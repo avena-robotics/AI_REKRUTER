@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Dodaj kampanię - AI Rekruter{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2>Dodaj nową kampanię</h2>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('campaign.add') }}">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="code" class="form-label">Kod kampanii*</label>
+                    <input type="text" class="form-control" id="code" name="code" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="title" class="form-label">Tytuł kampanii*</label>
+                    <input type="text" class="form-control" id="title" name="title" required>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="workplace_location" class="form-label">Miejsce pracy*</label>
+                    <input type="text" class="form-control" id="workplace_location" name="workplace_location" required>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="contract_type" class="form-label">Rodzaj umowy*</label>
+                    <select class="form-select" id="contract_type" name="contract_type" required>
+                        <option value="umowa o pracę">Umowa o pracę</option>
+                        <option value="B2B">B2B</option>
+                        <option value="umowa zlecenie">Umowa zlecenie</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="employment_type" class="form-label">Rodzaj etatu*</label>
+                    <select class="form-select" id="employment_type" name="employment_type" required>
+                        <option value="pełny etat">Pełny etat</option>
+                        <option value="część etatu">Część etatu</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="work_start_date" class="form-label">Data rozpoczęcia pracy*</label>
+                <input type="date" class="form-control" id="work_start_date" name="work_start_date" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="duties" class="form-label">Opis obowiązków*</label>
+                <textarea class="form-control" id="duties" name="duties" rows="3" required></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label for="requirements" class="form-label">Wymagania*</label>
+                <textarea class="form-control" id="requirements" name="requirements" rows="3" required></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label for="employer_offerings" class="form-label">Co oferuje pracodawca*</label>
+                <textarea class="form-control" id="employer_offerings" name="employer_offerings" rows="3" required></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label for="job_description" class="form-label">Opis czego potrzebujemy*</label>
+                <textarea class="form-control" id="job_description" name="job_description" rows="3" required></textarea>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="salary_range_min" class="form-label">Dolna granica wynagrodzenia (PLN)</label>
+                    <input type="number" class="form-control" id="salary_range_min" name="salary_range_min">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="salary_range_max" class="form-label">Górna granica wynagrodzenia (PLN)</label>
+                    <input type="number" class="form-control" id="salary_range_max" name="salary_range_max">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <button type="button" class="btn btn-secondary" id="addTestBtn">Dodaj test</button>
+            </div>
+
+            <div id="testsContainer"></div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">Zapisz kampanię</button>
+                <a href="{{ url_for('campaign.list') }}" class="btn btn-secondary">Anuluj</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let testCounter = 0;
+
+document.getElementById('addTestBtn').addEventListener('click', function() {
+    const testHtml = `
+        <div class="card mb-3 test-card" data-test-id="${testCounter}">
+            <div class="card-header">
+                <h5>Test ${testCounter + 1}</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Typ testu*</label>
+                        <select class="form-select" name="tests[${testCounter}][test_type]" required>
+                            <option value="SURVEY">Ankieta</option>
+                            <option value="EQ">Test EQ</option>
+                            <option value="IQ">Test IQ</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Etap*</label>
+                        <select class="form-select" name="tests[${testCounter}][stage]" required>
+                            <option value="PO1">PO1</option>
+                            <option value="PO2">PO2</option>
+                            <option value="PO3">PO3</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Waga testu*</label>
+                        <input type="number" class="form-control" name="tests[${testCounter}][weight]" required>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-danger remove-test">Usuń test</button>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('testsContainer').insertAdjacentHTML('beforeend', testHtml);
+    testCounter++;
+});
+
+document.getElementById('testsContainer').addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-test')) {
+        e.target.closest('.test-card').remove();
+    }
+});
+</script>
+{% endblock %} 

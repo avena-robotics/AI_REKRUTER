@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}AI Rekruter - Strona główna{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h2 class="card-title">Kampanie rekrutacyjne</h2>
+                    <p class="card-text">Zarządzaj kampaniami rekrutacyjnymi, twórz testy i ankiety.</p>
+                    <a href="{{ url_for('campaign.list') }}" class="btn btn-primary">Przejdź do kampanii</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h2 class="card-title">Kandydaci</h2>
+                    <p class="card-text">Przeglądaj i zarządzaj kandydatami w procesie rekrutacji.</p>
+                    <a href="{{ url_for('candidate.list') }}" class="btn btn-primary">Przejdź do kandydatów</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

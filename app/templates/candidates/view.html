@@ -1,0 +1,85 @@
+<div class="candidate-details">
+    <h4>{{ candidate.first_name }} {{ candidate.last_name }}</h4>
+    <p class="text-muted">{{ candidate.email }}</p>
+    
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <strong>Status rekrutacji:</strong>
+            <span class="badge 
+                {% if candidate.recruitment_status == 'ACCEPTED' %}bg-success
+                {% elif candidate.recruitment_status == 'REJECTED' %}bg-danger
+                {% else %}bg-primary{% endif %}">
+                {{ candidate.recruitment_status }}
+            </span>
+        </div>
+        <div class="col-md-6">
+            <strong>Data aplikacji:</strong> {{ candidate.created_at|datetime }}
+        </div>
+    </div>
+
+    <div class="accordion" id="candidateAccordion">
+        {% for stage in ['PO1', 'PO2', 'PO3'] %}
+        {% set stage_answers = answers|selectattr("test.stage", "equalto", stage)|list %}
+        {% if stage_answers %}
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button {% if not loop.first %}collapsed{% endif %}" 
+                        type="button" 
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#collapse{{ stage }}">
+                    Etap {{ stage }} 
+                    {% if stage == 'PO1' and candidate.po1_score %}
+                        (Wynik: {{ candidate.po1_score }})
+                    {% elif stage == 'PO2' and candidate.po2_score %}
+                        (Wynik: {{ candidate.po2_score }})
+                    {% elif stage == 'PO3' and candidate.po3_score %}
+                        (Wynik: {{ candidate.po3_score }})
+                    {% endif %}
+                </button>
+            </h2>
+            <div id="collapse{{ stage }}" 
+                 class="accordion-collapse collapse {% if loop.first %}show{% endif %}"
+                 data-bs-parent="#candidateAccordion">
+                <div class="accordion-body">
+                    {% for answer in stage_answers %}
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h6 class="card-title">{{ answer.question.question_text }}</h6>
+                            {% if answer.question.image %}
+                            <img src="{{ answer.question.image }}" class="img-fluid mb-2" alt="Question image">
+                            {% endif %}
+                            
+                            <div class="answer-content">
+                                {% if answer.question.answer_type == 'TEXT' %}
+                                    <p>{{ answer.text_answer }}</p>
+                                {% elif answer.question.answer_type == 'BOOLEAN' %}
+                                    <p>{{ 'Tak' if answer.boolean_answer else 'Nie' }}</p>
+                                {% elif answer.question.answer_type == 'SCALE' %}
+                                    <p>{{ answer.scale_answer }}/5</p>
+                                {% elif answer.question.answer_type == 'SALARY' %}
+                                    <p>{{ answer.numeric_answer }} PLN</p>
+                                {% elif answer.question.answer_type == 'DATE' %}
+                                    <p>{{ answer.date_answer|date }}</p>
+                                {% elif answer.question.answer_type == 'ABCD' %}
+                                    <p>Odpowiedź: {{ answer.abcd_answer }}</p>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="score-info">
+                                <small class="text-muted">
+                                    Punkty: {{ answer.score }}/{{ answer.question.points }}
+                                    {% if answer.score_ai %}
+                                    (AI: {{ answer.score_ai }})
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+</div> 

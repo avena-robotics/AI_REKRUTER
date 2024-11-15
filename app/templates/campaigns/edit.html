@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Edytuj kampanię - AI Rekruter{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card">
+        <div class="card-header">
+            <h2>Edytuj kampanię</h2>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('campaign.edit', id=campaign.id) }}">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="code" class="form-label">Kod kampanii*</label>
+                        <input type="text" class="form-control" id="code" name="code" 
+                               value="{{ campaign.code }}" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="title" class="form-label">Tytuł kampanii*</label>
+                        <input type="text" class="form-control" id="title" name="title" 
+                               value="{{ campaign.title }}" required>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="workplace_location" class="form-label">Miejsce pracy*</label>
+                        <input type="text" class="form-control" id="workplace_location" 
+                               name="workplace_location" value="{{ campaign.workplace_location }}" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="contract_type" class="form-label">Rodzaj umowy*</label>
+                        <select class="form-select" id="contract_type" name="contract_type" required>
+                            <option value="umowa o pracę" {% if campaign.contract_type == 'umowa o pracę' %}selected{% endif %}>
+                                Umowa o pracę
+                            </option>
+                            <option value="B2B" {% if campaign.contract_type == 'B2B' %}selected{% endif %}>
+                                B2B
+                            </option>
+                            <option value="umowa zlecenie" {% if campaign.contract_type == 'umowa zlecenie' %}selected{% endif %}>
+                                Umowa zlecenie
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="employment_type" class="form-label">Rodzaj etatu*</label>
+                        <select class="form-select" id="employment_type" name="employment_type" required>
+                            <option value="pełny etat" {% if campaign.employment_type == 'pełny etat' %}selected{% endif %}>
+                                Pełny etat
+                            </option>
+                            <option value="część etatu" {% if campaign.employment_type == 'część etatu' %}selected{% endif %}>
+                                Część etatu
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="work_start_date" class="form-label">Data rozpoczęcia pracy*</label>
+                    <input type="date" class="form-control" id="work_start_date" 
+                           name="work_start_date" value="{{ campaign.work_start_date }}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="duties" class="form-label">Opis obowiązków*</label>
+                    <textarea class="form-control" id="duties" name="duties" 
+                              rows="3" required>{{ campaign.duties }}</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="requirements" class="form-label">Wymagania*</label>
+                    <textarea class="form-control" id="requirements" name="requirements" 
+                              rows="3" required>{{ campaign.requirements }}</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="employer_offerings" class="form-label">Co oferuje pracodawca*</label>
+                    <textarea class="form-control" id="employer_offerings" name="employer_offerings" 
+                              rows="3" required>{{ campaign.employer_offerings }}</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="job_description" class="form-label">Opis czego potrzebujemy*</label>
+                    <textarea class="form-control" id="job_description" name="job_description" 
+                              rows="3" required>{{ campaign.job_description }}</textarea>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="salary_range_min" class="form-label">Dolna granica wynagrodzenia (PLN)</label>
+                        <input type="number" class="form-control" id="salary_range_min" 
+                               name="salary_range_min" value="{{ campaign.salary_range_min }}">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="salary_range_max" class="form-label">Górna granica wynagrodzenia (PLN)</label>
+                        <input type="number" class="form-control" id="salary_range_max" 
+                               name="salary_range_max" value="{{ campaign.salary_range_max }}">
+                    </div>
+                </div>
+
+                <div class="form-check mb-3">
+                    <input type="checkbox" class="form-check-input" id="is_active" 
+                           name="is_active" {% if campaign.is_active %}checked{% endif %}>
+                    <label class="form-check-label" for="is_active">Kampania aktywna</label>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">Zapisz zmiany</button>
+                    <a href="{{ url_for('campaign.list') }}" class="btn btn-secondary">Anuluj</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Validate salary range
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const minSalary = parseInt(document.getElementById('salary_range_min').value);
+        const maxSalary = parseInt(document.getElementById('salary_range_max').value);
+        
+        if (minSalary && maxSalary && minSalary > maxSalary) {
+            e.preventDefault();
+            alert('Dolna granica wynagrodzenia nie może być wyższa niż górna granica.');
+        }
+    });
+});
+</script>
+{% endblock %} 

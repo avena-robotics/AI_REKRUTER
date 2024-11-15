@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Kampanie - AI Rekruter{% endblock %}
+
+{% block head %}
+{{ super() }}
+<script defer>
+    // Przeniesienie funkcji do globalnego zakresu
+    window.confirmDelete = function(campaignId) {
+        if (confirm('Czy na pewno chcesz usunąć tę kampanię?')) {
+            fetch(`/campaigns/${campaignId}/delete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+            }).then(async response => {
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Success:', data);
+                    window.location.href = "{{ url_for('campaign.list') }}";
+                } else {
+                    const error = await response.json();
+                    console.error('Error:', error);
+                    alert('Wystąpił błąd podczas usuwania kampanii: ' + error.error);
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+                alert('Wystąpił błąd podczas usuwania kampanii');
+            });
+        }
+    }
+
+    // Przeniesienie obsługi kopiowania linku
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.copy-link').forEach(button => {
+            button.addEventListener('click', function() {
+                navigator.clipboard.writeText(this.dataset.link);
+                this.textContent = 'Skopiowano!';
+                setTimeout(() => {
+                    this.textContent = 'Kopiuj link';
+                }, 2000);
+            });
+        });
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Kampanie rekrutacyjne</h1>
+    <a href="{{ url_for('campaign.add') }}" class="btn btn-primary">Dodaj kampanię</a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Kod kampanii</th>
+                <th>Tytuł</th>
+                <th>Lokalizacja</th>
+                <th>Data utworzenia</th>
+                <th>Status</th>
+                <th>Link</th>
+                <th>Akcje</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for campaign in campaigns %}
+            <tr>
+                <td>{{ campaign.code }}</td>
+                <td>{{ campaign.title }}</td>
+                <td>{{ campaign.workplace_location }}</td>
+                <td>{{ campaign.created_at|datetime }}</td>
+                <td>
+                    <span class="badge {% if campaign.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                        {{ 'Aktywna' if campaign.is_active else 'Nieaktywna' }}
+                    </span>
+                </td>
+                <td>
+                    {% if campaign.universal_access_token %}
+                        <button class="btn btn-sm btn-secondary copy-link" 
+                                data-link="{{ request.host_url }}test/{{ campaign.universal_access_token }}">
+                            Kopiuj link
+                        </button>
+                    {% else %}
+                        <form method="POST" action="{{ url_for('campaign.generate_link', id=campaign.id) }}" 
+                              class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-primary">Generuj link</button>
+                        </form>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="btn-group">
+                        <a href="{{ url_for('campaign.edit', id=campaign.id) }}" 
+                           class="btn btn-sm btn-warning">Edytuj</a>
+                        <button type="button" class="btn btn-sm btn-danger" 
+                                onclick="confirmDelete('{{ campaign.id }}')">Usuń</button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %} 

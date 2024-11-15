@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}{{ test.description }} - AI Rekruter{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card">
+        <div class="card-header">
+            <h2>{{ test.description }}</h2>
+            {% if test.time_limit_minutes %}
+            <div class="timer-container">
+                Pozostały czas: <span id="timer">{{ test.time_limit_minutes }}:00</span>
+            </div>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('test.submit', token=token) }}" id="testForm">
+                {% for question in questions %}
+                <div class="question-card mb-4">
+                    <h5 class="mb-3">{{ loop.index }}. {{ question.question_text }}</h5>
+                    
+                    {% if question.image %}
+                    <img src="{{ question.image }}" class="img-fluid mb-3" alt="Question image">
+                    {% endif %}
+
+                    {% if question.answer_type == 'TEXT' %}
+                    <textarea class="form-control" 
+                              name="answer_{{ question.id }}" 
+                              rows="3"
+                              {% if question.is_required %}required{% endif %}></textarea>
+
+                    {% elif question.answer_type == 'BOOLEAN' %}
+                    <div class="form-check">
+                        <input type="radio" class="form-check-input" 
+                               name="answer_{{ question.id }}" value="true" 
+                               id="true_{{ question.id }}"
+                               {% if question.is_required %}required{% endif %}>
+                        <label class="form-check-label" for="true_{{ question.id }}">Tak</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="radio" class="form-check-input" 
+                               name="answer_{{ question.id }}" value="false" 
+                               id="false_{{ question.id }}">
+                        <label class="form-check-label" for="false_{{ question.id }}">Nie</label>
+                    </div>
+
+                    {% elif question.answer_type == 'SCALE' %}
+                    <div class="range-container">
+                        <input type="range" class="form-range" 
+                               name="answer_{{ question.id }}" 
+                               min="0" max="5" step="1"
+                               {% if question.is_required %}required{% endif %}>
+                        <div class="range-labels">
+                            <span>0</span>
+                            <span>1</span>
+                            <span>2</span>
+                            <span>3</span>
+                            <span>4</span>
+                            <span>5</span>
+                        </div>
+                    </div>
+
+                    {% elif question.answer_type == 'SALARY' %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Minimalne wynagrodzenie (PLN)</label>
+                            <input type="number" class="form-control" 
+                                   name="answer_{{ question.id }}_min"
+                                   {% if question.is_required %}required{% endif %}>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Maksymalne wynagrodzenie (PLN)</label>
+                            <input type="number" class="form-control" 
+                                   name="answer_{{ question.id }}_max"
+                                   {% if question.is_required %}required{% endif %}>
+                        </div>
+                    </div>
+
+                    {% elif question.answer_type == 'DATE' %}
+                    <input type="date" class="form-control" 
+                           name="answer_{{ question.id }}"
+                           {% if question.is_required %}required{% endif %}>
+
+                    {% elif question.answer_type == 'ABCD' %}
+                    <div class="abcd-options">
+                        {% for letter in ['A', 'B', 'C', 'D'] %}
+                        <div class="form-check">
+                            <input type="radio" class="form-check-input" 
+                                   name="answer_{{ question.id }}" 
+                                   value="{{ letter }}"
+                                   id="{{ letter }}_{{ question.id }}"
+                                   {% if question.is_required %}required{% endif %}>
+                            <label class="form-check-label" for="{{ letter }}_{{ question.id }}">
+                                {% if question['answer_' + letter|lower] %}
+                                    {{ question['answer_' + letter|lower] }}
+                                {% endif %}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg">Zakończ test</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+{% if test.time_limit_minutes %}
+// Timer functionality
+let timeLeft = {{ test.time_limit_minutes }} * 60;
+const timerDisplay = document.getElementById('timer');
+
+const timer = setInterval(() => {
+    timeLeft--;
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    timerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    
+    if (timeLeft <= 0) {
+        clearInterval(timer);
+        document.getElementById('testForm').submit();
+    }
+}, 1000);
+{% endif %}
+
+// Form validation
+document.getElementById('testForm').addEventListener('submit', function(e) {
+    const requiredQuestions = document.querySelectorAll('[required]');
+    let allAnswered = true;
+    
+    requiredQuestions.forEach(question => {
+        if (!question.value) {
+            allAnswered = false;
+            question.closest('.question-card').classList.add('border-danger');
+        }
+    });
+    
+    if (!allAnswered) {
+        e.preventDefault();
+        alert('Proszę odpowiedzieć na wszystkie wymagane pytania.');
+    }
+});
+</script>
+{% endblock %} 

@@ -14,9 +14,9 @@ create table campaigns (
     salary_range_min integer,             -- 3000
     salary_range_max integer,             -- 5000
     is_active boolean default true,
-    universal_access_token text
-    created_at timestamp with time zone default now(),
-    updated_at timestamp with time zone default now(),
+    universal_access_token text,
+    created_at timestamp default now(),
+    updated_at timestamp default now()
 );
 
 -- Typ testu enum
@@ -59,7 +59,7 @@ create table questions (
     correct_answer_numeric numeric,
     correct_answer_scale int,
     correct_answer_date date,
-    correct_answer_abcd text,
+    correct_answer_abcd text
 );
 
 -- Status rekrutacji enum
@@ -88,8 +88,8 @@ create table candidates (
     access_token_po3_is_used boolean default false, -- Czy token PO3 został użyty
     access_token_po2_expires_at timestamp with time zone, -- Data ważności tokenu PO2
     access_token_po3_expires_at timestamp with time zone, -- Data ważności tokenu PO3
-    created_at timestamp with time zone default now(),
-    updated_at timestamp with time zone default now()
+    created_at timestamp default now(),
+    updated_at timestamp default now()
 );
 
 -- Tabela odpowiedzi kandydatów
@@ -105,5 +105,5 @@ create table candidate_answers (
     abcd_answer text,                              -- Odpowiedź typu ABCD
     score int,                                     -- Punkty za odpowiedź
     score_ai int,                                  -- Punkty za odpowiedź AI
-    created_at timestamp with time zone default now()
+    created_at timestamp default now()
 );

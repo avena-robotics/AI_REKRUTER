@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Kandydaci - AI Rekruter{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>Filtry</h5>
+    </div>
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label for="campaign_code" class="form-label">Kod kampanii</label>
+                <select class="form-select" id="campaign_code" name="campaign_code">
+                    <option value="">Wszystkie kampanie</option>
+                    {% for campaign in campaigns %}
+                        <option value="{{ campaign.code }}" {% if request.args.get('campaign_code') == campaign.code %}selected{% endif %}>
+                            {{ campaign.code }} - {{ campaign.title }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="status" class="form-label">Status rekrutacji</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">Wszystkie statusy</option>
+                    <option value="PO1" {% if request.args.get('status') == 'PO1' %}selected{% endif %}>PO1</option>
+                    <option value="PO2" {% if request.args.get('status') == 'PO2' %}selected{% endif %}>PO2</option>
+                    <option value="PO3" {% if request.args.get('status') == 'PO3' %}selected{% endif %}>PO3</option>
+                    <option value="PO4" {% if request.args.get('status') == 'PO4' %}selected{% endif %}>PO4</option>
+                    <option value="REJECTED" {% if request.args.get('status') == 'REJECTED' %}selected{% endif %}>Odrzucony</option>
+                    <option value="ACCEPTED" {% if request.args.get('status') == 'ACCEPTED' %}selected{% endif %}>Zaakceptowany</option>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary">Filtruj</button>
+                <a href="{{ url_for('candidate.list') }}" class="btn btn-secondary ms-2">Resetuj</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped" id="candidatesTable">
+        <thead>
+            <tr>
+                <th>Imię i nazwisko</th>
+                <th>Kod kampanii</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>PO1</th>
+                <th>PO2</th>
+                <th>PO3</th>
+                <th>Wynik ogólny</th>
+                <th>Data aplikacji</th>
+                <th>Akcje</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for candidate in candidates %}
+            <tr>
+                <td>{{ candidate.first_name }} {{ candidate.last_name }}</td>
+                <td>{{ candidate.campaign_id }}</td>
+                <td>{{ candidate.email }}</td>
+                <td>
+                    <span class="badge 
+                        {% if candidate.recruitment_status == 'ACCEPTED' %}bg-success
+                        {% elif candidate.recruitment_status == 'REJECTED' %}bg-danger
+                        {% else %}bg-primary{% endif %}">
+                        {{ candidate.recruitment_status }}
+                    </span>
+                </td>
+                <td>{{ candidate.po1_score if candidate.po1_score else '-' }}</td>
+                <td>{{ candidate.po2_score if candidate.po2_score else '-' }}</td>
+                <td>{{ candidate.po3_score if candidate.po3_score else '-' }}</td>
+                <td>{{ candidate.total_score if candidate.total_score else '-' }}</td>
+                <td>{{ candidate.created_at|datetime }}</td>
+                <td>
+                    <div class="dropdown">
+                        <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            Akcje
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <button class="dropdown-item" onclick="viewCandidate('{{ candidate.id }}')">
+                                    Podgląd
+                                </button>
+                            </li>
+                            {% if candidate.recruitment_status not in ['ACCEPTED', 'REJECTED'] %}
+                            <li>
+                                <button class="dropdown-item" onclick="moveToNextStage('{{ candidate.id }}')">
+                                    Przepchnij do kolejnego etapu
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item text-danger" onclick="rejectCandidate('{{ candidate.id }}')">
+                                    Odrzuć
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item text-success" onclick="acceptCandidate('{{ candidate.id }}')">
+                                    Zaakceptuj
+                                </button>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal for candidate details -->
+<div class="modal fade" id="candidateModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Szczegóły kandydata</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="candidateModalBody">
+                <!-- Content will be loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function viewCandidate(candidateId) {
+    const modal = new bootstrap.Modal(document.getElementById('candidateModal'));
+    fetch(`/candidates/${candidateId}`)
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('candidateModalBody').innerHTML = html;
+            modal.show();
+        });
+}
+
+function moveToNextStage(candidateId) {
+    if (confirm('Czy na pewno chcesz przepchnąć kandydata do kolejnego etapu?')) {
+        fetch(`/candidates/${candidateId}/next-stage`, {
+            method: 'POST',
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            }
+        });
+    }
+}
+
+function rejectCandidate(candidateId) {
+    if (confirm('Czy na pewno chcesz odrzucić kandydata?')) {
+        fetch(`/candidates/${candidateId}/reject`, {
+            method: 'POST',
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            }
+        });
+    }
+}
+
+function acceptCandidate(candidateId) {
+    if (confirm('Czy na pewno chcesz zaakceptować kandydata?')) {
+        fetch(`/candidates/${candidateId}/accept`, {
+            method: 'POST',
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            }
+        });
+    }
+}
+
+// Initialize sorting
+document.addEventListener('DOMContentLoaded', function() {
+    const table = document.getElementById('candidatesTable');
+    const headers = table.querySelectorAll('th');
+    
+    headers.forEach((header, index) => {
+        if (index > 3 && index < 8) { // Only add sorting for score columns
+            header.style.cursor = 'pointer';
+            header.addEventListener('click', () => {
+                sortTable(index);
+            });
+        }
+    });
+});
+
+function sortTable(column) {
+    const table = document.getElementById('candidatesTable');
+    const rows = Array.from(table.querySelectorAll('tbody tr'));
+    const isNumeric = true;
+    
+    rows.sort((a, b) => {
+        let aVal = a.cells[column].textContent.trim();
+        let bVal = b.cells[column].textContent.trim();
+        
+        if (aVal === '-') aVal = -1;
+        if (bVal === '-') bVal = -1;
+        
+        if (isNumeric) {
+            return Number(bVal) - Number(aVal);
+        }
+        return aVal.localeCompare(bVal);
+    });
+    
+    const tbody = table.querySelector('tbody');
+    tbody.innerHTML = '';
+    rows.forEach(row => tbody.appendChild(row));
+}
+</script>
+{% endblock %} 
