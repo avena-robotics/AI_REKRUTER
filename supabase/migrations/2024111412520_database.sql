@@ -79,23 +79,24 @@ create table candidates (
     po3_score int,                                  -- 70
     po4_score int,                                  -- 60
     total_score int,                                -- 310  
+    po1_completed_at timestamp with time zone,           -- Data zakończenia testu PO1
+    po2_completed_at timestamp with time zone,          -- Data zakończenia testu PO2
+    po3_completed_at timestamp with time zone,          -- Data zakończenia testu PO3
     access_token_po2 text,                          -- token do testu PO2
     access_token_po3 text,                          -- token do testu PO3
     access_token_po2_is_used boolean default false, -- Czy token PO2 został użyty
     access_token_po3_is_used boolean default false, -- Czy token PO3 został użyty
     access_token_po2_expires_at timestamp with time zone, -- Data ważności tokenu PO2
     access_token_po3_expires_at timestamp with time zone, -- Data ważności tokenu PO3
-    po2_completed_at timestamp with time zone,          -- Data zakończenia testu PO2
-    po3_completed_at timestamp with time zone,          -- Data zakończenia testu PO3
     created_at timestamp with time zone default now(),
     updated_at timestamp with time zone default now()
 );
+
 -- Tabela odpowiedzi kandydatów
 create table candidate_answers (
     id bigserial primary key,
     candidate_id bigint references candidates(id),
     question_id integer references questions(id),
-    test_session_id bigint references test_sessions(id),
     text_answer text,                              -- Odpowiedź tekstowa    
     boolean_answer boolean,                        -- Odpowiedź typu boolean
     numeric_answer numeric,                        -- Odpowiedź typu numeric
@@ -103,5 +104,6 @@ create table candidate_answers (
     date_answer date,                              -- Odpowiedź typu date
     abcd_answer text,                              -- Odpowiedź typu ABCD
     score int,                                     -- Punkty za odpowiedź
+    score_ai int,                                  -- Punkty za odpowiedź AI
     created_at timestamp with time zone default now()
 );
