@@ -1,0 +1,70 @@
+Provide a Chain-Of-Thought analysis before answering.
+Review the project files thoroughly. If there is anything you need referenced that’s missing, ask for it.
+If you’re unsure about any aspect of the task, ask for clarification. Don’t guess. Don’t make assumptions.
+Don’t do anything unless explicitly instructed to do so. Nothing “extra”.
+Always preserve everything from the original files, except for what is being updated.
+Write all code in full with no placeholders. If you get cut off, I’ll say “continue”
+
+1. Wymogi klienta
+
+Moduł 1 - Lista kampani rekrutacyjnych (np. J5A_logopeda_05_2024)
+
+Informacje dla kandydata:
+- miejsce pracy
+- rodzaj umowy
+- rodzaj etatu
+- rozpoczęcie pracy
+- zakres obowiązków
+- wymagania pracodawcy
+- co pracodawca oferuje
+- opis stanowiska pracy - kogo potrzebujemy (np. wg schematu pracuj.pl)
+- zakres wynagrodzenia
+
+Informacje zwrotne od kandydata:
+- ankieta - pytania do kandydata - rodzaj odpowiedzi (text, tak/nie, samoocena 0-5, wynagrodzenie (PLN), data)
+- test EQ (trzeba zrobić dobry automat)
+- test IQ (trzeba zrobić dobry automat)
+
+- kryteria ocen, czyli przeliczanie odpowiedzi x WAGA = punkty
+- generowanie linków dla kandydata
+
+Schemat działania:
+1. Generowanie linku uniwersalnego
+2. Ankieta (PO1)  
+3. Sito automatyczne wg kryteriów/wag dla PO1 
+4. Generowanie linku do test EQ 
+5. Test EQ (PO2)
+6. Sito automatyczne wg kryteriów/wag dla PO2
+7. Generowanie linku do test IQ
+8. Test IQ (PO3) 
+9. Sito automatyczne wg kryteriów/wag dla PO3
+10. Rozmowa rekrutacyjna (PO4)
+11. Sito ręczne
+
+
+Moduł 2 - Przeglądanie przebiegu rekrutacji
+- filtry: kampania rekrutacji, stan rekrutacji
+- sortowanie: stan, punkty 1, 2, 3, Suma
+- Lista kandydatów: 
+    * ID kampanii
+    * Imię i nazwisko
+    * stan rekrutacji
+    * punkty kategoria 1
+    * punkty kategoria 2
+    * punkty kategoria 3
+    * punkty suma
+    * AKCJE ( przepchnij do następnego etapu )
+- Podgląd kandydata
+
+2. Zaprojektowanie bazy danych
+
+3. Technologia: Supabase, Python, Flask, HMTL, JSS, Bootstrap
+
+4. Termin: 2 tygodnie
+
+5. DOD:
+- Działająca funkcjonalna aplikacja
+- Przetestowanie z klientem
+- Poprawki po uwagach 
+
+
