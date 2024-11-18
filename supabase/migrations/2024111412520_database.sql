@@ -1,7 +1,7 @@
 -- Tabela kampanii
 create table campaigns (
     id bigserial primary key,
-    code text not null unique,            -- J5A_logopeda_05_2024
+    code text not null,            -- J5A_logopeda_05_2024
     title text not null,                  -- Logopedia - Warszawa   
     workplace_location text not null,     -- Warszawa
     contract_type text not null,          -- umowa o pracę, B2B, etc.

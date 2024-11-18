@@ -146,6 +146,7 @@
 
                     const form = document.getElementById('editCampaignForm');
                     form.action = `/campaigns/${campaignId}/edit`;
+                    form.dataset.campaignId = campaignId;  // Add campaign ID to form
                     
                     // Update campaign fields
                     Object.entries({
@@ -175,6 +176,15 @@
                     if (campaign.tests?.length > 0) {
                         campaign.tests.forEach(test => {
                             testsContainer.insertAdjacentHTML('beforeend', createTestHtml(test, testCounter));
+                            
+                            // Initialize Sortable for questions container in this test
+                            const questionsContainer = testsContainer.querySelector(
+                                `.test-card[data-counter="${testCounter}"] .questions-container`
+                            );
+                            if (questionsContainer) {
+                                initializeSortable(questionsContainer);
+                            }
+                            
                             testCounter++;
                         });
                     }
@@ -189,11 +199,31 @@
 
         // Initialize Sortable for existing and new question containers
         function initializeSortable(container) {
-            new Sortable(container, {
+            // Remove existing Sortable instance if it exists
+            if (container.sortableInstance) {
+                container.sortableInstance.destroy();
+            }
+            
+            // Create new Sortable instance
+            container.sortableInstance = new Sortable(container, {
                 animation: 150,
                 handle: '.drag-handle',
-                onEnd: function() {
+                onEnd: function(evt) {
                     updateQuestionOrders(container);
+                    
+                    // Update form field names to match new order
+                    const questions = container.querySelectorAll('.question-card');
+                    questions.forEach((question, index) => {
+                        const inputs = question.querySelectorAll('input, select, textarea');
+                        inputs.forEach(input => {
+                            const name = input.name;
+                            if (name) {
+                                // Update the question index in the name attribute
+                                const newName = name.replace(/\[questions\]\[\d+\]/, `[questions][${index}]`);
+                                input.name = newName;
+                            }
+                        });
+                    });
                 }
             });
         }
@@ -203,11 +233,14 @@
             const questions = container.querySelectorAll('.question-card');
             questions.forEach((question, index) => {
                 question.dataset.order = index + 1;
-                // Update the hidden order input
+                // Update all order_number inputs in this question
                 const orderInput = question.querySelector('input[name$="[order_number]"]');
                 if (orderInput) {
                     orderInput.value = index + 1;
                 }
+                
+                // Update data attributes
+                question.dataset.questionIndex = index;
             });
         }
 
@@ -241,40 +274,20 @@
                 const questionCard = e.target.closest('.question-card');
                 const questionId = questionCard.querySelector('input[name$="[id]"]').value;
                 
-                if (questionId) {
-                    // Existing question - delete from database
-                    if (confirm('Czy na pewno chcesz usunąć to pytanie?')) {
-                        const testCard = questionCard.closest('.test-card');
-                        const testId = testCard.dataset.testId;
-                        const campaignId = document.querySelector('form').dataset.campaignId;
-                        
-                        fetch(`/campaigns/${campaignId}/tests/${testId}/questions/${questionId}/delete`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json'
-                            }
-                        }).then(async response => {
-                            if (response.ok) {
-                                questionCard.remove();
-                                const container = questionCard.parentElement;
-                                updateQuestionOrders(container);
-                            } else {
-                                const error = await response.json();
-                                alert('Wystąpił błąd podczas usuwania pytania: ' + error.error);
-                            }
-                        }).catch(error => {
-                            console.error('Error:', error);
-                            alert('Wystąpił błąd podczas usuwania pytania');
-                        });
+                if (confirm('Czy na pewno chcesz usunąć to pytanie?')) {
+                    if (questionId) {
+                        // Add question ID to deleted questions list
+                        const form = questionCard.closest('form');
+                        const deletedQuestionsInput = form.querySelector('input[name="deleted_questions"]');
+                        const deletedQuestions = JSON.parse(deletedQuestionsInput.value);
+                        deletedQuestions.push(questionId);
+                        deletedQuestionsInput.value = JSON.stringify(deletedQuestions);
                     }
-                } else {
-                    // New question - just remove from DOM
-                    if (confirm('Czy na pewno chcesz usunąć to pytanie?')) {
-                        const container = questionCard.parentElement;
-                        questionCard.remove();
-                        updateQuestionOrders(container);
-                    }
+                    
+                    // Remove question card from DOM
+                    const container = questionCard.parentElement;
+                    questionCard.remove();
+                    updateQuestionOrders(container);
                 }
             }
         });
@@ -302,6 +315,18 @@
         // Initialize Sortable for existing question containers
         document.querySelectorAll('.questions-container').forEach(container => {
             initializeSortable(container);
+        });
+
+        // Add hidden input for deleted questions to both forms
+        ['addCampaignForm', 'editCampaignForm'].forEach(formId => {
+            const form = document.getElementById(formId);
+            if (form) {
+                const deletedQuestionsInput = document.createElement('input');
+                deletedQuestionsInput.type = 'hidden';
+                deletedQuestionsInput.name = 'deleted_questions';
+                deletedQuestionsInput.value = '[]';
+                form.appendChild(deletedQuestionsInput);
+            }
         });
     });
 
