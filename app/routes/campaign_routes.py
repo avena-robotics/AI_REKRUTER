@@ -182,13 +182,8 @@ def edit(id):
 @campaign_bp.route('/<int:id>/delete', methods=['POST'])
 def delete(id):
     try:
-        # First delete all tests associated with the campaign
-        supabase.table('tests')\
-            .delete()\
-            .eq('campaign_id', id)\
-            .execute()
-            
-        # Then delete the campaign
+        # With ON DELETE CASCADE, we only need to delete the campaign
+        # Questions and tests will be automatically deleted
         supabase.table('campaigns')\
             .delete()\
             .eq('id', id)\

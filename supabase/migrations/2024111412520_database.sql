@@ -43,7 +43,7 @@ create type answer_type as enum ('TEXT', 'BOOLEAN', 'SCALE', 'SALARY', 'DATE', '
 -- Tabela pytań
 create table questions (
     id serial primary key,
-    test_id integer references tests(id),           -- Id testu
+    test_id integer references tests(id) ON DELETE CASCADE,           -- Id testu
     question_text text not null,                    -- Pytanie do kandydata     
     answer_type answer_type not null,               -- TEXT, BOOLEAN, SCALE(0-5), SALARY, DATE, ABCD
     answer_a text,
