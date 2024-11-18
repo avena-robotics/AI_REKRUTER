@@ -92,6 +92,24 @@
                                 <input type="number" class="form-control" name="tests[${testCounter}][weight]" required>
                             </div>
                         </div>
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">Opis testu</label>
+                                <textarea class="form-control" name="tests[${testCounter}][description]" rows="2"></textarea>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Próg zaliczenia*</label>
+                                <input type="number" class="form-control" name="tests[${testCounter}][passing_threshold]" 
+                                       value="0" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Limit czasu (minuty)</label>
+                                <input type="number" class="form-control" name="tests[${testCounter}][time_limit_minutes]" 
+                                       value="0">
+                            </div>
+                        </div>
                         <button type="button" class="btn btn-danger remove-test">Usuń test</button>
                     </div>
                 </div>
@@ -124,10 +142,10 @@
 
                     const form = document.getElementById('editCampaignForm');
                     
-                    // Update form action first
+                    // Update form action
                     form.action = `/campaigns/${campaignId}/edit`;
                     
-                    // Then update all form fields
+                    // Update campaign fields
                     form.querySelector('#edit_code').value = campaign.code || '';
                     form.querySelector('#edit_title').value = campaign.title || '';
                     form.querySelector('#edit_workplace_location').value = campaign.workplace_location || '';
@@ -141,6 +159,31 @@
                     form.querySelector('#edit_salary_range_min').value = campaign.salary_range_min || '';
                     form.querySelector('#edit_salary_range_max').value = campaign.salary_range_max || '';
                     form.querySelector('#edit_is_active').checked = campaign.is_active || false;
+                    
+                    // Clear and populate tests
+                    const testsContainer = document.getElementById('editTestsContainer');
+                    testsContainer.innerHTML = '';
+                    editTestCounter = 0;
+                    
+                    console.log('Campaign tests:', campaign.tests); // Debug log
+                    
+                    if (campaign.tests && campaign.tests.length > 0) {
+                        campaign.tests.forEach(test => {
+                            // Convert test data to match the form fields
+                            const formattedTest = {
+                                test_type: test.test_type,
+                                stage: test.stage,
+                                weight: test.weight,
+                                description: test.description || '',
+                                passing_threshold: test.passing_threshold || 0,
+                                time_limit_minutes: test.time_limit_minutes || 0
+                            };
+                            
+                            console.log('Formatted test data:', formattedTest); // Debug log
+                            testsContainer.insertAdjacentHTML('beforeend', createTestHtml(formattedTest, editTestCounter));
+                            editTestCounter++;
+                        });
+                    }
                     
                     // Show modal
                     const modal = new bootstrap.Modal(document.getElementById('editCampaignModal'));
@@ -157,7 +200,6 @@
     document.getElementById('addCampaignForm')?.addEventListener('submit', function(e) {
         e.preventDefault();
         
-        // Create FormData object
         const formData = new FormData(this);
         
         // Get all test cards
@@ -225,7 +267,7 @@
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Waga testu*</label>
                             <input type="number" class="form-control" name="tests[${counter}][weight]" 
-                                   value="${test.weight || ''}" required>
+                                   value="${test.weight !== undefined ? test.weight : ''}" required>
                         </div>
                     </div>
                     <div class="row">
@@ -238,12 +280,12 @@
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Próg zaliczenia*</label>
                             <input type="number" class="form-control" name="tests[${counter}][passing_threshold]" 
-                                   value="${test.passing_threshold || '0'}" required>
+                                   value="${test.passing_threshold !== undefined ? test.passing_threshold : '0'}" required>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Limit czasu (minuty)</label>
                             <input type="number" class="form-control" name="tests[${counter}][time_limit_minutes]" 
-                                   value="${test.time_limit_minutes || '0'}">
+                                   value="${test.time_limit_minutes !== undefined ? test.time_limit_minutes : '0'}">
                         </div>
                     </div>
                     <button type="button" class="btn btn-danger remove-test">Usuń test</button>
@@ -251,49 +293,6 @@
             </div>
         `;
     }
-
-    // Update the editCampaign function
-    window.editCampaign = function(campaignId) {
-        fetch(`/campaigns/${campaignId}/data`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(campaign => {
-                if (!campaign || campaign.error) {
-                    throw new Error(campaign.error || 'Błąd podczas pobierania danych kampanii');
-                }
-
-                const form = document.getElementById('editCampaignForm');
-                
-                // Update form action
-                form.action = `/campaigns/${campaignId}/edit`;
-                
-                // Update all form fields (existing code...)
-                
-                // Clear and populate tests
-                const testsContainer = document.getElementById('editTestsContainer');
-                testsContainer.innerHTML = '';
-                editTestCounter = 0;
-                
-                if (campaign.tests && campaign.tests.length > 0) {
-                    campaign.tests.forEach(test => {
-                        testsContainer.insertAdjacentHTML('beforeend', createTestHtml(test, editTestCounter));
-                        editTestCounter++;
-                    });
-                }
-                
-                // Show modal
-                const modal = new bootstrap.Modal(document.getElementById('editCampaignModal'));
-                modal.show();
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Wystąpił błąd podczas pobierania danych kampanii: ' + error.message);
-            });
-    };
 
     // Add test button for edit modal
     document.getElementById('editAddTestBtn')?.addEventListener('click', function() {
