@@ -152,6 +152,199 @@
                 });
         };
     });
+
+    // Update the form submission handling
+    document.getElementById('addCampaignForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Create FormData object
+        const formData = new FormData(this);
+        
+        // Get all test cards
+        const testCards = document.querySelectorAll('.test-card');
+        console.log('Found test cards:', testCards.length);  // Debug log
+        
+        // Add test data to formData
+        testCards.forEach((card, index) => {
+            const testData = {
+                test_type: card.querySelector('[name^="tests"][name$="[test_type]"]').value,
+                stage: card.querySelector('[name^="tests"][name$="[stage]"]').value,
+                weight: card.querySelector('[name^="tests"][name$="[weight]"]').value,
+                description: card.querySelector('[name^="tests"][name$="[description]"]').value,
+                passing_threshold: card.querySelector('[name^="tests"][name$="[passing_threshold]"]').value,
+                time_limit_minutes: card.querySelector('[name^="tests"][name$="[time_limit_minutes]"]').value
+            };
+            console.log('Test data for card', index, ':', testData);  // Debug log
+            formData.append('tests', JSON.stringify(testData));
+        });
+        
+        // Submit the form
+        fetch(this.action, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.text())
+        .then(html => {
+            window.location.href = "{{ url_for('campaign.list') }}";
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Wystąpił błąd podczas zapisywania kampanii');
+        });
+    });
+
+    let editTestCounter = 0;
+    
+    // Function to create test HTML for edit modal
+    function createTestHtml(testData = null, counter) {
+        console.log('Creating test HTML with data:', testData);  // Debug log
+        const test = testData || {};
+        return `
+            <div class="card mb-3 test-card" data-test-id="${counter}">
+                <div class="card-header">
+                    <h5>Test ${counter + 1}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Typ testu*</label>
+                            <select class="form-select" name="tests[${counter}][test_type]" required>
+                                <option value="SURVEY" ${test.test_type === 'SURVEY' ? 'selected' : ''}>Ankieta</option>
+                                <option value="EQ" ${test.test_type === 'EQ' ? 'selected' : ''}>Test EQ</option>
+                                <option value="IQ" ${test.test_type === 'IQ' ? 'selected' : ''}>Test IQ</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Etap*</label>
+                            <select class="form-select" name="tests[${counter}][stage]" required>
+                                <option value="PO1" ${test.stage === 'PO1' ? 'selected' : ''}>PO1</option>
+                                <option value="PO2" ${test.stage === 'PO2' ? 'selected' : ''}>PO2</option>
+                                <option value="PO3" ${test.stage === 'PO3' ? 'selected' : ''}>PO3</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Waga testu*</label>
+                            <input type="number" class="form-control" name="tests[${counter}][weight]" 
+                                   value="${test.weight || ''}" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Opis testu</label>
+                            <textarea class="form-control" name="tests[${counter}][description]" rows="2">${test.description || ''}</textarea>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Próg zaliczenia*</label>
+                            <input type="number" class="form-control" name="tests[${counter}][passing_threshold]" 
+                                   value="${test.passing_threshold || '0'}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Limit czasu (minuty)</label>
+                            <input type="number" class="form-control" name="tests[${counter}][time_limit_minutes]" 
+                                   value="${test.time_limit_minutes || '0'}">
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-danger remove-test">Usuń test</button>
+                </div>
+            </div>
+        `;
+    }
+
+    // Update the editCampaign function
+    window.editCampaign = function(campaignId) {
+        fetch(`/campaigns/${campaignId}/data`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(campaign => {
+                if (!campaign || campaign.error) {
+                    throw new Error(campaign.error || 'Błąd podczas pobierania danych kampanii');
+                }
+
+                const form = document.getElementById('editCampaignForm');
+                
+                // Update form action
+                form.action = `/campaigns/${campaignId}/edit`;
+                
+                // Update all form fields (existing code...)
+                
+                // Clear and populate tests
+                const testsContainer = document.getElementById('editTestsContainer');
+                testsContainer.innerHTML = '';
+                editTestCounter = 0;
+                
+                if (campaign.tests && campaign.tests.length > 0) {
+                    campaign.tests.forEach(test => {
+                        testsContainer.insertAdjacentHTML('beforeend', createTestHtml(test, editTestCounter));
+                        editTestCounter++;
+                    });
+                }
+                
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('editCampaignModal'));
+                modal.show();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Wystąpił błąd podczas pobierania danych kampanii: ' + error.message);
+            });
+    };
+
+    // Add test button for edit modal
+    document.getElementById('editAddTestBtn')?.addEventListener('click', function() {
+        const testsContainer = document.getElementById('editTestsContainer');
+        testsContainer.insertAdjacentHTML('beforeend', createTestHtml(null, editTestCounter));
+        editTestCounter++;
+    });
+
+    // Handle test removal in edit modal
+    document.getElementById('editTestsContainer')?.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-test')) {
+            e.target.closest('.test-card').remove();
+        }
+    });
+
+    // Update the edit form submission
+    document.getElementById('editCampaignForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        // Get all test cards from edit form
+        const testCards = this.querySelectorAll('.test-card');
+        
+        // Add test data to formData
+        testCards.forEach((card, index) => {
+            const testData = {
+                test_type: card.querySelector('[name^="tests"][name$="[test_type]"]').value,
+                stage: card.querySelector('[name^="tests"][name$="[stage]"]').value,
+                weight: card.querySelector('[name^="tests"][name$="[weight]"]').value,
+                description: card.querySelector('[name^="tests"][name$="[description]"]').value,
+                passing_threshold: card.querySelector('[name^="tests"][name$="[passing_threshold]"]').value,
+                time_limit_minutes: card.querySelector('[name^="tests"][name$="[time_limit_minutes]"]').value
+            };
+            formData.append('tests', JSON.stringify(testData));
+        });
+        
+        // Submit the form
+        fetch(this.action, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.text())
+        .then(html => {
+            window.location.href = "{{ url_for('campaign.list') }}";
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Wystąpił błąd podczas zapisywania kampanii');
+        });
+    });
 </script>
 {% endblock %}
 
@@ -392,6 +585,15 @@
                     <div class="form-check mb-3">
                         <input type="checkbox" class="form-check-input" id="edit_is_active" name="is_active">
                         <label class="form-check-label" for="edit_is_active">Kampania aktywna</label>
+                    </div>
+
+                    <div class="mb-3">
+                        <h4>Testy</h4>
+                        <button type="button" class="btn btn-secondary" id="editAddTestBtn">Dodaj test</button>
+                    </div>
+
+                    <div id="editTestsContainer">
+                        <!-- Tests will be populated here -->
                     </div>
 
                     <div class="mt-4">

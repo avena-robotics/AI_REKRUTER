@@ -28,7 +28,7 @@ create type test_stage as enum ('PO1', 'PO2', 'PO3');
 -- Tabela testów
 create table tests (
     id serial primary key,
-    campaign_id bigint references campaigns(id),    -- J5A_logopeda_05_2024    
+    campaign_id bigint references campaigns(id) ON DELETE CASCADE,    -- Dodane ON DELETE CASCADE
     test_type test_type not null,    -- SURVEY, EQ, IQ
     stage test_stage not null,       -- PO1, PO2, PO3
     description text,                -- Czas wykonania testu to.. lub inne informacje?

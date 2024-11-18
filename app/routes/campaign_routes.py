@@ -76,18 +76,53 @@ def edit(id):
                 'updated_at': current_time
             }
             
+            # Update campaign
             supabase.table('campaigns')\
                 .update(campaign_data)\
                 .eq('id', id)\
                 .execute()
+            
+            # Delete existing tests
+            supabase.table('tests')\
+                .delete()\
+                .eq('campaign_id', id)\
+                .execute()
+            
+            # Process tests by grouping form data
+            test_data = {}
+            for key, value in request.form.items():
+                if key.startswith('tests['):
+                    # Extract index and field name from key like 'tests[0][test_type]'
+                    import re
+                    match = re.match(r'tests\[(\d+)\]\[(\w+)\]', key)
+                    if match:
+                        index, field = match.groups()
+                        if index not in test_data:
+                            test_data[index] = {}
+                        test_data[index][field] = value
+
+            # Insert tests
+            for test in test_data.values():
+                test_to_insert = {
+                    'campaign_id': id,
+                    'test_type': test['test_type'],
+                    'stage': test['stage'],
+                    'weight': int(test['weight']),
+                    'description': test.get('description', ''),
+                    'passing_threshold': int(test.get('passing_threshold', 0)),
+                    'time_limit_minutes': int(test.get('time_limit_minutes', 0))
+                }
+                
+                supabase.table('tests').insert(test_to_insert).execute()
                 
             flash('Kampania została zaktualizowana pomyślnie', 'success')
             return redirect(url_for('campaign.list'))
         except Exception as e:
             flash(f'Wystąpił błąd: {str(e)}', 'danger')
+            print(f"Error details: {str(e)}")
     
     campaign = supabase.table('campaigns')\
-        .select('*')\
+        .select('*, tests(*)')\
         .eq('id', id)\
         .single()\
         .execute()
@@ -97,10 +132,18 @@ def edit(id):
 @campaign_bp.route('/<int:id>/delete', methods=['POST'])
 def delete(id):
     try:
+        # First delete all tests associated with the campaign
+        supabase.table('tests')\
+            .delete()\
+            .eq('campaign_id', id)\
+            .execute()
+            
+        # Then delete the campaign
         supabase.table('campaigns')\
             .delete()\
             .eq('id', id)\
             .execute()
+            
         return jsonify({'message': 'Kampania została usunięta pomyślnie'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -109,8 +152,11 @@ def delete(id):
 def add():
     if request.method == 'POST':
         try:
+            print("Form data:", request.form)
+            
             current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             
+            # First, create the campaign
             campaign_data = {
                 'code': request.form['code'],
                 'title': request.form['title'],
@@ -128,19 +174,59 @@ def add():
                 'updated_at': current_time
             }
             
-            supabase.table('campaigns').insert(campaign_data).execute()
+            print("Campaign data to insert:", campaign_data)
+            
+            # Insert campaign and get the response
+            campaign_response = supabase.table('campaigns').insert(campaign_data).execute()
+            campaign_id = campaign_response.data[0]['id']
+            
+            print("Campaign response:", campaign_response.data)
+            
+            # Process tests by grouping form data
+            test_data = {}
+            for key, value in request.form.items():
+                if key.startswith('tests['):
+                    # Extract index and field name from key like 'tests[0][test_type]'
+                    import re
+                    match = re.match(r'tests\[(\d+)\]\[(\w+)\]', key)
+                    if match:
+                        index, field = match.groups()
+                        if index not in test_data:
+                            test_data[index] = {}
+                        test_data[index][field] = value
+
+            print("Grouped test data:", test_data)
+            
+            # Insert tests
+            for test in test_data.values():
+                test_to_insert = {
+                    'campaign_id': campaign_id,
+                    'test_type': test['test_type'],
+                    'stage': test['stage'],
+                    'weight': int(test['weight']),
+                    'description': test.get('description', ''),
+                    'passing_threshold': int(test.get('passing_threshold', 0)),
+                    'time_limit_minutes': int(test.get('time_limit_minutes', 0))
+                }
+                
+                print("Inserting test:", test_to_insert)
+                test_response = supabase.table('tests').insert(test_to_insert).execute()
+                print("Test insert response:", test_response.data)
+            
             flash('Kampania została dodana pomyślnie', 'success')
             return redirect(url_for('campaign.list'))
         except Exception as e:
             flash(f'Wystąpił błąd: {str(e)}', 'danger')
+            print(f"Error details: {str(e)}")
     
     return render_template('campaigns/add.html')
 
 @campaign_bp.route('/<int:id>/data')
 def get_campaign_data(id):
     try:
+        # Get campaign with its tests
         campaign = supabase.table('campaigns')\
-            .select('*')\
+            .select('*, tests(*)')\
             .eq('id', id)\
             .single()\
             .execute()
