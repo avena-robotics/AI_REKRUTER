@@ -821,6 +821,11 @@
             </div>
             <div class="modal-body">
                 <form id="addCampaignForm" method="POST" action="{{ url_for('campaign.add') }}">
+                    <div class="form-check form-switch mb-3">
+                        <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
+                        <label class="form-check-label" for="is_active">Kampania aktywna</label>
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="code" class="form-label">Kod kampanii*</label>
@@ -920,6 +925,11 @@
             </div>
             <div class="modal-body">
                 <form id="editCampaignForm" method="POST">
+                    <div class="form-check form-switch mb-3">
+                        <input type="checkbox" class="form-check-input" id="edit_is_active" name="is_active">
+                        <label class="form-check-label" for="edit_is_active">Kampania aktywna</label>
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="edit_code" class="form-label">Kod kampanii*</label>
@@ -987,11 +997,6 @@
                             <label for="edit_salary_range_max" class="form-label">Górna granica wynagrodzenia (PLN)</label>
                             <input type="number" class="form-control" id="edit_salary_range_max" name="salary_range_max">
                         </div>
-                    </div>
-
-                    <div class="form-check mb-3">
-                        <input type="checkbox" class="form-check-input" id="edit_is_active" name="is_active">
-                        <label class="form-check-label" for="edit_is_active">Kampania aktywna</label>
                     </div>
 
                     <!-- Tests Container -->

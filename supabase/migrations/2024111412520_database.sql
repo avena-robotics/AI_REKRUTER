@@ -1,7 +1,7 @@
 -- Tabela kampanii
 create table campaigns (
     id bigserial primary key,
-    code text not null,            -- J5A_logopeda_05_2024
+    code text not null,                  -- J5A_logopeda_05_2024
     title text not null,                  -- Logopedia - Warszawa   
     workplace_location text not null,     -- Warszawa
     contract_type text not null,          -- umowa o pracę, B2B, etc.
@@ -79,9 +79,9 @@ create table candidates (
     po3_score int,                                  -- 70
     po4_score int,                                  -- 60
     total_score int,                                -- 310  
-    po1_completed_at timestamp with time zone,           -- Data zakończenia testu PO1
-    po2_completed_at timestamp with time zone,          -- Data zakończenia testu PO2
-    po3_completed_at timestamp with time zone,          -- Data zakończenia testu PO3
+    po1_completed_at timestamp with time zone,      -- Data zakończenia testu PO1
+    po2_completed_at timestamp with time zone,      -- Data zakończenia testu PO2
+    po3_completed_at timestamp with time zone,      -- Data zakończenia testu PO3
     access_token_po2 text,                          -- token do testu PO2
     access_token_po3 text,                          -- token do testu PO3
     access_token_po2_is_used boolean default false, -- Czy token PO2 został użyty
