@@ -175,39 +175,59 @@ def add():
             
             print("Campaign response:", campaign_response.data)
             
-            # Process tests by grouping form data
-            test_data = {}
-            for key, value in request.form.items():
-                if key.startswith('tests['):
-                    # Extract index and field name from key like 'tests[0][test_type]'
-                    import re
-                    match = re.match(r'tests\[(\d+)\]\[(\w+)\]', key)
-                    if match:
-                        index, field = match.groups()
-                        if index not in test_data:
-                            test_data[index] = {}
-                        test_data[index][field] = value
-
-            print("Grouped test data:", test_data)
-            
-            # Insert tests
-            for test in test_data.values():
-                test_to_insert = {
-                    'campaign_id': campaign_id,
-                    'test_type': test['test_type'],
-                    'stage': test['stage'],
-                    'weight': int(test['weight']),
-                    'description': test.get('description', ''),
-                    'passing_threshold': int(test.get('passing_threshold', 0)),
-                    'time_limit_minutes': int(test.get('time_limit_minutes', 0))
-                }
-                
-                print("Inserting test:", test_to_insert)
-                test_response = supabase.table('tests').insert(test_to_insert).execute()
-                print("Test insert response:", test_response.data)
+            # Process tests and questions
+            if 'tests' in request.form:
+                for test_data in request.form.getlist('tests'):
+                    if isinstance(test_data, str):
+                        import json
+                        test_data = json.loads(test_data)
+                    
+                    # Insert test
+                    test_response = supabase.table('tests').insert({
+                        'campaign_id': campaign_id,
+                        'test_type': test_data['test_type'],
+                        'stage': test_data['stage'],
+                        'weight': int(test_data['weight']),
+                        'description': test_data.get('description', ''),
+                        'passing_threshold': int(test_data.get('passing_threshold', 0)),
+                        'time_limit_minutes': int(test_data.get('time_limit_minutes', 0))
+                    }).execute()
+                    
+                    test_id = test_response.data[0]['id']
+                    
+                    # Process questions for this test
+                    if 'questions' in test_data:
+                        for question_data in test_data['questions']:
+                            question = {
+                                'test_id': test_id,
+                                'question_text': question_data['question_text'],
+                                'answer_type': question_data['answer_type'],
+                                'points': int(question_data['points']),
+                                'order_number': int(question_data.get('order', 1)),
+                                'is_required': question_data.get('is_required', True)
+                            }
+                            
+                            # Add answer fields based on type
+                            if question_data['answer_type'] == 'ABCD':
+                                question.update({
+                                    'answer_a': question_data.get('answer_a'),
+                                    'answer_b': question_data.get('answer_b'),
+                                    'answer_c': question_data.get('answer_c'),
+                                    'answer_d': question_data.get('answer_d'),
+                                    'correct_answer_abcd': question_data.get('correct_answer_abcd')
+                                })
+                            elif question_data['answer_type'] == 'BOOLEAN':
+                                question['correct_answer_boolean'] = question_data.get('correct_answer_boolean') == 'true'
+                            elif question_data['answer_type'] == 'SCALE':
+                                question['correct_answer_scale'] = int(question_data.get('correct_answer_scale', 0))
+                            else:
+                                question['correct_answer_text'] = question_data.get('correct_answer_text', '')
+                            
+                            supabase.table('questions').insert(question).execute()
             
             flash('Kampania została dodana pomyślnie', 'success')
             return redirect(url_for('campaign.list'))
+            
         except Exception as e:
             flash(f'Wystąpił błąd: {str(e)}', 'danger')
             print(f"Error details: {str(e)}")

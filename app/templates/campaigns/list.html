@@ -186,11 +186,84 @@
                     alert('Wystąpił błąd podczas pobierania danych kampanii: ' + error);
                 });
         };
+
+        // Initialize Sortable for existing and new question containers
+        function initializeSortable(container) {
+            new Sortable(container, {
+                animation: 150,
+                handle: '.drag-handle',
+                onEnd: function() {
+                    updateQuestionOrders(container);
+                }
+            });
+        }
+
+        // Update question order numbers
+        function updateQuestionOrders(container) {
+            const questions = container.querySelectorAll('.question-card');
+            questions.forEach((question, index) => {
+                question.dataset.order = index + 1;
+            });
+        }
+
+        // Handle adding new questions
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('add-question')) {
+                const testCounter = e.target.dataset.testCounter;
+                const questionsContainer = e.target.previousElementSibling;
+                const questionCounter = questionsContainer.children.length;
+                
+                const questionHtml = createQuestionHtml(testCounter, questionCounter);
+                questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
+                
+                // Reinitialize Sortable if needed
+                if (questionCounter === 0) {
+                    initializeSortable(questionsContainer);
+                }
+            }
+        });
+
+        // Handle removing questions
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-question')) {
+                if (confirm('Czy na pewno chcesz usunąć to pytanie?')) {
+                    const questionCard = e.target.closest('.question-card');
+                    const container = questionCard.parentElement;
+                    questionCard.remove();
+                    updateQuestionOrders(container);
+                }
+            }
+        });
+
+        // Handle answer type changes
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('answer-type-select')) {
+                const questionCard = e.target.closest('.question-card');
+                const testCounter = questionCard.closest('.test-card').dataset.counter;
+                const questionCounter = Array.from(questionCard.parentElement.children).indexOf(questionCard);
+                const answerFieldsContainer = questionCard.querySelector('.answer-fields');
+                
+                const questionData = {
+                    answer_type: e.target.value
+                };
+                
+                answerFieldsContainer.innerHTML = createAnswerFieldsHtml(
+                    testCounter, 
+                    questionCounter, 
+                    questionData
+                );
+            }
+        });
+
+        // Initialize Sortable for existing question containers
+        document.querySelectorAll('.questions-container').forEach(container => {
+            initializeSortable(container);
+        });
     });
 
     // Function to create test HTML for edit modal
     function createTestHtml(testData = null, counter) {
-        console.log('Creating test HTML with data:', testData);  // Debug log
+        console.log('Creating test HTML with data:', testData);
         const test = testData || {};
         return `
             <div class="card mb-3 test-card" data-test-id="${test.id || ''}" data-counter="${counter}">
@@ -239,10 +312,169 @@
                                    value="${test.time_limit_minutes !== undefined ? test.time_limit_minutes : '0'}">
                         </div>
                     </div>
-                    <button type="button" class="btn btn-danger remove-test">Usuń test</button>
+                    
+                    <!-- Questions Section -->
+                    <div class="questions-section mt-4">
+                        <h6>Pytania</h6>
+                        <div class="questions-container" data-test-counter="${counter}">
+                            ${test.questions ? test.questions.map((question, qIndex) => 
+                                createQuestionHtml(counter, qIndex, question)).join('') : ''}
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-sm mt-2 add-question" 
+                                data-test-counter="${counter}">
+                            Dodaj pytanie
+                        </button>
+                    </div>
+                    
+                    <button type="button" class="btn btn-danger remove-test mt-3">Usuń test</button>
                 </div>
             </div>
         `;
+    }
+
+    function createQuestionHtml(testCounter, questionCounter, questionData = null) {
+        const question = questionData || {};
+        return `
+            <div class="card mb-2 question-card" data-order="${question.order_number || questionCounter + 1}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="drag-handle me-2">☰</div>
+                        <div class="flex-grow-1">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <input type="text" class="form-control" 
+                                           name="tests[${testCounter}][questions][${questionCounter}][question_text]"
+                                           placeholder="Treść pytania" 
+                                           value="${question.question_text || ''}" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <select class="form-select answer-type-select" 
+                                            name="tests[${testCounter}][questions][${questionCounter}][answer_type]" required>
+                                        <option value="TEXT" ${question.answer_type === 'TEXT' ? 'selected' : ''}>Tekst</option>
+                                        <option value="BOOLEAN" ${question.answer_type === 'BOOLEAN' ? 'selected' : ''}>Tak/Nie</option>
+                                        <option value="SCALE" ${question.answer_type === 'SCALE' ? 'selected' : ''}>Skala</option>
+                                        <option value="SALARY" ${question.answer_type === 'SALARY' ? 'selected' : ''}>Wynagrodzenie</option>
+                                        <option value="DATE" ${question.answer_type === 'DATE' ? 'selected' : ''}>Data</option>
+                                        <option value="ABCD" ${question.answer_type === 'ABCD' ? 'selected' : ''}>ABCD</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Dynamic answer fields container -->
+                            <div class="answer-fields mt-2">
+                                ${createAnswerFieldsHtml(testCounter, questionCounter, question)}
+                            </div>
+                            
+                            <div class="row mt-2">
+                                <div class="col-md-4">
+                                    <input type="number" class="form-control" 
+                                           name="tests[${testCounter}][questions][${questionCounter}][points]"
+                                           placeholder="Punkty" 
+                                           value="${question.points || '0'}" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" 
+                                               name="tests[${testCounter}][questions][${questionCounter}][is_required]"
+                                               ${question.is_required ? 'checked' : ''}>
+                                        <label class="form-check-label">Wymagane</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-danger btn-sm ms-2 remove-question">×</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function createAnswerFieldsHtml(testCounter, questionCounter, question) {
+        const answerType = question.answer_type || 'TEXT';
+        let html = '';
+        
+        switch (answerType) {
+            case 'ABCD':
+                html = `
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <input type="text" class="form-control" 
+                                   name="tests[${testCounter}][questions][${questionCounter}][answer_a]"
+                                   placeholder="Odpowiedź A" 
+                                   value="${question.answer_a || ''}" required>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <input type="text" class="form-control" 
+                                   name="tests[${testCounter}][questions][${questionCounter}][answer_b]"
+                                   placeholder="Odpowiedź B" 
+                                   value="${question.answer_b || ''}" required>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <input type="text" class="form-control" 
+                                   name="tests[${testCounter}][questions][${questionCounter}][answer_c]"
+                                   placeholder="Odpowiedź C" 
+                                   value="${question.answer_c || ''}" required>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <input type="text" class="form-control" 
+                                   name="tests[${testCounter}][questions][${questionCounter}][answer_d]"
+                                   placeholder="Odpowiedź D" 
+                                   value="${question.answer_d || ''}" required>
+                        </div>
+                        <div class="col-md-12">
+                            <select class="form-select" 
+                                    name="tests[${testCounter}][questions][${questionCounter}][correct_answer_abcd]" required>
+                                <option value="">Wybierz poprawną odpowiedź</option>
+                                <option value="A" ${question.correct_answer_abcd === 'A' ? 'selected' : ''}>A</option>
+                                <option value="B" ${question.correct_answer_abcd === 'B' ? 'selected' : ''}>B</option>
+                                <option value="C" ${question.correct_answer_abcd === 'C' ? 'selected' : ''}>C</option>
+                                <option value="D" ${question.correct_answer_abcd === 'D' ? 'selected' : ''}>D</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+                break;
+                
+            case 'BOOLEAN':
+                html = `
+                    <div class="form-check">
+                        <input type="radio" class="form-check-input" 
+                               name="tests[${testCounter}][questions][${questionCounter}][correct_answer_boolean]" 
+                               value="true" ${question.correct_answer_boolean === true ? 'checked' : ''} required>
+                        <label class="form-check-label">Prawda</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="radio" class="form-check-input" 
+                               name="tests[${testCounter}][questions][${questionCounter}][correct_answer_boolean]" 
+                               value="false" ${question.correct_answer_boolean === false ? 'checked' : ''} required>
+                        <label class="form-check-label">Fałsz</label>
+                    </div>
+                `;
+                break;
+                
+            case 'SCALE':
+                html = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <input type="number" class="form-control" 
+                                   name="tests[${testCounter}][questions][${questionCounter}][correct_answer_scale]"
+                                   min="0" max="5" placeholder="Poprawna odpowiedź (0-5)" 
+                                   value="${question.correct_answer_scale || ''}" required>
+                        </div>
+                    </div>
+                `;
+                break;
+                
+            default:
+                html = `
+                    <input type="text" class="form-control" 
+                           name="tests[${testCounter}][questions][${questionCounter}][correct_answer_text]"
+                           placeholder="Poprawna odpowiedź" 
+                           value="${question.correct_answer_text || ''}">
+                `;
+        }
+        
+        return html;
     }
 </script>
 {% endblock %}
