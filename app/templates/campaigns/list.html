@@ -210,8 +210,15 @@
         document.addEventListener('click', function(e) {
             if (e.target.classList.contains('add-question')) {
                 const testCounter = e.target.dataset.testCounter;
-                const questionsContainer = e.target.previousElementSibling;
+                // Znajdź kontener pytań w ramach tego samego testu
+                const questionsContainer = e.target.closest('.questions-section').querySelector('.questions-container');
                 const questionCounter = questionsContainer.children.length;
+                
+                console.log('Adding new question:', {
+                    testCounter,
+                    questionCounter,
+                    container: questionsContainer
+                });
                 
                 const questionHtml = createQuestionHtml(testCounter, questionCounter);
                 questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
@@ -267,8 +274,9 @@
         const test = testData || {};
         return `
             <div class="card mb-3 test-card" data-test-id="${test.id || ''}" data-counter="${counter}">
-                <div class="card-header">
-                    <h5>Test ${counter + 1}</h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Test ${counter + 1}</h5>
+                    <button type="button" class="btn btn-danger remove-test">Usuń test</button>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -315,18 +323,18 @@
                     
                     <!-- Questions Section -->
                     <div class="questions-section mt-4">
-                        <h6>Pytania</h6>
+                        <h6 class="mb-3">Pytania</h6>
                         <div class="questions-container" data-test-counter="${counter}">
                             ${test.questions ? test.questions.map((question, qIndex) => 
                                 createQuestionHtml(counter, qIndex, question)).join('') : ''}
                         </div>
-                        <button type="button" class="btn btn-secondary btn-sm mt-2 add-question" 
-                                data-test-counter="${counter}">
-                            Dodaj pytanie
-                        </button>
+                        <div class="text-end mt-3">
+                            <button type="button" class="btn btn-secondary add-question" 
+                                    data-test-counter="${counter}">
+                                Dodaj pytanie
+                            </button>
+                        </div>
                     </div>
-                    
-                    <button type="button" class="btn btn-danger remove-test mt-3">Usuń test</button>
                 </div>
             </div>
         `;
@@ -336,14 +344,17 @@
         const question = questionData || {};
         return `
             <div class="card mb-2 question-card" data-order="${question.order_number || questionCounter + 1}">
-                <!-- Toggle switch at the top -->
-                <div class="card-header">
+                <!-- Header with required toggle and delete button -->
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <div class="form-check form-switch">
                         <input type="checkbox" class="form-check-input" 
                                name="tests[${testCounter}][questions][${questionCounter}][is_required]"
                                ${question.is_required ? 'checked' : ''}>
                         <label class="form-check-label">Pytanie obowiązkowe</label>
                     </div>
+                    <button type="button" class="btn btn-danger btn-sm remove-question">
+                        Usuń pytanie
+                    </button>
                 </div>
                 
                 <div class="card-body">
@@ -399,13 +410,6 @@
                                            name="tests[${testCounter}][questions][${questionCounter}][points]"
                                            value="${question.points || '0'}" required>
                                 </div>
-                            </div>
-
-                            <!-- Delete button at the bottom -->
-                            <div class="text-end mt-3">
-                                <button type="button" class="btn btn-danger remove-question">
-                                    Usuń pytanie
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -679,15 +683,19 @@
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <button type="button" class="btn btn-secondary" id="addTestBtn">Dodaj test</button>
-                    </div>
-
+                    <!-- Tests Container -->
                     <div id="testsContainer"></div>
 
-                    <div class="mt-4">
-                        <button type="submit" class="btn btn-primary">Zapisz kampanię</button>
+                    <!-- Add Test Button moved below tests container -->
+                    <div class="text-end mt-3 mb-4">
+                        <button type="button" class="btn btn-secondary" id="addTestBtn">
+                            <i class="bi bi-plus-circle me-2"></i>Dodaj test
+                        </button>
+                    </div>
+
+                    <div class="text-end mt-4">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn btn-primary ms-2">Zapisz kampanię</button>
                     </div>
                 </form>
             </div>
@@ -779,18 +787,19 @@
                         <label class="form-check-label" for="edit_is_active">Kampania aktywna</label>
                     </div>
 
-                    <div class="mb-3">
-                        <h4>Testy</h4>
-                        <button type="button" class="btn btn-secondary" id="editAddTestBtn">Dodaj test</button>
+                    <!-- Tests Container -->
+                    <div id="editTestsContainer"></div>
+
+                    <!-- Add Test Button moved below tests container -->
+                    <div class="text-end mt-3 mb-4">
+                        <button type="button" class="btn btn-secondary" id="editAddTestBtn">
+                            <i class="bi bi-plus-circle me-2"></i>Dodaj test
+                        </button>
                     </div>
 
-                    <div id="editTestsContainer">
-                        <!-- Tests will be populated here -->
-                    </div>
-
-                    <div class="mt-4">
-                        <button type="submit" class="btn btn-primary">Zapisz zmiany</button>
+                    <div class="text-end mt-4">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn btn-primary ms-2">Zapisz zmiany</button>
                     </div>
                 </form>
             </div>
