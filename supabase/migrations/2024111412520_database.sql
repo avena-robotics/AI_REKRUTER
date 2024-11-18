@@ -38,7 +38,7 @@ create table tests (
 );
 
 -- Typ odpowiedzi enum
-create type answer_type as enum ('TEXT', 'BOOLEAN', 'SCALE', 'SALARY', 'DATE', 'ABCD');
+create type answer_type as enum ('TEXT', 'BOOLEAN', 'SCALE', 'SALARY', 'DATE', 'ABCD_TEXT', 'ABCD_IMAGE');
 
 -- Tabela pytań
 create table questions (
