@@ -82,38 +82,31 @@ def edit(id):
                 .eq('id', id)\
                 .execute()
             
-            # Delete existing tests
+            # Delete all existing tests for this campaign
             supabase.table('tests')\
                 .delete()\
                 .eq('campaign_id', id)\
                 .execute()
             
-            # Process tests by grouping form data
-            test_data = {}
-            for key, value in request.form.items():
-                if key.startswith('tests['):
-                    # Extract index and field name from key like 'tests[0][test_type]'
-                    import re
-                    match = re.match(r'tests\[(\d+)\]\[(\w+)\]', key)
-                    if match:
-                        index, field = match.groups()
-                        if index not in test_data:
-                            test_data[index] = {}
-                        test_data[index][field] = value
-
-            # Insert tests
-            for test in test_data.values():
-                test_to_insert = {
-                    'campaign_id': id,
-                    'test_type': test['test_type'],
-                    'stage': test['stage'],
-                    'weight': int(test['weight']),
-                    'description': test.get('description', ''),
-                    'passing_threshold': int(test.get('passing_threshold', 0)),
-                    'time_limit_minutes': int(test.get('time_limit_minutes', 0))
-                }
-                
-                supabase.table('tests').insert(test_to_insert).execute()
+            # Add new and updated tests
+            if 'tests' in request.form:
+                for test_data in request.form.getlist('tests'):
+                    if isinstance(test_data, str):
+                        import json
+                        test_data = json.loads(test_data)
+                    
+                    test = {
+                        'campaign_id': id,
+                        'test_type': test_data['test_type'],
+                        'stage': test_data['stage'],
+                        'weight': int(test_data['weight']),
+                        'description': test_data.get('description', ''),
+                        'passing_threshold': int(test_data.get('passing_threshold', 0)),
+                        'time_limit_minutes': int(test_data.get('time_limit_minutes', 0))
+                    }
+                    
+                    # Insert test
+                    supabase.table('tests').insert(test).execute()
                 
             flash('Kampania została zaktualizowana pomyślnie', 'success')
             return redirect(url_for('campaign.list'))
