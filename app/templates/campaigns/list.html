@@ -382,7 +382,8 @@
                                         <option value="SCALE" ${question.answer_type === 'SCALE' ? 'selected' : ''}>Skala (0-5)</option>
                                         <option value="SALARY" ${question.answer_type === 'SALARY' ? 'selected' : ''}>Wynagrodzenie (PLN)</option>
                                         <option value="DATE" ${question.answer_type === 'DATE' ? 'selected' : ''}>Data</option>
-                                        <option value="ABCD" ${question.answer_type === 'ABCD' ? 'selected' : ''}>ABCD</option>
+                                        <option value="ABCD_TEXT" ${question.answer_type === 'ABCD_TEXT' ? 'selected' : ''}>ABCD (tekst)</option>
+                                        <option value="ABCD_IMAGE" ${question.answer_type === 'ABCD_IMAGE' ? 'selected' : ''}>ABCD (obrazek)</option>
                                     </select>
                                 </div>
                             </div>
@@ -423,29 +424,29 @@
         let html = '';
         
         switch (answerType) {
-            case 'ABCD':
+            case 'ABCD_TEXT':
                 html = `
                     <div class="row">
                         <div class="col-md-6 mb-2">
-                            <label class="form-label">Odpowiedź A*</label>
+                            <label class="form-label">Odpowiedź A (tekst)*</label>
                             <input type="text" class="form-control" 
                                    name="tests[${testCounter}][questions][${questionCounter}][answer_a]"
                                    value="${question.answer_a || ''}" required>
                         </div>
                         <div class="col-md-6 mb-2">
-                            <label class="form-label">Odpowiedź B*</label>
+                            <label class="form-label">Odpowiedź B (tekst)*</label>
                             <input type="text" class="form-control" 
                                    name="tests[${testCounter}][questions][${questionCounter}][answer_b]"
                                    value="${question.answer_b || ''}" required>
                         </div>
                         <div class="col-md-6 mb-2">
-                            <label class="form-label">Odpowiedź C*</label>
+                            <label class="form-label">Odpowiedź C (tekst)*</label>
                             <input type="text" class="form-control" 
                                    name="tests[${testCounter}][questions][${questionCounter}][answer_c]"
                                    value="${question.answer_c || ''}" required>
                         </div>
                         <div class="col-md-6 mb-2">
-                            <label class="form-label">Odpowiedź D*</label>
+                            <label class="form-label">Odpowiedź D (tekst)*</label>
                             <input type="text" class="form-control" 
                                    name="tests[${testCounter}][questions][${questionCounter}][answer_d]"
                                    value="${question.answer_d || ''}" required>
@@ -540,6 +541,22 @@
         }
         
         return html;
+    }
+
+    function convertToBase64(fileInput) {
+        const file = fileInput.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64String = e.target.result;
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = fileInput.name.replace('_image', '');
+                hiddenInput.value = base64String;
+                fileInput.parentNode.appendChild(hiddenInput);
+            };
+            reader.readAsDataURL(file);
+        }
     }
 </script>
 {% endblock %}
