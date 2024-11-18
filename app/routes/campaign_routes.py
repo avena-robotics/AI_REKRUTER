@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, jsonify
 from database import supabase
 import uuid
 from datetime import datetime
@@ -11,15 +11,9 @@ def format_datetime(dt_str):
     if not dt_str:
         return None
     try:
-        # Parse the datetime string
         if '.' in dt_str:
-            # Remove microseconds if present
             dt_str = dt_str.split('.')[0]
-        
-        # Convert to datetime object
         dt = datetime.fromisoformat(dt_str.replace('Z', ''))
-        
-        # Format without milliseconds
         return dt.strftime('%Y-%m-%d %H:%M:%S')
     except Exception as e:
         print(f"Error formatting datetime {dt_str}: {str(e)}")
@@ -28,7 +22,6 @@ def format_datetime(dt_str):
 @campaign_bp.route('/')
 def list():
     campaigns = supabase.table('campaigns').select('*').execute()
-    # Format datetime for each campaign
     for campaign in campaigns.data:
         if campaign.get('created_at'):
             campaign['created_at'] = format_datetime(campaign['created_at'])
@@ -39,27 +32,35 @@ def list():
 @campaign_bp.route('/<int:id>/generate-link', methods=['POST'])
 def generate_link(id):
     try:
-        # Generate a unique token
+        # Generate new token
         token = str(uuid.uuid4())
         
-        # Update campaign with the new token
+        # Update campaign with new token
         supabase.table('campaigns')\
             .update({'universal_access_token': token})\
             .eq('id', id)\
             .execute()
             
-        flash('Link został wygenerowany pomyślnie', 'success')
+        # Return JSON response with success message
+        return jsonify({
+            'status': 'success',
+            'message': 'Link został wygenerowany pomyślnie',
+            'token': token
+        }), 200
+            
     except Exception as e:
-        flash(f'Wystąpił błąd podczas generowania linku: {str(e)}', 'danger')
-    
-    return redirect(url_for('campaign.list'))
+        # Return JSON response with error message
+        return jsonify({
+            'status': 'error',
+            'message': 'Wystąpił błąd podczas generowania linku',
+            'error': str(e)
+        }), 500
 
 @campaign_bp.route('/<int:id>/edit', methods=['POST'])
 def edit(id):
     try:
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
-        # Update campaign data
         campaign_data = {
             'code': request.form['code'],
             'title': request.form['title'],
@@ -77,13 +78,11 @@ def edit(id):
             'updated_at': current_time
         }
         
-        # Update campaign
         supabase.table('campaigns')\
             .update(campaign_data)\
             .eq('id', id)\
             .execute()
 
-        # Process deleted questions
         if 'deleted_questions' in request.form and request.form['deleted_questions']:
             try:
                 deleted_questions = json.loads(request.form['deleted_questions'])
@@ -188,24 +187,18 @@ def edit(id):
                             .execute()
                     else:  # New question
                         supabase.table('questions').insert(question).execute()
-
-        flash('Kampania została zaktualizowana pomyślnie', 'success')
-        return redirect(url_for('campaign.list'))
+        return jsonify({'message': 'Kampania została dodana pomyślnie', 'id': id}), 200
     except Exception as e:
-        flash(f'Wystąpił błąd: {str(e)}', 'danger')
         print(f"Error details: {str(e)}")
-        return redirect(url_for('campaign.list'))  # Return to list view on error
+        return jsonify({'error': str(e)}), 500
 
 @campaign_bp.route('/<int:id>/delete', methods=['POST'])
 def delete(id):
     try:
-        # With ON DELETE CASCADE, we only need to delete the campaign
-        # Questions and tests will be automatically deleted
         supabase.table('campaigns')\
             .delete()\
             .eq('id', id)\
             .execute()
-            
         return jsonify({'message': 'Kampania została usunięta pomyślnie'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -213,11 +206,8 @@ def delete(id):
 @campaign_bp.route('/add', methods=['POST'])
 def add():
     try:
-        print("Form data:", request.form)
-        
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
-        # First, create the campaign
         campaign_data = {
             'code': request.form['code'],
             'title': request.form['title'],
@@ -235,13 +225,8 @@ def add():
             'updated_at': current_time
         }
         
-        print("Campaign data to insert:", campaign_data)
-        
-        # Insert campaign and get the response
         campaign_response = supabase.table('campaigns').insert(campaign_data).execute()
         campaign_id = campaign_response.data[0]['id']
-        
-        print("Campaign response:", campaign_response.data)
         
         # Process tests and questions
         if 'tests' in request.form:
@@ -322,18 +307,15 @@ def add():
                         print("Inserting question:", question)
                         supabase.table('questions').insert(question).execute()
         
-        flash('Kampania została dodana pomyślnie', 'success')
-        return redirect(url_for('campaign.list'))
+        return jsonify({'message': 'Kampania została dodana pomyślnie', 'id': campaign_id}), 200
         
     except Exception as e:
-        flash(f'Wystąpił błąd: {str(e)}', 'danger')
         print(f"Error details: {str(e)}")
-        return redirect(url_for('campaign.list'))  # Return to list view on error
+        return jsonify({'error': str(e)}), 500
 
 @campaign_bp.route('/<int:id>/data')
 def get_campaign_data(id):
     try:
-        # Get campaign with its tests and questions
         campaign = supabase.table('campaigns')\
             .select('*, tests(*, questions(*))')\
             .eq('id', id)\
@@ -343,7 +325,6 @@ def get_campaign_data(id):
         if not campaign.data:
             return jsonify({'error': 'Campaign not found'}), 404
             
-        # Format dates for response
         if campaign.data.get('created_at'):
             campaign.data['created_at'] = format_datetime(campaign.data['created_at'])
         if campaign.data.get('updated_at'):

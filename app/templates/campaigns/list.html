@@ -7,6 +7,9 @@
 <script defer>
     // Przeniesienie funkcji do globalnego zakresu
     window.confirmDelete = function(campaignId) {
+        const row = document.querySelector(`tr[data-campaign-id="${campaignId}"]`);
+        const campaignCode = row.querySelector('td:first-child').textContent;
+        
         if (confirm('Czy na pewno chcesz usunąć tę kampanię?')) {
             fetch(`/campaigns/${campaignId}/delete`, {
                 method: 'POST',
@@ -17,22 +20,26 @@
             }).then(async response => {
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('Success:', data);
+                    sessionStorage.setItem('pendingToast', JSON.stringify({
+                        message: `Kampania została usunięta pomyślnie: ${campaignCode}`,
+                        type: 'success'
+                    }));
                     window.location.href = "{{ url_for('campaign.list') }}";
                 } else {
                     const error = await response.json();
-                    console.error('Error:', error);
-                    alert('Wystąpił błąd podczas usuwania kampanii: ' + error.error);
+                    showToast(error.error || 'Wystąpił błąd podczas usuwania kampanii', 'error');
                 }
             }).catch(error => {
                 console.error('Error:', error);
-                alert('Wystąpił błąd podczas usuwania kampanii');
+                showToast('Wystąpił błąd podczas usuwania kampanii', 'error');
             });
         }
     }
 
     // Przeniesienie obsługi kopiowania linku
     document.addEventListener('DOMContentLoaded', function() {
+        checkPendingToast();
+
         document.querySelectorAll('.copy-link').forEach(button => {
             button.addEventListener('click', function() {
                 navigator.clipboard.writeText(this.dataset.link)
@@ -216,7 +223,8 @@
                     // Dodaj obsługę generowania linku
                     const generateButton = linkContainer.querySelector('.generate-link');
                     if (generateButton) {
-                        generateButton.addEventListener('click', async function() {
+                        generateButton.addEventListener('click', async function(e) {
+                            e.preventDefault();
                             try {
                                 const response = await fetch(`/campaigns/${campaignId}/generate-link`, {
                                     method: 'POST',
@@ -227,9 +235,8 @@
                                 });
                                 
                                 if (response.ok) {
-                                    // Odśwież dane kampanii aby pobrać nowy token
-                                    const updatedCampaign = await fetch(`/campaigns/${campaignId}/data`).then(r => r.json());
-                                    const newLink = `${window.location.origin}/test/${updatedCampaign.universal_access_token}`;
+                                    const data = await response.json();
+                                    const newLink = `${window.location.origin}/test/${data.token}`;
                                     
                                     linkContainer.innerHTML = `
                                         <div class="d-flex align-items-center">
@@ -239,12 +246,14 @@
                                             </button>
                                         </div>
                                     `;
+                                    showToast(data.message);
                                 } else {
-                                    throw new Error('Błąd podczas generowania linku');
+                                    const error = await response.json();
+                                    throw new Error(error.error || 'Błąd podczas generowania linku');
                                 }
                             } catch (error) {
                                 console.error('Error:', error);
-                                alert('Wystąpił błąd podczas generowania linku');
+                                showToast('Wystąpił błąd podczas generowania linku', 'error');
                             }
                         });
                     }
@@ -654,7 +663,7 @@
                 html = `
                     <div class="row">
                         <div class="col-md-6">
-                            <label class="form-label">Poprawna odpowiedź (PLN)*</label>
+                            <label class="form-label">Poprawna odpowied (PLN)*</label>
                             <input type="number" class="form-control" 
                                    name="tests[${testCounter}][questions][${questionCounter}][correct_answer_numeric]"
                                    min="0" step="100" 
@@ -856,9 +865,21 @@
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('copy-link')) {
             e.preventDefault();
+            let campaignCode = '';
+            
+            // Check if we're in a modal
+            const modal = e.target.closest('.modal');
+            if (modal) {
+                // Get code from form field
+                campaignCode = modal.querySelector('[name="code"]').value;
+            } else {
+                // Get code from table row
+                campaignCode = e.target.closest('tr').querySelector('td:first-child').textContent;
+            }
+            
             navigator.clipboard.writeText(e.target.dataset.link)
                 .then(() => {
-                    showToast('Link został skopiowany do schowka');
+                    showToast(`Skopiowano link do kampanii: ${campaignCode}`);
                 })
                 .catch(() => {
                     showToast('Nie udało się skopiować linku', 'error');
@@ -866,92 +887,92 @@
         }
     });
 
-    // Update generate link handler in editCampaign function
-    const generateButton = linkContainer.querySelector('.generate-link');
-    if (generateButton) {
-        generateButton.addEventListener('click', async function() {
-            try {
-                const response = await fetch(`/campaigns/${campaignId}/generate-link`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    }
-                });
-                
-                if (response.ok) {
-                    const updatedCampaign = await fetch(`/campaigns/${campaignId}/data`).then(r => r.json());
-                    const newLink = `${window.location.origin}/test/${updatedCampaign.universal_access_token}`;
-                    
-                    linkContainer.innerHTML = `
-                        <div class="d-flex align-items-center">
-                            <span class="me-2">${newLink}</span>
-                            <button type="button" class="btn btn-sm btn-secondary copy-link" data-link="${newLink}">
-                                Kopiuj link
-                            </button>
-                        </div>
-                    `;
-                    showToast('Link został wygenerowany pomyślnie');
-                } else {
-                    throw new Error('Błąd podczas generowania linku');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showToast('Wystąpił błąd podczas generowania linku', 'error');
-            }
-        });
-    }
-
     // Update form submission handlers
     ['addCampaignForm', 'editCampaignForm'].forEach(formId => {
         document.getElementById(formId)?.addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
+            const campaignCode = this.querySelector('[name="code"]').value;
             
             fetch(this.action, {
                 method: 'POST',
                 body: formData
             })
-            .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok');
-                return response.text();
+            .then(async response => {
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Wystąpił błąd podczas zapisywania kampanii');
+                }
+                return data;
             })
-            .then(() => {
-                showToast(formId === 'addCampaignForm' ? 
-                    'Kampania została dodana pomyślnie' : 
-                    'Kampania została zaktualizowana pomyślnie'
-                );
+            .then(data => {
+                // Store toast message before redirect
+                sessionStorage.setItem('pendingToast', JSON.stringify({
+                    message: formId === 'addCampaignForm' ? 
+                        `Kampania została dodana pomyślnie: ${campaignCode}` : 
+                        `Kampania została zaktualizowana pomyślnie: ${campaignCode}`,
+                    type: 'success'
+                }));
                 window.location.href = "{{ url_for('campaign.list') }}";
             })
             .catch(error => {
                 console.error('Error:', error);
-                showToast('Wystąpił błąd podczas zapisywania kampanii', 'error');
+                showToast(error.message, 'error');
             });
         });
     });
 
-    // Update delete handler
-    window.confirmDelete = function(campaignId) {
-        if (confirm('Czy na pewno chcesz usunąć tę kampanię?')) {
-            fetch(`/campaigns/${campaignId}/delete`, {
+    // Add event listener for generate-link-list buttons
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('generate-link-list')) {
+            const campaignId = e.target.dataset.campaignId;
+            const campaignCode = e.target.dataset.campaignCode;
+            
+            fetch(`/campaigns/${campaignId}/generate-link`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
-                },
-            }).then(async response => {
+                }
+            })
+            .then(async response => {
                 if (response.ok) {
                     const data = await response.json();
-                    showToast('Kampania została usunięta pomyślnie');
-                    window.location.href = "{{ url_for('campaign.list') }}";
+                    const link = `${window.location.origin}/test/${data.token}`;
+                    
+                    // Replace button with copy link button
+                    e.target.outerHTML = `
+                        <button class="btn btn-sm btn-secondary copy-link" 
+                                data-link="${link}">
+                            Kopiuj link
+                        </button>
+                    `;
+                    showToast(`Link został wygenerowany pomyślnie dla kampanii: ${campaignCode}`);
                 } else {
-                    const error = await response.json();
-                    showToast(error.error || 'Wystąpił błąd podczas usuwania kampanii', 'error');
+                    throw new Error('Network response was not ok');
                 }
-            }).catch(error => {
+            })
+            .catch(error => {
                 console.error('Error:', error);
-                showToast('Wystąpił błąd podczas usuwania kampanii', 'error');
+                showToast('Wystąpił błąd podczas generowania linku', 'error');
             });
+        }
+    });
+
+    // Check for pending toast after page load
+    window.addEventListener('load', checkPendingToast);
+
+    function checkPendingToast() {
+        const pendingToast = sessionStorage.getItem('pendingToast');
+        if (pendingToast) {
+            try {
+                const toastData = JSON.parse(pendingToast);
+                showToast(toastData.message, toastData.type);
+            } catch (error) {
+                console.error('Error showing pending toast:', error);
+            } finally {
+                sessionStorage.removeItem('pendingToast');
+            }
         }
     }
 </script>
@@ -980,7 +1001,7 @@
         </thead>
         <tbody>
             {% for campaign in campaigns %}
-            <tr>
+            <tr data-campaign-id="{{ campaign.id }}">
                 <td>{{ campaign.code }}</td>
                 <td>{{ campaign.title }}</td>
                 <td>{{ campaign.workplace_location }}</td>
@@ -997,10 +1018,11 @@
                             Kopiuj link
                         </button>
                     {% else %}
-                        <form method="POST" action="{{ url_for('campaign.generate_link', id=campaign.id) }}" 
-                              class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-primary">Generuj link</button>
-                        </form>
+                        <button type="button" class="btn btn-sm btn-primary generate-link-list" 
+                                data-campaign-id="{{ campaign.id }}" 
+                                data-campaign-code="{{ campaign.code }}">
+                            Generuj link
+                        </button>
                     {% endif %}
                 </td>
                 <td>
