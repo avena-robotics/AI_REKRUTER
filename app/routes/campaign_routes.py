@@ -59,6 +59,7 @@ def edit(id):
         try:
             current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             
+            # Update campaign data
             campaign_data = {
                 'code': request.form['code'],
                 'title': request.form['title'],
@@ -81,34 +82,44 @@ def edit(id):
                 .update(campaign_data)\
                 .eq('id', id)\
                 .execute()
-            
-            # Delete all existing tests and their questions for this campaign
-            tests_response = supabase.table('tests')\
-                .select('id')\
-                .eq('campaign_id', id)\
-                .execute()
-                
-            for test in tests_response.data:
-                # Delete questions for this test
-                supabase.table('questions')\
-                    .delete()\
-                    .eq('test_id', test['id'])\
-                    .execute()
-            
-            # Delete tests
-            supabase.table('tests')\
-                .delete()\
-                .eq('campaign_id', id)\
-                .execute()
-            
-            # Add new and updated tests with questions
-            if 'tests' in request.form:
-                for test_data in request.form.getlist('tests'):
-                    if isinstance(test_data, str):
-                        import json
-                        test_data = json.loads(test_data)
+
+            # Group questions by test index
+            test_questions = {}
+            for key, value in request.form.items():
+                if key.startswith('tests[') and '[questions]' in key:
+                    test_idx = key.split('[')[1].split(']')[0]
+                    if test_idx not in test_questions:
+                        test_questions[test_idx] = {}
                     
-                    # Insert test
+                    parts = key.split('[questions][')
+                    q_idx = parts[1].split(']')[0]
+                    field = parts[1].split('][')[1].split(']')[0]
+                    
+                    if q_idx not in test_questions[test_idx]:
+                        test_questions[test_idx][q_idx] = {}
+                    test_questions[test_idx][q_idx][field] = value
+
+            # Process each test
+            for test_data in request.form.getlist('tests'):
+                if isinstance(test_data, str):
+                    import json
+                    test_data = json.loads(test_data)
+                
+                if test_data.get('id'):  # Existing test
+                    test_id = test_data['id']
+                    # Update test
+                    supabase.table('tests')\
+                        .update({
+                            'test_type': test_data['test_type'],
+                            'stage': test_data['stage'],
+                            'weight': int(test_data['weight']),
+                            'description': test_data.get('description', ''),
+                            'passing_threshold': int(test_data.get('passing_threshold', 0)),
+                            'time_limit_minutes': int(test_data.get('time_limit_minutes', 0))
+                        })\
+                        .eq('id', test_id)\
+                        .execute()
+                else:  # New test
                     test_response = supabase.table('tests').insert({
                         'campaign_id': id,
                         'test_type': test_data['test_type'],
@@ -118,48 +129,53 @@ def edit(id):
                         'passing_threshold': int(test_data.get('passing_threshold', 0)),
                         'time_limit_minutes': int(test_data.get('time_limit_minutes', 0))
                     }).execute()
-                    
                     test_id = test_response.data[0]['id']
-                    
-                    # Process questions for this test
-                    if 'questions' in test_data:
-                        for question_data in test_data['questions']:
-                            question = {
-                                'test_id': test_id,
-                                'question_text': question_data['question_text'],
-                                'answer_type': question_data['answer_type'],
-                                'points': int(question_data['points']),
-                                'order_number': int(question_data.get('order', 1)),
-                                'is_required': question_data.get('is_required', True)
-                            }
-                            
-                            # Handle base64 image if present
-                            if question_data.get('image'):
-                                question['image'] = question_data['image']
-                            
-                            # Add answer fields based on type
-                            if question_data['answer_type'] == 'ABCD':
-                                question.update({
-                                    'answer_a': question_data.get('answer_a'),
-                                    'answer_b': question_data.get('answer_b'),
-                                    'answer_c': question_data.get('answer_c'),
-                                    'answer_d': question_data.get('answer_d'),
-                                    'correct_answer_abcd': question_data.get('correct_answer_abcd')
-                                })
-                            elif question_data['answer_type'] == 'BOOLEAN':
-                                question['correct_answer_boolean'] = question_data.get('correct_answer_boolean') == 'true'
-                            elif question_data['answer_type'] == 'SCALE':
-                                question['correct_answer_scale'] = int(question_data.get('correct_answer_scale', 0))
-                            elif question_data['answer_type'] == 'SALARY':
-                                question['correct_answer_numeric'] = float(question_data.get('correct_answer_numeric', 0))
-                            elif question_data['answer_type'] == 'DATE':
-                                question['correct_answer_date'] = question_data.get('correct_answer_date')
-                            else:  # TEXT
-                                question['correct_answer_text'] = question_data.get('correct_answer_text', '')
-                            
-                            print("Updating question:", question)
+
+                # Process questions for this test
+                test_idx = str(test_data.get('test_index', 0))
+                if test_idx in test_questions:
+                    for q_idx, question_data in test_questions[test_idx].items():
+                        question = {
+                            'test_id': test_id,
+                            'question_text': question_data['question_text'],
+                            'answer_type': question_data['answer_type'],
+                            'points': int(question_data.get('points', 0)),
+                            'order_number': int(question_data.get('order_number', 0)),
+                            'is_required': question_data.get('is_required') == 'on'
+                        }
+
+                        # Handle base64 image if present
+                        if question_data.get('image'):
+                            question['image'] = question_data['image']
+
+                        # Add answer fields based on type
+                        if question_data['answer_type'] in ['ABCD_TEXT', 'ABCD_IMAGE']:
+                            question.update({
+                                'answer_a': question_data.get('answer_a'),
+                                'answer_b': question_data.get('answer_b'),
+                                'answer_c': question_data.get('answer_c'),
+                                'answer_d': question_data.get('answer_d'),
+                                'correct_answer_abcd': question_data.get('correct_answer_abcd')
+                            })
+                        elif question_data['answer_type'] == 'BOOLEAN':
+                            question['correct_answer_boolean'] = question_data.get('correct_answer_boolean') == 'true'
+                        elif question_data['answer_type'] == 'SCALE':
+                            question['correct_answer_scale'] = int(question_data.get('correct_answer_scale', 0))
+                        elif question_data['answer_type'] == 'SALARY':
+                            question['correct_answer_numeric'] = float(question_data.get('correct_answer_numeric', 0))
+                        elif question_data['answer_type'] == 'DATE':
+                            question['correct_answer_date'] = question_data.get('correct_answer_date')
+                        else:  # TEXT
+                            question['correct_answer_text'] = question_data.get('correct_answer_text', '')
+
+                        if question_data.get('id'):  # Existing question
+                            supabase.table('questions')\
+                                .update(question)\
+                                .eq('id', question_data['id'])\
+                                .execute()
+                        else:  # New question
                             supabase.table('questions').insert(question).execute()
-                
+
             flash('Kampania została zaktualizowana pomyślnie', 'success')
             return redirect(url_for('campaign.list'))
         except Exception as e:
@@ -271,7 +287,7 @@ def add():
                                 'question_text': question_data['question_text'],
                                 'answer_type': question_data['answer_type'],
                                 'points': int(question_data.get('points', 0)),
-                                'order_number': int(q_idx) + 1,
+                                'order_number': int(question_data.get('order_number', 0)),
                                 'is_required': question_data.get('is_required') == 'on'
                             }
                             
@@ -314,9 +330,9 @@ def add():
 @campaign_bp.route('/<int:id>/data')
 def get_campaign_data(id):
     try:
-        # Get campaign with its tests
+        # Get campaign with its tests and questions
         campaign = supabase.table('campaigns')\
-            .select('*, tests(*)')\
+            .select('*, tests(*, questions(*))')\
             .eq('id', id)\
             .single()\
             .execute()
@@ -331,5 +347,29 @@ def get_campaign_data(id):
             campaign.data['updated_at'] = format_datetime(campaign.data['updated_at'])
             
         return jsonify(campaign.data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@campaign_bp.route('/<int:campaign_id>/tests/<int:test_id>/questions/<int:question_id>/delete', methods=['POST'])
+def delete_question(campaign_id, test_id, question_id):
+    try:
+        # Verify that the question belongs to the correct test and campaign
+        question = supabase.table('questions')\
+            .select('*')\
+            .eq('id', question_id)\
+            .eq('test_id', test_id)\
+            .single()\
+            .execute()
+            
+        if not question.data:
+            return jsonify({'error': 'Question not found'}), 404
+            
+        # Delete the question
+        supabase.table('questions')\
+            .delete()\
+            .eq('id', question_id)\
+            .execute()
+            
+        return jsonify({'message': 'Question deleted successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500 

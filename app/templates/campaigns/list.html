@@ -203,6 +203,11 @@
             const questions = container.querySelectorAll('.question-card');
             questions.forEach((question, index) => {
                 question.dataset.order = index + 1;
+                // Update the hidden order input
+                const orderInput = question.querySelector('input[name$="[order_number]"]');
+                if (orderInput) {
+                    orderInput.value = index + 1;
+                }
             });
         }
 
@@ -233,11 +238,43 @@
         // Handle removing questions
         document.addEventListener('click', function(e) {
             if (e.target.classList.contains('remove-question')) {
-                if (confirm('Czy na pewno chcesz usunąć to pytanie?')) {
-                    const questionCard = e.target.closest('.question-card');
-                    const container = questionCard.parentElement;
-                    questionCard.remove();
-                    updateQuestionOrders(container);
+                const questionCard = e.target.closest('.question-card');
+                const questionId = questionCard.querySelector('input[name$="[id]"]').value;
+                
+                if (questionId) {
+                    // Existing question - delete from database
+                    if (confirm('Czy na pewno chcesz usunąć to pytanie?')) {
+                        const testCard = questionCard.closest('.test-card');
+                        const testId = testCard.dataset.testId;
+                        const campaignId = document.querySelector('form').dataset.campaignId;
+                        
+                        fetch(`/campaigns/${campaignId}/tests/${testId}/questions/${questionId}/delete`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
+                            }
+                        }).then(async response => {
+                            if (response.ok) {
+                                questionCard.remove();
+                                const container = questionCard.parentElement;
+                                updateQuestionOrders(container);
+                            } else {
+                                const error = await response.json();
+                                alert('Wystąpił błąd podczas usuwania pytania: ' + error.error);
+                            }
+                        }).catch(error => {
+                            console.error('Error:', error);
+                            alert('Wystąpił błąd podczas usuwania pytania');
+                        });
+                    }
+                } else {
+                    // New question - just remove from DOM
+                    if (confirm('Czy na pewno chcesz usunąć to pytanie?')) {
+                        const container = questionCard.parentElement;
+                        questionCard.remove();
+                        updateQuestionOrders(container);
+                    }
                 }
             }
         });
@@ -324,10 +361,15 @@
                     <!-- Questions Section -->
                     <div class="questions-section mt-4">
                         <h6 class="mb-3">Pytania</h6>
+                        
+                        <!-- Questions Container -->
                         <div class="questions-container" data-test-counter="${counter}">
-                            ${test.questions ? test.questions.map((question, qIndex) => 
-                                createQuestionHtml(counter, qIndex, question)).join('') : ''}
+                            ${test.questions ? test.questions
+                                .sort((a, b) => a.order_number - b.order_number)
+                                .map((question, qIndex) => createQuestionHtml(counter, qIndex, question))
+                                .join('') : ''}
                         </div>
+                        
                         <div class="text-end mt-3">
                             <button type="button" class="btn btn-secondary add-question" 
                                     data-test-counter="${counter}">
@@ -344,6 +386,9 @@
         const question = questionData || {};
         return `
             <div class="card mb-2 question-card" data-order="${question.order_number || questionCounter + 1}">
+                <input type="hidden" name="tests[${testCounter}][questions][${questionCounter}][id]" value="${question.id || ''}">
+                <input type="hidden" name="tests[${testCounter}][questions][${questionCounter}][order_number]" 
+                       value="${question.order_number || questionCounter + 1}">
                 <!-- Header with required toggle and delete button -->
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <div class="form-check form-switch">
@@ -660,6 +705,23 @@
             };
             reader.readAsDataURL(file);
         }
+    }
+
+    // Add function to handle question editing
+    function editQuestion(testCounter, questionIndex, questionData) {
+        const questionsContainer = document.querySelector(`.test-card[data-counter="${testCounter}"] .questions-container`);
+        const questionHtml = createQuestionHtml(testCounter, questionIndex, questionData);
+        
+        // Remove existing edit form if any
+        const existingForm = questionsContainer.querySelector(`.question-card[data-order="${questionData.order_number}"]`);
+        if (existingForm) {
+            existingForm.remove();
+        }
+        
+        questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
+        
+        // Scroll to the edit form
+        questionsContainer.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 </script>
 {% endblock %}
