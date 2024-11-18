@@ -82,20 +82,34 @@ def edit(id):
                 .eq('id', id)\
                 .execute()
             
-            # Delete all existing tests for this campaign
+            # Delete all existing tests and their questions for this campaign
+            tests_response = supabase.table('tests')\
+                .select('id')\
+                .eq('campaign_id', id)\
+                .execute()
+                
+            for test in tests_response.data:
+                # Delete questions for this test
+                supabase.table('questions')\
+                    .delete()\
+                    .eq('test_id', test['id'])\
+                    .execute()
+            
+            # Delete tests
             supabase.table('tests')\
                 .delete()\
                 .eq('campaign_id', id)\
                 .execute()
             
-            # Add new and updated tests
+            # Add new and updated tests with questions
             if 'tests' in request.form:
                 for test_data in request.form.getlist('tests'):
                     if isinstance(test_data, str):
                         import json
                         test_data = json.loads(test_data)
                     
-                    test = {
+                    # Insert test
+                    test_response = supabase.table('tests').insert({
                         'campaign_id': id,
                         'test_type': test_data['test_type'],
                         'stage': test_data['stage'],
@@ -103,10 +117,52 @@ def edit(id):
                         'description': test_data.get('description', ''),
                         'passing_threshold': int(test_data.get('passing_threshold', 0)),
                         'time_limit_minutes': int(test_data.get('time_limit_minutes', 0))
-                    }
+                    }).execute()
                     
-                    # Insert test
-                    supabase.table('tests').insert(test).execute()
+                    test_id = test_response.data[0]['id']
+                    
+                    # Process questions for this test
+                    if 'questions' in test_data:
+                        for question_data in test_data['questions']:
+                            question = {
+                                'test_id': test_id,
+                                'question_text': question_data['question_text'],
+                                'answer_type': question_data['answer_type'],
+                                'points': int(question_data['points']),
+                                'order_number': int(question_data.get('order', 1)),
+                                'is_required': question_data.get('is_required', True)
+                            }
+                            
+                            # Handle image upload if present
+                            if 'image' in request.files:
+                                image_file = request.files['image']
+                                if image_file:
+                                    # TODO: Implement image upload to storage
+                                    # For now, store the filename
+                                    question['image'] = image_file.filename
+                            
+                            # Add answer fields based on type
+                            if question_data['answer_type'] == 'ABCD':
+                                question.update({
+                                    'answer_a': question_data.get('answer_a'),
+                                    'answer_b': question_data.get('answer_b'),
+                                    'answer_c': question_data.get('answer_c'),
+                                    'answer_d': question_data.get('answer_d'),
+                                    'correct_answer_abcd': question_data.get('correct_answer_abcd')
+                                })
+                            elif question_data['answer_type'] == 'BOOLEAN':
+                                question['correct_answer_boolean'] = question_data.get('correct_answer_boolean') == 'true'
+                            elif question_data['answer_type'] == 'SCALE':
+                                question['correct_answer_scale'] = int(question_data.get('correct_answer_scale', 0))
+                            elif question_data['answer_type'] == 'SALARY':
+                                question['correct_answer_numeric'] = float(question_data.get('correct_answer_numeric', 0))
+                            elif question_data['answer_type'] == 'DATE':
+                                question['correct_answer_date'] = question_data.get('correct_answer_date')
+                            else:  # TEXT
+                                question['correct_answer_text'] = question_data.get('correct_answer_text', '')
+                            
+                            print("Updating question:", question)
+                            supabase.table('questions').insert(question).execute()
                 
             flash('Kampania została zaktualizowana pomyślnie', 'success')
             return redirect(url_for('campaign.list'))
@@ -114,8 +170,9 @@ def edit(id):
             flash(f'Wystąpił błąd: {str(e)}', 'danger')
             print(f"Error details: {str(e)}")
     
+    # Get campaign with tests and questions for editing
     campaign = supabase.table('campaigns')\
-        .select('*, tests(*)')\
+        .select('*, tests(*, questions(*))')\
         .eq('id', id)\
         .single()\
         .execute()
@@ -207,6 +264,14 @@ def add():
                                 'is_required': question_data.get('is_required', True)
                             }
                             
+                            # Handle image upload if present
+                            if 'image' in request.files:
+                                image_file = request.files['image']
+                                if image_file:
+                                    # TODO: Implement image upload to storage
+                                    # For now, store the filename
+                                    question['image'] = image_file.filename
+                            
                             # Add answer fields based on type
                             if question_data['answer_type'] == 'ABCD':
                                 question.update({
@@ -220,9 +285,14 @@ def add():
                                 question['correct_answer_boolean'] = question_data.get('correct_answer_boolean') == 'true'
                             elif question_data['answer_type'] == 'SCALE':
                                 question['correct_answer_scale'] = int(question_data.get('correct_answer_scale', 0))
-                            else:
+                            elif question_data['answer_type'] == 'SALARY':
+                                question['correct_answer_numeric'] = float(question_data.get('correct_answer_numeric', 0))
+                            elif question_data['answer_type'] == 'DATE':
+                                question['correct_answer_date'] = question_data.get('correct_answer_date')
+                            else:  # TEXT
                                 question['correct_answer_text'] = question_data.get('correct_answer_text', '')
                             
+                            print("Inserting question:", question)
                             supabase.table('questions').insert(question).execute()
             
             flash('Kampania została dodana pomyślnie', 'success')

@@ -336,27 +336,54 @@
         const question = questionData || {};
         return `
             <div class="card mb-2 question-card" data-order="${question.order_number || questionCounter + 1}">
+                <!-- Toggle switch at the top -->
+                <div class="card-header">
+                    <div class="form-check form-switch">
+                        <input type="checkbox" class="form-check-input" 
+                               name="tests[${testCounter}][questions][${questionCounter}][is_required]"
+                               ${question.is_required ? 'checked' : ''}>
+                        <label class="form-check-label">Pytanie obowiązkowe</label>
+                    </div>
+                </div>
+                
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div class="drag-handle me-2">☰</div>
+                    <div class="d-flex">
+                        <!-- Drag handle on the left -->
+                        <div class="drag-handle me-3 d-flex align-items-center" 
+                             title="Przeciągnij aby zmienić kolejność"
+                             style="cursor: move;">☰</div>
+                        
+                        <!-- Main content -->
                         <div class="flex-grow-1">
                             <div class="row">
                                 <div class="col-md-8">
+                                    <label class="form-label">Treść pytania*</label>
                                     <input type="text" class="form-control" 
                                            name="tests[${testCounter}][questions][${questionCounter}][question_text]"
-                                           placeholder="Treść pytania" 
                                            value="${question.question_text || ''}" required>
                                 </div>
                                 <div class="col-md-4">
+                                    <label class="form-label">Typ odpowiedzi*</label>
                                     <select class="form-select answer-type-select" 
                                             name="tests[${testCounter}][questions][${questionCounter}][answer_type]" required>
                                         <option value="TEXT" ${question.answer_type === 'TEXT' ? 'selected' : ''}>Tekst</option>
                                         <option value="BOOLEAN" ${question.answer_type === 'BOOLEAN' ? 'selected' : ''}>Tak/Nie</option>
-                                        <option value="SCALE" ${question.answer_type === 'SCALE' ? 'selected' : ''}>Skala</option>
-                                        <option value="SALARY" ${question.answer_type === 'SALARY' ? 'selected' : ''}>Wynagrodzenie</option>
+                                        <option value="SCALE" ${question.answer_type === 'SCALE' ? 'selected' : ''}>Skala (0-5)</option>
+                                        <option value="SALARY" ${question.answer_type === 'SALARY' ? 'selected' : ''}>Wynagrodzenie (PLN)</option>
                                         <option value="DATE" ${question.answer_type === 'DATE' ? 'selected' : ''}>Data</option>
                                         <option value="ABCD" ${question.answer_type === 'ABCD' ? 'selected' : ''}>ABCD</option>
                                     </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Image upload field -->
+                            <div class="row mt-2">
+                                <div class="col-12">
+                                    <label class="form-label">Obrazek (opcjonalnie)</label>
+                                    <input type="file" class="form-control" 
+                                           name="tests[${testCounter}][questions][${questionCounter}][image]"
+                                           accept="image/*">
+                                    ${question.image ? `<small class="text-muted">Aktualny: ${question.image}</small>` : ''}
                                 </div>
                             </div>
                             
@@ -367,22 +394,20 @@
                             
                             <div class="row mt-2">
                                 <div class="col-md-4">
+                                    <label class="form-label">Punkty za pytanie*</label>
                                     <input type="number" class="form-control" 
                                            name="tests[${testCounter}][questions][${questionCounter}][points]"
-                                           placeholder="Punkty" 
                                            value="${question.points || '0'}" required>
                                 </div>
-                                <div class="col-md-4">
-                                    <div class="form-check">
-                                        <input type="checkbox" class="form-check-input" 
-                                               name="tests[${testCounter}][questions][${questionCounter}][is_required]"
-                                               ${question.is_required ? 'checked' : ''}>
-                                        <label class="form-check-label">Wymagane</label>
-                                    </div>
-                                </div>
+                            </div>
+
+                            <!-- Delete button at the bottom -->
+                            <div class="text-end mt-3">
+                                <button type="button" class="btn btn-danger remove-question">
+                                    Usuń pytanie
+                                </button>
                             </div>
                         </div>
-                        <button type="button" class="btn btn-danger btn-sm ms-2 remove-question">×</button>
                     </div>
                 </div>
             </div>
@@ -398,33 +423,34 @@
                 html = `
                     <div class="row">
                         <div class="col-md-6 mb-2">
+                            <label class="form-label">Odpowiedź A*</label>
                             <input type="text" class="form-control" 
                                    name="tests[${testCounter}][questions][${questionCounter}][answer_a]"
-                                   placeholder="Odpowiedź A" 
                                    value="${question.answer_a || ''}" required>
                         </div>
                         <div class="col-md-6 mb-2">
+                            <label class="form-label">Odpowiedź B*</label>
                             <input type="text" class="form-control" 
                                    name="tests[${testCounter}][questions][${questionCounter}][answer_b]"
-                                   placeholder="Odpowiedź B" 
                                    value="${question.answer_b || ''}" required>
                         </div>
                         <div class="col-md-6 mb-2">
+                            <label class="form-label">Odpowiedź C*</label>
                             <input type="text" class="form-control" 
                                    name="tests[${testCounter}][questions][${questionCounter}][answer_c]"
-                                   placeholder="Odpowiedź C" 
                                    value="${question.answer_c || ''}" required>
                         </div>
                         <div class="col-md-6 mb-2">
+                            <label class="form-label">Odpowiedź D*</label>
                             <input type="text" class="form-control" 
                                    name="tests[${testCounter}][questions][${questionCounter}][answer_d]"
-                                   placeholder="Odpowiedź D" 
                                    value="${question.answer_d || ''}" required>
                         </div>
                         <div class="col-md-12">
+                            <label class="form-label">Poprawna odpowiedź*</label>
                             <select class="form-select" 
                                     name="tests[${testCounter}][questions][${questionCounter}][correct_answer_abcd]" required>
-                                <option value="">Wybierz poprawną odpowiedź</option>
+                                <option value="">Wybierz odpowiedź</option>
                                 <option value="A" ${question.correct_answer_abcd === 'A' ? 'selected' : ''}>A</option>
                                 <option value="B" ${question.correct_answer_abcd === 'B' ? 'selected' : ''}>B</option>
                                 <option value="C" ${question.correct_answer_abcd === 'C' ? 'selected' : ''}>C</option>
@@ -437,17 +463,20 @@
                 
             case 'BOOLEAN':
                 html = `
-                    <div class="form-check">
-                        <input type="radio" class="form-check-input" 
-                               name="tests[${testCounter}][questions][${questionCounter}][correct_answer_boolean]" 
-                               value="true" ${question.correct_answer_boolean === true ? 'checked' : ''} required>
-                        <label class="form-check-label">Prawda</label>
-                    </div>
-                    <div class="form-check">
-                        <input type="radio" class="form-check-input" 
-                               name="tests[${testCounter}][questions][${questionCounter}][correct_answer_boolean]" 
-                               value="false" ${question.correct_answer_boolean === false ? 'checked' : ''} required>
-                        <label class="form-check-label">Fałsz</label>
+                    <div>
+                        <label class="form-label">Poprawna odpowiedź*</label>
+                        <div class="form-check">
+                            <input type="radio" class="form-check-input" 
+                                   name="tests[${testCounter}][questions][${questionCounter}][correct_answer_boolean]" 
+                                   value="true" ${question.correct_answer_boolean === true ? 'checked' : ''} required>
+                            <label class="form-check-label">Prawda</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="radio" class="form-check-input" 
+                                   name="tests[${testCounter}][questions][${questionCounter}][correct_answer_boolean]" 
+                                   value="false" ${question.correct_answer_boolean === false ? 'checked' : ''} required>
+                            <label class="form-check-label">Fałsz</label>
+                        </div>
                     </div>
                 `;
                 break;
@@ -456,21 +485,53 @@
                 html = `
                     <div class="row">
                         <div class="col-md-6">
+                            <label class="form-label">Poprawna odpowiedź (0-5)*</label>
                             <input type="number" class="form-control" 
                                    name="tests[${testCounter}][questions][${questionCounter}][correct_answer_scale]"
-                                   min="0" max="5" placeholder="Poprawna odpowiedź (0-5)" 
+                                   min="0" max="5" 
                                    value="${question.correct_answer_scale || ''}" required>
                         </div>
                     </div>
                 `;
                 break;
                 
-            default:
+            case 'SALARY':
                 html = `
-                    <input type="text" class="form-control" 
-                           name="tests[${testCounter}][questions][${questionCounter}][correct_answer_text]"
-                           placeholder="Poprawna odpowiedź" 
-                           value="${question.correct_answer_text || ''}">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Poprawna odpowiedź (PLN)*</label>
+                            <input type="number" class="form-control" 
+                                   name="tests[${testCounter}][questions][${questionCounter}][correct_answer_numeric]"
+                                   min="0" step="100" 
+                                   value="${question.correct_answer_numeric || ''}" required>
+                        </div>
+                    </div>
+                `;
+                break;
+                
+            case 'DATE':
+                html = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Poprawna data*</label>
+                            <input type="date" class="form-control" 
+                                   name="tests[${testCounter}][questions][${questionCounter}][correct_answer_date]"
+                                   value="${question.correct_answer_date || ''}" required>
+                        </div>
+                    </div>
+                `;
+                break;
+                
+            default: // TEXT
+                html = `
+                    <div class="row">
+                        <div class="col-md-12">
+                            <label class="form-label">Poprawna odpowiedź tekstowa</label>
+                            <input type="text" class="form-control" 
+                                   name="tests[${testCounter}][questions][${questionCounter}][correct_answer_text]"
+                                   value="${question.correct_answer_text || ''}">
+                        </div>
+                    </div>
                 `;
         }
         
