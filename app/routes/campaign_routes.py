@@ -133,13 +133,9 @@ def edit(id):
                                 'is_required': question_data.get('is_required', True)
                             }
                             
-                            # Handle image upload if present
-                            if 'image' in request.files:
-                                image_file = request.files['image']
-                                if image_file:
-                                    # TODO: Implement image upload to storage
-                                    # For now, store the filename
-                                    question['image'] = image_file.filename
+                            # Handle base64 image if present
+                            if question_data.get('image'):
+                                question['image'] = question_data['image']
                             
                             # Add answer fields based on type
                             if question_data['answer_type'] == 'ABCD':
@@ -229,6 +225,25 @@ def add():
             
             # Process tests and questions
             if 'tests' in request.form:
+                # Group questions by test index
+                test_questions = {}
+                for key, value in request.form.items():
+                    if key.startswith('tests[') and '[questions]' in key:
+                        # Extract test index and question data
+                        test_idx = key.split('[')[1].split(']')[0]
+                        if test_idx not in test_questions:
+                            test_questions[test_idx] = {}
+                        
+                        # Extract question index and field
+                        parts = key.split('[questions][')
+                        q_idx = parts[1].split(']')[0]
+                        field = parts[1].split('][')[1].split(']')[0]
+                        
+                        if q_idx not in test_questions[test_idx]:
+                            test_questions[test_idx][q_idx] = {}
+                        test_questions[test_idx][q_idx][field] = value
+
+                # Process each test
                 for test_data in request.form.getlist('tests'):
                     if isinstance(test_data, str):
                         import json
@@ -247,28 +262,25 @@ def add():
                     
                     test_id = test_response.data[0]['id']
                     
-                    # Process questions for this test
-                    if 'questions' in test_data:
-                        for question_data in test_data['questions']:
+                    # Get questions for this test
+                    test_idx = str(test_data.get('test_index', 0))  # Default to 0 if not specified
+                    if test_idx in test_questions:
+                        for q_idx, question_data in test_questions[test_idx].items():
                             question = {
                                 'test_id': test_id,
                                 'question_text': question_data['question_text'],
                                 'answer_type': question_data['answer_type'],
-                                'points': int(question_data['points']),
-                                'order_number': int(question_data.get('order', 1)),
-                                'is_required': question_data.get('is_required', True)
+                                'points': int(question_data.get('points', 0)),
+                                'order_number': int(q_idx) + 1,
+                                'is_required': question_data.get('is_required') == 'on'
                             }
                             
-                            # Handle image upload if present
-                            if 'image' in request.files:
-                                image_file = request.files['image']
-                                if image_file:
-                                    # TODO: Implement image upload to storage
-                                    # For now, store the filename
-                                    question['image'] = image_file.filename
+                            # Handle base64 image if present
+                            if question_data.get('image'):
+                                question['image'] = question_data['image']
                             
                             # Add answer fields based on type
-                            if question_data['answer_type'] == 'ABCD':
+                            if question_data['answer_type'] in ['ABCD_TEXT', 'ABCD_IMAGE']:
                                 question.update({
                                     'answer_a': question_data.get('answer_a'),
                                     'answer_b': question_data.get('answer_b'),

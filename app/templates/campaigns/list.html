@@ -393,9 +393,16 @@
                                 <div class="col-12">
                                     <label class="form-label">Obrazek (opcjonalnie)</label>
                                     <input type="file" class="form-control" 
-                                           name="tests[${testCounter}][questions][${questionCounter}][image]"
-                                           accept="image/*">
-                                    ${question.image ? `<small class="text-muted">Aktualny: ${question.image}</small>` : ''}
+                                           name="tests[${testCounter}][questions][${questionCounter}][image_file]"
+                                           accept="image/*"
+                                           onchange="convertToBase64(this, 'image')">
+                                    ${question.image ? `
+                                        <div class="mt-2">
+                                            <img src="${question.image}" class="img-thumbnail" style="max-height: 100px">
+                                            <input type="hidden" 
+                                                   name="tests[${testCounter}][questions][${questionCounter}][image]"
+                                                   value="${question.image}">
+                                        </div>` : ''}
                                 </div>
                             </div>
                             
@@ -527,6 +534,84 @@
                 `;
                 break;
                 
+            case 'ABCD_IMAGE':
+                html = `
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Odpowiedź A (obrazek)*</label>
+                            <input type="file" class="form-control" 
+                                   name="tests[${testCounter}][questions][${questionCounter}][answer_a_image]"
+                                   accept="image/*" 
+                                   onchange="convertToBase64(this, 'answer_a')" 
+                                   ${!question.answer_a ? 'required' : ''}>
+                            ${question.answer_a ? `
+                                <div class="mt-2">
+                                    <img src="${question.answer_a}" class="img-thumbnail" style="max-height: 100px">
+                                    <input type="hidden" 
+                                           name="tests[${testCounter}][questions][${questionCounter}][answer_a]"
+                                           value="${question.answer_a}">
+                                </div>` : ''}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Odpowiedź B (obrazek)*</label>
+                            <input type="file" class="form-control" 
+                                   name="tests[${testCounter}][questions][${questionCounter}][answer_b_image]"
+                                   accept="image/*" 
+                                   onchange="convertToBase64(this, 'answer_b')" 
+                                   ${!question.answer_b ? 'required' : ''}>
+                            ${question.answer_b ? `
+                                <div class="mt-2">
+                                    <img src="${question.answer_b}" class="img-thumbnail" style="max-height: 100px">
+                                    <input type="hidden" 
+                                           name="tests[${testCounter}][questions][${questionCounter}][answer_b]"
+                                           value="${question.answer_b}">
+                                </div>` : ''}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Odpowiedź C (obrazek)*</label>
+                            <input type="file" class="form-control" 
+                                   name="tests[${testCounter}][questions][${questionCounter}][answer_c_image]"
+                                   accept="image/*" 
+                                   onchange="convertToBase64(this, 'answer_c')" 
+                                   ${!question.answer_c ? 'required' : ''}>
+                            ${question.answer_c ? `
+                                <div class="mt-2">
+                                    <img src="${question.answer_c}" class="img-thumbnail" style="max-height: 100px">
+                                    <input type="hidden" 
+                                           name="tests[${testCounter}][questions][${questionCounter}][answer_c]"
+                                           value="${question.answer_c}">
+                                </div>` : ''}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Odpowiedź D (obrazek)*</label>
+                            <input type="file" class="form-control" 
+                                   name="tests[${testCounter}][questions][${questionCounter}][answer_d_image]"
+                                   accept="image/*" 
+                                   onchange="convertToBase64(this, 'answer_d')" 
+                                   ${!question.answer_d ? 'required' : ''}>
+                            ${question.answer_d ? `
+                                <div class="mt-2">
+                                    <img src="${question.answer_d}" class="img-thumbnail" style="max-height: 100px">
+                                    <input type="hidden" 
+                                           name="tests[${testCounter}][questions][${questionCounter}][answer_d]"
+                                           value="${question.answer_d}">
+                                </div>` : ''}
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Poprawna odpowiedź*</label>
+                            <select class="form-select" 
+                                    name="tests[${testCounter}][questions][${questionCounter}][correct_answer_abcd]" required>
+                                <option value="">Wybierz odpowiedź</option>
+                                <option value="A" ${question.correct_answer_abcd === 'A' ? 'selected' : ''}>A</option>
+                                <option value="B" ${question.correct_answer_abcd === 'B' ? 'selected' : ''}>B</option>
+                                <option value="C" ${question.correct_answer_abcd === 'C' ? 'selected' : ''}>C</option>
+                                <option value="D" ${question.correct_answer_abcd === 'D' ? 'selected' : ''}>D</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+                break;
+                
             default: // TEXT
                 html = `
                     <div class="row">
@@ -543,17 +628,35 @@
         return html;
     }
 
-    function convertToBase64(fileInput) {
+    function convertToBase64(fileInput, fieldName) {
         const file = fileInput.files[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const base64String = e.target.result;
-                const hiddenInput = document.createElement('input');
+                
+                // Create or update hidden input
+                const questionCard = fileInput.closest('.question-card');
+                const hiddenInput = questionCard.querySelector(`input[name$="[${fieldName}]"]`) || 
+                                   document.createElement('input');
                 hiddenInput.type = 'hidden';
-                hiddenInput.name = fileInput.name.replace('_image', '');
+                hiddenInput.name = fileInput.name.replace('_file', '').replace('_image', '');
                 hiddenInput.value = base64String;
-                fileInput.parentNode.appendChild(hiddenInput);
+                
+                // Create or update preview image
+                const previewContainer = fileInput.nextElementSibling || document.createElement('div');
+                previewContainer.className = 'mt-2';
+                previewContainer.innerHTML = `
+                    <img src="${base64String}" class="img-thumbnail" style="max-height: 100px">
+                `;
+                
+                // Add elements if they don't exist
+                if (!fileInput.nextElementSibling) {
+                    fileInput.parentNode.appendChild(previewContainer);
+                }
+                if (!questionCard.querySelector(`input[name$="[${fieldName}]"]`)) {
+                    questionCard.appendChild(hiddenInput);
+                }
             };
             reader.readAsDataURL(file);
         }
