@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if campaign %}Edytuj kampanię{% else %}Dodaj kampanię{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">
+        {% if campaign %}Edytuj kampanię{% else %}Dodaj kampanię{% endif %}
+    </h1>
+
+    <form method="POST" class="needs-validation" novalidate>
+        {{ form.csrf_token }}
+        
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="form-group">
+                    {{ form.code.label(class="form-label required") }}
+                    {{ form.code(class="form-control" + (" is-invalid" if form.code.errors else "")) }}
+                    {% if form.code.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.code.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-group">
+                    {{ form.title.label(class="form-label required") }}
+                    {{ form.title(class="form-control" + (" is-invalid" if form.title.errors else "")) }}
+                    {% if form.title.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.title.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-group">
+                    {{ form.workplace_location.label(class="form-label required") }}
+                    {{ form.workplace_location(class="form-control" + (" is-invalid" if form.workplace_location.errors else "")) }}
+                    {% if form.workplace_location.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.workplace_location.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-group">
+                    {{ form.work_start_date.label(class="form-label required") }}
+                    {{ form.work_start_date(class="form-control", type="date") }}
+                    {% if form.work_start_date.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.work_start_date.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-group">
+                    {{ form.contract_type.label(class="form-label required") }}
+                    {{ form.contract_type(class="form-select") }}
+                    {% if form.contract_type.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.contract_type.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-group">
+                    {{ form.employment_type.label(class="form-label required") }}
+                    {{ form.employment_type(class="form-select") }}
+                    {% if form.employment_type.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.employment_type.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-group">
+                    {{ form.salary_range_min.label(class="form-label") }}
+                    {{ form.salary_range_min(class="form-control", type="number") }}
+                    {% if form.salary_range_min.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.salary_range_min.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-group">
+                    {{ form.salary_range_max.label(class="form-label") }}
+                    {{ form.salary_range_max(class="form-control", type="number") }}
+                    {% if form.salary_range_max.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.salary_range_max.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="form-group">
+                    {{ form.duties.label(class="form-label required") }}
+                    {{ form.duties(class="form-control", rows=4) }}
+                    {% if form.duties.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.duties.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="form-group">
+                    {{ form.requirements.label(class="form-label required") }}
+                    {{ form.requirements(class="form-control", rows=4) }}
+                    {% if form.requirements.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.requirements.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="form-group">
+                    {{ form.employer_offerings.label(class="form-label required") }}
+                    {{ form.employer_offerings(class="form-control", rows=4) }}
+                    {% if form.employer_offerings.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.employer_offerings.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="form-group">
+                    {{ form.job_description.label(class="form-label required") }}
+                    {{ form.job_description(class="form-control", rows=4) }}
+                    {% if form.job_description.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.job_description.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">
+                {% if campaign %}Zapisz zmiany{% else %}Dodaj kampanię{% endif %}
+            </button>
+            <a href="{{ url_for('campaigns.list') }}" class="btn btn-secondary">Anuluj</a>
+        </div>
+    </form>
+</div>
+{% endblock %} 

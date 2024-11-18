@@ -103,4 +103,20 @@ def add():
         except Exception as e:
             flash(f'Wystąpił błąd: {str(e)}', 'danger')
     
-    return render_template('campaigns/add.html') 
+    return render_template('campaigns/add.html')
+
+@campaign_bp.route('/<int:id>/data')
+def get_campaign_data(id):
+    try:
+        campaign = supabase.table('campaigns')\
+            .select('*')\
+            .eq('id', id)\
+            .single()\
+            .execute()
+            
+        if not campaign.data:
+            return jsonify({'error': 'Campaign not found'}), 404
+            
+        return jsonify(campaign.data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500 
