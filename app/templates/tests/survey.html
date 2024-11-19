@@ -192,14 +192,14 @@
                         {% elif question.answer_type == 'SALARY' %}
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Minimalne wynagrodzenie (PLN)</label>
+                                <label class="form-label">Minimalne wynagrodzenie netto (PLN)</label>
                                 <input type="number" class="form-control" name="answer_{{ question.id }}_min" 
-                                       min="0" step="100" {% if question.is_required %}required{% endif %}>
+                                       min="0" {% if question.is_required %}required{% endif %}>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Maksymalne wynagrodzenie (PLN)</label>
+                                <label class="form-label">Maksymalne wynagrodzenie netto (PLN)</label>
                                 <input type="number" class="form-control" name="answer_{{ question.id }}_max" 
-                                       min="0" step="100" {% if question.is_required %}required{% endif %}>
+                                       min="0" {% if question.is_required %}required{% endif %}>
                             </div>
                         </div>
 
