@@ -10,6 +10,58 @@
     </button>
 </div>
 
+<!-- Update filters and sort section -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Typ testu</label>
+                <select class="form-select" id="filterTestType">
+                    <option value="">Wszystkie</option>
+                    <option value="SURVEY">Ankieta</option>
+                    <option value="EQ">Test EQ</option>
+                    <option value="IQ">Test IQ</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Etap</label>
+                <select class="form-select" id="filterStage">
+                    <option value="">Wszystkie</option>
+                    <option value="PO1">PO1</option>
+                    <option value="PO2">PO2</option>
+                    <option value="PO3">PO3</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Sortuj według</label>
+                <select class="form-select" id="sortBy">
+                    <option value="created_at">Data utworzenia</option>
+                    <option value="stage">Etap</option>
+                    <option value="time_limit">Limit czasu</option>
+                    <option value="questions">Liczba pytań</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Kolejność</label>
+                <select class="form-select" id="sortOrder">
+                    <option value="desc">Malejąco</option>
+                    <option value="asc">Rosnąco</option>
+                </select>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-12 text-end">
+                <button type="button" class="btn btn-outline-secondary" id="resetFilters">
+                    Resetuj filtry
+                </button>
+                <button type="button" class="btn btn-primary ms-2" id="applyFilters">
+                    Zastosuj
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="table-responsive">
     <table class="table table-striped">
         <thead>
@@ -19,13 +71,13 @@
                 <th>Limit czasu</th>
                 <th>Próg zaliczenia</th>
                 <th>Liczba pytań</th>
-                <th>Punkty</th>
+                <th>Suma punktów do zdobycia</th>
                 <th>Akcje</th>
             </tr>
         </thead>
         <tbody>
             {% for test in tests %}
-            <tr data-test-id="{{ test.id }}">
+            <tr data-test-id="{{ test.id }}" data-created-at="{{ test.created_at }}">
                 <td>
                     {% if test.test_type == 'SURVEY' %}
                         Ankieta
@@ -202,13 +254,111 @@
 
 <!-- Update Toast Container -->
 <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index: 1070;">
-    <div id="notificationToast" class="toast border-0" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="d-flex align-items-center justify-content-between p-2">
-            <span id="toastMessage"></span>
-            <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="toast" aria-label="Close"></button>
+    <div id="notificationToast" class="toast border-0" role="alert" aria-live="assertive" aria-atomic="true" style="min-width: 400px;">
+        <div class="d-flex align-items-center justify-content-between p-3">
+            <span id="toastMessage" style="font-size: 1.1rem;"></span>
+            <button type="button" class="btn-close btn-close-white ms-3" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
     </div>
 </div>
+
+<!-- Update JavaScript for filtering and sorting -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filterTestType = document.getElementById('filterTestType');
+    const filterStage = document.getElementById('filterStage');
+    const sortBy = document.getElementById('sortBy');
+    const sortOrder = document.getElementById('sortOrder');
+    const applyFilters = document.getElementById('applyFilters');
+    const resetFilters = document.getElementById('resetFilters');
+    
+    // Store original table rows
+    const tbody = document.querySelector('tbody');
+    const originalRows = Array.from(tbody.querySelectorAll('tr'));
+    
+    // Add button click handlers
+    applyFilters.addEventListener('click', function() {
+        updateTable(true);
+    });
+    
+    resetFilters.addEventListener('click', function() {
+        // Reset filter values
+        filterTestType.value = '';
+        filterStage.value = '';
+        sortBy.value = 'created_at';
+        sortOrder.value = 'desc';
+        
+        // Restore original rows and order
+        updateTable(false);
+    });
+    
+    function updateTable(applyFilters) {
+        const tbody = document.querySelector('tbody');
+        
+        if (!applyFilters) {
+            // Reset to original state
+            tbody.innerHTML = '';
+            originalRows.forEach(row => {
+                tbody.appendChild(row.cloneNode(true));
+            });
+            return;
+        }
+        
+        // Clone original rows for filtering
+        let rows = originalRows.map(row => row.cloneNode(true));
+        
+        // Apply filters
+        if (filterTestType.value || filterStage.value) {
+            rows = rows.filter(row => {
+                const testType = row.querySelector('td:first-child').textContent.trim();
+                const stage = row.querySelector('td:nth-child(2)').textContent.trim();
+                
+                const testTypeMatch = !filterTestType.value || 
+                    (filterTestType.value === 'SURVEY' && testType === 'Ankieta') ||
+                    (filterTestType.value === 'EQ' && testType === 'Test EQ') ||
+                    (filterTestType.value === 'IQ' && testType === 'Test IQ');
+                    
+                const stageMatch = !filterStage.value || stage === filterStage.value;
+                
+                return testTypeMatch && stageMatch;
+            });
+        }
+        
+        // Apply sorting
+        if (sortBy.value) {
+            rows.sort((a, b) => {
+                const aValue = getRowValue(a, sortBy.value);
+                const bValue = getRowValue(b, sortBy.value);
+                
+                const order = sortOrder.value === 'asc' ? 1 : -1;
+                
+                if (aValue < bValue) return -1 * order;
+                if (aValue > bValue) return 1 * order;
+                return 0;
+            });
+        }
+        
+        // Update table
+        tbody.innerHTML = '';
+        rows.forEach(row => tbody.appendChild(row));
+    }
+    
+    function getRowValue(row, sortField) {
+        switch (sortField) {
+            case 'stage':
+                return row.querySelector('td:nth-child(2)').textContent.trim();
+            case 'time_limit':
+                return parseInt(row.querySelector('td:nth-child(3)').textContent) || 0;
+            case 'questions':
+                return parseInt(row.querySelector('td:nth-child(5)').textContent) || 0;
+            case 'created_at':
+                return row.dataset.createdAt || '0';
+            default:
+                return 0;
+        }
+    }
+});
+</script>
 
 {% endblock %}
 
@@ -255,14 +405,15 @@
         fetch(`/tests/${testId}/data`)
             .then(response => response.json())
             .then(test => {
+                console.log('Test data received:', test); // Debug log
                 const form = document.getElementById('editTestForm');
                 form.action = `/tests/${testId}/edit`;
                 
                 // Populate basic test fields
-                form.querySelector('[name="test_type"]').value = test.test_type;
-                form.querySelector('[name="stage"]').value = test.stage;
+                form.querySelector('[name="test_type"]').value = test.test_type || '';
+                form.querySelector('[name="stage"]').value = test.stage || '';
                 form.querySelector('[name="description"]').value = test.description || '';
-                form.querySelector('[name="passing_threshold"]').value = test.passing_threshold;
+                form.querySelector('[name="passing_threshold"]').value = test.passing_threshold || 0;
                 form.querySelector('[name="time_limit_minutes"]').value = test.time_limit_minutes || '';
 
                 // Clear and populate questions
@@ -270,25 +421,70 @@
                 questionsContainer.innerHTML = '';
                 
                 if (test.questions?.length > 0) {
-                    test.questions.forEach(question => {
-                        const questionHtml = createQuestionHtml(question);
-                        questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
-                        
-                        // After adding HTML, set correct answer based on type
-                        const questionCard = questionsContainer.lastElementChild;
-                        const answerType = question.answer_type.toLowerCase();
-                        const answerField = questionCard.querySelector(`[name$="[correct_answer_${answerType}]"]`);
-                        
-                        if (answerField) {
-                            if (answerType === 'boolean') {
-                                const value = question[`correct_answer_${answerType}`];
-                                const radio = questionCard.querySelector(`[name$="[correct_answer_boolean]"][value="${value}"]`);
-                                if (radio) radio.checked = true;
-                            } else {
-                                answerField.value = question[`correct_answer_${answerType}`] || '';
+                    console.log('Questions to populate:', test.questions); // Debug log
+                    test.questions
+                        .sort((a, b) => a.order_number - b.order_number)
+                        .forEach(question => {
+                            const questionHtml = createQuestionHtml(question);
+                            questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
+                            
+                            // After adding HTML, set correct answer based on type
+                            const questionCard = questionsContainer.lastElementChild;
+                            const answerType = question.answer_type; // Remove toLowerCase()
+                            
+                            // Set answer type specific fields
+                            switch (answerType) {
+                                case 'TEXT':
+                                    const textInput = questionCard.querySelector(`[name$="[correct_answer_text]"]`);
+                                    if (textInput) textInput.value = question.correct_answer_text || '';
+                                    break;
+                                    
+                                case 'BOOLEAN':
+                                    const boolValue = question.correct_answer_boolean;
+                                    if (boolValue !== null) {
+                                        const radio = questionCard.querySelector(`[name$="[correct_answer_boolean]"][value="${boolValue}"]`);
+                                        if (radio) radio.checked = true;
+                                    }
+                                    break;
+                                    
+                                case 'SCALE':
+                                    const scaleInput = questionCard.querySelector(`[name$="[correct_answer_scale]"]`);
+                                    if (scaleInput && question.correct_answer_scale !== null) {
+                                        scaleInput.value = question.correct_answer_scale;
+                                    }
+                                    break;
+                                    
+                                case 'SALARY':
+                                    const salaryInput = questionCard.querySelector(`[name$="[correct_answer_numeric]"]`);
+                                    if (salaryInput && question.correct_answer_numeric !== null) {
+                                        salaryInput.value = question.correct_answer_numeric;
+                                    }
+                                    break;
+                                    
+                                case 'DATE':
+                                    const dateInput = questionCard.querySelector(`[name$="[correct_answer_date]"]`);
+                                    if (dateInput) dateInput.value = question.correct_answer_date || '';
+                                    break;
+                                    
+                                case 'ABCD':
+                                    const abcdSelect = questionCard.querySelector(`[name$="[correct_answer_abcd]"]`);
+                                    if (abcdSelect) abcdSelect.value = question.correct_answer_abcd || '';
+                                    break;
                             }
-                        }
-                    });
+                            
+                            // Set image if exists
+                            if (question.image) {
+                                const imagePreview = questionCard.querySelector('.image-preview');
+                                if (imagePreview) {
+                                    imagePreview.innerHTML = `
+                                        <img src="${question.image}" class="img-thumbnail" style="max-height: 100px">
+                                        <input type="hidden" 
+                                               name="questions[${questionCard.dataset.questionIndex}][image]"
+                                               value="${question.image}">
+                                    `;
+                                }
+                            }
+                        });
                 }
 
                 new bootstrap.Modal(document.getElementById('editTestModal')).show();
@@ -350,12 +546,30 @@
                                 </div>
                             </div>
                             
+                            <!-- Add image upload field -->
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <label class="form-label">Obrazek (opcjonalnie)</label>
+                                    <input type="file" class="form-control" 
+                                           name="questions[${questionCounter}][image_file]"
+                                           accept="image/*"
+                                           onchange="handleImageUpload(this)">
+                                    ${q.image ? `
+                                        <div class="mt-2 image-preview">
+                                            <img src="${q.image}" class="img-thumbnail" style="max-height: 100px">
+                                            <input type="hidden" 
+                                                   name="questions[${questionCounter}][image]"
+                                                   value="${q.image}">
+                                        </div>` : ''}
+                                </div>
+                            </div>
+                            
                             <!-- Dynamic answer fields container -->
-                            <div class="answer-fields mt-2">
+                            <div class="answer-fields mt-3">
                                 ${createAnswerFieldsHtml(questionCounter, q)}
                             </div>
                             
-                            <div class="row mt-2">
+                            <div class="row mt-3">
                                 <div class="col-md-4">
                                     <label class="form-label">Punkty za pytanie*</label>
                                     <input type="number" class="form-control" 
@@ -437,7 +651,7 @@
                             <input type="number" class="form-control" 
                                    name="questions[${questionCounter}][correct_answer_numeric]"
                                    min="0" step="100" 
-                                   value="${question?.correct_answer_numeric || ''}" required>
+                                   value="${question?.correct_answer_numeric !== null ? question.correct_answer_numeric : ''}" required>
                         </div>
                     </div>
                 `;
@@ -519,6 +733,7 @@
                 points: parseInt(card.querySelector('[name$="[points]"]').value || '0'),
                 order_number: index + 1,
                 is_required: card.querySelector('[name$="[is_required]"]').checked,
+                image: card.querySelector('input[name$="[image]"]')?.value || null,  // Add image data
                 correct_answer_text: null,
                 correct_answer_boolean: null,
                 correct_answer_numeric: null,
@@ -542,7 +757,9 @@
                     break;
                 case 'SALARY':
                     const numericValue = card.querySelector('[name$="[correct_answer_numeric]"]')?.value;
-                    questionData.correct_answer_numeric = numericValue ? parseFloat(numericValue) : null;
+                    console.log('SALARY value before conversion:', numericValue); // Debug log
+                    questionData.correct_answer_numeric = numericValue ? Number(numericValue) : null;
+                    console.log('SALARY value after conversion:', questionData.correct_answer_numeric); // Debug log
                     break;
                 case 'DATE':
                     questionData.correct_answer_date = card.querySelector('[name$="[correct_answer_date]"]')?.value || null;
@@ -555,6 +772,7 @@
             questions.push(questionData);
         });
         
+        console.log('Questions data before submit:', questions); // Debug log
         formData.append('questions', JSON.stringify(questions));
 
         fetch(form.action, {
@@ -706,6 +924,46 @@
             } finally {
                 sessionStorage.removeItem('pendingToast');
             }
+        }
+    }
+
+    // Add image handling function
+    function handleImageUpload(input) {
+        const file = input.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64String = e.target.result;
+                const questionCard = input.closest('.question-card');
+                
+                // Create or update hidden input for image data
+                const hiddenInput = questionCard.querySelector('input[name$="[image]"]') || 
+                                  document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = input.name.replace('_file', '');
+                hiddenInput.value = base64String;
+                
+                // Create or update preview container
+                let previewContainer = questionCard.querySelector('.image-preview');
+                if (!previewContainer) {
+                    previewContainer = document.createElement('div');
+                    previewContainer.className = 'mt-2 image-preview';
+                    input.parentNode.insertBefore(previewContainer, input.nextSibling);
+                }
+                
+                // Update preview
+                previewContainer.innerHTML = `
+                    <img src="${base64String}" class="img-thumbnail" style="max-height: 100px">
+                `;
+                
+                // Ensure hidden input is in the form
+                if (!questionCard.querySelector(`input[name$="[image]"]`)) {
+                    questionCard.appendChild(hiddenInput);
+                }
+                
+                console.log('Image uploaded and converted to base64');
+            };
+            reader.readAsDataURL(file);
         }
     }
 </script>

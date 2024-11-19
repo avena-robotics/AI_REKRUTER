@@ -24,7 +24,9 @@ create table tests (
     stage test_stage not null,
     description text,
     passing_threshold int not null,
-    time_limit_minutes int
+    time_limit_minutes int,
+    created_at timestamp default now(),
+    updated_at timestamp default now()
 );
 
 -- Now create campaigns table (which references tests)
