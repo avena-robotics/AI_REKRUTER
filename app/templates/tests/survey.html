@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Rekrutacyjny</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/test.css') }}">
+    <script src="{{ url_for('static', filename='js/test.js') }}" defer></script>
+    <style>
+        /* Custom styles for ABCD text options */
+        .abcd-text-option {
+            cursor: pointer;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .abcd-text-option:hover {
+            border-color: #6c757d;
+            background-color: #f8f9fa;
+        }
+
+        .abcd-text-option input[type="radio"] {
+            display: none;
+        }
+
+        .abcd-text-option.selected {
+            border-color: #0d6efd;
+            background-color: #f0f7ff;
+        }
+
+        .abcd-text-option .option-letter {
+            font-weight: bold;
+            margin-right: 10px;
+            color: #6c757d;
+        }
+
+        .abcd-text-option.selected .option-letter {
+            color: #0d6efd;
+        }
+
+        /* New ABCD image styles */
+        .abcd-image-option {
+            cursor: pointer;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 15px;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .abcd-image-option:hover {
+            border-color: #6c757d;
+            background-color: #f8f9fa;
+        }
+
+        .abcd-image-option input[type="radio"] {
+            display: none;
+        }
+
+        .abcd-image-option.selected {
+            border-color: #0d6efd;
+            background-color: #f0f7ff;
+        }
+
+        .abcd-image-option .option-letter {
+            font-weight: bold;
+            color: #6c757d;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .abcd-image-option.selected .option-letter {
+            color: #0d6efd;
+        }
+
+        .abcd-image-option img {
+            max-height: 200px;
+            width: auto;
+            margin: 0 auto;
+            display: block;
+        }
+
+        /* Grid layout for image options */
+        .abcd-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <div class="container py-4">
+            <!-- Test Header -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h1 class="text-center mb-3">ANKIETA</h1>
+                    <p class="lead text-center mb-3">{{ test.description }}</p>
+                    {% if test.time_limit_minutes %}
+                    <div class="timer-container">
+                        <span>Pozostały czas: </span>
+                        <span id="timer">{{ test.time_limit_minutes }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Candidate Form -->
+            <form id="testForm" method="POST" action="{{ url_for('test.submit', token=token) }}">
+                <!-- Personal Information Section -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3 class="mb-0">Dane osobowe</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="first_name" class="form-label">Imię*</label>
+                                <input type="text" class="form-control" id="first_name" name="first_name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="last_name" class="form-label">Nazwisko*</label>
+                                <input type="text" class="form-control" id="last_name" name="last_name" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email*</label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label">Telefon</label>
+                                <input type="tel" class="form-control" id="phone" name="phone">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Questions Section -->
+                {% for question in questions %}
+                <div class="question-card mb-4" id="question_{{ question.id }}">
+                    <div class="card-body">
+                        <h4 class="card-title mb-3">
+                            {{ question.question_text }}
+                            {% if question.is_required %}
+                            <small class="text-muted ms-2">(wymagane)</small>
+                            {% endif %}
+                        </h4>
+                        
+                        {% if question.image %}
+                        <img src="{{ question.image }}" alt="Question image" class="img-fluid mb-3">
+                        {% endif %}
+
+                        {% if question.answer_type == 'TEXT' %}
+                        <div class="form-group">
+                            <textarea class="form-control" name="answer_{{ question.id }}" rows="3"
+                                    {% if question.is_required %}required{% endif %}></textarea>
+                        </div>
+
+                        {% elif question.answer_type == 'BOOLEAN' %}
+                        <div class="form-check">
+                            <input type="radio" class="form-check-input" name="answer_{{ question.id }}" value="true" 
+                                   id="answer_{{ question.id }}_true" {% if question.is_required %}required{% endif %}>
+                            <label class="form-check-label" for="answer_{{ question.id }}_true">Tak</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="radio" class="form-check-input" name="answer_{{ question.id }}" value="false" 
+                                   id="answer_{{ question.id }}_false" {% if question.is_required %}required{% endif %}>
+                            <label class="form-check-label" for="answer_{{ question.id }}_false">Nie</label>
+                        </div>
+
+                        {% elif question.answer_type == 'SCALE' %}
+                        <div class="range-container">
+                            <input type="range" class="form-range" name="answer_{{ question.id }}" 
+                                   min="0" max="5" step="1" {% if question.is_required %}required{% endif %}>
+                            <div class="range-labels">
+                                <span>0</span>
+                                <span>1</span>
+                                <span>2</span>
+                                <span>3</span>
+                                <span>4</span>
+                                <span>5</span>
+                            </div>
+                        </div>
+
+                        {% elif question.answer_type == 'SALARY' %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Minimalne wynagrodzenie (PLN)</label>
+                                <input type="number" class="form-control" name="answer_{{ question.id }}_min" 
+                                       min="0" step="100" {% if question.is_required %}required{% endif %}>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Maksymalne wynagrodzenie (PLN)</label>
+                                <input type="number" class="form-control" name="answer_{{ question.id }}_max" 
+                                       min="0" step="100" {% if question.is_required %}required{% endif %}>
+                            </div>
+                        </div>
+
+                        {% elif question.answer_type == 'DATE' %}
+                        <div class="form-group">
+                            <input type="date" class="form-control" name="answer_{{ question.id }}"
+                                   {% if question.is_required %}required{% endif %}>
+                        </div>
+
+                        {% elif question.answer_type == 'ABCD_TEXT' %}
+                        <div class="abcd-options">
+                            {% for letter in ['A', 'B', 'C', 'D'] %}
+                            <label class="abcd-text-option w-100" for="answer_{{ question.id }}_{{ letter }}">
+                                <input type="radio" name="answer_{{ question.id }}" 
+                                       value="{{ letter }}" id="answer_{{ question.id }}_{{ letter }}"
+                                       {% if question.is_required %}required{% endif %}>
+                                <span class="option-letter">{{ letter }}.</span>
+                                <span class="option-text">{{ question['answer_' + letter.lower()] }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+
+                        {% elif question.answer_type == 'ABCD_IMAGE' %}
+                        <div class="abcd-options">
+                            {% for letter in ['A', 'B', 'C', 'D'] %}
+                            <label class="abcd-image-option" for="answer_{{ question.id }}_{{ letter }}">
+                                <input type="radio" name="answer_{{ question.id }}" 
+                                       value="{{ letter }}" id="answer_{{ question.id }}_{{ letter }}"
+                                       {% if question.is_required %}required{% endif %}>
+                                <span class="option-letter">{{ letter }}.</span>
+                                <img src="{{ question['answer_' + letter.lower()] }}" 
+                                     alt="Option {{ letter }}" 
+                                     class="img-fluid">
+                            </label>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+
+                <div class="text-muted mb-3">
+                    <small><span class="text-danger">*</span> - pola wymagane</small>
+                </div>
+
+                <div class="d-grid gap-2 col-md-6 mx-auto mb-4">
+                    <button type="submit" class="btn btn-primary btn-lg">Zakończ test</button>
+                </div>
+            </form>
+        </div>
+    </main>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle both text and image options
+            document.querySelectorAll('.abcd-text-option, .abcd-image-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    // Remove selected class from all options in this group
+                    const name = this.querySelector('input').name;
+                    document.querySelectorAll(`input[name="${name}"]`).forEach(input => {
+                        input.closest('.abcd-text-option, .abcd-image-option').classList.remove('selected');
+                    });
+                    // Add selected class to clicked option
+                    this.classList.add('selected');
+                });
+            });
+        });
+    </script>
+</body>
+</html> 

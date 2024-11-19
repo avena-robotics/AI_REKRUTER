@@ -59,6 +59,7 @@ def submit(token):
         'first_name': request.form.get('first_name'),
         'last_name': request.form.get('last_name'),
         'email': request.form.get('email'),
+        'phone': request.form.get('phone'),
         'recruitment_status': 'PO1',
         'po1_completed_at': datetime.now().isoformat()
     }
@@ -70,6 +71,9 @@ def submit(token):
     for key, value in request.form.items():
         if key.startswith('answer_'):
             question_id = int(key.split('_')[1])
+            if '_min' in key or '_max' in key:
+                continue  # Skip individual min/max fields, they'll be handled with the main salary field
+                
             question = supabase.table('questions')\
                 .select('*')\
                 .eq('id', question_id)\
@@ -89,12 +93,15 @@ def submit(token):
             elif question.data['answer_type'] == 'SCALE':
                 answer_data['scale_answer'] = int(value)
             elif question.data['answer_type'] == 'SALARY':
-                min_val = request.form.get(f'answer_{question_id}_min')
-                max_val = request.form.get(f'answer_{question_id}_max')
-                answer_data['numeric_answer'] = json.dumps({'min': min_val, 'max': max_val})
+                min_val = float(request.form.get(f'answer_{question_id}_min', 0))
+                max_val = float(request.form.get(f'answer_{question_id}_max', 0))
+                # Store the average as numeric_answer
+                answer_data['numeric_answer'] = (min_val + max_val) / 2
+                # Store the full range as text_answer for reference
+                answer_data['text_answer'] = json.dumps({'min': min_val, 'max': max_val})
             elif question.data['answer_type'] == 'DATE':
                 answer_data['date_answer'] = value
-            elif question.data['answer_type'] == 'ABCD':
+            elif question.data['answer_type'] in ['ABCD_TEXT', 'ABCD_IMAGE']:
                 answer_data['abcd_answer'] = value
             
             # Calculate score
@@ -122,6 +129,13 @@ def calculate_score(question, answer):
         return question['points'] if answer['boolean_answer'] == question['correct_answer_boolean'] else 0
     elif question['answer_type'] == 'SCALE':
         return question['points'] if answer['scale_answer'] == question['correct_answer_scale'] else 0
-    elif question['answer_type'] == 'ABCD':
+    elif question['answer_type'] == 'SALARY':
+        # For salary questions, check if the answer is within an acceptable range
+        correct_value = float(question['correct_answer_numeric'])
+        answer_value = float(answer['numeric_answer'])
+        # Allow for a 10% deviation from the correct value
+        tolerance = correct_value * 0.1
+        return question['points'] if abs(answer_value - correct_value) <= tolerance else 0
+    elif question['answer_type'] in ['ABCD_TEXT', 'ABCD_IMAGE']:
         return question['points'] if answer['abcd_answer'] == question['correct_answer_abcd'] else 0
     return 0
