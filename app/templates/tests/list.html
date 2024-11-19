@@ -16,8 +16,10 @@
             <tr>
                 <th>Typ testu</th>
                 <th>Etap</th>
-                <th>Próg zaliczenia</th>
                 <th>Limit czasu</th>
+                <th>Próg zaliczenia</th>
+                <th>Liczba pytań</th>
+                <th>Punkty</th>
                 <th>Akcje</th>
             </tr>
         </thead>
@@ -34,8 +36,10 @@
                     {% endif %}
                 </td>
                 <td>{{ test.stage }}</td>
-                <td>{{ test.passing_threshold }}</td>
                 <td>{{ test.time_limit_minutes }} min</td>
+                <td>{{ test.passing_threshold }}</td>
+                <td>{{ test.question_count }}</td>
+                <td>{{ test.total_points }}</td>
                 <td>
                     <div class="btn-group">
                         <button type="button" class="btn btn-sm btn-warning" 
@@ -241,47 +245,6 @@
         });
     });
 
-    function handleTestFormSubmit(e) {
-        e.preventDefault();
-        const formData = new FormData(this);
-        const isEdit = this.id === 'editTestForm';
-        
-        // Add questions data
-        const questions = [];
-        this.querySelectorAll('.question-card').forEach((card, index) => {
-            const questionData = {
-                id: card.dataset.questionId || '',
-                question_text: card.querySelector('[name$="[question_text]"]').value,
-                answer_type: card.querySelector('[name$="[answer_type]"]').value,
-                points: card.querySelector('[name$="[points]"]').value,
-                order_number: index + 1,
-                is_required: card.querySelector('[name$="[is_required]"]').checked,
-                // Add other question fields based on answer type
-            };
-            questions.push(questionData);
-        });
-        
-        formData.append('questions', JSON.stringify(questions));
-
-        fetch(this.action, {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showToast(isEdit ? 'Test został zaktualizowany' : 'Test został dodany', 'success');
-                window.location.reload();
-            } else {
-                throw new Error(data.error || 'Wystąpił błąd');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showToast(error.message, 'error');
-        });
-    }
-
     function editTest(testId) {
         fetch(`/tests/${testId}/data`)
             .then(response => response.json())
@@ -292,20 +255,34 @@
                 // Populate basic test fields
                 form.querySelector('[name="test_type"]').value = test.test_type;
                 form.querySelector('[name="stage"]').value = test.stage;
+                form.querySelector('[name="description"]').value = test.description || '';
                 form.querySelector('[name="passing_threshold"]').value = test.passing_threshold;
-                form.querySelector('[name="time_limit_minutes"]').value = test.time_limit_minutes;
+                form.querySelector('[name="time_limit_minutes"]').value = test.time_limit_minutes || '';
 
                 // Clear and populate questions
                 const questionsContainer = form.querySelector('.questions-container');
                 questionsContainer.innerHTML = '';
                 
                 if (test.questions?.length > 0) {
-                    test.questions
-                        .sort((a, b) => a.order_number - b.order_number)
-                        .forEach(question => {
-                            questionsContainer.insertAdjacentHTML('beforeend', 
-                                createQuestionHtml(question));
-                        });
+                    test.questions.forEach(question => {
+                        const questionHtml = createQuestionHtml(question);
+                        questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
+                        
+                        // After adding HTML, set correct answer based on type
+                        const questionCard = questionsContainer.lastElementChild;
+                        const answerType = question.answer_type.toLowerCase();
+                        const answerField = questionCard.querySelector(`[name$="[correct_answer_${answerType}]"]`);
+                        
+                        if (answerField) {
+                            if (answerType === 'boolean') {
+                                const value = question[`correct_answer_${answerType}`];
+                                const radio = questionCard.querySelector(`[name$="[correct_answer_boolean]"][value="${value}"]`);
+                                if (radio) radio.checked = true;
+                            } else {
+                                answerField.value = question[`correct_answer_${answerType}`] || '';
+                            }
+                        }
+                    });
                 }
 
                 new bootstrap.Modal(document.getElementById('editTestModal')).show();
@@ -316,31 +293,6 @@
             });
     }
 
-    function confirmDeleteTest(testId) {
-        if (confirm('Czy na pewno chcesz usunąć ten test?')) {
-            fetch(`/tests/${testId}/delete`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showToast('Test został usunięty', 'success');
-                    document.querySelector(`tr[data-test-id="${testId}"]`).remove();
-                } else {
-                    throw new Error(data.error || 'Wystąpił błąd podczas usuwania testu');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast(error.message, 'error');
-            });
-        }
-    }
-
-    // Helper functions for question management
     function createQuestionHtml(question = null) {
         const q = question || {};
         const questionCounter = document.querySelectorAll('.question-card').length;
@@ -387,27 +339,8 @@
                                         <option value="SCALE" ${q.answer_type === 'SCALE' ? 'selected' : ''}>Skala (0-5)</option>
                                         <option value="SALARY" ${q.answer_type === 'SALARY' ? 'selected' : ''}>Wynagrodzenie (PLN)</option>
                                         <option value="DATE" ${q.answer_type === 'DATE' ? 'selected' : ''}>Data</option>
-                                        <option value="ABCD_TEXT" ${q.answer_type === 'ABCD_TEXT' ? 'selected' : ''}>ABCD (tekst)</option>
-                                        <option value="ABCD_IMAGE" ${q.answer_type === 'ABCD_IMAGE' ? 'selected' : ''}>ABCD (obrazek)</option>
+                                        <option value="ABCD" ${q.answer_type === 'ABCD' ? 'selected' : ''}>ABCD</option>
                                     </select>
-                                </div>
-                            </div>
-                            
-                            <!-- Image upload field -->
-                            <div class="row mt-2">
-                                <div class="col-12">
-                                    <label class="form-label">Obrazek (opcjonalnie)</label>
-                                    <input type="file" class="form-control" 
-                                           name="questions[${questionCounter}][image_file]"
-                                           accept="image/*"
-                                           onchange="convertToBase64(this, 'image')">
-                                    ${q.image ? `
-                                        <div class="mt-2">
-                                            <img src="${q.image}" class="img-thumbnail" style="max-height: 100px">
-                                            <input type="hidden" 
-                                                   name="questions[${questionCounter}][image]"
-                                                   value="${q.image}">
-                                        </div>` : ''}
                                 </div>
                             </div>
                             
@@ -434,124 +367,22 @@
     }
 
     function createAnswerFieldsHtml(questionCounter, question) {
-        const answerType = question.answer_type || 'TEXT';
+        const answerType = question?.answer_type || 'TEXT';
         let html = '';
         
         switch (answerType) {
-            case 'ABCD_TEXT':
+            case 'ABCD':
                 html = `
                     <div class="row">
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label">Odpowiedź A (tekst)*</label>
-                            <input type="text" class="form-control" 
-                                   name="questions[${questionCounter}][answer_a]"
-                                   value="${question.answer_a || ''}" required>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label">Odpowiedź B (tekst)*</label>
-                            <input type="text" class="form-control" 
-                                   name="questions[${questionCounter}][answer_b]"
-                                   value="${question.answer_b || ''}" required>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label">Odpowiedź C (tekst)*</label>
-                            <input type="text" class="form-control" 
-                                   name="questions[${questionCounter}][answer_c]"
-                                   value="${question.answer_c || ''}" required>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label">Odpowiedź D (tekst)*</label>
-                            <input type="text" class="form-control" 
-                                   name="questions[${questionCounter}][answer_d]"
-                                   value="${question.answer_d || ''}" required>
-                        </div>
                         <div class="col-md-12">
                             <label class="form-label">Poprawna odpowiedź*</label>
                             <select class="form-select" 
                                     name="questions[${questionCounter}][correct_answer_abcd]" required>
                                 <option value="">Wybierz odpowiedź</option>
-                                <option value="A" ${question.correct_answer_abcd === 'A' ? 'selected' : ''}>A</option>
-                                <option value="B" ${question.correct_answer_abcd === 'B' ? 'selected' : ''}>B</option>
-                                <option value="C" ${question.correct_answer_abcd === 'C' ? 'selected' : ''}>C</option>
-                                <option value="D" ${question.correct_answer_abcd === 'D' ? 'selected' : ''}>D</option>
-                            </select>
-                        </div>
-                    </div>
-                `;
-                break;
-                
-            case 'ABCD_IMAGE':
-                html = `
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Odpowiedź A (obrazek)*</label>
-                            <input type="file" class="form-control" 
-                                   name="questions[${questionCounter}][answer_a_image]"
-                                   accept="image/*" 
-                                   onchange="convertToBase64(this, 'answer_a')" 
-                                   ${!question.answer_a ? 'required' : ''}>
-                            ${question.answer_a ? `
-                                <div class="mt-2">
-                                    <img src="${question.answer_a}" class="img-thumbnail" style="max-height: 100px">
-                                    <input type="hidden" 
-                                           name="questions[${questionCounter}][answer_a]"
-                                           value="${question.answer_a}">
-                                </div>` : ''}
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Odpowiedź B (obrazek)*</label>
-                            <input type="file" class="form-control" 
-                                   name="questions[${questionCounter}][answer_b_image]"
-                                   accept="image/*" 
-                                   onchange="convertToBase64(this, 'answer_b')" 
-                                   ${!question.answer_b ? 'required' : ''}>
-                            ${question.answer_b ? `
-                                <div class="mt-2">
-                                    <img src="${question.answer_b}" class="img-thumbnail" style="max-height: 100px">
-                                    <input type="hidden" 
-                                           name="questions[${questionCounter}][answer_b]"
-                                           value="${question.answer_b}">
-                                </div>` : ''}
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Odpowiedź C (obrazek)*</label>
-                            <input type="file" class="form-control" 
-                                   name="questions[${questionCounter}][answer_c_image]"
-                                   accept="image/*" 
-                                   onchange="convertToBase64(this, 'answer_c')" 
-                                   ${!question.answer_c ? 'required' : ''}>
-                            ${question.answer_c ? `
-                                <div class="mt-2">
-                                    <img src="${question.answer_c}" class="img-thumbnail" style="max-height: 100px">
-                                    <input type="hidden" 
-                                           name="questions[${questionCounter}][answer_c]"
-                                           value="${question.answer_c}">
-                                </div>` : ''}
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Odpowiedź D (obrazek)*</label>
-                            <input type="file" class="form-control" 
-                                   name="questions[${questionCounter}][answer_d_image]"
-                                   accept="image/*" 
-                                   onchange="convertToBase64(this, 'answer_d')" 
-                                   ${!question.answer_d ? 'required' : ''}>
-                            ${question.answer_d ? `
-                                <div class="mt-2">
-                                    <img src="${question.answer_d}" class="img-thumbnail" style="max-height: 100px">
-                                    <input type="hidden" 
-                                           name="questions[${questionCounter}][answer_d]"
-                                           value="${question.answer_d}">
-                                </div>` : ''}
-                        </div>
-                        <div class="col-md-12">
-                            <label class="form-label">Poprawna odpowiedź*</label>
-                            <select class="form-select" 
-                                    name="questions[${questionCounter}][correct_answer_abcd]" required>
-                                <option value="">Wybierz odpowiedź</option>
-                                <option value="A" ${question.correct_answer_abcd === 'A' ? 'selected' : ''}>A</option>
-                                <option value="B" ${question.correct_answer_abcd === 'B' ? 'selected' : ''}>B</option>
-                                <option value="C" ${question.correct_answer_abcd === 'C' ? 'selected' : ''}>C</option>
-                                <option value="D" ${question.correct_answer_abcd === 'D' ? 'selected' : ''}>D</option>
+                                <option value="A" ${question?.correct_answer_abcd === 'A' ? 'selected' : ''}>A</option>
+                                <option value="B" ${question?.correct_answer_abcd === 'B' ? 'selected' : ''}>B</option>
+                                <option value="C" ${question?.correct_answer_abcd === 'C' ? 'selected' : ''}>C</option>
+                                <option value="D" ${question?.correct_answer_abcd === 'D' ? 'selected' : ''}>D</option>
                             </select>
                         </div>
                     </div>
@@ -565,13 +396,13 @@
                         <div class="form-check">
                             <input type="radio" class="form-check-input" 
                                    name="questions[${questionCounter}][correct_answer_boolean]" 
-                                   value="true" ${question.correct_answer_boolean === true ? 'checked' : ''} required>
+                                   value="true" ${question?.correct_answer_boolean === true ? 'checked' : ''} required>
                             <label class="form-check-label">Prawda</label>
                         </div>
                         <div class="form-check">
                             <input type="radio" class="form-check-input" 
                                    name="questions[${questionCounter}][correct_answer_boolean]" 
-                                   value="false" ${question.correct_answer_boolean === false ? 'checked' : ''} required>
+                                   value="false" ${question?.correct_answer_boolean === false ? 'checked' : ''} required>
                             <label class="form-check-label">Fałsz</label>
                         </div>
                     </div>
@@ -586,7 +417,7 @@
                             <input type="number" class="form-control" 
                                    name="questions[${questionCounter}][correct_answer_scale]"
                                    min="0" max="5" 
-                                   value="${question.correct_answer_scale || ''}" required>
+                                   value="${question?.correct_answer_scale || ''}" required>
                         </div>
                     </div>
                 `;
@@ -600,7 +431,7 @@
                             <input type="number" class="form-control" 
                                    name="questions[${questionCounter}][correct_answer_numeric]"
                                    min="0" step="100" 
-                                   value="${question.correct_answer_numeric || ''}" required>
+                                   value="${question?.correct_answer_numeric || ''}" required>
                         </div>
                     </div>
                 `;
@@ -613,7 +444,7 @@
                             <label class="form-label">Poprawna data*</label>
                             <input type="date" class="form-control" 
                                    name="questions[${questionCounter}][correct_answer_date]"
-                                   value="${question.correct_answer_date || ''}" required>
+                                   value="${question?.correct_answer_date || ''}" required>
                         </div>
                     </div>
                 `;
@@ -626,7 +457,7 @@
                             <label class="form-label">Poprawna odpowiedź tekstowa</label>
                             <input type="text" class="form-control" 
                                    name="questions[${questionCounter}][correct_answer_text]"
-                                   value="${question.correct_answer_text || ''}">
+                                   value="${question?.correct_answer_text || ''}">
                         </div>
                     </div>
                 `;
@@ -635,28 +466,130 @@
         return html;
     }
 
+    function handleAnswerTypeChange(e) {
+        const questionCard = e.target.closest('.question-card');
+        const answerFieldsContainer = questionCard.querySelector('.answer-fields');
+        const questionCounter = Array.from(questionCard.parentElement.children).indexOf(questionCard);
+        
+        answerFieldsContainer.innerHTML = createAnswerFieldsHtml(questionCounter, {
+            answer_type: e.target.value
+        });
+    }
+
     function handleAddQuestion(e) {
         const container = e.target.closest('.questions-section').querySelector('.questions-container');
         const questionHtml = createQuestionHtml();
         container.insertAdjacentHTML('beforeend', questionHtml);
     }
 
-    function handleAnswerTypeChange(e) {
-        const questionCard = e.target.closest('.question-card');
-        const answerFieldsContainer = questionCard.querySelector('.answer-fields');
-        const questionCounter = Array.from(questionCard.parentElement.children).indexOf(questionCard);
-        
-        const questionData = {
-            answer_type: e.target.value
-        };
-        
-        answerFieldsContainer.innerHTML = createAnswerFieldsHtml(questionCounter, questionData);
-    }
-
     function handleRemoveQuestion(e) {
         if (confirm('Czy na pewno chcesz usunąć to pytanie?')) {
             const questionCard = e.target.closest('.question-card');
             questionCard.remove();
+        }
+    }
+
+    function handleTestFormSubmit(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const isEdit = this.id === 'editTestForm';
+        
+        // Add questions data
+        const questions = [];
+        this.querySelectorAll('.question-card').forEach((card, index) => {
+            const questionData = {
+                id: card.dataset.questionId || '',
+                question_text: card.querySelector('[name$="[question_text]"]').value,
+                answer_type: card.querySelector('[name$="[answer_type]"]').value,
+                // Ensure points is always a number, default to 0
+                points: parseInt(card.querySelector('[name$="[points]"]').value || '0'),
+                order_number: index + 1,
+                is_required: card.querySelector('[name$="[is_required]"]').checked,
+                // Initialize all answer fields as null
+                correct_answer_text: null,
+                correct_answer_boolean: null,
+                correct_answer_numeric: null,
+                correct_answer_scale: null,
+                correct_answer_date: null,
+                correct_answer_abcd: null
+            };
+
+            // Add correct answer field based on answer type
+            switch (questionData.answer_type) {
+                case 'TEXT':
+                    questionData.correct_answer_text = card.querySelector('[name$="[correct_answer_text]"]')?.value || null;
+                    break;
+                case 'BOOLEAN':
+                    const booleanValue = card.querySelector('[name$="[correct_answer_boolean]"]:checked')?.value;
+                    questionData.correct_answer_boolean = booleanValue ? booleanValue === 'true' : null;
+                    break;
+                case 'SCALE':
+                    const scaleValue = card.querySelector('[name$="[correct_answer_scale]"]')?.value;
+                    questionData.correct_answer_scale = scaleValue ? parseInt(scaleValue) : null;
+                    break;
+                case 'SALARY':
+                    const numericValue = card.querySelector('[name$="[correct_answer_numeric]"]')?.value;
+                    questionData.correct_answer_numeric = numericValue ? parseFloat(numericValue) : null;
+                    break;
+                case 'DATE':
+                    questionData.correct_answer_date = card.querySelector('[name$="[correct_answer_date]"]')?.value || null;
+                    break;
+                case 'ABCD':
+                    questionData.correct_answer_abcd = card.querySelector('[name$="[correct_answer_abcd]"]')?.value || null;
+                    break;
+            }
+
+            // Add image if exists
+            const imageInput = card.querySelector('[name$="[image]"]');
+            if (imageInput) {
+                questionData.image = imageInput.value || null;
+            }
+
+            questions.push(questionData);
+        });
+        
+        formData.append('questions', JSON.stringify(questions));
+
+        fetch(this.action, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast(isEdit ? 'Test został zaktualizowany' : 'Test został dodany', 'success');
+                window.location.reload();
+            } else {
+                throw new Error(data.error || 'Wystąpił błąd');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast(error.message, 'error');
+        });
+    }
+
+    function confirmDeleteTest(testId) {
+        if (confirm('Czy na pewno chcesz usunąć ten test?')) {
+            fetch(`/tests/${testId}/delete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Test został usunięty', 'success');
+                    document.querySelector(`tr[data-test-id="${testId}"]`).remove();
+                } else {
+                    throw new Error(data.error || 'Wystąpił błąd podczas usuwania testu');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast(error.message, 'error');
+            });
         }
     }
 

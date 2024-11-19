@@ -1,4 +1,33 @@
--- Tabela kampanii
+-- Drop tables first (in reverse order of dependencies)
+DROP TABLE IF EXISTS candidate_answers CASCADE;
+DROP TABLE IF EXISTS candidates CASCADE;
+DROP TABLE IF EXISTS questions CASCADE;
+DROP TABLE IF EXISTS tests CASCADE;
+DROP TABLE IF EXISTS campaigns CASCADE;
+
+-- Drop custom types
+DROP TYPE IF EXISTS recruitment_status CASCADE;
+DROP TYPE IF EXISTS answer_type CASCADE;
+DROP TYPE IF EXISTS test_stage CASCADE;
+DROP TYPE IF EXISTS test_type CASCADE;
+
+-- Create types first
+create type test_type as enum ('SURVEY', 'EQ', 'IQ');
+create type test_stage as enum ('PO1', 'PO2', 'PO3');
+create type answer_type as enum ('TEXT', 'BOOLEAN', 'SCALE', 'SALARY', 'DATE', 'ABCD');
+create type recruitment_status as enum ('PO1', 'PO2', 'PO3', 'PO4', 'REJECTED', 'ACCEPTED');
+
+-- Create tests table before campaigns (since campaigns references tests)
+create table tests (
+    id serial primary key,
+    test_type test_type not null,
+    stage test_stage not null,
+    description text,
+    passing_threshold int not null,
+    time_limit_minutes int
+);
+
+-- Now create campaigns table (which references tests)
 create table campaigns (
     id bigserial primary key,
     code text not null unique,            -- J5A_logopeda_05_2024
@@ -25,25 +54,6 @@ create table campaigns (
     po3_test_weight integer               -- Waga testu PO3 (%)
 );
 
--- Typ testu enum
-create type test_type as enum ('SURVEY', 'EQ', 'IQ');
-
--- Etap testu enum
-create type test_stage as enum ('PO1', 'PO2', 'PO3');
-
--- Tabela testów
-create table tests (
-    id serial primary key,
-    test_type test_type not null,    -- SURVEY, EQ, IQ
-    stage test_stage not null,       -- PO1, PO2, PO3
-    description text,                -- Czas wykonania testu to.. lub inne informacje?
-    passing_threshold int not null,  -- Minimum score to pass this stage
-    time_limit_minutes int           -- Time limit in minutes
-);
-
--- Typ odpowiedzi enum
-create type answer_type as enum ('TEXT', 'BOOLEAN', 'SCALE', 'SALARY', 'DATE', 'ABCD_TEXT', 'ABCD_IMAGE');
-
 -- Tabela pytań
 create table questions (
     id serial primary key,
@@ -65,9 +75,6 @@ create table questions (
     correct_answer_date date,
     correct_answer_abcd text
 );
-
--- Status rekrutacji enum
-create type recruitment_status as enum ('PO1', 'PO2', 'PO3', 'PO4', 'REJECTED', 'ACCEPTED');
 
 -- Tabela kandydatów
 create table candidates (

@@ -92,6 +92,46 @@
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 15px;
         }
+
+        /* ABCD options style */
+        .abcd-options {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .abcd-text-option {
+            cursor: pointer;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            flex: 1;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .abcd-text-option:hover {
+            border-color: #6c757d;
+            background-color: #f8f9fa;
+        }
+
+        .abcd-text-option input[type="radio"] {
+            display: none;
+        }
+
+        .abcd-text-option.selected {
+            border-color: #0d6efd;
+            background-color: #f0f7ff;
+        }
+
+        .abcd-text-option .option-letter {
+            font-weight: bold;
+            color: #6c757d;
+        }
+
+        .abcd-text-option.selected .option-letter {
+            color: #0d6efd;
+        }
     </style>
 </head>
 <body>
@@ -209,15 +249,14 @@
                                    {% if question.is_required %}required{% endif %}>
                         </div>
 
-                        {% elif question.answer_type == 'ABCD_TEXT' %}
+                        {% elif question.answer_type == 'ABCD' %}
                         <div class="abcd-options">
                             {% for letter in ['A', 'B', 'C', 'D'] %}
                             <label class="abcd-text-option w-100" for="answer_{{ question.id }}_{{ letter }}">
                                 <input type="radio" name="answer_{{ question.id }}" 
                                        value="{{ letter }}" id="answer_{{ question.id }}_{{ letter }}"
                                        {% if question.is_required %}required{% endif %}>
-                                <span class="option-letter">{{ letter }}.</span>
-                                <span class="option-text">{{ question['answer_' + letter.lower()] }}</span>
+                                <span class="option-letter">{{ letter }}</span>
                             </label>
                             {% endfor %}
                         </div>
