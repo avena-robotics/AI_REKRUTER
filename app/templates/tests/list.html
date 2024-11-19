@@ -116,7 +116,10 @@
 
                     <div class="text-end mt-4">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                        <button type="submit" class="btn btn-primary ms-2">Zapisz test</button>
+                        <button type="submit" class="btn btn-primary ms-2" id="addTestSubmit">
+                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            <span class="button-text">Zapisz test</span>
+                        </button>
                     </div>
                 </form>
             </div>
@@ -186,7 +189,10 @@
 
                     <div class="text-end mt-4">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                        <button type="submit" class="btn btn-primary ms-2">Zapisz zmiany</button>
+                        <button type="submit" class="btn btn-primary ms-2" id="editTestSubmit">
+                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            <span class="button-text">Zapisz zmiany</span>
+                        </button>
                     </div>
                 </form>
             </div>
@@ -194,14 +200,12 @@
     </div>
 </div>
 
-<!-- Toast Container -->
+<!-- Update Toast Container -->
 <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index: 1070;">
-    <div id="notificationToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="toast-header">
-            <strong class="me-auto" id="toastTitle">Notification</strong>
-            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-        <div class="toast-body" id="toastMessage">
+    <div id="notificationToast" class="toast border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex align-items-center justify-content-between p-2">
+            <span id="toastMessage"></span>
+            <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
     </div>
 </div>
@@ -243,6 +247,8 @@
                 handleRemoveQuestion(e);
             }
         });
+
+        checkPendingToast();
     });
 
     function editTest(testId) {
@@ -491,21 +497,28 @@
 
     function handleTestFormSubmit(e) {
         e.preventDefault();
-        const formData = new FormData(this);
-        const isEdit = this.id === 'editTestForm';
+        const form = this;
+        const formData = new FormData(form);
+        const isEdit = form.id === 'editTestForm';
+        const submitButton = form.querySelector('button[type="submit"]');
+        const spinner = submitButton.querySelector('.spinner-border');
+        const buttonText = submitButton.querySelector('.button-text');
+        
+        // Show loading state
+        submitButton.disabled = true;
+        spinner.classList.remove('d-none');
+        buttonText.textContent = 'Zapisywanie...';
         
         // Add questions data
         const questions = [];
-        this.querySelectorAll('.question-card').forEach((card, index) => {
+        form.querySelectorAll('.question-card').forEach((card, index) => {
             const questionData = {
                 id: card.dataset.questionId || '',
                 question_text: card.querySelector('[name$="[question_text]"]').value,
                 answer_type: card.querySelector('[name$="[answer_type]"]').value,
-                // Ensure points is always a number, default to 0
                 points: parseInt(card.querySelector('[name$="[points]"]').value || '0'),
                 order_number: index + 1,
                 is_required: card.querySelector('[name$="[is_required]"]').checked,
-                // Initialize all answer fields as null
                 correct_answer_text: null,
                 correct_answer_boolean: null,
                 correct_answer_numeric: null,
@@ -539,26 +552,32 @@
                     break;
             }
 
-            // Add image if exists
-            const imageInput = card.querySelector('[name$="[image]"]');
-            if (imageInput) {
-                questionData.image = imageInput.value || null;
-            }
-
             questions.push(questionData);
         });
         
         formData.append('questions', JSON.stringify(questions));
 
-        fetch(this.action, {
+        fetch(form.action, {
             method: 'POST',
             body: formData
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showToast(isEdit ? 'Test został zaktualizowany' : 'Test został dodany', 'success');
-                window.location.reload();
+                // Store toast message in sessionStorage
+                sessionStorage.setItem('pendingToast', JSON.stringify({
+                    message: data.message || (isEdit ? 'Test został zaktualizowany' : 'Test został dodany'),
+                    type: 'success'
+                }));
+
+                // Close modal before reload
+                const modal = bootstrap.Modal.getInstance(form.closest('.modal'));
+                modal.hide();
+                
+                // Reload after modal is hidden
+                modal._element.addEventListener('hidden.bs.modal', function () {
+                    window.location.reload();
+                }, { once: true });
             } else {
                 throw new Error(data.error || 'Wystąpił błąd');
             }
@@ -566,6 +585,11 @@
         .catch(error => {
             console.error('Error:', error);
             showToast(error.message, 'error');
+            
+            // Reset button state
+            submitButton.disabled = false;
+            spinner.classList.add('d-none');
+            buttonText.textContent = isEdit ? 'Zapisz zmiany' : 'Zapisz test';
         });
     }
 
@@ -595,16 +619,27 @@
 
     function showToast(message, type = 'success') {
         const toast = document.getElementById('notificationToast');
-        const toastTitle = document.getElementById('toastTitle');
         const toastMessage = document.getElementById('toastMessage');
         
-        toastTitle.textContent = type === 'success' ? 'Sukces' : 'Błąd';
-        toast.classList.toggle('bg-success', type === 'success');
-        toast.classList.toggle('bg-danger', type === 'error');
-        toast.classList.toggle('text-white', true);
+        // Reset classes
+        toast.className = 'toast border-0';
         
+        // Add styling based on type
+        if (type === 'success') {
+            toast.style.backgroundColor = '#198754';  // Bootstrap success color
+            toast.style.borderLeft = '4px solid #146c43';  // Darker shade
+        } else {
+            toast.style.backgroundColor = '#dc3545';  // Bootstrap danger color
+            toast.style.borderLeft = '4px solid #b02a37';  // Darker shade
+        }
+        
+        // Add common styles
+        toast.classList.add('text-white');
+        
+        // Set message
         toastMessage.textContent = message;
         
+        // Show toast
         const bsToast = new bootstrap.Toast(toast);
         bsToast.show();
     }
@@ -657,6 +692,20 @@
                 }
             };
             reader.readAsDataURL(file);
+        }
+    }
+
+    function checkPendingToast() {
+        const pendingToast = sessionStorage.getItem('pendingToast');
+        if (pendingToast) {
+            try {
+                const toastData = JSON.parse(pendingToast);
+                showToast(toastData.message, toastData.type);
+            } catch (error) {
+                console.error('Error showing pending toast:', error);
+            } finally {
+                sessionStorage.removeItem('pendingToast');
+            }
         }
     }
 </script>

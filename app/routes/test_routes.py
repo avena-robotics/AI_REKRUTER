@@ -70,14 +70,23 @@ def add():
             
             supabase.from_('questions').insert(clean_question).execute()
         
-        return jsonify({'success': True})
+        return jsonify({
+            'success': True,
+            'message': 'Test został dodany pomyślnie'
+        })
     
     except ValueError as e:
         print(f"Error adding test (value error): {str(e)}")
-        return jsonify({'success': False, 'error': 'Nieprawidłowe wartości numeryczne'})
+        return jsonify({
+            'success': False, 
+            'error': 'Nieprawidłowe wartości numeryczne'
+        })
     except Exception as e:
         print(f"Error adding test: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
+        return jsonify({
+            'success': False, 
+            'error': str(e)
+        })
 
 @test_bp.route('/tests/<int:test_id>/data')
 def get_test_data(test_id):
@@ -175,11 +184,17 @@ def edit(test_id):
                     .insert(clean_question)\
                     .execute()
         
-        return jsonify({'success': True})
+        return jsonify({
+            'success': True,
+            'message': 'Test został zaktualizowany pomyślnie'
+        })
     
     except Exception as e:
         print(f"Error editing test: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
+        return jsonify({
+            'success': False, 
+            'error': str(e)
+        })
 
 @test_bp.route('/tests/<int:test_id>/delete', methods=['POST'])
 def delete(test_id):
