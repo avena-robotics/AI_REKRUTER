@@ -1,7 +1,7 @@
 -- Tabela kampanii
 create table campaigns (
     id bigserial primary key,
-    code text not null,                  -- J5A_logopeda_05_2024
+    code text not null unique,            -- J5A_logopeda_05_2024
     title text not null,                  -- Logopedia - Warszawa   
     workplace_location text not null,     -- Warszawa
     contract_type text not null,          -- umowa o pracę, B2B, etc.
@@ -16,7 +16,13 @@ create table campaigns (
     is_active boolean default true,
     universal_access_token text,
     created_at timestamp default now(),
-    updated_at timestamp default now()
+    updated_at timestamp default now(),
+    po1_test_id integer REFERENCES tests(id),
+    po2_test_id integer REFERENCES tests(id),
+    po3_test_id integer REFERENCES tests(id),
+    po1_test_weight integer,              -- Waga testu PO1 (%)
+    po2_test_weight integer,              -- Waga testu PO2 (%)
+    po3_test_weight integer               -- Waga testu PO3 (%)
 );
 
 -- Typ testu enum
@@ -28,13 +34,11 @@ create type test_stage as enum ('PO1', 'PO2', 'PO3');
 -- Tabela testów
 create table tests (
     id serial primary key,
-    campaign_id bigint references campaigns(id) ON DELETE CASCADE,    -- Dodane ON DELETE CASCADE
     test_type test_type not null,    -- SURVEY, EQ, IQ
     stage test_stage not null,       -- PO1, PO2, PO3
     description text,                -- Czas wykonania testu to.. lub inne informacje?
     passing_threshold int not null,  -- Minimum score to pass this stage
-    time_limit_minutes int,          -- Time limit in minutes
-    weight int                       -- Waga testu
+    time_limit_minutes int           -- Time limit in minutes
 );
 
 -- Typ odpowiedzi enum

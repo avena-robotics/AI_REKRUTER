@@ -1126,14 +1126,47 @@
                         </div>
                     </div>
 
-                    <!-- Tests Container -->
-                    <div id="testsContainer"></div>
-
-                    <!-- Add Test Button moved below tests container -->
-                    <div class="text-end mt-3 mb-4">
-                        <button type="button" class="btn btn-secondary" id="addTestBtn">
-                            <i class="bi bi-plus-circle me-2"></i>Dodaj test
-                        </button>
+                    <!-- In Add Campaign Modal, replace the testsContainer div with: -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label">Test PO1</label>
+                            <select class="form-select" name="po1_test_id">
+                                <option value="">Wybierz test</option>
+                                {% for test in tests %}
+                                    {% if test.stage == 'PO1' %}
+                                        <option value="{{ test.id }}">
+                                            {{ test.test_type }} - {{ test.description }}
+                                        </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Test PO2</label>
+                            <select class="form-select" name="po2_test_id">
+                                <option value="">Wybierz test</option>
+                                {% for test in tests %}
+                                    {% if test.stage == 'PO2' %}
+                                        <option value="{{ test.id }}">
+                                            {{ test.test_type }} - {{ test.description }}
+                                        </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Test PO3</label>
+                            <select class="form-select" name="po3_test_id">
+                                <option value="">Wybierz test</option>
+                                {% for test in tests %}
+                                    {% if test.stage == 'PO3' %}
+                                        <option value="{{ test.id }}">
+                                            {{ test.test_type }} - {{ test.description }}
+                                        </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
                     </div>
 
                     <div class="mt-4 mb-3">
@@ -1242,14 +1275,50 @@
                         </div>
                     </div>
 
-                    <!-- Tests Container -->
-                    <div id="editTestsContainer"></div>
-
-                    <!-- Add Test Button moved below tests container -->
-                    <div class="text-end mt-3 mb-4">
-                        <button type="button" class="btn btn-secondary" id="editAddTestBtn">
-                            <i class="bi bi-plus-circle me-2"></i>Dodaj test
-                        </button>
+                    <!-- In Edit Campaign Modal, replace the editTestsContainer div with: -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label">Test PO1</label>
+                            <select class="form-select" name="po1_test_id">
+                                <option value="">Wybierz test</option>
+                                {% for test in tests %}
+                                    {% if test.stage == 'PO1' %}
+                                        <option value="{{ test.id }}" 
+                                                {% if campaign.po1_test_id == test.id %}selected{% endif %}>
+                                            {{ test.test_type }} - {{ test.description }}
+                                        </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Test PO2</label>
+                            <select class="form-select" name="po2_test_id">
+                                <option value="">Wybierz test</option>
+                                {% for test in tests %}
+                                    {% if test.stage == 'PO2' %}
+                                        <option value="{{ test.id }}"
+                                                {% if campaign.po2_test_id == test.id %}selected{% endif %}>
+                                            {{ test.test_type }} - {{ test.description }}
+                                        </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Test PO3</label>
+                            <select class="form-select" name="po3_test_id">
+                                <option value="">Wybierz test</option>
+                                {% for test in tests %}
+                                    {% if test.stage == 'PO3' %}
+                                        <option value="{{ test.id }}"
+                                                {% if campaign.po3_test_id == test.id %}selected{% endif %}>
+                                            {{ test.test_type }} - {{ test.description }}
+                                        </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
                     </div>
 
                     <div class="mt-4 mb-3">

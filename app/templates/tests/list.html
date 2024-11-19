@@ -1,0 +1,730 @@
+{% extends "base.html" %}
+
+{% block title %}Testy - AI Rekruter{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Testy</h1>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTestModal">
+        Dodaj test
+    </button>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Typ testu</th>
+                <th>Etap</th>
+                <th>Próg zaliczenia</th>
+                <th>Limit czasu</th>
+                <th>Akcje</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for test in tests %}
+            <tr data-test-id="{{ test.id }}">
+                <td>
+                    {% if test.test_type == 'SURVEY' %}
+                        Ankieta
+                    {% elif test.test_type == 'EQ' %}
+                        Test EQ
+                    {% elif test.test_type == 'IQ' %}
+                        Test IQ
+                    {% endif %}
+                </td>
+                <td>{{ test.stage }}</td>
+                <td>{{ test.passing_threshold }}</td>
+                <td>{{ test.time_limit_minutes }} min</td>
+                <td>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-warning" 
+                                onclick="editTest('{{ test.id }}')">Edytuj</button>
+                        <button type="button" class="btn btn-sm btn-danger" 
+                                onclick="confirmDeleteTest('{{ test.id }}')">Usuń</button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Test Modal -->
+<div class="modal fade" id="addTestModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Dodaj nowy test</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addTestForm" method="POST" action="{{ url_for('test.add') }}">
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label class="form-label">Typ testu*</label>
+                            <select class="form-select" name="test_type" required>
+                                <option value="SURVEY">Ankieta</option>
+                                <option value="EQ">Test EQ</option>
+                                <option value="IQ">Test IQ</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label class="form-label">Etap*</label>
+                            <select class="form-select" name="stage" required>
+                                <option value="PO1">PO1</option>
+                                <option value="PO2">PO2</option>
+                                <option value="PO3">PO3</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Opis testu</label>
+                            <textarea class="form-control" name="description" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Próg zaliczenia* <span class="text-muted">(Ustaw wartość 0, aby test był traktowany jako kwalifikacyjny bez progu)</span></label>
+                            <input type="number" class="form-control" name="passing_threshold" required>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Limit czasu (minuty)</label>
+                            <input type="number" class="form-control" name="time_limit_minutes">
+                        </div>
+                    </div>
+
+                    <!-- Questions Section -->
+                    <div class="questions-section mt-4">
+                        <h6 class="mb-3">Pytania</h6>
+                        <div class="questions-container"></div>
+                        <div class="text-end mt-3">
+                            <button type="button" class="btn btn-secondary add-question">
+                                Dodaj pytanie
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="text-end mt-4">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn btn-primary ms-2">Zapisz test</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Test Modal -->
+<div class="modal fade" id="editTestModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edytuj test</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editTestForm" method="POST">
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label class="form-label">Typ testu*</label>
+                            <select class="form-select" name="test_type" required>
+                                <option value="SURVEY">Ankieta</option>
+                                <option value="EQ">Test EQ</option>
+                                <option value="IQ">Test IQ</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label class="form-label">Etap*</label>
+                            <select class="form-select" name="stage" required>
+                                <option value="PO1">PO1</option>
+                                <option value="PO2">PO2</option>
+                                <option value="PO3">PO3</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Opis testu</label>
+                            <textarea class="form-control" name="description" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Próg zaliczenia* <span class="text-muted">(Ustaw wartość 0, aby test był traktowany jak bez progu)</span></label>
+                            <input type="number" class="form-control" name="passing_threshold" required>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Limit czasu (minuty)</label>
+                            <input type="number" class="form-control" name="time_limit_minutes">
+                        </div>
+                    </div>
+
+                    <!-- Questions Section -->
+                    <div class="questions-section mt-4">
+                        <h6 class="mb-3">Pytania</h6>
+                        <div class="questions-container"></div>
+                        <div class="text-end mt-3">
+                            <button type="button" class="btn btn-secondary add-question">
+                                Dodaj pytanie
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="text-end mt-4">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn btn-primary ms-2">Zapisz zmiany</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index: 1070;">
+    <div id="notificationToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto" id="toastTitle">Notification</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toastMessage">
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block head %}
+{{ super() }}
+<script defer>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Sortable for all question containers
+        document.querySelectorAll('.questions-container').forEach(container => {
+            initializeSortable(container);
+        });
+
+        // Handle form submissions
+        ['addTestForm', 'editTestForm'].forEach(formId => {
+            const form = document.getElementById(formId);
+            if (form) {
+                form.addEventListener('submit', handleTestFormSubmit);
+            }
+        });
+
+        // Add question button handlers
+        document.querySelectorAll('.add-question').forEach(button => {
+            button.addEventListener('click', handleAddQuestion);
+        });
+
+        // Question type change handler
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('answer-type-select')) {
+                handleAnswerTypeChange(e);
+            }
+        });
+
+        // Remove question handler
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-question')) {
+                handleRemoveQuestion(e);
+            }
+        });
+    });
+
+    function handleTestFormSubmit(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const isEdit = this.id === 'editTestForm';
+        
+        // Add questions data
+        const questions = [];
+        this.querySelectorAll('.question-card').forEach((card, index) => {
+            const questionData = {
+                id: card.dataset.questionId || '',
+                question_text: card.querySelector('[name$="[question_text]"]').value,
+                answer_type: card.querySelector('[name$="[answer_type]"]').value,
+                points: card.querySelector('[name$="[points]"]').value,
+                order_number: index + 1,
+                is_required: card.querySelector('[name$="[is_required]"]').checked,
+                // Add other question fields based on answer type
+            };
+            questions.push(questionData);
+        });
+        
+        formData.append('questions', JSON.stringify(questions));
+
+        fetch(this.action, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast(isEdit ? 'Test został zaktualizowany' : 'Test został dodany', 'success');
+                window.location.reload();
+            } else {
+                throw new Error(data.error || 'Wystąpił błąd');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast(error.message, 'error');
+        });
+    }
+
+    function editTest(testId) {
+        fetch(`/tests/${testId}/data`)
+            .then(response => response.json())
+            .then(test => {
+                const form = document.getElementById('editTestForm');
+                form.action = `/tests/${testId}/edit`;
+                
+                // Populate basic test fields
+                form.querySelector('[name="test_type"]').value = test.test_type;
+                form.querySelector('[name="stage"]').value = test.stage;
+                form.querySelector('[name="passing_threshold"]').value = test.passing_threshold;
+                form.querySelector('[name="time_limit_minutes"]').value = test.time_limit_minutes;
+
+                // Clear and populate questions
+                const questionsContainer = form.querySelector('.questions-container');
+                questionsContainer.innerHTML = '';
+                
+                if (test.questions?.length > 0) {
+                    test.questions
+                        .sort((a, b) => a.order_number - b.order_number)
+                        .forEach(question => {
+                            questionsContainer.insertAdjacentHTML('beforeend', 
+                                createQuestionHtml(question));
+                        });
+                }
+
+                new bootstrap.Modal(document.getElementById('editTestModal')).show();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Błąd podczas ładowania danych testu', 'error');
+            });
+    }
+
+    function confirmDeleteTest(testId) {
+        if (confirm('Czy na pewno chcesz usunąć ten test?')) {
+            fetch(`/tests/${testId}/delete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Test został usunięty', 'success');
+                    document.querySelector(`tr[data-test-id="${testId}"]`).remove();
+                } else {
+                    throw new Error(data.error || 'Wystąpił błąd podczas usuwania testu');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast(error.message, 'error');
+            });
+        }
+    }
+
+    // Helper functions for question management
+    function createQuestionHtml(question = null) {
+        const q = question || {};
+        const questionCounter = document.querySelectorAll('.question-card').length;
+        
+        return `
+            <div class="card mb-2 question-card" data-question-id="${q.id || ''}" 
+                 data-order="${q.order_number || questionCounter + 1}">
+                <input type="hidden" name="questions[${questionCounter}][id]" value="${q.id || ''}">
+                <input type="hidden" name="questions[${questionCounter}][order_number]" 
+                       value="${q.order_number || questionCounter + 1}">
+                
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="form-check form-switch">
+                        <input type="checkbox" class="form-check-input" 
+                               name="questions[${questionCounter}][is_required]"
+                               ${q.is_required !== false ? 'checked' : ''}>
+                        <label class="form-check-label">Pytanie obowiązkowe</label>
+                    </div>
+                    <button type="button" class="btn btn-danger btn-sm remove-question">
+                        Usuń pytanie
+                    </button>
+                </div>
+                
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="drag-handle me-3 d-flex align-items-center" 
+                             title="Przeciągnij aby zmienić kolejność"
+                             style="cursor: move;">☰</div>
+                        
+                        <div class="flex-grow-1">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <label class="form-label">Treść pytania*</label>
+                                    <input type="text" class="form-control" 
+                                           name="questions[${questionCounter}][question_text]"
+                                           value="${q.question_text || ''}" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Typ odpowiedzi*</label>
+                                    <select class="form-select answer-type-select" 
+                                            name="questions[${questionCounter}][answer_type]" required>
+                                        <option value="TEXT" ${q.answer_type === 'TEXT' ? 'selected' : ''}>Tekst</option>
+                                        <option value="BOOLEAN" ${q.answer_type === 'BOOLEAN' ? 'selected' : ''}>Tak/Nie</option>
+                                        <option value="SCALE" ${q.answer_type === 'SCALE' ? 'selected' : ''}>Skala (0-5)</option>
+                                        <option value="SALARY" ${q.answer_type === 'SALARY' ? 'selected' : ''}>Wynagrodzenie (PLN)</option>
+                                        <option value="DATE" ${q.answer_type === 'DATE' ? 'selected' : ''}>Data</option>
+                                        <option value="ABCD_TEXT" ${q.answer_type === 'ABCD_TEXT' ? 'selected' : ''}>ABCD (tekst)</option>
+                                        <option value="ABCD_IMAGE" ${q.answer_type === 'ABCD_IMAGE' ? 'selected' : ''}>ABCD (obrazek)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Image upload field -->
+                            <div class="row mt-2">
+                                <div class="col-12">
+                                    <label class="form-label">Obrazek (opcjonalnie)</label>
+                                    <input type="file" class="form-control" 
+                                           name="questions[${questionCounter}][image_file]"
+                                           accept="image/*"
+                                           onchange="convertToBase64(this, 'image')">
+                                    ${q.image ? `
+                                        <div class="mt-2">
+                                            <img src="${q.image}" class="img-thumbnail" style="max-height: 100px">
+                                            <input type="hidden" 
+                                                   name="questions[${questionCounter}][image]"
+                                                   value="${q.image}">
+                                        </div>` : ''}
+                                </div>
+                            </div>
+                            
+                            <!-- Dynamic answer fields container -->
+                            <div class="answer-fields mt-2">
+                                ${createAnswerFieldsHtml(questionCounter, q)}
+                            </div>
+                            
+                            <div class="row mt-2">
+                                <div class="col-md-4">
+                                    <label class="form-label">Punkty za pytanie*</label>
+                                    <input type="number" class="form-control" 
+                                           name="questions[${questionCounter}][points]"
+                                           value="${q.points || '0'}" 
+                                           min="0"
+                                           required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function createAnswerFieldsHtml(questionCounter, question) {
+        const answerType = question.answer_type || 'TEXT';
+        let html = '';
+        
+        switch (answerType) {
+            case 'ABCD_TEXT':
+                html = `
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label">Odpowiedź A (tekst)*</label>
+                            <input type="text" class="form-control" 
+                                   name="questions[${questionCounter}][answer_a]"
+                                   value="${question.answer_a || ''}" required>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label">Odpowiedź B (tekst)*</label>
+                            <input type="text" class="form-control" 
+                                   name="questions[${questionCounter}][answer_b]"
+                                   value="${question.answer_b || ''}" required>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label">Odpowiedź C (tekst)*</label>
+                            <input type="text" class="form-control" 
+                                   name="questions[${questionCounter}][answer_c]"
+                                   value="${question.answer_c || ''}" required>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label">Odpowiedź D (tekst)*</label>
+                            <input type="text" class="form-control" 
+                                   name="questions[${questionCounter}][answer_d]"
+                                   value="${question.answer_d || ''}" required>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Poprawna odpowiedź*</label>
+                            <select class="form-select" 
+                                    name="questions[${questionCounter}][correct_answer_abcd]" required>
+                                <option value="">Wybierz odpowiedź</option>
+                                <option value="A" ${question.correct_answer_abcd === 'A' ? 'selected' : ''}>A</option>
+                                <option value="B" ${question.correct_answer_abcd === 'B' ? 'selected' : ''}>B</option>
+                                <option value="C" ${question.correct_answer_abcd === 'C' ? 'selected' : ''}>C</option>
+                                <option value="D" ${question.correct_answer_abcd === 'D' ? 'selected' : ''}>D</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+                break;
+                
+            case 'ABCD_IMAGE':
+                html = `
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Odpowiedź A (obrazek)*</label>
+                            <input type="file" class="form-control" 
+                                   name="questions[${questionCounter}][answer_a_image]"
+                                   accept="image/*" 
+                                   onchange="convertToBase64(this, 'answer_a')" 
+                                   ${!question.answer_a ? 'required' : ''}>
+                            ${question.answer_a ? `
+                                <div class="mt-2">
+                                    <img src="${question.answer_a}" class="img-thumbnail" style="max-height: 100px">
+                                    <input type="hidden" 
+                                           name="questions[${questionCounter}][answer_a]"
+                                           value="${question.answer_a}">
+                                </div>` : ''}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Odpowiedź B (obrazek)*</label>
+                            <input type="file" class="form-control" 
+                                   name="questions[${questionCounter}][answer_b_image]"
+                                   accept="image/*" 
+                                   onchange="convertToBase64(this, 'answer_b')" 
+                                   ${!question.answer_b ? 'required' : ''}>
+                            ${question.answer_b ? `
+                                <div class="mt-2">
+                                    <img src="${question.answer_b}" class="img-thumbnail" style="max-height: 100px">
+                                    <input type="hidden" 
+                                           name="questions[${questionCounter}][answer_b]"
+                                           value="${question.answer_b}">
+                                </div>` : ''}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Odpowiedź C (obrazek)*</label>
+                            <input type="file" class="form-control" 
+                                   name="questions[${questionCounter}][answer_c_image]"
+                                   accept="image/*" 
+                                   onchange="convertToBase64(this, 'answer_c')" 
+                                   ${!question.answer_c ? 'required' : ''}>
+                            ${question.answer_c ? `
+                                <div class="mt-2">
+                                    <img src="${question.answer_c}" class="img-thumbnail" style="max-height: 100px">
+                                    <input type="hidden" 
+                                           name="questions[${questionCounter}][answer_c]"
+                                           value="${question.answer_c}">
+                                </div>` : ''}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Odpowiedź D (obrazek)*</label>
+                            <input type="file" class="form-control" 
+                                   name="questions[${questionCounter}][answer_d_image]"
+                                   accept="image/*" 
+                                   onchange="convertToBase64(this, 'answer_d')" 
+                                   ${!question.answer_d ? 'required' : ''}>
+                            ${question.answer_d ? `
+                                <div class="mt-2">
+                                    <img src="${question.answer_d}" class="img-thumbnail" style="max-height: 100px">
+                                    <input type="hidden" 
+                                           name="questions[${questionCounter}][answer_d]"
+                                           value="${question.answer_d}">
+                                </div>` : ''}
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Poprawna odpowiedź*</label>
+                            <select class="form-select" 
+                                    name="questions[${questionCounter}][correct_answer_abcd]" required>
+                                <option value="">Wybierz odpowiedź</option>
+                                <option value="A" ${question.correct_answer_abcd === 'A' ? 'selected' : ''}>A</option>
+                                <option value="B" ${question.correct_answer_abcd === 'B' ? 'selected' : ''}>B</option>
+                                <option value="C" ${question.correct_answer_abcd === 'C' ? 'selected' : ''}>C</option>
+                                <option value="D" ${question.correct_answer_abcd === 'D' ? 'selected' : ''}>D</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+                break;
+                
+            case 'BOOLEAN':
+                html = `
+                    <div>
+                        <label class="form-label">Poprawna odpowiedź*</label>
+                        <div class="form-check">
+                            <input type="radio" class="form-check-input" 
+                                   name="questions[${questionCounter}][correct_answer_boolean]" 
+                                   value="true" ${question.correct_answer_boolean === true ? 'checked' : ''} required>
+                            <label class="form-check-label">Prawda</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="radio" class="form-check-input" 
+                                   name="questions[${questionCounter}][correct_answer_boolean]" 
+                                   value="false" ${question.correct_answer_boolean === false ? 'checked' : ''} required>
+                            <label class="form-check-label">Fałsz</label>
+                        </div>
+                    </div>
+                `;
+                break;
+                
+            case 'SCALE':
+                html = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Poprawna odpowiedź (0-5)*</label>
+                            <input type="number" class="form-control" 
+                                   name="questions[${questionCounter}][correct_answer_scale]"
+                                   min="0" max="5" 
+                                   value="${question.correct_answer_scale || ''}" required>
+                        </div>
+                    </div>
+                `;
+                break;
+                
+            case 'SALARY':
+                html = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Poprawna odpowiedź (PLN)*</label>
+                            <input type="number" class="form-control" 
+                                   name="questions[${questionCounter}][correct_answer_numeric]"
+                                   min="0" step="100" 
+                                   value="${question.correct_answer_numeric || ''}" required>
+                        </div>
+                    </div>
+                `;
+                break;
+                
+            case 'DATE':
+                html = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Poprawna data*</label>
+                            <input type="date" class="form-control" 
+                                   name="questions[${questionCounter}][correct_answer_date]"
+                                   value="${question.correct_answer_date || ''}" required>
+                        </div>
+                    </div>
+                `;
+                break;
+                
+            default: // TEXT
+                html = `
+                    <div class="row">
+                        <div class="col-md-12">
+                            <label class="form-label">Poprawna odpowiedź tekstowa</label>
+                            <input type="text" class="form-control" 
+                                   name="questions[${questionCounter}][correct_answer_text]"
+                                   value="${question.correct_answer_text || ''}">
+                        </div>
+                    </div>
+                `;
+        }
+        
+        return html;
+    }
+
+    function handleAddQuestion(e) {
+        const container = e.target.closest('.questions-section').querySelector('.questions-container');
+        const questionHtml = createQuestionHtml();
+        container.insertAdjacentHTML('beforeend', questionHtml);
+    }
+
+    function handleAnswerTypeChange(e) {
+        const questionCard = e.target.closest('.question-card');
+        const answerFieldsContainer = questionCard.querySelector('.answer-fields');
+        const questionCounter = Array.from(questionCard.parentElement.children).indexOf(questionCard);
+        
+        const questionData = {
+            answer_type: e.target.value
+        };
+        
+        answerFieldsContainer.innerHTML = createAnswerFieldsHtml(questionCounter, questionData);
+    }
+
+    function handleRemoveQuestion(e) {
+        if (confirm('Czy na pewno chcesz usunąć to pytanie?')) {
+            const questionCard = e.target.closest('.question-card');
+            questionCard.remove();
+        }
+    }
+
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('notificationToast');
+        const toastTitle = document.getElementById('toastTitle');
+        const toastMessage = document.getElementById('toastMessage');
+        
+        toastTitle.textContent = type === 'success' ? 'Sukces' : 'Błąd';
+        toast.classList.toggle('bg-success', type === 'success');
+        toast.classList.toggle('bg-danger', type === 'error');
+        toast.classList.toggle('text-white', true);
+        
+        toastMessage.textContent = message;
+        
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+    }
+
+    function initializeSortable(container) {
+        if (container.sortableInstance) {
+            container.sortableInstance.destroy();
+        }
+        
+        container.sortableInstance = new Sortable(container, {
+            animation: 150,
+            handle: '.drag-handle',
+            onEnd: function(evt) {
+                updateQuestionOrders(container);
+            }
+        });
+    }
+
+    function updateQuestionOrders(container) {
+        container.querySelectorAll('.question-card').forEach((card, index) => {
+            card.dataset.order = index + 1;
+            card.querySelector('input[name$="[order_number]"]').value = index + 1;
+        });
+    }
+
+    function convertToBase64(fileInput, fieldName) {
+        const file = fileInput.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64String = e.target.result;
+                const questionCard = fileInput.closest('.question-card');
+                const hiddenInput = questionCard.querySelector(`input[name$="[${fieldName}]"]`) || 
+                                   document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = fileInput.name.replace('_file', '').replace('_image', '');
+                hiddenInput.value = base64String;
+                
+                const previewContainer = fileInput.nextElementSibling || document.createElement('div');
+                previewContainer.className = 'mt-2';
+                previewContainer.innerHTML = `
+                    <img src="${base64String}" class="img-thumbnail" style="max-height: 100px">
+                `;
+                
+                if (!fileInput.nextElementSibling) {
+                    fileInput.parentNode.appendChild(previewContainer);
+                }
+                if (!questionCard.querySelector(`input[name$="[${fieldName}]"]`)) {
+                    questionCard.appendChild(hiddenInput);
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+</script>
+{% endblock %} 

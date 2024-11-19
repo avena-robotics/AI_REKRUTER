@@ -1,141 +1,149 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
+from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
 from database import supabase
-from datetime import datetime, timedelta
 import json
 
+test_bp = Blueprint('test', __name__)
 
-test_bp = Blueprint('test', __name__, url_prefix='/test')
+@test_bp.route('/tests')
+def list():
+    try:
+        # Get all tests with their basic information
+        tests = supabase.table('tests')\
+            .select('id, test_type, stage, description, passing_threshold, time_limit_minutes, weight')\
+            .order('stage')\
+            .order('test_type')\
+            .execute()
+        
+        return render_template('tests/list.html', tests=tests.data)
+    
+    except Exception as e:
+        flash(f'Wystąpił błąd podczas pobierania testów: {str(e)}', 'error')
+        return redirect(url_for('main.index'))
 
-@test_bp.route('/<token>', methods=['GET'])
-def take_test(token):
-    # Check if token is valid
-    campaign = supabase.table('campaigns')\
-        .select('*')\
-        .eq('universal_access_token', token)\
-        .single()\
-        .execute()
+@test_bp.route('/tests/add', methods=['POST'])
+def add():
+    try:
+        # Get test data from form
+        test_data = {
+            'test_type': request.form.get('test_type'),
+            'stage': request.form.get('stage'),
+            'description': request.form.get('description'),
+            'passing_threshold': request.form.get('passing_threshold'),
+            'time_limit_minutes': request.form.get('time_limit_minutes'),
+            'weight': request.form.get('weight')
+        }
+        
+        # Insert test
+        result = supabase.table('tests').insert(test_data).execute()
+        test_id = result.data[0]['id']
+        
+        # Handle questions if any
+        questions = json.loads(request.form.get('questions', '[]'))
+        for question in questions:
+            question['test_id'] = test_id
+            supabase.table('questions').insert(question).execute()
+        
+        return jsonify({'success': True})
     
-    if not campaign.data:
-        abort(404, description="Invalid or expired token")
-    
-    # Get test for the campaign
-    test = supabase.table('tests')\
-        .select('*')\
-        .eq('campaign_id', campaign.data['id'])\
-        .eq('stage', 'PO1')\
-        .single()\
-        .execute()
-    
-    if not test.data:
-        abort(404, description="No test found for this campaign")
-    
-    # Get questions for the test
-    questions = supabase.table('questions')\
-        .select('*')\
-        .eq('test_id', test.data['id'])\
-        .order('order_number')\
-        .execute()
-    
-    return render_template('tests/survey.html',
-                         test=test.data,
-                         questions=questions.data,
-                         token=token)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
-@test_bp.route('/<token>/submit', methods=['POST'])
-def submit(token):
-    # Validate token and get campaign
-    campaign = supabase.table('campaigns')\
-        .select('*')\
-        .eq('universal_access_token', token)\
-        .single()\
-        .execute()
+@test_bp.route('/tests/<int:test_id>/data')
+def get_test_data(test_id):
+    try:
+        # Get test with questions
+        test = supabase.table('tests')\
+            .select("""
+                *,
+                questions (*)
+            """)\
+            .eq('id', test_id)\
+            .single()\
+            .execute()
+        
+        if not test.data:
+            return jsonify({'error': 'Test not found'}), 404
+            
+        return jsonify(test.data)
     
-    if not campaign.data:
-        abort(404, description="Invalid or expired token")
-    
-    # Create candidate record
-    candidate_data = {
-        'campaign_id': campaign.data['id'],
-        'first_name': request.form.get('first_name'),
-        'last_name': request.form.get('last_name'),
-        'email': request.form.get('email'),
-        'phone': request.form.get('phone'),
-        'recruitment_status': 'PO1',
-        'po1_completed_at': datetime.now().isoformat()
-    }
-    
-    candidate = supabase.table('candidates').insert(candidate_data).execute()
-    
-    # Process answers
-    total_score = 0
-    for key, value in request.form.items():
-        if key.startswith('answer_'):
-            question_id = int(key.split('_')[1])
-            if '_min' in key or '_max' in key:
-                continue  # Skip individual min/max fields, they'll be handled with the main salary field
-                
-            question = supabase.table('questions')\
-                .select('*')\
-                .eq('id', question_id)\
-                .single()\
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@test_bp.route('/tests/<int:test_id>/edit', methods=['POST'])
+def edit(test_id):
+    try:
+        # Update test data
+        test_data = {
+            'test_type': request.form.get('test_type'),
+            'stage': request.form.get('stage'),
+            'description': request.form.get('description'),
+            'passing_threshold': request.form.get('passing_threshold'),
+            'time_limit_minutes': request.form.get('time_limit_minutes'),
+            'weight': request.form.get('weight')
+        }
+        
+        supabase.table('tests')\
+            .update(test_data)\
+            .eq('id', test_id)\
+            .execute()
+        
+        # Handle questions
+        questions = json.loads(request.form.get('questions', '[]'))
+        existing_questions = [q['id'] for q in questions if q.get('id')]
+        
+        # Delete questions not in the update
+        if existing_questions:
+            supabase.table('questions')\
+                .delete()\
+                .eq('test_id', test_id)\
+                .not_.in_('id', existing_questions)\
                 .execute()
-            
-            answer_data = {
-                'candidate_id': candidate.data[0]['id'],
-                'question_id': question_id
-            }
-            
-            # Process different answer types
-            if question.data['answer_type'] == 'TEXT':
-                answer_data['text_answer'] = value
-            elif question.data['answer_type'] == 'BOOLEAN':
-                answer_data['boolean_answer'] = value.lower() == 'true'
-            elif question.data['answer_type'] == 'SCALE':
-                answer_data['scale_answer'] = int(value)
-            elif question.data['answer_type'] == 'SALARY':
-                min_val = float(request.form.get(f'answer_{question_id}_min', 0))
-                max_val = float(request.form.get(f'answer_{question_id}_max', 0))
-                # Store the average as numeric_answer
-                answer_data['numeric_answer'] = (min_val + max_val) / 2
-                # Store the full range as text_answer for reference
-                answer_data['text_answer'] = json.dumps({'min': min_val, 'max': max_val})
-            elif question.data['answer_type'] == 'DATE':
-                answer_data['date_answer'] = value
-            elif question.data['answer_type'] in ['ABCD_TEXT', 'ABCD_IMAGE']:
-                answer_data['abcd_answer'] = value
-            
-            # Calculate score
-            score = calculate_score(question.data, answer_data)
-            answer_data['score'] = score
-            total_score += score
-            
-            # Save answer
-            supabase.table('candidate_answers').insert(answer_data).execute()
+        else:
+            supabase.table('questions')\
+                .delete()\
+                .eq('test_id', test_id)\
+                .execute()
+        
+        # Update or insert questions
+        for question in questions:
+            question['test_id'] = test_id
+            if question.get('id'):
+                supabase.table('questions')\
+                    .update(question)\
+                    .eq('id', question['id'])\
+                    .execute()
+            else:
+                supabase.table('questions')\
+                    .insert(question)\
+                    .execute()
+        
+        return jsonify({'success': True})
     
-    # Update candidate's score
-    supabase.table('candidates')\
-        .update({'po1_score': total_score, 'total_score': total_score})\
-        .eq('id', candidate.data[0]['id'])\
-        .execute()
-    
-    return render_template('tests/complete.html')
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
-def calculate_score(question, answer):
-    """Calculate score based on question type and correct answer"""
-    if question['answer_type'] == 'TEXT':
-        # For text answers, score will be calculated by AI later
-        return 0
-    elif question['answer_type'] == 'BOOLEAN':
-        return question['points'] if answer['boolean_answer'] == question['correct_answer_boolean'] else 0
-    elif question['answer_type'] == 'SCALE':
-        return question['points'] if answer['scale_answer'] == question['correct_answer_scale'] else 0
-    elif question['answer_type'] == 'SALARY':
-        # For salary questions, check if the answer is within an acceptable range
-        correct_value = float(question['correct_answer_numeric'])
-        answer_value = float(answer['numeric_answer'])
-        # Allow for a 10% deviation from the correct value
-        tolerance = correct_value * 0.1
-        return question['points'] if abs(answer_value - correct_value) <= tolerance else 0
-    elif question['answer_type'] in ['ABCD_TEXT', 'ABCD_IMAGE']:
-        return question['points'] if answer['abcd_answer'] == question['correct_answer_abcd'] else 0
-    return 0
+@test_bp.route('/tests/<int:test_id>/delete', methods=['POST'])
+def delete(test_id):
+    try:
+        # Check if test is used in any campaign
+        campaigns = supabase.table('campaigns')\
+            .select('id')\
+            .or_(f'po1_test_id.eq.{test_id},po2_test_id.eq.{test_id},po3_test_id.eq.{test_id}')\
+            .execute()
+        
+        if campaigns.data:
+            return jsonify({
+                'success': False, 
+                'error': 'Test nie może zostać usunięty, ponieważ jest używany w kampanii'
+            })
+        
+        # Delete test (questions will be deleted automatically due to CASCADE)
+        supabase.table('tests')\
+            .delete()\
+            .eq('id', test_id)\
+            .execute()
+        
+        return jsonify({'success': True})
+    
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})

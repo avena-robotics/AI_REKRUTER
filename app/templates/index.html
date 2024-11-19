@@ -4,22 +4,31 @@
 
 {% block content %}
 <div class="container py-5">
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-body">
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
                     <h2 class="card-title">Kampanie rekrutacyjne</h2>
-                    <p class="card-text">Zarządzaj kampaniami rekrutacyjnymi, twórz testy i ankiety.</p>
-                    <a href="{{ url_for('campaign.list') }}" class="btn btn-primary">Przejdź do kampanii</a>
+                    <p class="card-text flex-grow-1">Zarządzaj kampaniami rekrutacyjnymi, twórz testy i ankiety.</p>
+                    <a href="{{ url_for('campaign.list') }}" class="btn btn-primary mt-auto">Przejdź do kampanii</a>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-body">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
                     <h2 class="card-title">Kandydaci</h2>
-                    <p class="card-text">Przeglądaj i zarządzaj kandydatami w procesie rekrutacji.</p>
-                    <a href="{{ url_for('candidate.list') }}" class="btn btn-primary">Przejdź do kandydatów</a>
+                    <p class="card-text flex-grow-1">Przeglądaj i zarządzaj kandydatami w procesie rekrutacji.</p>
+                    <a href="{{ url_for('candidate.list') }}" class="btn btn-primary mt-auto">Przejdź do kandydatów</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <h2 class="card-title">Testy</h2>
+                    <p class="card-text flex-grow-1">Zarządzaj bazą testów i pytań dla kampanii rekrutacyjnych.</p>
+                    <a href="{{ url_for('test.list') }}" class="btn btn-primary mt-auto">Przejdź do testów</a>
                 </div>
             </div>
         </div>
