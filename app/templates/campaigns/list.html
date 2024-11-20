@@ -61,6 +61,8 @@
                     <div class="btn-group">
                         <button type="button" class="btn btn-sm btn-warning" 
                                 onclick="editCampaign('{{ campaign.id }}')">Edytuj</button>
+                        <button type="button" class="btn btn-sm btn-info" 
+                                onclick="cloneCampaign('{{ campaign.id }}')">Klonuj</button>
                         <button type="button" class="btn btn-sm btn-danger" 
                                 onclick="confirmDelete('{{ campaign.id }}')">Usuń</button>
                     </div>
@@ -402,6 +404,11 @@
                 generateLink(campaignId);
             });
         });
+
+        // Reset modal title when opening normally
+        document.querySelector('[data-bs-target="#addCampaignModal"]').addEventListener('click', function() {
+            document.querySelector('#addCampaignModal .modal-title').textContent = 'Dodaj nową kampanię';
+        });
     });
 
     function editCampaign(campaignId) {
@@ -603,5 +610,41 @@
             }
         });
     });
+
+    function cloneCampaign(campaignId) {
+        fetch(`/campaigns/${campaignId}/data`)
+            .then(response => response.json())
+            .then(campaign => {
+                const form = document.getElementById('addCampaignForm');
+                
+                // Populate form fields except code
+                form.querySelector('[name="code"]').value = ''; // Leave empty
+                form.querySelector('[name="title"]').value = campaign.title || '';
+                form.querySelector('[name="workplace_location"]').value = campaign.workplace_location || '';
+                form.querySelector('[name="work_start_date"]').value = campaign.work_start_date || '';
+                form.querySelector('[name="contract_type"]').value = campaign.contract_type || '';
+                form.querySelector('[name="employment_type"]').value = campaign.employment_type || '';
+                form.querySelector('[name="salary_range_min"]').value = campaign.salary_range_min || '';
+                form.querySelector('[name="salary_range_max"]').value = campaign.salary_range_max || '';
+                form.querySelector('[name="duties"]').value = campaign.duties || '';
+                form.querySelector('[name="requirements"]').value = campaign.requirements || '';
+                form.querySelector('[name="employer_offerings"]').value = campaign.employer_offerings || '';
+                form.querySelector('[name="job_description"]').value = campaign.job_description || '';
+                form.querySelector('[name="po1_test_id"]').value = campaign.po1_test_id || '';
+                form.querySelector('[name="po2_test_id"]').value = campaign.po2_test_id || '';
+                form.querySelector('[name="po3_test_id"]').value = campaign.po3_test_id || '';
+                form.querySelector('[name="is_active"]').checked = campaign.is_active;
+                
+                // Update modal title to indicate cloning
+                document.querySelector('#addCampaignModal .modal-title').textContent = 'Klonuj kampanię';
+                
+                // Show the modal
+                new bootstrap.Modal(document.getElementById('addCampaignModal')).show();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Błąd podczas ładowania danych kampanii', 'error');
+            });
+    }
 </script>
 {% endblock %}
