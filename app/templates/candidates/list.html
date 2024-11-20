@@ -59,9 +59,9 @@
     </div>
 </div>
 
-<div class="table-responsive">
+<div class="table-container" style="height: calc(100vh - 300px); overflow: auto;">
     <table class="table table-striped" id="candidatesTable">
-        <thead>
+        <thead style="position: sticky; top: 0; background: white; z-index: 1;">
             <tr>
                 <th>Imię i nazwisko</th>
                 <th>Kod kampanii</th>
@@ -96,10 +96,10 @@
                 <td>{{ candidate.created_at|datetime }}</td>
                 <td>
                     <div class="dropdown">
-                        <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             Akcje
                         </button>
-                        <ul class="dropdown-menu">
+                        <ul class="dropdown-menu dropdown-menu-end" style="overflow: visible;">
                             <li>
                                 <button class="dropdown-item" onclick="viewCandidate('{{ candidate.id }}')">
                                     Podgląd
