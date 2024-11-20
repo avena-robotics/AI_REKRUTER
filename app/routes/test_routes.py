@@ -1,3 +1,4 @@
+import json
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, abort
 from database import supabase
 from datetime import datetime, timedelta

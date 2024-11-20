@@ -4,14 +4,11 @@
 
 {% block content %}
 <div class="card mb-4">
-    <div class="card-header">
-        <h5>Filtry</h5>
-    </div>
     <div class="card-body">
-        <form method="GET" class="row g-3">
-            <div class="col-md-4">
-                <label for="campaign_code" class="form-label">Kod kampanii</label>
-                <select class="form-select" id="campaign_code" name="campaign_code">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Kod kampanii</label>
+                <select class="form-select" id="filterCampaign" name="campaign_code">
                     <option value="">Wszystkie kampanie</option>
                     {% for campaign in campaigns %}
                         <option value="{{ campaign.code }}" {% if request.args.get('campaign_code') == campaign.code %}selected{% endif %}>
@@ -20,9 +17,9 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-4">
-                <label for="status" class="form-label">Status rekrutacji</label>
-                <select class="form-select" id="status" name="status">
+            <div class="col-md-3">
+                <label class="form-label">Status rekrutacji</label>
+                <select class="form-select" id="filterStatus" name="status">
                     <option value="">Wszystkie statusy</option>
                     <option value="PO1" {% if request.args.get('status') == 'PO1' %}selected{% endif %}>PO1</option>
                     <option value="PO2" {% if request.args.get('status') == 'PO2' %}selected{% endif %}>PO2</option>
@@ -32,9 +29,31 @@
                     <option value="ACCEPTED" {% if request.args.get('status') == 'ACCEPTED' %}selected{% endif %}>Zaakceptowany</option>
                 </select>
             </div>
-            <div class="col-md-4 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary">Filtruj</button>
-                <a href="{{ url_for('candidate.list') }}" class="btn btn-secondary ms-2">Resetuj</a>
+            <div class="col-md-3">
+                <label class="form-label">Sortuj według</label>
+                <select class="form-select" id="sortBy" name="sort_by">
+                    <option value="created_at" {% if request.args.get('sort_by', 'created_at') == 'created_at' %}selected{% endif %}>Data aplikacji</option>
+                    <option value="recruitment_status" {% if request.args.get('sort_by') == 'recruitment_status' %}selected{% endif %}>Status rekrutacji</option>
+                    <option value="po1_score" {% if request.args.get('sort_by') == 'po1_score' %}selected{% endif %}>PO1</option>
+                    <option value="po2_score" {% if request.args.get('sort_by') == 'po2_score' %}selected{% endif %}>PO2</option>
+                    <option value="po3_score" {% if request.args.get('sort_by') == 'po3_score' %}selected{% endif %}>PO3</option>
+                    <option value="total_score" {% if request.args.get('sort_by') == 'total_score' %}selected{% endif %}>Wynik ogólny</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Kolejność</label>
+                <select class="form-select" id="sortOrder" name="sort_order">
+                    <option value="desc" {% if request.args.get('sort_order', 'desc') == 'desc' %}selected{% endif %}>Malejąco</option>
+                    <option value="asc" {% if request.args.get('sort_order') == 'asc' %}selected{% endif %}>Rosnąco</option>
+                </select>
+            </div>
+            <div class="col-12 text-end mt-3">
+                <a href="{{ url_for('candidate.list') }}" class="btn btn-outline-secondary">
+                    Resetuj filtry
+                </a>
+                <button type="submit" class="btn btn-primary ms-2">
+                    Zastosuj
+                </button>
             </div>
         </form>
     </div>
@@ -60,7 +79,7 @@
             {% for candidate in candidates %}
             <tr>
                 <td>{{ candidate.first_name }} {{ candidate.last_name }}</td>
-                <td>{{ candidate.campaign_id }}</td>
+                <td>{{ candidate.campaigns.code }}</td>
                 <td>{{ candidate.email }}</td>
                 <td>
                     <span class="badge 
@@ -178,50 +197,5 @@ function acceptCandidate(candidateId) {
         });
     }
 }
-
-// Initialize sorting
-document.addEventListener('DOMContentLoaded', function() {
-    const table = document.getElementById('candidatesTable');
-    const headers = table.querySelectorAll('th');
-    
-    headers.forEach((header, index) => {
-        if (index > 3 && index < 8) { // Only add sorting for score columns
-            header.style.cursor = 'pointer';
-            header.addEventListener('click', () => {
-                sortTable(index);
-            });
-        }
-    });
-});
-
-function sortTable(column) {
-    const table = document.getElementById('candidatesTable');
-    const rows = Array.from(table.querySelectorAll('tbody tr'));
-    const isNumeric = true;
-    
-    rows.sort((a, b) => {
-        let aVal = a.cells[column].textContent.trim();
-        let bVal = b.cells[column].textContent.trim();
-        
-        if (aVal === '-') aVal = -1;
-        if (bVal === '-') bVal = -1;
-        
-        if (isNumeric) {
-            return Number(bVal) - Number(aVal);
-        }
-        return aVal.localeCompare(bVal);
-    });
-    
-    const tbody = table.querySelector('tbody');
-    tbody.innerHTML = '';
-    rows.forEach(row => tbody.appendChild(row));
-}
 </script>
-{% endblock %} <html xmlns:mso="urn:schemas-microsoft-com:office:office" xmlns:msdt="uuid:C2F41010-65B3-11d1-A29F-00AA00C14882"><head>
-<!--[if gte mso 9]><xml>
-<mso:CustomDocumentProperties>
-<mso:LastModifiedDateTime_Client msdt:dt="string">2024-11-15T06:43:26Z</mso:LastModifiedDateTime_Client>
-<mso:CreatedDateTime_Client msdt:dt="string">2024-11-15T06:43:26Z</mso:CreatedDateTime_Client>
-</mso:CustomDocumentProperties>
-</xml><![endif]-->
-</head>
+{% endblock %}

@@ -1,21 +1,12 @@
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
+from filters import format_datetime
 from database import supabase
 import secrets
 from datetime import datetime
 
 campaign_bp = Blueprint('campaign', __name__)
 
-def format_datetime(dt_str):
-    if not dt_str:
-        return None
-    try:
-        if '.' in dt_str:
-            dt_str = dt_str.split('.')[0]
-        dt = datetime.fromisoformat(dt_str.replace('Z', ''))
-        return dt.strftime('%Y-%m-%d %H:%M:%S')
-    except Exception as e:
-        print(f"Error formatting datetime {dt_str}: {str(e)}")
-        return dt_str
+
 
 @campaign_bp.route('/campaigns')
 def list():
