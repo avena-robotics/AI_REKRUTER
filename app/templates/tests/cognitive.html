@@ -16,9 +16,7 @@
             Pozostały czas: <span id="timeLeft"></span>
         </div>
 
-        <form id="testForm" method="POST" action="{{ url_for('test.submit_test') }}">
-            <input type="hidden" name="token" value="{{ token }}">
-            
+        <form id="testForm" method="POST" action="{{ url_for('test.submit_test', token=token) }}">
             {% for question in questions %}
             <div class="card mb-4 question-card" data-question-id="{{ question.id }}">
                 <div class="card-header">
@@ -33,22 +31,27 @@
 
                     {% if question.answer_type == 'ABCD' %}
                     <div class="list-group">
-                        <label class="list-group-item">
-                            <input type="radio" name="answer_{{ question.id }}" value="A" class="me-2">
-                            {{ question.answer_a }}
+                        {% for letter, answer in [('A', question.answer_a), ('B', question.answer_b), ('C', question.answer_c), ('D', question.answer_d)] %}
+                        <label class="list-group-item" style="cursor: pointer;">
+                            <input type="radio" 
+                                   name="answer_{{ question.id }}" 
+                                   value="{{ letter }}" 
+                                   class="me-2"
+                                   {% if question.is_required %}required{% endif %}>
+                            <span class="ms-2">{{ answer }}</span>
                         </label>
-                        <label class="list-group-item">
-                            <input type="radio" name="answer_{{ question.id }}" value="B" class="me-2">
-                            {{ question.answer_b }}
-                        </label>
-                        <label class="list-group-item">
-                            <input type="radio" name="answer_{{ question.id }}" value="C" class="me-2">
-                            {{ question.answer_c }}
-                        </label>
-                        <label class="list-group-item">
-                            <input type="radio" name="answer_{{ question.id }}" value="D" class="me-2">
-                            {{ question.answer_d }}
-                        </label>
+                        {% endfor %}
+                    </div>
+                    {% elif question.answer_type == 'DATE' %}
+                    <div class="form-group">
+                        <div class="date-input-container" style="cursor: pointer;" onclick="document.getElementById('date_{{ question.id }}').showPicker()">
+                            <input type="date" 
+                                   class="form-control" 
+                                   name="answer_{{ question.id }}"
+                                   id="date_{{ question.id }}"
+                                   {% if question.is_required %}required{% endif %}
+                                   style="cursor: pointer;">
+                        </div>
                     </div>
                     {% endif %}
                 </div>
@@ -117,7 +120,49 @@
             // Initial update before starting interval
             updateTimer();
             timerInterval = setInterval(updateTimer, 1000);
+
+            // Add ABCD selection handler
+            document.querySelectorAll('.list-group-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    // Ensure radio input is checked even if clicking on label
+                    const radio = this.querySelector('input[type="radio"]');
+                    if (radio) {
+                        radio.checked = true;
+                        
+                        // Remove active class from all items in the same question
+                        const questionCard = this.closest('.question-card');
+                        questionCard.querySelectorAll('.list-group-item').forEach(i => {
+                            i.classList.remove('active');
+                        });
+                        
+                        // Add active class to clicked item
+                        this.classList.add('active');
+                    }
+                });
+            });
         });
     </script>
+
+    <style>
+        .list-group-item {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        
+        .list-group-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .list-group-item.active {
+            background-color: #0d6efd;
+            color: white;
+            border-color: #0d6efd;
+        }
+        
+        .list-group-item input[type="radio"] {
+            cursor: pointer;
+        }
+    </style>
 </body>
 </html> 

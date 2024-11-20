@@ -104,70 +104,83 @@ def save_progress():
     # You might want to create a new table for temporary answers
     return jsonify({'success': True})
 
-@test_bp.route('/test/submit', methods=['POST'])
-def submit_test():
+@test_bp.route('/test/<token>/submit', methods=['POST'])
+def submit_test(token):
     """Submit the test"""
-    token = request.form.get('token')
+    if not token:
+        abort(400, description="Token is required")
+        
     test_info = get_test_info(token)
     if not test_info:
-        abort(404)
+        abort(404, description="Invalid token")
     
-    # Calculate score based on answers
-    total_score = 0
-    for key, value in request.form.items():
-        if key.startswith('answer_'):
-            question_id = int(key.split('_')[1])
-            # Get question details
-            question = supabase.table('questions')\
-                .select('*')\
-                .eq('id', question_id)\
-                .single()\
+    try:
+        # Calculate score based on answers
+        total_score = 0
+        for key, value in request.form.items():
+            if key.startswith('answer_'):
+                question_id = int(key.split('_')[1])
+                # Get question details
+                question = supabase.table('questions')\
+                    .select('*')\
+                    .eq('id', question_id)\
+                    .single()\
+                    .execute()
+                
+                if question.data:
+                    # Save answer
+                    answer_data = {
+                        'candidate_id': test_info.get('candidate', {}).get('id'),
+                        'question_id': question_id,
+                        'created_at': datetime.now().isoformat()
+                    }
+                    
+                    # Set appropriate answer field based on type
+                    answer_type = question.data['answer_type']
+                    if answer_type == 'ABCD':
+                        answer_data['abcd_answer'] = value
+                        if value == question.data['correct_answer_abcd']:
+                            total_score += question.data['points']
+                    
+                    supabase.table('candidate_answers').insert(answer_data).execute()
+        
+        # Update candidate status and score
+        if test_info['stage'] == 'PO1':
+            # Create new candidate for PO1
+            candidate_data = {
+                'campaign_id': test_info['campaign']['id'],
+                'first_name': request.form.get('first_name'),
+                'last_name': request.form.get('last_name'),
+                'email': request.form.get('email'),
+                'phone': request.form.get('phone'),
+                'recruitment_status': 'PO1',
+                'po1_score': total_score,
+                'po1_completed_at': datetime.now().isoformat()
+            }
+            supabase.table('candidates').insert(candidate_data).execute()
+        else:
+            # Update existing candidate
+            update_data = {
+                f'{test_info["stage"].lower()}_score': total_score,
+                f'{test_info["stage"].lower()}_completed_at': datetime.now().isoformat(),
+                f'access_token_{test_info["stage"].lower()}_is_used': True
+            }
+            supabase.table('candidates')\
+                .update(update_data)\
+                .eq('id', test_info['candidate']['id'])\
                 .execute()
-            
-            if question.data:
-                # Save answer
-                answer_data = {
-                    'candidate_id': test_info.get('candidate', {}).get('id'),
-                    'question_id': question_id,
-                    'created_at': datetime.now().isoformat()
-                }
-                
-                # Set appropriate answer field based on type
-                answer_type = question.data['answer_type']
-                if answer_type == 'ABCD':
-                    answer_data['abcd_answer'] = value
-                    if value == question.data['correct_answer_abcd']:
-                        total_score += question.data['points']
-                
-                supabase.table('candidate_answers').insert(answer_data).execute()
-    
-    # Update candidate status and score
-    if test_info['stage'] == 'PO1':
-        # Create new candidate for PO1
-        candidate_data = {
-            'campaign_id': test_info['campaign']['id'],
-            'first_name': request.form.get('first_name'),
-            'last_name': request.form.get('last_name'),
-            'email': request.form.get('email'),
-            'phone': request.form.get('phone'),
-            'recruitment_status': 'PO1',
-            'po1_score': total_score,
-            'po1_completed_at': datetime.now().isoformat()
-        }
-        supabase.table('candidates').insert(candidate_data).execute()
-    else:
-        # Update existing candidate
-        update_data = {
-            f'{test_info["stage"].lower()}_score': total_score,
-            f'{test_info["stage"].lower()}_completed_at': datetime.now().isoformat(),
-            f'access_token_{test_info["stage"].lower()}_is_used': True
-        }
-        supabase.table('candidates')\
-            .update(update_data)\
-            .eq('id', test_info['candidate']['id'])\
-            .execute()
-    
-    return redirect(url_for('test.complete'))
+        
+        # Clear the timer from localStorage
+        return """
+            <script>
+                localStorage.removeItem('remainingSeconds');
+                window.location.href = '{}';
+            </script>
+        """.format(url_for('test.complete'))
+        
+    except Exception as e:
+        print(f"Error submitting test: {str(e)}")
+        abort(500, description="Error submitting test")
 
 @test_bp.route('/test/<token>/cancel', methods=['GET'])
 def cancel_test(token):
@@ -409,3 +422,8 @@ def delete(test_id):
     
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+@test_bp.route('/test/complete')
+def complete():
+    """Show test completion page"""
+    return render_template('tests/complete.html')

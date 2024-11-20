@@ -245,8 +245,14 @@
 
                         {% elif question.answer_type == 'DATE' %}
                         <div class="form-group">
-                            <input type="date" class="form-control" name="answer_{{ question.id }}"
-                                   {% if question.is_required %}required{% endif %}>
+                            <div class="date-input-container" style="cursor: pointer;" onclick="document.getElementById('date_{{ question.id }}').showPicker()">
+                                <input type="date" 
+                                       class="form-control" 
+                                       name="answer_{{ question.id }}"
+                                       id="date_{{ question.id }}"
+                                       {% if question.is_required %}required{% endif %}
+                                       style="cursor: pointer;">
+                            </div>
                         </div>
 
                         {% elif question.answer_type == 'ABCD' %}
@@ -319,6 +325,38 @@
             // Initial update before starting interval
             updateTimer();
             timerInterval = setInterval(updateTimer, 1000);
+
+            // Add ABCD selection handler
+            document.querySelectorAll('.abcd-text-option').forEach(item => {
+                item.addEventListener('click', function() {
+                    // Remove selected class from all items in the same question
+                    const questionCard = this.closest('.question-card');
+                    questionCard.querySelectorAll('.abcd-text-option').forEach(i => {
+                        i.classList.remove('selected');
+                    });
+                    // Add selected class to clicked item
+                    this.classList.add('selected');
+                    // Check the radio input
+                    const radio = this.querySelector('input[type="radio"]');
+                    if (radio) radio.checked = true;
+                });
+            });
+
+            // Add ABCD image selection handler
+            document.querySelectorAll('.abcd-image-option').forEach(item => {
+                item.addEventListener('click', function() {
+                    // Remove selected class from all items in the same question
+                    const questionCard = this.closest('.question-card');
+                    questionCard.querySelectorAll('.abcd-image-option').forEach(i => {
+                        i.classList.remove('selected');
+                    });
+                    // Add selected class to clicked item
+                    this.classList.add('selected');
+                    // Check the radio input
+                    const radio = this.querySelector('input[type="radio"]');
+                    if (radio) radio.checked = true;
+                });
+            });
         });
     </script>
 </body>
