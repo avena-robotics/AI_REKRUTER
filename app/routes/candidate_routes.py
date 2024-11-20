@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, jsonify
 from database import supabase
 
 candidate_bp = Blueprint('candidate', __name__, url_prefix='/candidates')
@@ -40,4 +40,30 @@ def view(id):
         .execute()
     return render_template('candidates/view.html', 
                          candidate=candidate.data, 
-                         answers=answers.data) 
+                         answers=answers.data)
+
+@candidate_bp.route('/<int:id>/reject', methods=['POST'])
+def reject(id):
+    try:
+        # Update candidate status to REJECTED
+        result = supabase.table('candidates')\
+            .update({'recruitment_status': 'REJECTED'})\
+            .eq('id', id)\
+            .execute()
+        
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@candidate_bp.route('/<int:id>/accept', methods=['POST'])
+def accept(id):
+    try:
+        # Update candidate status to ACCEPTED
+        result = supabase.table('candidates')\
+            .update({'recruitment_status': 'ACCEPTED'})\
+            .eq('id', id)\
+            .execute()
+        
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500 

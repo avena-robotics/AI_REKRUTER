@@ -148,54 +148,54 @@
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
 <script>
-function viewCandidate(candidateId) {
-    const modal = new bootstrap.Modal(document.getElementById('candidateModal'));
-    fetch(`/candidates/${candidateId}`)
-        .then(response => response.text())
-        .then(html => {
-            document.getElementById('candidateModalBody').innerHTML = html;
-            modal.show();
-        });
-}
-
-function moveToNextStage(candidateId) {
-    if (confirm('Czy na pewno chcesz przepchnąć kandydata do kolejnego etapu?')) {
-        fetch(`/candidates/${candidateId}/next-stage`, {
-            method: 'POST',
-        }).then(response => {
-            if (response.ok) {
-                location.reload();
-            }
-        });
+document.addEventListener('DOMContentLoaded', function() {
+    window.viewCandidate = function(candidateId) {
+        const modal = new bootstrap.Modal(document.getElementById('candidateModal'));
+        fetch(`/candidates/${candidateId}`)
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('candidateModalBody').innerHTML = html;
+                modal.show();
+            });
     }
-}
 
-function rejectCandidate(candidateId) {
-    if (confirm('Czy na pewno chcesz odrzucić kandydata?')) {
-        fetch(`/candidates/${candidateId}/reject`, {
-            method: 'POST',
-        }).then(response => {
-            if (response.ok) {
-                location.reload();
-            }
-        });
+    window.moveToNextStage = function(candidateId) {
+        if (confirm('Czy na pewno chcesz przepchnąć kandydata do kolejnego etapu?')) {
+            fetch(`/candidates/${candidateId}/next-stage`, {
+                method: 'POST',
+            }).then(response => {
+                if (response.ok) {
+                    location.reload();
+                }
+            });
+        }
     }
-}
 
-function acceptCandidate(candidateId) {
-    if (confirm('Czy na pewno chcesz zaakceptować kandydata?')) {
-        fetch(`/candidates/${candidateId}/accept`, {
-            method: 'POST',
-        }).then(response => {
-            if (response.ok) {
-                location.reload();
-            }
-        });
+    window.rejectCandidate = function(candidateId) {
+        if (confirm('Czy na pewno chcesz odrzucić kandydata?')) {
+            fetch(`/candidates/${candidateId}/reject`, {
+                method: 'POST',
+            }).then(response => {
+                if (response.ok) {
+                    location.reload();
+                }
+            });
+        }
     }
-}
+
+    window.acceptCandidate = function(candidateId) {
+        if (confirm('Czy na pewno chcesz zaakceptować kandydata?')) {
+            fetch(`/candidates/${candidateId}/accept`, {
+                method: 'POST',
+            }).then(response => {
+                if (response.ok) {
+                    location.reload();
+                }
+            });
+        }
+    }
+});
 </script>
 {% endblock %}
