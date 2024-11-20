@@ -2,983 +2,15 @@
 
 {% block title %}Kampanie - AI Rekruter{% endblock %}
 
-{% block head %}
-{{ super() }}
-<script defer>
-    // Przeniesienie funkcji do globalnego zakresu
-    window.confirmDelete = function(campaignId) {
-        const row = document.querySelector(`tr[data-campaign-id="${campaignId}"]`);
-        const campaignCode = row.querySelector('td:first-child').textContent;
-        
-        if (confirm('Czy na pewno chcesz usunąć tę kampanię?')) {
-            fetch(`/campaigns/${campaignId}/delete`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-            }).then(async response => {
-                if (response.ok) {
-                    const data = await response.json();
-                    sessionStorage.setItem('pendingToast', JSON.stringify({
-                        message: `Kampania została usunięta pomyślnie: ${campaignCode}`,
-                        type: 'success'
-                    }));
-                    window.location.href = "{{ url_for('campaign.list') }}";
-                } else {
-                    const error = await response.json();
-                    showToast(error.error || 'Wystąpił błąd podczas usuwania kampanii', 'error');
-                }
-            }).catch(error => {
-                console.error('Error:', error);
-                showToast('Wystąpił błąd podczas usuwania kampanii', 'error');
-            });
-        }
-    }
-
-    // Przeniesienie obsługi kopiowania linku
-    document.addEventListener('DOMContentLoaded', function() {
-        checkPendingToast();
-
-        document.querySelectorAll('.copy-link').forEach(button => {
-            button.addEventListener('click', function() {
-                navigator.clipboard.writeText(this.dataset.link)
-                    .then(() => {
-                        showToast('Link został skopiowany do schowka');
-                    })
-                    .catch(() => {
-                        showToast('Nie udało się skopiować linku', 'error');
-                    });
-            });
-        });
-
-        // New form validation for both add and edit forms
-        ['addCampaignForm', 'editCampaignForm'].forEach(formId => {
-            const form = document.getElementById(formId);
-            if (form) {
-                form.addEventListener('submit', function(e) {
-                    const minSalary = parseInt(this.querySelector('[name="salary_range_min"]').value);
-                    const maxSalary = parseInt(this.querySelector('[name="salary_range_max"]').value);
-                    
-                    if (minSalary && maxSalary && minSalary > maxSalary) {
-                        e.preventDefault();
-                        alert('Dolna granica wynagrodzenia nie może być wyższa niż górna granica.');
-                    }
-                });
-            }
-        });
-
-        // Single counter for both add and edit
-        let testCounter = 0;
-
-        // Add test button for add campaign
-        document.getElementById('addTestBtn')?.addEventListener('click', function() {
-            const testHtml = createTestHtml(null, testCounter);
-            document.getElementById('testsContainer').insertAdjacentHTML('beforeend', testHtml);
-            testCounter++;
-        });
-
-        // Add test button for edit campaign
-        document.getElementById('editAddTestBtn')?.addEventListener('click', function() {
-            const testHtml = createTestHtml(null, testCounter);
-            document.getElementById('editTestsContainer').insertAdjacentHTML('beforeend', testHtml);
-            testCounter++;
-        });
-
-        // Handle test removal for both add and edit
-        ['testsContainer', 'editTestsContainer'].forEach(containerId => {
-            document.getElementById(containerId)?.addEventListener('click', function(e) {
-                if (e.target.classList.contains('remove-test')) {
-                    if (confirm('Czy na pewno chcesz usunąć ten test?')) {
-                        const testCard = e.target.closest('.test-card');
-                        testCard.remove();
-                        
-                        // Update test numbering
-                        this.querySelectorAll('.test-card').forEach((card, index) => {
-                            card.querySelector('.card-header h5').textContent = `Test ${index + 1}`;
-                        });
-                    }
-                }
-            });
-        });
-
-        // Handle form submission for both add and edit
-        ['addCampaignForm', 'editCampaignForm'].forEach(formId => {
-            document.getElementById(formId)?.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const formData = new FormData(this);
-                
-                // Get all test cards
-                const testCards = this.querySelectorAll('.test-card');
-                console.log(`Found ${testCards.length} tests in ${formId}`);
-                
-                // Add test data to formData
-                testCards.forEach((card, index) => {
-                    const testData = {
-                        id: card.dataset.testId, // Will be undefined for new tests
-                        test_type: card.querySelector('[name^="tests"][name$="[test_type]"]').value,
-                        stage: card.querySelector('[name^="tests"][name$="[stage]"]').value,
-                        weight: card.querySelector('[name^="tests"][name$="[weight]"]').value,
-                        description: card.querySelector('[name^="tests"][name$="[description]"]').value,
-                        passing_threshold: card.querySelector('[name^="tests"][name$="[passing_threshold]"]').value,
-                        time_limit_minutes: card.querySelector('[name^="tests"][name$="[time_limit_minutes]"]').value
-                    };
-                    console.log(`Test data for ${formId}:`, testData);
-                    formData.append('tests', JSON.stringify(testData));
-                });
-                
-                // Submit the form
-                fetch(this.action, {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.text())
-                .then(html => {
-                    window.location.href = "{{ url_for('campaign.list') }}";
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Wystąpił błąd podczas zapisywania kampanii');
-                });
-            });
-        });
-
-        // Edit campaign modal population
-        window.editCampaign = function(campaignId) {
-            testCounter = 0; // Reset counter when opening edit modal
-            
-            fetch(`/campaigns/${campaignId}/data`)
-                .then(response => response.ok ? response.json() : Promise.reject('Network response was not ok'))
-                .then(campaign => {
-                    if (!campaign) throw new Error('No campaign data received');
-
-                    const form = document.getElementById('editCampaignForm');
-                    form.action = `/campaigns/${campaignId}/edit`;
-                    form.dataset.campaignId = campaignId;  // Add campaign ID to form
-                    
-                    // Update campaign fields
-                    Object.entries({
-                        'edit_code': campaign.code,
-                        'edit_title': campaign.title,
-                        'edit_workplace_location': campaign.workplace_location,
-                        'edit_contract_type': campaign.contract_type,
-                        'edit_employment_type': campaign.employment_type,
-                        'edit_work_start_date': campaign.work_start_date,
-                        'edit_duties': campaign.duties,
-                        'edit_requirements': campaign.requirements,
-                        'edit_employer_offerings': campaign.employer_offerings,
-                        'edit_job_description': campaign.job_description,
-                        'edit_salary_range_min': campaign.salary_range_min,
-                        'edit_salary_range_max': campaign.salary_range_max
-                    }).forEach(([id, value]) => {
-                        const element = form.querySelector(`#${id}`);
-                        if (element) element.value = value || '';
-                    });
-                    
-                    form.querySelector('#edit_is_active').checked = campaign.is_active || false;
-                    
-                    // Clear and populate tests
-                    const testsContainer = document.getElementById('editTestsContainer');
-                    testsContainer.innerHTML = '';
-                    
-                    if (campaign.tests?.length > 0) {
-                        campaign.tests.forEach(test => {
-                            testsContainer.insertAdjacentHTML('beforeend', createTestHtml(test, testCounter));
-                            
-                            // Initialize Sortable for questions container in this test
-                            const questionsContainer = testsContainer.querySelector(
-                                `.test-card[data-counter="${testCounter}"] .questions-container`
-                            );
-                            if (questionsContainer) {
-                                initializeSortable(questionsContainer);
-                            }
-                            
-                            testCounter++;
-                        });
-                    }
-                    
-                    new bootstrap.Modal(document.getElementById('editCampaignModal')).show();
-                    
-                    // Add link handling
-                    const linkContainer = document.getElementById('editCampaignLinkContainer');
-                    if (campaign.universal_access_token) {
-                        const link = `${window.location.origin}/test/${campaign.universal_access_token}`;
-                        linkContainer.innerHTML = `
-                            <div class="d-flex align-items-center">
-                                <span class="me-2">${link}</span>
-                                <button type="button" class="btn btn-sm btn-secondary copy-link" data-link="${link}">
-                                    Kopiuj link
-                                </button>
-                            </div>
-                        `;
-                    } else {
-                        linkContainer.innerHTML = `
-                            <button type="button" class="btn btn-sm btn-primary generate-link">
-                                Generuj link
-                            </button>
-                        `;
-                    }
-
-                    // Dodaj obsługę generowania linku
-                    const generateButton = linkContainer.querySelector('.generate-link');
-                    if (generateButton) {
-                        generateButton.addEventListener('click', async function(e) {
-                            e.preventDefault();
-                            try {
-                                const response = await fetch(`/campaigns/${campaignId}/generate-link`, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'Accept': 'application/json'
-                                    }
-                                });
-                                
-                                if (response.ok) {
-                                    const data = await response.json();
-                                    const newLink = `${window.location.origin}/test/${data.token}`;
-                                    
-                                    linkContainer.innerHTML = `
-                                        <div class="d-flex align-items-center">
-                                            <span class="me-2">${newLink}</span>
-                                            <button type="button" class="btn btn-sm btn-secondary copy-link" data-link="${newLink}">
-                                                Kopiuj link
-                                            </button>
-                                        </div>
-                                    `;
-                                    showToast(data.message);
-                                } else {
-                                    const error = await response.json();
-                                    throw new Error(error.error || 'Błąd podczas generowania linku');
-                                }
-                            } catch (error) {
-                                console.error('Error:', error);
-                                showToast('Wystąpił błąd podczas generowania linku', 'error');
-                            }
-                        });
-                    }
-
-                    // Zaktualizuj obsługę kopiowania linku
-                    document.addEventListener('DOMContentLoaded', function() {
-                        document.addEventListener('click', function(e) {
-                            if (e.target.classList.contains('copy-link')) {
-                                e.preventDefault();
-                                navigator.clipboard.writeText(e.target.dataset.link);
-                                const originalText = e.target.textContent;
-                                e.target.textContent = 'Skopiowano!';
-                                setTimeout(() => {
-                                    e.target.textContent = originalText;
-                                }, 2000);
-                            }
-                        });
-                    });
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Wystąpił błąd podczas pobierania danych kampanii: ' + error);
-                });
-        };
-
-        // Initialize Sortable for existing and new question containers
-        function initializeSortable(container) {
-            // Remove existing Sortable instance if it exists
-            if (container.sortableInstance) {
-                container.sortableInstance.destroy();
-            }
-            
-            // Create new Sortable instance
-            container.sortableInstance = new Sortable(container, {
-                animation: 150,
-                handle: '.drag-handle',
-                onEnd: function(evt) {
-                    updateQuestionOrders(container);
-                    
-                    // Update form field names to match new order
-                    const questions = container.querySelectorAll('.question-card');
-                    questions.forEach((question, index) => {
-                        const inputs = question.querySelectorAll('input, select, textarea');
-                        inputs.forEach(input => {
-                            const name = input.name;
-                            if (name) {
-                                // Update the question index in the name attribute
-                                const newName = name.replace(/\[questions\]\[\d+\]/, `[questions][${index}]`);
-                                input.name = newName;
-                            }
-                        });
-                    });
-                }
-            });
-        }
-
-        // Update question order numbers
-        function updateQuestionOrders(container) {
-            const questions = container.querySelectorAll('.question-card');
-            questions.forEach((question, index) => {
-                question.dataset.order = index + 1;
-                // Update all order_number inputs in this question
-                const orderInput = question.querySelector('input[name$="[order_number]"]');
-                if (orderInput) {
-                    orderInput.value = index + 1;
-                }
-                
-                // Update data attributes
-                question.dataset.questionIndex = index;
-            });
-        }
-
-        // Handle adding new questions
-        document.addEventListener('click', function(e) {
-            if (e.target.classList.contains('add-question')) {
-                const testCounter = e.target.dataset.testCounter;
-                // Znajd kontener pytań w ramach tego samego testu
-                const questionsContainer = e.target.closest('.questions-section').querySelector('.questions-container');
-                const questionCounter = questionsContainer.children.length;
-                
-                console.log('Adding new question:', {
-                    testCounter,
-                    questionCounter,
-                    container: questionsContainer
-                });
-                
-                const questionHtml = createQuestionHtml(testCounter, questionCounter);
-                questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
-                
-                // Reinitialize Sortable if needed
-                if (questionCounter === 0) {
-                    initializeSortable(questionsContainer);
-                }
-            }
-        });
-
-        // Handle removing questions
-        document.addEventListener('click', function(e) {
-            if (e.target.classList.contains('remove-question')) {
-                const questionCard = e.target.closest('.question-card');
-                const questionId = questionCard.querySelector('input[name$="[id]"]').value;
-                
-                if (confirm('Czy na pewno chcesz usunąć to pytanie?')) {
-                    if (questionId) {
-                        // Add question ID to deleted questions list
-                        const form = questionCard.closest('form');
-                        const deletedQuestionsInput = form.querySelector('input[name="deleted_questions"]');
-                        const deletedQuestions = JSON.parse(deletedQuestionsInput.value);
-                        deletedQuestions.push(questionId);
-                        deletedQuestionsInput.value = JSON.stringify(deletedQuestions);
-                    }
-                    
-                    // Remove question card from DOM
-                    const container = questionCard.parentElement;
-                    questionCard.remove();
-                    updateQuestionOrders(container);
-                }
-            }
-        });
-
-        // Handle answer type changes
-        document.addEventListener('change', function(e) {
-            if (e.target.classList.contains('answer-type-select')) {
-                const questionCard = e.target.closest('.question-card');
-                const testCounter = questionCard.closest('.test-card').dataset.counter;
-                const questionCounter = Array.from(questionCard.parentElement.children).indexOf(questionCard);
-                const answerFieldsContainer = questionCard.querySelector('.answer-fields');
-                
-                const questionData = {
-                    answer_type: e.target.value
-                };
-                
-                answerFieldsContainer.innerHTML = createAnswerFieldsHtml(
-                    testCounter, 
-                    questionCounter, 
-                    questionData
-                );
-            }
-        });
-
-        // Initialize Sortable for existing question containers
-        document.querySelectorAll('.questions-container').forEach(container => {
-            initializeSortable(container);
-        });
-
-        // Add hidden input for deleted questions to both forms
-        ['addCampaignForm', 'editCampaignForm'].forEach(formId => {
-            const form = document.getElementById(formId);
-            if (form) {
-                const deletedQuestionsInput = document.createElement('input');
-                deletedQuestionsInput.type = 'hidden';
-                deletedQuestionsInput.name = 'deleted_questions';
-                deletedQuestionsInput.value = '[]';
-                form.appendChild(deletedQuestionsInput);
-            }
-        });
-    });
-
-    // Function to create test HTML for edit modal
-    function createTestHtml(testData = null, counter) {
-        console.log('Creating test HTML with data:', testData);
-        const test = testData || {};
-        return `
-            <div class="card mb-3 test-card" data-test-id="${test.id || ''}" data-counter="${counter}">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Test ${counter + 1}</h5>
-                    <button type="button" class="btn btn-danger remove-test">Usuń test</button>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Typ testu*</label>
-                            <select class="form-select" name="tests[${counter}][test_type]" required>
-                                <option value="SURVEY" ${test.test_type === 'SURVEY' ? 'selected' : ''}>Ankieta</option>
-                                <option value="EQ" ${test.test_type === 'EQ' ? 'selected' : ''}>Test EQ</option>
-                                <option value="IQ" ${test.test_type === 'IQ' ? 'selected' : ''}>Test IQ</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Etap*</label>
-                            <select class="form-select" name="tests[${counter}][stage]" required>
-                                <option value="PO1" ${test.stage === 'PO1' ? 'selected' : ''}>PO1</option>
-                                <option value="PO2" ${test.stage === 'PO2' ? 'selected' : ''}>PO2</option>
-                                <option value="PO3" ${test.stage === 'PO3' ? 'selected' : ''}>PO3</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Waga testu*</label>
-                            <input type="number" class="form-control" name="tests[${counter}][weight]" 
-                                   value="${test.weight !== undefined ? test.weight : ''}" required>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">Opis testu</label>
-                            <textarea class="form-control" name="tests[${counter}][description]" rows="2">${test.description || ''}</textarea>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Próg zaliczenia*</label>
-                            <input type="number" class="form-control" name="tests[${counter}][passing_threshold]" 
-                                   value="${test.passing_threshold !== undefined ? test.passing_threshold : '0'}" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Limit czasu (minuty)</label>
-                            <input type="number" class="form-control" name="tests[${counter}][time_limit_minutes]" 
-                                   value="${test.time_limit_minutes !== undefined ? test.time_limit_minutes : '0'}">
-                        </div>
-                    </div>
-                    
-                    <!-- Questions Section -->
-                    <div class="questions-section mt-4">
-                        <h6 class="mb-3">Pytania</h6>
-                        
-                        <!-- Questions Container -->
-                        <div class="questions-container" data-test-counter="${counter}">
-                            ${test.questions ? test.questions
-                                .sort((a, b) => a.order_number - b.order_number)
-                                .map((question, qIndex) => createQuestionHtml(counter, qIndex, question))
-                                .join('') : ''}
-                        </div>
-                        
-                        <div class="text-end mt-3">
-                            <button type="button" class="btn btn-secondary add-question" 
-                                    data-test-counter="${counter}">
-                                Dodaj pytanie
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    function createQuestionHtml(testCounter, questionCounter, questionData = null) {
-        const question = questionData || {};
-        return `
-            <div class="card mb-2 question-card" data-order="${question.order_number || questionCounter + 1}">
-                <input type="hidden" name="tests[${testCounter}][questions][${questionCounter}][id]" value="${question.id || ''}">
-                <input type="hidden" name="tests[${testCounter}][questions][${questionCounter}][order_number]" 
-                       value="${question.order_number || questionCounter + 1}">
-                <!-- Header with required toggle and delete button -->
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <div class="form-check form-switch">
-                        <input type="checkbox" class="form-check-input" 
-                               name="tests[${testCounter}][questions][${questionCounter}][is_required]"
-                               ${question.is_required ? 'checked' : ''}>
-                        <label class="form-check-label">Pytanie obowiązkowe</label>
-                    </div>
-                    <button type="button" class="btn btn-danger btn-sm remove-question">
-                        Usuń pytanie
-                    </button>
-                </div>
-                
-                <div class="card-body">
-                    <div class="d-flex">
-                        <!-- Drag handle on the left -->
-                        <div class="drag-handle me-3 d-flex align-items-center" 
-                             title="Przeciągnij aby zmienić kolejność"
-                             style="cursor: move;">☰</div>
-                        
-                        <!-- Main content -->
-                        <div class="flex-grow-1">
-                            <div class="row">
-                                <div class="col-md-8">
-                                    <label class="form-label">Treść pytania*</label>
-                                    <input type="text" class="form-control" 
-                                           name="tests[${testCounter}][questions][${questionCounter}][question_text]"
-                                           value="${question.question_text || ''}" required>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Typ odpowiedzi*</label>
-                                    <select class="form-select answer-type-select" 
-                                            name="tests[${testCounter}][questions][${questionCounter}][answer_type]" required>
-                                        <option value="TEXT" ${question.answer_type === 'TEXT' ? 'selected' : ''}>Tekst</option>
-                                        <option value="BOOLEAN" ${question.answer_type === 'BOOLEAN' ? 'selected' : ''}>Tak/Nie</option>
-                                        <option value="SCALE" ${question.answer_type === 'SCALE' ? 'selected' : ''}>Skala (0-5)</option>
-                                        <option value="SALARY" ${question.answer_type === 'SALARY' ? 'selected' : ''}>Wynagrodzenie (PLN)</option>
-                                        <option value="DATE" ${question.answer_type === 'DATE' ? 'selected' : ''}>Data</option>
-                                        <option value="ABCD_TEXT" ${question.answer_type === 'ABCD_TEXT' ? 'selected' : ''}>ABCD (tekst)</option>
-                                        <option value="ABCD_IMAGE" ${question.answer_type === 'ABCD_IMAGE' ? 'selected' : ''}>ABCD (obrazek)</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <!-- Image upload field -->
-                            <div class="row mt-2">
-                                <div class="col-12">
-                                    <label class="form-label">Obrazek (opcjonalnie)</label>
-                                    <input type="file" class="form-control" 
-                                           name="tests[${testCounter}][questions][${questionCounter}][image_file]"
-                                           accept="image/*"
-                                           onchange="convertToBase64(this, 'image')">
-                                    ${question.image ? `
-                                        <div class="mt-2">
-                                            <img src="${question.image}" class="img-thumbnail" style="max-height: 100px">
-                                            <input type="hidden" 
-                                                   name="tests[${testCounter}][questions][${questionCounter}][image]"
-                                                   value="${question.image}">
-                                        </div>` : ''}
-                                </div>
-                            </div>
-                            
-                            <!-- Dynamic answer fields container -->
-                            <div class="answer-fields mt-2">
-                                ${createAnswerFieldsHtml(testCounter, questionCounter, question)}
-                            </div>
-                            
-                            <div class="row mt-2">
-                                <div class="col-md-4">
-                                    <label class="form-label">Punkty za pytanie*</label>
-                                    <input type="number" class="form-control" 
-                                           name="tests[${testCounter}][questions][${questionCounter}][points]"
-                                           value="${question.points || '0'}" required>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    function createAnswerFieldsHtml(testCounter, questionCounter, question) {
-        const answerType = question.answer_type || 'TEXT';
-        let html = '';
-        
-        switch (answerType) {
-            case 'ABCD_TEXT':
-                html = `
-                    <div class="row">
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label">Odpowiedź A (tekst)*</label>
-                            <input type="text" class="form-control" 
-                                   name="tests[${testCounter}][questions][${questionCounter}][answer_a]"
-                                   value="${question.answer_a || ''}" required>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label">Odpowiedź B (tekst)*</label>
-                            <input type="text" class="form-control" 
-                                   name="tests[${testCounter}][questions][${questionCounter}][answer_b]"
-                                   value="${question.answer_b || ''}" required>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label">Odpowiedź C (tekst)*</label>
-                            <input type="text" class="form-control" 
-                                   name="tests[${testCounter}][questions][${questionCounter}][answer_c]"
-                                   value="${question.answer_c || ''}" required>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label">Odpowiedź D (tekst)*</label>
-                            <input type="text" class="form-control" 
-                                   name="tests[${testCounter}][questions][${questionCounter}][answer_d]"
-                                   value="${question.answer_d || ''}" required>
-                        </div>
-                        <div class="col-md-12">
-                            <label class="form-label">Poprawna odpowiedź*</label>
-                            <select class="form-select" 
-                                    name="tests[${testCounter}][questions][${questionCounter}][correct_answer_abcd]" required>
-                                <option value="">Wybierz odpowiedź</option>
-                                <option value="A" ${question.correct_answer_abcd === 'A' ? 'selected' : ''}>A</option>
-                                <option value="B" ${question.correct_answer_abcd === 'B' ? 'selected' : ''}>B</option>
-                                <option value="C" ${question.correct_answer_abcd === 'C' ? 'selected' : ''}>C</option>
-                                <option value="D" ${question.correct_answer_abcd === 'D' ? 'selected' : ''}>D</option>
-                            </select>
-                        </div>
-                    </div>
-                `;
-                break;
-                
-            case 'BOOLEAN':
-                html = `
-                    <div>
-                        <label class="form-label">Poprawna odpowiedź*</label>
-                        <div class="form-check">
-                            <input type="radio" class="form-check-input" 
-                                   name="tests[${testCounter}][questions][${questionCounter}][correct_answer_boolean]" 
-                                   value="true" ${question.correct_answer_boolean === true ? 'checked' : ''} required>
-                            <label class="form-check-label">Prawda</label>
-                        </div>
-                        <div class="form-check">
-                            <input type="radio" class="form-check-input" 
-                                   name="tests[${testCounter}][questions][${questionCounter}][correct_answer_boolean]" 
-                                   value="false" ${question.correct_answer_boolean === false ? 'checked' : ''} required>
-                            <label class="form-check-label">Fałsz</label>
-                        </div>
-                    </div>
-                `;
-                break;
-                
-            case 'SCALE':
-                html = `
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label class="form-label">Poprawna odpowiedź (0-5)*</label>
-                            <input type="number" class="form-control" 
-                                   name="tests[${testCounter}][questions][${questionCounter}][correct_answer_scale]"
-                                   min="0" max="5" 
-                                   value="${question.correct_answer_scale || ''}" required>
-                        </div>
-                    </div>
-                `;
-                break;
-                
-            case 'SALARY':
-                html = `
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label class="form-label">Poprawna odpowied (PLN)*</label>
-                            <input type="number" class="form-control" 
-                                   name="tests[${testCounter}][questions][${questionCounter}][correct_answer_numeric]"
-                                   min="0" step="100" 
-                                   value="${question.correct_answer_numeric || ''}" required>
-                        </div>
-                    </div>
-                `;
-                break;
-                
-            case 'DATE':
-                html = `
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label class="form-label">Poprawna data*</label>
-                            <input type="date" class="form-control" 
-                                   name="tests[${testCounter}][questions][${questionCounter}][correct_answer_date]"
-                                   value="${question.correct_answer_date || ''}" required>
-                        </div>
-                    </div>
-                `;
-                break;
-                
-            case 'ABCD_IMAGE':
-                html = `
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Odpowiedź A (obrazek)*</label>
-                            <input type="file" class="form-control" 
-                                   name="tests[${testCounter}][questions][${questionCounter}][answer_a_image]"
-                                   accept="image/*" 
-                                   onchange="convertToBase64(this, 'answer_a')" 
-                                   ${!question.answer_a ? 'required' : ''}>
-                            ${question.answer_a ? `
-                                <div class="mt-2">
-                                    <img src="${question.answer_a}" class="img-thumbnail" style="max-height: 100px">
-                                    <input type="hidden" 
-                                           name="tests[${testCounter}][questions][${questionCounter}][answer_a]"
-                                           value="${question.answer_a}">
-                                </div>` : ''}
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Odpowiedź B (obrazek)*</label>
-                            <input type="file" class="form-control" 
-                                   name="tests[${testCounter}][questions][${questionCounter}][answer_b_image]"
-                                   accept="image/*" 
-                                   onchange="convertToBase64(this, 'answer_b')" 
-                                   ${!question.answer_b ? 'required' : ''}>
-                            ${question.answer_b ? `
-                                <div class="mt-2">
-                                    <img src="${question.answer_b}" class="img-thumbnail" style="max-height: 100px">
-                                    <input type="hidden" 
-                                           name="tests[${testCounter}][questions][${questionCounter}][answer_b]"
-                                           value="${question.answer_b}">
-                                </div>` : ''}
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Odpowiedź C (obrazek)*</label>
-                            <input type="file" class="form-control" 
-                                   name="tests[${testCounter}][questions][${questionCounter}][answer_c_image]"
-                                   accept="image/*" 
-                                   onchange="convertToBase64(this, 'answer_c')" 
-                                   ${!question.answer_c ? 'required' : ''}>
-                            ${question.answer_c ? `
-                                <div class="mt-2">
-                                    <img src="${question.answer_c}" class="img-thumbnail" style="max-height: 100px">
-                                    <input type="hidden" 
-                                           name="tests[${testCounter}][questions][${questionCounter}][answer_c]"
-                                           value="${question.answer_c}">
-                                </div>` : ''}
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Odpowiedź D (obrazek)*</label>
-                            <input type="file" class="form-control" 
-                                   name="tests[${testCounter}][questions][${questionCounter}][answer_d_image]"
-                                   accept="image/*" 
-                                   onchange="convertToBase64(this, 'answer_d')" 
-                                   ${!question.answer_d ? 'required' : ''}>
-                            ${question.answer_d ? `
-                                <div class="mt-2">
-                                    <img src="${question.answer_d}" class="img-thumbnail" style="max-height: 100px">
-                                    <input type="hidden" 
-                                           name="tests[${testCounter}][questions][${questionCounter}][answer_d]"
-                                           value="${question.answer_d}">
-                                </div>` : ''}
-                        </div>
-                        <div class="col-md-12">
-                            <label class="form-label">Poprawna odpowiedź*</label>
-                            <select class="form-select" 
-                                    name="tests[${testCounter}][questions][${questionCounter}][correct_answer_abcd]" required>
-                                <option value="">Wybierz odpowiedź</option>
-                                <option value="A" ${question.correct_answer_abcd === 'A' ? 'selected' : ''}>A</option>
-                                <option value="B" ${question.correct_answer_abcd === 'B' ? 'selected' : ''}>B</option>
-                                <option value="C" ${question.correct_answer_abcd === 'C' ? 'selected' : ''}>C</option>
-                                <option value="D" ${question.correct_answer_abcd === 'D' ? 'selected' : ''}>D</option>
-                            </select>
-                        </div>
-                    </div>
-                `;
-                break;
-                
-            default: // TEXT
-                html = `
-                    <div class="row">
-                        <div class="col-md-12">
-                            <label class="form-label">Poprawna odpowiedź tekstowa</label>
-                            <input type="text" class="form-control" 
-                                   name="tests[${testCounter}][questions][${questionCounter}][correct_answer_text]"
-                                   value="${question.correct_answer_text || ''}">
-                        </div>
-                    </div>
-                `;
-        }
-        
-        return html;
-    }
-
-    function convertToBase64(fileInput, fieldName) {
-        const file = fileInput.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const base64String = e.target.result;
-                
-                // Create or update hidden input
-                const questionCard = fileInput.closest('.question-card');
-                const hiddenInput = questionCard.querySelector(`input[name$="[${fieldName}]"]`) || 
-                                   document.createElement('input');
-                hiddenInput.type = 'hidden';
-                hiddenInput.name = fileInput.name.replace('_file', '').replace('_image', '');
-                hiddenInput.value = base64String;
-                
-                // Create or update preview image
-                const previewContainer = fileInput.nextElementSibling || document.createElement('div');
-                previewContainer.className = 'mt-2';
-                previewContainer.innerHTML = `
-                    <img src="${base64String}" class="img-thumbnail" style="max-height: 100px">
-                `;
-                
-                // Add elements if they don't exist
-                if (!fileInput.nextElementSibling) {
-                    fileInput.parentNode.appendChild(previewContainer);
-                }
-                if (!questionCard.querySelector(`input[name$="[${fieldName}]"]`)) {
-                    questionCard.appendChild(hiddenInput);
-                }
-            };
-            reader.readAsDataURL(file);
-        }
-    }
-
-    // Add function to handle question editing
-    function editQuestion(testCounter, questionIndex, questionData) {
-        const questionsContainer = document.querySelector(`.test-card[data-counter="${testCounter}"] .questions-container`);
-        const questionHtml = createQuestionHtml(testCounter, questionIndex, questionData);
-        
-        // Remove existing edit form if any
-        const existingForm = questionsContainer.querySelector(`.question-card[data-order="${questionData.order_number}"]`);
-        if (existingForm) {
-            existingForm.remove();
-        }
-        
-        questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
-        
-        // Scroll to the edit form
-        questionsContainer.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-
-    // Function to show toast notification
-    function showToast(message, type = 'success') {
-        const toast = document.getElementById('notificationToast');
-        const toastTitle = document.getElementById('toastTitle');
-        const toastMessage = document.getElementById('toastMessage');
-        
-        // Set toast title based on type
-        switch(type) {
-            case 'success':
-                toastTitle.textContent = 'Sukces';
-                toast.classList.remove('bg-danger', 'text-white');
-                toast.classList.add('bg-success', 'text-white');
-                break;
-            case 'error':
-                toastTitle.textContent = 'Błąd';
-                toast.classList.remove('bg-success', 'text-white');
-                toast.classList.add('bg-danger', 'text-white');
-                break;
-            default:
-                toastTitle.textContent = 'Powiadomienie';
-                toast.classList.remove('bg-success', 'bg-danger', 'text-white');
-        }
-        
-        toastMessage.textContent = message;
-        
-        // Show toast
-        const bsToast = new bootstrap.Toast(toast);
-        bsToast.show();
-    }
-
-    // Update copy link handler
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('copy-link')) {
-            e.preventDefault();
-            let campaignCode = '';
-            
-            // Check if we're in a modal
-            const modal = e.target.closest('.modal');
-            if (modal) {
-                // Get code from form field
-                campaignCode = modal.querySelector('[name="code"]').value;
-            } else {
-                // Get code from table row
-                campaignCode = e.target.closest('tr').querySelector('td:first-child').textContent;
-            }
-            
-            navigator.clipboard.writeText(e.target.dataset.link)
-                .then(() => {
-                    showToast(`Skopiowano link do kampanii: ${campaignCode}`);
-                })
-                .catch(() => {
-                    showToast('Nie udało się skopiować linku', 'error');
-                });
-        }
-    });
-
-    // Update form submission handlers
-    ['addCampaignForm', 'editCampaignForm'].forEach(formId => {
-        document.getElementById(formId)?.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            const campaignCode = this.querySelector('[name="code"]').value;
-            
-            fetch(this.action, {
-                method: 'POST',
-                body: formData
-            })
-            .then(async response => {
-                const data = await response.json();
-                if (!response.ok) {
-                    throw new Error(data.error || 'Wystąpił błąd podczas zapisywania kampanii');
-                }
-                return data;
-            })
-            .then(data => {
-                // Store toast message before redirect
-                sessionStorage.setItem('pendingToast', JSON.stringify({
-                    message: formId === 'addCampaignForm' ? 
-                        `Kampania została dodana pomyślnie: ${campaignCode}` : 
-                        `Kampania została zaktualizowana pomyślnie: ${campaignCode}`,
-                    type: 'success'
-                }));
-                window.location.href = "{{ url_for('campaign.list') }}";
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast(error.message, 'error');
-            });
-        });
-    });
-
-    // Add event listener for generate-link-list buttons
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('generate-link-list')) {
-            const campaignId = e.target.dataset.campaignId;
-            const campaignCode = e.target.dataset.campaignCode;
-            
-            fetch(`/campaigns/${campaignId}/generate-link`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                }
-            })
-            .then(async response => {
-                if (response.ok) {
-                    const data = await response.json();
-                    const link = `${window.location.origin}/test/${data.token}`;
-                    
-                    // Replace button with copy link button
-                    e.target.outerHTML = `
-                        <button class="btn btn-sm btn-secondary copy-link" 
-                                data-link="${link}">
-                            Kopiuj link
-                        </button>
-                    `;
-                    showToast(`Link został wygenerowany pomyślnie dla kampanii: ${campaignCode}`);
-                } else {
-                    throw new Error('Network response was not ok');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('Wystąpił błąd podczas generowania linku', 'error');
-            });
-        }
-    });
-
-    // Check for pending toast after page load
-    window.addEventListener('load', checkPendingToast);
-
-    function checkPendingToast() {
-        const pendingToast = sessionStorage.getItem('pendingToast');
-        if (pendingToast) {
-            try {
-                const toastData = JSON.parse(pendingToast);
-                showToast(toastData.message, toastData.type);
-            } catch (error) {
-                console.error('Error showing pending toast:', error);
-            } finally {
-                sessionStorage.removeItem('pendingToast');
-            }
-        }
-    }
-</script>
-{% endblock %}
-
 {% block content %}
+{% if error_message %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        showToast('{{ error_message }}', 'error');
+    });
+</script>
+{% endif %}
+
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Kampanie rekrutacyjne</h1>
     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCampaignModal">
@@ -1049,138 +81,139 @@
             </div>
             <div class="modal-body">
                 <form id="addCampaignForm" method="POST" action="{{ url_for('campaign.add') }}">
-                    <div class="form-check form-switch mb-3">
-                        <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
-                        <label class="form-check-label" for="is_active">Kampania aktywna</label>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="code" class="form-label">Kod kampanii*</label>
-                            <input type="text" class="form-control" id="code" name="code" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="title" class="form-label">Tytuł kampanii*</label>
-                            <input type="text" class="form-control" id="title" name="title" required>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="contract_type" class="form-label">Rodzaj umowy*</label>
-                            <select class="form-select" id="contract_type" name="contract_type" required>
-                                <option value="umowa o pracę">Umowa o pracę</option>
-                                <option value="B2B">B2B</option>
-                                <option value="umowa zlecenie">Umowa zlecenie</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="employment_type" class="form-label">Rodzaj etatu*</label>
-                            <select class="form-select" id="employment_type" name="employment_type" required>
-                                <option value="pełny etat">Pełny etat</option>
-                                <option value="część etatu">Część etatu</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="workplace_location" class="form-label">Miejsce pracy*</label>
-                            <input type="text" class="form-control" id="workplace_location" name="workplace_location" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="work_start_date" class="form-label" style="cursor: pointer;" onclick="document.getElementById('work_start_date').showPicker()">Data rozpoczęcia pracy*</label>
-                            <input type="date" class="form-control" id="work_start_date" name="work_start_date" required 
-                                   onclick="this.showPicker()" style="cursor: pointer;">
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="duties" class="form-label">Opis obowiązków*</label>
-                        <textarea class="form-control" id="duties" name="duties" rows="3" required></textarea>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="requirements" class="form-label">Wymagania*</label>
-                        <textarea class="form-control" id="requirements" name="requirements" rows="3" required></textarea>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="employer_offerings" class="form-label">Co oferuje pracodawca*</label>
-                        <textarea class="form-control" id="employer_offerings" name="employer_offerings" rows="3" required></textarea>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="job_description" class="form-label">Opis czego potrzebujemy*</label>
-                        <textarea class="form-control" id="job_description" name="job_description" rows="3" required></textarea>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="salary_range_min" class="form-label">Dolna granica wynagrodzenia netto (PLN)</label>
-                            <input type="number" class="form-control" id="salary_range_min" name="salary_range_min">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="salary_range_max" class="form-label">Górna granica wynagrodzenia netto (PLN)</label>
-                            <input type="number" class="form-control" id="salary_range_max" name="salary_range_max">
-                        </div>
-                    </div>
-
-                    <!-- In Add Campaign Modal, replace the testsContainer div with: -->
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <label class="form-label">Test PO1</label>
-                            <select class="form-select" name="po1_test_id">
-                                <option value="">Wybierz test</option>
-                                {% for test in tests %}
-                                    {% if test.stage == 'PO1' %}
-                                        <option value="{{ test.id }}">
-                                            {{ test.test_type }} - {{ test.description }}
-                                        </option>
-                                    {% endif %}
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Test PO2</label>
-                            <select class="form-select" name="po2_test_id">
-                                <option value="">Wybierz test</option>
-                                {% for test in tests %}
-                                    {% if test.stage == 'PO2' %}
-                                        <option value="{{ test.id }}">
-                                            {{ test.test_type }} - {{ test.description }}
-                                        </option>
-                                    {% endif %}
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Test PO3</label>
-                            <select class="form-select" name="po3_test_id">
-                                <option value="">Wybierz test</option>
-                                {% for test in tests %}
-                                    {% if test.stage == 'PO3' %}
-                                        <option value="{{ test.id }}">
-                                            {{ test.test_type }} - {{ test.description }}
-                                        </option>
-                                    {% endif %}
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="mt-4 mb-3">
-                        <div class="d-flex align-items-center">
-                            <label class="form-label me-3 mb-0">Link do kampanii:</label>
-                            <div id="addCampaignLinkContainer">
-                                <em class="text-muted">Link zostanie wygenerowany po zapisaniu kampanii</em>
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="is_active" checked>
+                                <label class="form-check-label">Kampania aktywna</label>
                             </div>
                         </div>
                     </div>
-
-                    <div class="text-end mt-4">
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Kod kampanii*</label>
+                            <input type="text" class="form-control" name="code" required>
+                            <div class="invalid-feedback" style="display: none;">
+                                Kampania o takim kodzie już istnieje
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tytuł*</label>
+                            <input type="text" class="form-control" name="title" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Lokalizacja*</label>
+                            <input type="text" class="form-control" name="workplace_location" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Data rozpoczęcia pracy*</label>
+                            <input type="date" class="form-control" name="work_start_date" required 
+                                   onclick="this.showPicker()">
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Typ umowy*</label>
+                            <input type="text" class="form-control" name="contract_type" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Wymiar pracy*</label>
+                            <input type="text" class="form-control" name="employment_type" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Wynagrodzenie od</label>
+                            <input type="number" class="form-control" name="salary_range_min">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Wynagrodzenie do</label>
+                            <input type="number" class="form-control" name="salary_range_max">
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label class="form-label">Obowiązki*</label>
+                            <textarea class="form-control" name="duties" rows="3" required></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label class="form-label">Wymagania*</label>
+                            <textarea class="form-control" name="requirements" rows="3" required></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label class="form-label">Oferujemy*</label>
+                            <textarea class="form-control" name="employer_offerings" rows="3" required></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label class="form-label">Opis stanowiska*</label>
+                            <textarea class="form-control" name="job_description" rows="3" required></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Test PO1</label>
+                            <select class="form-select" name="po1_test_id">
+                                <option value="">Brak</option>
+                                {% for test in tests %}
+                                    {% if test.stage == 'PO1' %}
+                                        <option value="{{ test.id }}">
+                                            {{ test.test_type }} - {{ test.description or 'Brak opisu' }}
+                                        </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Test PO2</label>
+                            <select class="form-select" name="po2_test_id">
+                                <option value="">Brak</option>
+                                {% for test in tests %}
+                                    {% if test.stage == 'PO2' %}
+                                        <option value="{{ test.id }}">
+                                            {{ test.test_type }} - {{ test.description or 'Brak opisu' }}
+                                        </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Test PO3</label>
+                            <select class="form-select" name="po3_test_id">
+                                <option value="">Brak</option>
+                                {% for test in tests %}
+                                    {% if test.stage == 'PO3' %}
+                                        <option value="{{ test.id }}">
+                                            {{ test.test_type }} - {{ test.description or 'Brak opisu' }}
+                                        </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="text-end">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                        <button type="submit" class="btn btn-primary ms-2">Zapisz kampanię</button>
+                        <button type="submit" class="btn btn-primary ms-2" id="addCampaignSubmit">
+                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            <span class="button-text">Zapisz kampanię</span>
+                        </button>
                     </div>
                 </form>
             </div>
@@ -1198,141 +231,139 @@
             </div>
             <div class="modal-body">
                 <form id="editCampaignForm" method="POST">
-                    <div class="form-check form-switch mb-3">
-                        <input type="checkbox" class="form-check-input" id="edit_is_active" name="is_active">
-                        <label class="form-check-label" for="edit_is_active">Kampania aktywna</label>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="edit_code" class="form-label">Kod kampanii*</label>
-                            <input type="text" class="form-control" id="edit_code" name="code" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="edit_title" class="form-label">Tytuł kampanii*</label>
-                            <input type="text" class="form-control" id="edit_title" name="title" required>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="edit_contract_type" class="form-label">Rodzaj umowy*</label>
-                            <select class="form-select" id="edit_contract_type" name="contract_type" required>
-                                <option value="umowa o pracę">Umowa o pracę</option>
-                                <option value="B2B">B2B</option>
-                                <option value="umowa zlecenie">Umowa zlecenie</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="edit_employment_type" class="form-label">Rodzaj etatu*</label>
-                            <select class="form-select" id="edit_employment_type" name="employment_type" required>
-                                <option value="pełny etat">Pełny etat</option>
-                                <option value="część etatu">Część etatu</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="edit_workplace_location" class="form-label">Miejsce pracy*</label>
-                            <input type="text" class="form-control" id="edit_workplace_location" name="workplace_location" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="edit_work_start_date" class="form-label" style="cursor: pointer;" onclick="document.getElementById('edit_work_start_date').showPicker()">Data rozpoczęcia pracy*</label>
-                            <input type="date" class="form-control" id="edit_work_start_date" name="work_start_date" required 
-                                   onclick="this.showPicker()" style="cursor: pointer;">
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="edit_duties" class="form-label">Opis obowiązków*</label>
-                        <textarea class="form-control" id="edit_duties" name="duties" rows="3" required></textarea>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="edit_requirements" class="form-label">Wymagania*</label>
-                        <textarea class="form-control" id="edit_requirements" name="requirements" rows="3" required></textarea>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="edit_employer_offerings" class="form-label">Co oferuje pracodawca*</label>
-                        <textarea class="form-control" id="edit_employer_offerings" name="employer_offerings" rows="3" required></textarea>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="edit_job_description" class="form-label">Opis czego potrzebujemy*</label>
-                        <textarea class="form-control" id="edit_job_description" name="job_description" rows="3" required></textarea>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="edit_salary_range_min" class="form-label">Dolna granica wynagrodzenia netto (PLN)</label>
-                            <input type="number" class="form-control" id="edit_salary_range_min" name="salary_range_min">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="edit_salary_range_max" class="form-label">Górna granica wynagrodzenia netto (PLN)</label>
-                            <input type="number" class="form-control" id="edit_salary_range_max" name="salary_range_max">
-                        </div>
-                    </div>
-
-                    <!-- In Edit Campaign Modal, replace the editTestsContainer div with: -->
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <label class="form-label">Test PO1</label>
-                            <select class="form-select" name="po1_test_id">
-                                <option value="">Wybierz test</option>
-                                {% for test in tests %}
-                                    {% if test.stage == 'PO1' %}
-                                        <option value="{{ test.id }}" 
-                                                {% if campaign.po1_test_id == test.id %}selected{% endif %}>
-                                            {{ test.test_type }} - {{ test.description }}
-                                        </option>
-                                    {% endif %}
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Test PO2</label>
-                            <select class="form-select" name="po2_test_id">
-                                <option value="">Wybierz test</option>
-                                {% for test in tests %}
-                                    {% if test.stage == 'PO2' %}
-                                        <option value="{{ test.id }}"
-                                                {% if campaign.po2_test_id == test.id %}selected{% endif %}>
-                                            {{ test.test_type }} - {{ test.description }}
-                                        </option>
-                                    {% endif %}
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Test PO3</label>
-                            <select class="form-select" name="po3_test_id">
-                                <option value="">Wybierz test</option>
-                                {% for test in tests %}
-                                    {% if test.stage == 'PO3' %}
-                                        <option value="{{ test.id }}"
-                                                {% if campaign.po3_test_id == test.id %}selected{% endif %}>
-                                            {{ test.test_type }} - {{ test.description }}
-                                        </option>
-                                    {% endif %}
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="mt-4 mb-3">
-                        <div class="d-flex align-items-center">
-                            <label class="form-label me-3 mb-0">Link do kampanii:</label>
-                            <div id="editCampaignLinkContainer">
-                                <!-- Will be populated dynamically -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="is_active">
+                                <label class="form-check-label">Kampania aktywna</label>
                             </div>
                         </div>
                     </div>
-
-                    <div class="text-end mt-4">
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Kod kampanii*</label>
+                            <input type="text" class="form-control" name="code" required>
+                            <div class="invalid-feedback" style="display: none;">
+                                Kampania o takim kodzie już istnieje
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tytuł*</label>
+                            <input type="text" class="form-control" name="title" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Lokalizacja*</label>
+                            <input type="text" class="form-control" name="workplace_location" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Data rozpoczęcia pracy*</label>
+                            <input type="date" class="form-control" name="work_start_date" required 
+                                   onclick="this.showPicker()">
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Typ umowy*</label>
+                            <input type="text" class="form-control" name="contract_type" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Wymiar pracy*</label>
+                            <input type="text" class="form-control" name="employment_type" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Wynagrodzenie od</label>
+                            <input type="number" class="form-control" name="salary_range_min">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Wynagrodzenie do</label>
+                            <input type="number" class="form-control" name="salary_range_max">
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label class="form-label">Obowiązki*</label>
+                            <textarea class="form-control" name="duties" rows="3" required></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label class="form-label">Wymagania*</label>
+                            <textarea class="form-control" name="requirements" rows="3" required></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label class="form-label">Oferujemy*</label>
+                            <textarea class="form-control" name="employer_offerings" rows="3" required></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label class="form-label">Opis stanowiska*</label>
+                            <textarea class="form-control" name="job_description" rows="3" required></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Test PO1</label>
+                            <select class="form-select" name="po1_test_id">
+                                <option value="">Brak</option>
+                                {% for test in tests %}
+                                    {% if test.stage == 'PO1' %}
+                                        <option value="{{ test.id }}">
+                                            {{ test.test_type }} - {{ test.description or 'Brak opisu' }}
+                                        </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Test PO2</label>
+                            <select class="form-select" name="po2_test_id">
+                                <option value="">Brak</option>
+                                {% for test in tests %}
+                                    {% if test.stage == 'PO2' %}
+                                        <option value="{{ test.id }}">
+                                            {{ test.test_type }} - {{ test.description or 'Brak opisu' }}
+                                        </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Test PO3</label>
+                            <select class="form-select" name="po3_test_id">
+                                <option value="">Brak</option>
+                                {% for test in tests %}
+                                    {% if test.stage == 'PO3' %}
+                                        <option value="{{ test.id }}">
+                                            {{ test.test_type }} - {{ test.description or 'Brak opisu' }}
+                                        </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="text-end">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                        <button type="submit" class="btn btn-primary ms-2">Zapisz zmiany</button>
+                        <button type="submit" class="btn btn-primary ms-2" id="editCampaignSubmit">
+                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            <span class="button-text">Zapisz zmiany</span>
+                        </button>
                     </div>
                 </form>
             </div>
@@ -1340,15 +371,237 @@
     </div>
 </div>
 
-<!-- Toast Container -->
-<div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index: 1070;">
-    <div id="notificationToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="toast-header">
-            <strong class="me-auto" id="toastTitle">Notification</strong>
-            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-        <div class="toast-body" id="toastMessage">
-        </div>
-    </div>
-</div>
+{% endblock %}
+
+{% block head %}
+{{ super() }}
+<script defer>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle form submissions
+        ['addCampaignForm', 'editCampaignForm'].forEach(formId => {
+            const form = document.getElementById(formId);
+            if (form) {
+                form.addEventListener('submit', handleCampaignFormSubmit);
+            }
+        });
+
+        // Handle copy link buttons
+        document.querySelectorAll('.copy-link').forEach(button => {
+            button.addEventListener('click', function() {
+                const link = this.dataset.link;
+                navigator.clipboard.writeText(link).then(() => {
+                    showToast('Link został skopiowany do schowka', 'success');
+                });
+            });
+        });
+
+        // Handle generate link buttons
+        document.querySelectorAll('.generate-link-list').forEach(button => {
+            button.addEventListener('click', function() {
+                const campaignId = this.dataset.campaignId;
+                generateLink(campaignId);
+            });
+        });
+    });
+
+    function editCampaign(campaignId) {
+        fetch(`/campaigns/${campaignId}/data`)
+            .then(response => response.json())
+            .then(campaign => {
+                const form = document.getElementById('editCampaignForm');
+                form.action = `/campaigns/${campaignId}/edit`;
+                
+                // Populate form fields
+                form.querySelector('[name="code"]').value = campaign.code || '';
+                form.querySelector('[name="title"]').value = campaign.title || '';
+                form.querySelector('[name="workplace_location"]').value = campaign.workplace_location || '';
+                form.querySelector('[name="work_start_date"]').value = campaign.work_start_date || '';
+                form.querySelector('[name="contract_type"]').value = campaign.contract_type || '';
+                form.querySelector('[name="employment_type"]').value = campaign.employment_type || '';
+                form.querySelector('[name="salary_range_min"]').value = campaign.salary_range_min || '';
+                form.querySelector('[name="salary_range_max"]').value = campaign.salary_range_max || '';
+                form.querySelector('[name="duties"]').value = campaign.duties || '';
+                form.querySelector('[name="requirements"]').value = campaign.requirements || '';
+                form.querySelector('[name="employer_offerings"]').value = campaign.employer_offerings || '';
+                form.querySelector('[name="job_description"]').value = campaign.job_description || '';
+                form.querySelector('[name="po1_test_id"]').value = campaign.po1_test_id || '';
+                form.querySelector('[name="po2_test_id"]').value = campaign.po2_test_id || '';
+                form.querySelector('[name="po3_test_id"]').value = campaign.po3_test_id || '';
+                form.querySelector('[name="is_active"]').checked = campaign.is_active;
+                
+                new bootstrap.Modal(document.getElementById('editCampaignModal')).show();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Błąd podczas ładowania danych kampanii', 'error');
+            });
+    }
+
+    function confirmDelete(campaignId) {
+        if (confirm('Czy na pewno chcesz usunąć tę kampanię?')) {
+            fetch(`/campaigns/${campaignId}/delete`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.querySelector(`tr[data-campaign-id="${campaignId}"]`).remove();
+                    showToast('Kampania została usunięta', 'success');
+                } else {
+                    throw new Error(data.error || 'Wystąpił błąd podczas usuwania kampanii');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast(error.message, 'error');
+            });
+        }
+    }
+
+    function handleCampaignFormSubmit(e) {
+        e.preventDefault();
+        const form = this;
+        const formData = new FormData(form);
+        const code = formData.get('code');
+        const campaignId = form.action.includes('/edit') ? form.action.split('/').slice(-2)[0] : null;
+        const codeInput = form.querySelector('[name="code"]');
+        const feedbackDiv = codeInput.nextElementSibling;
+        
+        // Get submit button and show loading state
+        const submitButton = form.querySelector('button[type="submit"]');
+        const spinner = submitButton.querySelector('.spinner-border');
+        const buttonText = submitButton.querySelector('.button-text');
+        
+        // Show loading state
+        submitButton.disabled = true;
+        spinner.classList.remove('d-none');
+        buttonText.textContent = 'Zapisywanie...';
+        
+        // First check if code exists
+        fetch('/campaigns/check-code', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                code: code,
+                campaign_id: campaignId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.valid) {
+                // Show validation error in form
+                codeInput.classList.add('is-invalid');
+                feedbackDiv.style.display = 'block';
+                feedbackDiv.textContent = data.error;
+                
+                // Reset button state
+                submitButton.disabled = false;
+                spinner.classList.add('d-none');
+                buttonText.textContent = campaignId ? 'Zapisz zmiany' : 'Zapisz kampanię';
+                
+                throw new Error(data.error);
+            }
+            
+            // If code is valid, proceed with form submission
+            return fetch(form.action, {
+                method: 'POST',
+                body: formData
+            });
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Store success message in sessionStorage
+                sessionStorage.setItem('pendingToast', JSON.stringify({
+                    message: campaignId ? 'Kampania została zaktualizowana' : 'Kampania została dodana',
+                    type: 'success'
+                }));
+                window.location.reload();
+            } else {
+                throw new Error(data.error || 'Wystąpił błąd podczas zapisywania kampanii');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            if (!codeInput.classList.contains('is-invalid')) {
+                showToast(error.message, 'error');
+            }
+            
+            // Reset button state if not already reset
+            if (!codeInput.classList.contains('is-invalid')) {
+                submitButton.disabled = false;
+                spinner.classList.add('d-none');
+                buttonText.textContent = campaignId ? 'Zapisz zmiany' : 'Zapisz kampanię';
+            }
+        });
+    }
+
+    function generateLink(campaignId) {
+        fetch(`/campaigns/${campaignId}/generate-link`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                throw new Error(data.error || 'Wystąpił błąd podczas generowania linku');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast(error.message, 'error');
+        });
+    }
+
+    // Add real-time code validation
+    document.addEventListener('DOMContentLoaded', function() {
+        ['addCampaignForm', 'editCampaignForm'].forEach(formId => {
+            const form = document.getElementById(formId);
+            if (form) {
+                const codeInput = form.querySelector('[name="code"]');
+                const feedbackDiv = codeInput.nextElementSibling;
+                let timeout;
+                
+                codeInput.addEventListener('input', function() {
+                    clearTimeout(timeout);
+                    const code = this.value;
+                    const campaignId = form.action.includes('/edit') ? form.action.split('/').slice(-2)[0] : null;
+                    
+                    // Reset validation state
+                    this.classList.remove('is-invalid');
+                    feedbackDiv.style.display = 'none';
+                    
+                    if (code) {
+                        timeout = setTimeout(() => {
+                            fetch('/campaigns/check-code', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    code: code,
+                                    campaign_id: campaignId
+                                })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (!data.valid) {
+                                    this.classList.add('is-invalid');
+                                    feedbackDiv.style.display = 'block';
+                                    feedbackDiv.textContent = data.error;
+                                } else {
+                                    this.classList.remove('is-invalid');
+                                    feedbackDiv.style.display = 'none';
+                                }
+                            });
+                        }, 500);
+                    }
+                });
+            }
+        });
+    });
+</script>
 {% endblock %}

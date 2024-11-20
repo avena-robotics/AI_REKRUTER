@@ -21,12 +21,15 @@ def list():
             test['question_count'] = len(questions.data)
             test['total_points'] = sum(q.get('points', 0) for q in questions.data)
         
-        return render_template('tests/list.html', tests=tests.data)
+        return render_template('tests/list.html', 
+                             tests=tests.data or [])
     
     except Exception as e:
-        print(f"Debug - Error details: {str(e)}")
-        flash(f'Wystąpił błąd podczas pobierania testów: {str(e)}', 'error')
-        return redirect(url_for('main.index'))
+        print(f"Error in test list: {str(e)}")  # Debug log
+        return jsonify({
+            'success': False,
+            'error': f'Wystąpił błąd podczas pobierania testów: {str(e)}'
+        }), 500
 
 @test_bp.route('/tests/add', methods=['POST'])
 def add():

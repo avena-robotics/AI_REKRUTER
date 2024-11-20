@@ -21,7 +21,7 @@ def format_datetime(dt_str):
 def list():
     try:
         # Get all campaigns with tests
-        campaigns = supabase.table('campaigns')\
+        campaigns_response = supabase.table('campaigns')\
             .select("""
                 *,
                 po1:tests!campaigns_po1_test_id_fkey (test_type, description),
@@ -32,34 +32,82 @@ def list():
             .execute()
 
         # Format datetime fields
-        for campaign in campaigns.data:
-            if campaign.get('created_at'):
-                campaign['created_at'] = format_datetime(campaign['created_at'])
-            if campaign.get('updated_at'):
-                campaign['updated_at'] = format_datetime(campaign['updated_at'])
+        campaigns_data = campaigns_response.data or []
+        for campaign in campaigns_data:
+            if campaign and isinstance(campaign, dict):
+                if campaign.get('created_at'):
+                    campaign['created_at'] = format_datetime(campaign['created_at'])
+                if campaign.get('updated_at'):
+                    campaign['updated_at'] = format_datetime(campaign['updated_at'])
 
         # Get all tests for dropdowns
-        tests = supabase.table('tests')\
+        tests_response = supabase.table('tests')\
             .select('id, test_type, stage, description')\
             .order('stage')\
             .order('test_type')\
             .execute()
         
+        tests_data = tests_response.data or []
+        
         return render_template('campaigns/list.html', 
-                             campaigns=campaigns.data, 
-                             tests=tests.data)
+                             campaigns=campaigns_data, 
+                             tests=tests_data)
     
     except Exception as e:
-        flash(f'Wystąpił błąd podczas pobierania danych: {str(e)}', 'error')
-        return redirect(url_for('main.index'))
+        print(f"Error in campaign list: {str(e)}")  # Debug log
+        return render_template('campaigns/list.html',
+                             campaigns=[],
+                             tests=[],
+                             error_message=f'Wystąpił błąd podczas pobierania danych: {str(e)}')
+
+@campaign_bp.route('/campaigns/check-code', methods=['POST'])
+def check_code():
+    try:
+        code = request.json.get('code')
+        campaign_id = request.json.get('campaign_id')  # For edit case
+        
+        if not code:
+            return jsonify({'valid': False, 'error': 'Kod kampanii jest wymagany'})
+        
+        query = supabase.table('campaigns').select('id').eq('code', code)
+        
+        # If editing, exclude current campaign
+        if campaign_id:
+            query = query.neq('id', campaign_id)
+            
+        result = query.execute()
+        
+        exists = len(result.data) > 0
+        return jsonify({
+            'valid': not exists,
+            'error': 'Kampania o takim kodzie już istnieje' if exists else None
+        })
+    except Exception as e:
+        return jsonify({
+            'valid': False,
+            'error': f'Błąd podczas sprawdzania kodu: {str(e)}'
+        })
 
 @campaign_bp.route('/campaigns/add', methods=['POST'])
 def add():
     try:
+        # First check if code exists
+        code = request.form.get('code')
+        check_result = supabase.table('campaigns')\
+            .select('id')\
+            .eq('code', code)\
+            .execute()
+            
+        if check_result.data:
+            return jsonify({
+                'success': False,
+                'error': 'Kampania o takim kodzie już istnieje'
+            })
+        
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         campaign_data = {
-            'code': request.form.get('code'),
+            'code': code,
             'title': request.form.get('title'),
             'workplace_location': request.form.get('workplace_location'),
             'contract_type': request.form.get('contract_type'),
@@ -117,10 +165,24 @@ def get_campaign_data(campaign_id):
 @campaign_bp.route('/campaigns/<int:campaign_id>/edit', methods=['POST'])
 def edit(campaign_id):
     try:
+        # First check if code exists (excluding current campaign)
+        code = request.form.get('code')
+        check_result = supabase.table('campaigns')\
+            .select('id')\
+            .eq('code', code)\
+            .neq('id', campaign_id)\
+            .execute()
+            
+        if check_result.data:
+            return jsonify({
+                'success': False,
+                'error': 'Kampania o takim kodzie już istnieje'
+            })
+        
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         campaign_data = {
-            'code': request.form.get('code'),
+            'code': code,
             'title': request.form.get('title'),
             'workplace_location': request.form.get('workplace_location'),
             'contract_type': request.form.get('contract_type'),
