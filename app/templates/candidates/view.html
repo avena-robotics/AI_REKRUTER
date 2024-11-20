@@ -6,7 +6,7 @@
             {% if candidate.phone %}
             <p class="text-muted mb-0">Telefon: {{ candidate.phone }}</p>
             {% endif %}
-            <p class="text-muted mb-0">Kampania: {{ candidate.campaigns.code }} - {{ candidate.campaigns.title }}</p>
+            <p class="text-muted mb-0">Kampania: {{ candidate.campaign.code }} - {{ candidate.campaign.title }}</p>
         </div>
         <div class="col-md-6 text-md-end">
             <strong>Status rekrutacji:</strong>
@@ -27,14 +27,14 @@
         <div class="card-body">
             <div class="row">
                 <div class="col-md-6">
-                    <p><strong>Lokalizacja:</strong> {{ candidate.campaigns.workplace_location }}</p>
-                    <p><strong>Typ umowy:</strong> {{ candidate.campaigns.contract_type }}</p>
-                    <p><strong>Wymiar pracy:</strong> {{ candidate.campaigns.employment_type }}</p>
+                    <p><strong>Lokalizacja:</strong> {{ candidate.campaign.workplace_location }}</p>
+                    <p><strong>Typ umowy:</strong> {{ candidate.campaign.contract_type }}</p>
+                    <p><strong>Wymiar pracy:</strong> {{ candidate.campaign.employment_type }}</p>
                 </div>
                 <div class="col-md-6">
-                    <p><strong>Data rozpoczęcia:</strong> {{ candidate.campaigns.work_start_date }}</p>
-                    {% if candidate.campaigns.salary_range_min and candidate.campaigns.salary_range_max %}
-                    <p><strong>Widełki płacowe:</strong> {{ candidate.campaigns.salary_range_min }} - {{ candidate.campaigns.salary_range_max }} PLN</p>
+                    <p><strong>Data rozpoczęcia:</strong> {{ candidate.campaign.work_start_date }}</p>
+                    {% if candidate.campaign.salary_range_min and candidate.campaign.salary_range_max %}
+                    <p><strong>Widełki płacowe:</strong> {{ candidate.campaign.salary_range_min }} - {{ candidate.campaign.salary_range_max }} PLN</p>
                     {% endif %}
                 </div>
             </div>
@@ -86,118 +86,8 @@
         </div>
     </div>
 
-    <!-- Test Answers -->
-    <div class="accordion" id="candidateAccordion">
-        {% for stage in ['PO1', 'PO2', 'PO3'] %}
-        {% set stage_answers = answers|selectattr("question.test.stage", "equalto", stage)|list %}
-        {% if stage_answers %}
-        <div class="accordion-item">
-            <h2 class="accordion-header">
-                <button class="accordion-button {% if not loop.first %}collapsed{% endif %}" 
-                        type="button" 
-                        data-bs-toggle="collapse" 
-                        data-bs-target="#collapse{{ stage }}">
-                    Etap {{ stage }} - {{ stage_answers[0].question.test.test_type }}
-                    {% if stage == 'PO1' and candidate.po1_score %}
-                        (Wynik: {{ candidate.po1_score }})
-                    {% elif stage == 'PO2' and candidate.po2_score %}
-                        (Wynik: {{ candidate.po2_score }})
-                    {% elif stage == 'PO3' and candidate.po3_score %}
-                        (Wynik: {{ candidate.po3_score }})
-                    {% endif %}
-                </button>
-            </h2>
-            <div id="collapse{{ stage }}" 
-                 class="accordion-collapse collapse {% if loop.first %}show{% endif %}"
-                 data-bs-parent="#candidateAccordion">
-                <div class="accordion-body">
-                    <!-- Test Details -->
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <h6>Informacje o teście</h6>
-                            <p class="mb-1"><strong>Typ testu:</strong> {{ stage_answers[0].question.test.test_type }}</p>
-                            <p class="mb-1"><strong>Opis:</strong> {{ stage_answers[0].question.test.description }}</p>
-                            <p class="mb-1"><strong>Próg zaliczenia:</strong> {{ stage_answers[0].question.test.passing_threshold }}</p>
-                            <p class="mb-1"><strong>Limit czasu:</strong> {{ stage_answers[0].question.test.time_limit_minutes }} minut</p>
-                            <p class="mb-1"><strong>Liczba pytań:</strong> {{ stage_answers|length }}</p>
-                            <p class="mb-0"><strong>Suma punktów do zdobycia:</strong> 
-                                {{ stage_answers|sum(attribute='question.points') }}
-                            </p>
-                        </div>
-                    </div>
-
-                    <!-- Questions and Answers -->
-                    {% for answer in stage_answers %}
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <h6 class="card-title mb-0">{{ answer.question.question_text }}</h6>
-                                <span class="badge bg-info">
-                                    Punkty: {{ answer.score }}/{{ answer.question.points }}
-                                    {% if answer.score_ai %}
-                                    (AI: {{ answer.score_ai }})
-                                    {% endif %}
-                                </span>
-                            </div>
-
-                            {% if answer.question.image %}
-                            <img src="{{ answer.question.image }}" class="img-fluid mb-3" alt="Question image">
-                            {% endif %}
-                            
-                            <div class="answer-content">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <strong>Odpowiedź kandydata:</strong><br>
-                                        {% if answer.question.answer_type == 'TEXT' %}
-                                            <p>{{ answer.text_answer }}</p>
-                                        {% elif answer.question.answer_type == 'BOOLEAN' %}
-                                            <p>{{ 'Tak' if answer.boolean_answer else 'Nie' }}</p>
-                                        {% elif answer.question.answer_type == 'SCALE' %}
-                                            <p>{{ answer.scale_answer }}/5</p>
-                                        {% elif answer.question.answer_type == 'SALARY' %}
-                                            <p>{{ answer.numeric_answer }} PLN</p>
-                                        {% elif answer.question.answer_type == 'DATE' %}
-                                            <p>{{ answer.date_answer|date }}</p>
-                                        {% elif answer.question.answer_type == 'ABCD' %}
-                                            <p>Odpowiedź: {{ answer.abcd_answer }}</p>
-                                            {% if answer.question.answer_a %}
-                                            <small class="d-block">A: {{ answer.question.answer_a }}</small>
-                                            <small class="d-block">B: {{ answer.question.answer_b }}</small>
-                                            <small class="d-block">C: {{ answer.question.answer_c }}</small>
-                                            <small class="d-block">D: {{ answer.question.answer_d }}</small>
-                                            {% endif %}
-                                        {% endif %}
-                                    </div>
-                                    <div class="col-md-6">
-                                        <strong>Poprawna odpowiedź:</strong><br>
-                                        {% if answer.question.answer_type == 'TEXT' %}
-                                            <p>{{ answer.question.correct_answer_text }}</p>
-                                        {% elif answer.question.answer_type == 'BOOLEAN' %}
-                                            <p>{{ 'Tak' if answer.question.correct_answer_boolean else 'Nie' }}</p>
-                                        {% elif answer.question.answer_type == 'SCALE' %}
-                                            <p>{{ answer.question.correct_answer_scale }}/5</p>
-                                        {% elif answer.question.answer_type == 'SALARY' %}
-                                            <p>{{ answer.question.correct_answer_numeric }} PLN</p>
-                                        {% elif answer.question.answer_type == 'DATE' %}
-                                            <p>{{ answer.question.correct_answer_date|date }}</p>
-                                        {% elif answer.question.answer_type == 'ABCD' %}
-                                            <p>Odpowiedź: {{ answer.question.correct_answer_abcd }}</p>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-        {% endif %}
-        {% endfor %}
-    </div>
-
     <!-- Application Details -->
-    <div class="card mt-4">
+    <div class="card mb-4">
         <div class="card-header">
             <h5 class="mb-0">Szczegóły aplikacji</h5>
         </div>
@@ -209,23 +99,241 @@
                 </div>
                 <div class="col-md-6">
                     {% if candidate.access_token_po2 %}
-                    <p>
-                        <strong>Token PO2:</strong> {{ candidate.access_token_po2 }}
-                        {% if candidate.access_token_po2_expires_at %}
-                        <br><small class="text-muted">Wygasa: {{ candidate.access_token_po2_expires_at|datetime }}</small>
-                        {% endif %}
-                    </p>
+                    <div class="mb-3">
+                        <strong>Token PO2:</strong>
+                        <div class="d-flex align-items-center gap-2">
+                            <code>{{ candidate.access_token_po2[:8] }}...{{ candidate.access_token_po2[-8:] }}</code>
+                            <button class="btn btn-sm btn-outline-secondary copy-token" 
+                                    data-token="{{ candidate.access_token_po2 }}"
+                                    title="Kopiuj token">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <div class="mt-1 small">
+                            <span class="badge {{ 'bg-success' if not candidate.access_token_po2_is_used else 'bg-danger' }}">
+                                {{ 'Aktywny' if not candidate.access_token_po2_is_used else 'Wykorzystany' }}
+                            </span>
+                            {% if candidate.access_token_po2_expires_at %}
+                                <div class="text-muted mt-1">
+                                    Wygasa: {{ candidate.access_token_po2_expires_at|datetime }}
+                                    <span class="time-remaining" 
+                                          data-expires="{{ candidate.access_token_po2_expires_at }}">
+                                        (pozostało: ...)
+                                    </span>
+                                </div>
+                                {% if not candidate.access_token_po2_is_used %}
+                                    <button class="btn btn-sm btn-link extend-token p-0 mt-1" 
+                                            data-candidate-id="{{ candidate.id }}"
+                                            data-stage="PO2">
+                                        Przedłuż o tydzień
+                                    </button>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
                     {% endif %}
+
                     {% if candidate.access_token_po3 %}
-                    <p>
-                        <strong>Token PO3:</strong> {{ candidate.access_token_po3 }}
-                        {% if candidate.access_token_po3_expires_at %}
-                        <br><small class="text-muted">Wygasa: {{ candidate.access_token_po3_expires_at|datetime }}</small>
-                        {% endif %}
-                    </p>
+                    <div>
+                        <strong>Token PO3:</strong>
+                        <div class="d-flex align-items-center gap-2">
+                            <code>{{ candidate.access_token_po3[:8] }}...{{ candidate.access_token_po3[-8:] }}</code>
+                            <button class="btn btn-sm btn-outline-secondary copy-token" 
+                                    data-token="{{ candidate.access_token_po3 }}"
+                                    title="Kopiuj token">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <div class="mt-1 small">
+                            <span class="badge {{ 'bg-success' if not candidate.access_token_po3_is_used else 'bg-danger' }}">
+                                {{ 'Aktywny' if not candidate.access_token_po3_is_used else 'Wykorzystany' }}
+                            </span>
+                            {% if candidate.access_token_po3_expires_at %}
+                                <div class="text-muted mt-1">
+                                    Wygasa: {{ candidate.access_token_po3_expires_at|datetime }}
+                                    <span class="time-remaining" 
+                                          data-expires="{{ candidate.access_token_po3_expires_at }}">
+                                        (pozostało: ...)
+                                    </span>
+                                </div>
+                                {% if not candidate.access_token_po3_is_used %}
+                                    <button class="btn btn-sm btn-link extend-token p-0 mt-1" 
+                                            data-candidate-id="{{ candidate.id }}"
+                                            data-stage="PO3">
+                                        Przedłuż o tydzień
+                                    </button>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
                     {% endif %}
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Test Answers -->
+    <div class="accordion" id="candidateAccordion">
+        {% for stage in ['PO1', 'PO2', 'PO3'] %}
+        {% if tests[stage] %}
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button {% if not loop.first %}collapsed{% endif %}" 
+                        type="button" 
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#collapse{{ stage }}">
+                    Etap {{ stage }} - {{ tests[stage].test.test_type }}
+                    {% if tests[stage].score %}
+                        (Wynik: {{ tests[stage].score }})
+                    {% endif %}
+                </button>
+            </h2>
+            <div id="collapse{{ stage }}" 
+                 class="accordion-collapse collapse {% if loop.first %}show{% endif %}"
+                 data-bs-parent="#candidateAccordion">
+                <div class="accordion-body">
+                    <!-- Test Details -->
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h6>Informacje o teście</h6>
+                            <p class="mb-1"><strong>Typ testu:</strong> {{ tests[stage].test.test_type }}</p>
+                            <p class="mb-1"><strong>Opis:</strong> {{ tests[stage].test.description }}</p>
+                            <p class="mb-1"><strong>Próg zaliczenia:</strong> {{ tests[stage].test.passing_threshold }}</p>
+                            <p class="mb-1"><strong>Limit czasu:</strong> {{ tests[stage].test.time_limit_minutes }} minut</p>
+                            <p class="mb-1"><strong>Liczba pytań:</strong> {{ tests[stage].question_count }}</p>
+                            <p class="mb-0"><strong>Suma punktów do zdobycia:</strong> {{ tests[stage].total_points }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Questions and Answers -->
+                    {% for question in tests[stage].questions %}
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h6 class="card-title mb-0">{{ question.question_text }}</h6>
+                                {% if question.answer %}
+                                <span class="badge bg-info">
+                                    Punkty: {{ question.answer.score }}/{{ question.points }}
+                                    {% if question.answer.score_ai %}
+                                    (AI: {{ question.answer.score_ai }})
+                                    {% endif %}
+                                </span>
+                                {% endif %}
+                            </div>
+
+                            {% if question.image %}
+                            <img src="{{ question.image }}" class="img-fluid mb-3" alt="Question image">
+                            {% endif %}
+                            
+                            <div class="answer-content">
+                                <div class="mb-3">
+                                    <strong>Poprawna odpowiedź:</strong><br>
+                                    {% if question.answer_type == 'TEXT' %}
+                                        <p>{{ question.correct_answer_text }}</p>
+                                    {% elif question.answer_type == 'BOOLEAN' %}
+                                        <p>{{ 'Tak' if question.correct_answer_boolean else 'Nie' }}</p>
+                                    {% elif question.answer_type == 'SCALE' %}
+                                        <p>{{ question.correct_answer_scale }}/5</p>
+                                    {% elif question.answer_type == 'SALARY' %}
+                                        <p>{{ question.correct_answer_numeric }} PLN</p>
+                                    {% elif question.answer_type == 'DATE' %}
+                                        <p>{{ question.correct_answer_date|datetime }}</p>
+                                    {% elif question.answer_type == 'ABCD' %}
+                                        <p>Odpowiedź: {{ question.correct_answer_abcd }}</p>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <strong>Odpowiedź kandydata:</strong><br>
+                                    {% if question.answer %}
+                                        {% if question.answer_type == 'TEXT' %}
+                                            <p>{{ question.answer.text_answer }}</p>
+                                        {% elif question.answer_type == 'BOOLEAN' %}
+                                            <p>{{ 'Tak' if question.answer.boolean_answer else 'Nie' }}</p>
+                                        {% elif question.answer_type == 'SCALE' %}
+                                            <p>{{ question.answer.scale_answer }}/5</p>
+                                        {% elif question.answer_type == 'SALARY' %}
+                                            <p>{{ question.answer.numeric_answer }} PLN</p>
+                                        {% elif question.answer_type == 'DATE' %}
+                                            <p>{{ question.answer.date_answer|datetime }}</p>
+                                        {% elif question.answer_type == 'ABCD' %}
+                                            <p>Odpowiedź: {{ question.answer.abcd_answer }}</p>
+                                            {% if question.answer_a %}
+                                            <small class="d-block">A: {{ question.answer_a }}</small>
+                                            <small class="d-block">B: {{ question.answer_b }}</small>
+                                            <small class="d-block">C: {{ question.answer_c }}</small>
+                                            <small class="d-block">D: {{ question.answer_d }}</small>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% else %}
+                                        <p class="text-muted">Brak odpowiedzi</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Copy token functionality
+    document.querySelectorAll('.copy-token').forEach(button => {
+        button.addEventListener('click', function() {
+            const token = this.dataset.token;
+            navigator.clipboard.writeText(token).then(() => {
+                showToast('Token został skopiowany do schowka', 'success');
+            });
+        });
+    });
+
+    // Extend token functionality
+    document.querySelectorAll('.extend-token').forEach(button => {
+        button.addEventListener('click', function() {
+            if (confirm('Czy na pewno chcesz przedłużyć ważność tokenu o tydzień?')) {
+                const candidateId = this.dataset.candidateId;
+                const stage = this.dataset.stage;
+                
+                fetch(`/candidates/${candidateId}/extend-token/${stage}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        showToast(data.error || 'Wystąpił błąd', 'error');
+                    }
+                });
+            }
+        });
+    });
+
+    // Update time remaining
+    function updateTimeRemaining() {
+        document.querySelectorAll('.time-remaining').forEach(span => {
+            const expiresAt = new Date(span.dataset.expires);
+            const now = new Date();
+            const diff = expiresAt - now;
+
+            if (diff <= 0) {
+                span.textContent = '(token wygasł)';
+                span.classList.add('text-danger');
+            } else {
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                span.textContent = `(pozostało: ${hours}h ${minutes}min)`;
+            }
+        });
+    }
+
+    // Update time remaining every minute
+    updateTimeRemaining();
+    setInterval(updateTimeRemaining, 60000);
+});
+</script>

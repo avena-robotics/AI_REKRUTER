@@ -116,38 +116,9 @@ def submit_test(token):
         abort(404, description="Invalid token")
     
     try:
-        # Calculate score based on answers
-        total_score = 0
-        for key, value in request.form.items():
-            if key.startswith('answer_'):
-                question_id = int(key.split('_')[1])
-                # Get question details
-                question = supabase.table('questions')\
-                    .select('*')\
-                    .eq('id', question_id)\
-                    .single()\
-                    .execute()
-                
-                if question.data:
-                    # Save answer
-                    answer_data = {
-                        'candidate_id': test_info.get('candidate', {}).get('id'),
-                        'question_id': question_id,
-                        'created_at': datetime.now().isoformat()
-                    }
-                    
-                    # Set appropriate answer field based on type
-                    answer_type = question.data['answer_type']
-                    if answer_type == 'ABCD':
-                        answer_data['abcd_answer'] = value
-                        if value == question.data['correct_answer_abcd']:
-                            total_score += question.data['points']
-                    
-                    supabase.table('candidate_answers').insert(answer_data).execute()
-        
-        # Update candidate status and score
+        # For PO1, create candidate first
+        candidate_id = None
         if test_info['stage'] == 'PO1':
-            # Create new candidate for PO1
             candidate_data = {
                 'campaign_id': test_info['campaign']['id'],
                 'first_name': request.form.get('first_name'),
@@ -155,23 +126,112 @@ def submit_test(token):
                 'email': request.form.get('email'),
                 'phone': request.form.get('phone'),
                 'recruitment_status': 'PO1',
-                'po1_score': total_score,
-                'po1_completed_at': datetime.now().isoformat()
+                'created_at': datetime.now().isoformat(),
+                'updated_at': datetime.now().isoformat()
             }
-            supabase.table('candidates').insert(candidate_data).execute()
+            result = supabase.table('candidates').insert(candidate_data).execute()
+            candidate_id = result.data[0]['id']
         else:
-            # Update existing candidate
-            update_data = {
-                f'{test_info["stage"].lower()}_score': total_score,
-                f'{test_info["stage"].lower()}_completed_at': datetime.now().isoformat(),
-                f'access_token_{test_info["stage"].lower()}_is_used': True
-            }
-            supabase.table('candidates')\
-                .update(update_data)\
-                .eq('id', test_info['candidate']['id'])\
-                .execute()
+            candidate_id = test_info['candidate']['id']
+
+        if not candidate_id:
+            raise ValueError("No candidate ID available")
+
+        # Calculate score based on answers
+        total_score = 0
+        saved_answers = []  # Keep track of saved answers for verification
         
-        # Clear the timer from localStorage
+        for key, value in request.form.items():
+            if key.startswith('answer_'):
+                # Skip salary min/max fields, they'll be handled with the main salary field
+                if '_min' in key or '_max' in key:
+                    continue
+                    
+                question_id = int(key.split('_')[1])
+                # Get question details with test info
+                question = supabase.table('questions')\
+                    .select('*, tests(*)')\
+                    .eq('id', question_id)\
+                    .single()\
+                    .execute()
+                
+                if not question.data:
+                    raise ValueError(f"Question {question_id} not found")
+                
+                if question.data['test_id'] != test_info['test']['id']:
+                    raise ValueError(f"Question {question_id} does not belong to the current test")
+                
+                # Prepare base answer data
+                answer_data = {
+                    'candidate_id': candidate_id,
+                    'question_id': question_id,
+                    'created_at': datetime.now().isoformat()
+                }
+                
+                # Set appropriate answer field and calculate score based on type
+                answer_type = question.data['answer_type']
+                
+                if answer_type == 'TEXT':
+                    answer_data['text_answer'] = value
+                    if value == question.data['correct_answer_text']:
+                        total_score += question.data['points']
+                        answer_data['score'] = question.data['points']
+                        
+                elif answer_type == 'BOOLEAN':
+                    bool_value = value.lower() == 'true'
+                    answer_data['boolean_answer'] = bool_value
+                    if bool_value == question.data['correct_answer_boolean']:
+                        total_score += question.data['points']
+                        answer_data['score'] = question.data['points']
+                        
+                elif answer_type == 'SCALE':
+                    scale_value = int(value)
+                    answer_data['scale_answer'] = scale_value
+                    if scale_value == question.data['correct_answer_scale']:
+                        total_score += question.data['points']
+                        answer_data['score'] = question.data['points']
+                        
+                elif answer_type == 'SALARY':
+                    min_value = float(request.form.get(f'answer_{question_id}_min', 0))
+                    max_value = float(request.form.get(f'answer_{question_id}_max', 0))
+                    answer_data['numeric_answer'] = (min_value + max_value) / 2
+                    correct_value = question.data['correct_answer_numeric']
+                    if correct_value and min_value <= correct_value <= max_value:
+                        total_score += question.data['points']
+                        answer_data['score'] = question.data['points']
+                        
+                elif answer_type == 'DATE':
+                    date_value = datetime.strptime(value, '%Y-%m-%d').date()
+                    answer_data['date_answer'] = value
+                    if date_value == question.data['correct_answer_date']:
+                        total_score += question.data['points']
+                        answer_data['score'] = question.data['points']
+                        
+                elif answer_type == 'ABCD':
+                    answer_data['abcd_answer'] = value
+                    if value == question.data['correct_answer_abcd']:
+                        total_score += question.data['points']
+                        answer_data['score'] = question.data['points']
+                
+                # Save the answer
+                result = supabase.table('candidate_answers').insert(answer_data).execute()
+                saved_answers.append(result.data[0])
+        
+        # Update candidate with score
+        update_data = {
+            f'{test_info["stage"].lower()}_score': total_score,
+            f'{test_info["stage"].lower()}_completed_at': datetime.now().isoformat(),
+            'updated_at': datetime.now().isoformat()
+        }
+        
+        if test_info['stage'] != 'PO1':
+            update_data[f'access_token_{test_info["stage"].lower()}_is_used'] = True
+            
+        supabase.table('candidates')\
+            .update(update_data)\
+            .eq('id', candidate_id)\
+            .execute()
+        
         return """
             <script>
                 localStorage.removeItem('remainingSeconds');
@@ -181,6 +241,21 @@ def submit_test(token):
         
     except Exception as e:
         print(f"Error submitting test: {str(e)}")
+        # Try to rollback by deleting saved answers and candidate if PO1
+        try:
+            if saved_answers:
+                for answer in saved_answers:
+                    supabase.table('candidate_answers')\
+                        .delete()\
+                        .eq('id', answer['id'])\
+                        .execute()
+            if test_info['stage'] == 'PO1' and candidate_id:
+                supabase.table('candidates')\
+                    .delete()\
+                    .eq('id', candidate_id)\
+                    .execute()
+        except:
+            pass
         abort(500, description="Error submitting test")
 
 @test_bp.route('/test/<token>/cancel', methods=['GET'])
