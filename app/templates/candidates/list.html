@@ -122,6 +122,12 @@
                                 </button>
                             </li>
                             {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <button class="dropdown-item text-danger" onclick="deleteCandidate('{{ candidate.id }}')">
+                                    Usuń aplikację
+                                </button>
+                            </li>
                         </ul>
                     </div>
                 </td>
@@ -188,6 +194,18 @@ document.addEventListener('DOMContentLoaded', function() {
     window.acceptCandidate = function(candidateId) {
         if (confirm('Czy na pewno chcesz zaakceptować kandydata?')) {
             fetch(`/candidates/${candidateId}/accept`, {
+                method: 'POST',
+            }).then(response => {
+                if (response.ok) {
+                    location.reload();
+                }
+            });
+        }
+    }
+
+    window.deleteCandidate = function(candidateId) {
+        if (confirm('Czy na pewno chcesz usunąć tę aplikację? Ta operacja jest nieodwracalna.')) {
+            fetch(`/candidates/${candidateId}/delete`, {
                 method: 'POST',
             }).then(response => {
                 if (response.ok) {

@@ -33,11 +33,19 @@ def list():
 
 @candidate_bp.route('/<int:id>')
 def view(id):
-    candidate = supabase.table('candidates').select('*').eq('id', id).single().execute()
+    # Get candidate with campaign data
+    candidate = supabase.table('candidates')\
+        .select('*, campaigns(*)')\
+        .eq('id', id)\
+        .single()\
+        .execute()
+    
+    # Get answers with questions and test data
     answers = supabase.table('candidate_answers')\
-        .select('*, questions(*)')\
+        .select('*, questions(*, tests(*))')\
         .eq('candidate_id', id)\
         .execute()
+    
     return render_template('candidates/view.html', 
                          candidate=candidate.data, 
                          answers=answers.data)
@@ -61,6 +69,25 @@ def accept(id):
         # Update candidate status to ACCEPTED
         result = supabase.table('candidates')\
             .update({'recruitment_status': 'ACCEPTED'})\
+            .eq('id', id)\
+            .execute()
+        
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@candidate_bp.route('/<int:id>/delete', methods=['POST'])
+def delete(id):
+    try:
+        # First delete all candidate answers
+        supabase.table('candidate_answers')\
+            .delete()\
+            .eq('candidate_id', id)\
+            .execute()
+        
+        # Then delete the candidate
+        result = supabase.table('candidates')\
+            .delete()\
             .eq('id', id)\
             .execute()
         

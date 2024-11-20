@@ -1,9 +1,14 @@
 <div class="candidate-details">
-    <h4>{{ candidate.first_name }} {{ candidate.last_name }}</h4>
-    <p class="text-muted">{{ candidate.email }}</p>
-    
     <div class="row mb-4">
         <div class="col-md-6">
+            <h4>{{ candidate.first_name }} {{ candidate.last_name }}</h4>
+            <p class="text-muted mb-0">Email: {{ candidate.email }}</p>
+            {% if candidate.phone %}
+            <p class="text-muted mb-0">Telefon: {{ candidate.phone }}</p>
+            {% endif %}
+            <p class="text-muted mb-0">Kampania: {{ candidate.campaigns.code }} - {{ candidate.campaigns.title }}</p>
+        </div>
+        <div class="col-md-6 text-md-end">
             <strong>Status rekrutacji:</strong>
             <span class="badge 
                 {% if candidate.recruitment_status == 'ACCEPTED' %}bg-success
@@ -12,14 +17,79 @@
                 {{ candidate.recruitment_status }}
             </span>
         </div>
-        <div class="col-md-6">
-            <strong>Data aplikacji:</strong> {{ candidate.created_at|datetime }}
+    </div>
+
+    <!-- Campaign Details -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Szczegóły kampanii</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Lokalizacja:</strong> {{ candidate.campaigns.workplace_location }}</p>
+                    <p><strong>Typ umowy:</strong> {{ candidate.campaigns.contract_type }}</p>
+                    <p><strong>Wymiar pracy:</strong> {{ candidate.campaigns.employment_type }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Data rozpoczęcia:</strong> {{ candidate.campaigns.work_start_date }}</p>
+                    {% if candidate.campaigns.salary_range_min and candidate.campaigns.salary_range_max %}
+                    <p><strong>Widełki płacowe:</strong> {{ candidate.campaigns.salary_range_min }} - {{ candidate.campaigns.salary_range_max }} PLN</p>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 
+    <!-- Scores Summary -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Podsumowanie wyników</h5>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Etap</th>
+                        <th>Punkty</th>
+                        <th>Data ukończenia</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>PO1</td>
+                        <td>{{ candidate.po1_score if candidate.po1_score else '-' }}</td>
+                        <td>{{ candidate.po1_completed_at|datetime if candidate.po1_completed_at else '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td>PO2</td>
+                        <td>{{ candidate.po2_score if candidate.po2_score else '-' }}</td>
+                        <td>{{ candidate.po2_completed_at|datetime if candidate.po2_completed_at else '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td>PO3</td>
+                        <td>{{ candidate.po3_score if candidate.po3_score else '-' }}</td>
+                        <td>{{ candidate.po3_completed_at|datetime if candidate.po3_completed_at else '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td>PO4</td>
+                        <td>{{ candidate.po4_score if candidate.po4_score else '-' }}</td>
+                        <td>{{ candidate.po4_completed_at|datetime if candidate.po4_completed_at else '-' }}</td>
+                    </tr>
+                    <tr class="table-active">
+                        <td><strong>Wynik ogólny</strong></td>
+                        <td><strong>{{ candidate.total_score if candidate.total_score else '-' }}</strong></td>
+                        <td>-</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Test Answers -->
     <div class="accordion" id="candidateAccordion">
         {% for stage in ['PO1', 'PO2', 'PO3'] %}
-        {% set stage_answers = answers|selectattr("test.stage", "equalto", stage)|list %}
+        {% set stage_answers = answers|selectattr("question.test.stage", "equalto", stage)|list %}
         {% if stage_answers %}
         <div class="accordion-item">
             <h2 class="accordion-header">
@@ -27,7 +97,7 @@
                         type="button" 
                         data-bs-toggle="collapse" 
                         data-bs-target="#collapse{{ stage }}">
-                    Etap {{ stage }} 
+                    Etap {{ stage }} - {{ stage_answers[0].question.test.test_type }}
                     {% if stage == 'PO1' and candidate.po1_score %}
                         (Wynik: {{ candidate.po1_score }})
                     {% elif stage == 'PO2' and candidate.po2_score %}
@@ -41,37 +111,80 @@
                  class="accordion-collapse collapse {% if loop.first %}show{% endif %}"
                  data-bs-parent="#candidateAccordion">
                 <div class="accordion-body">
+                    <!-- Test Details -->
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h6>Informacje o teście</h6>
+                            <p class="mb-1"><strong>Typ testu:</strong> {{ stage_answers[0].question.test.test_type }}</p>
+                            <p class="mb-1"><strong>Opis:</strong> {{ stage_answers[0].question.test.description }}</p>
+                            <p class="mb-1"><strong>Próg zaliczenia:</strong> {{ stage_answers[0].question.test.passing_threshold }}</p>
+                            <p class="mb-1"><strong>Limit czasu:</strong> {{ stage_answers[0].question.test.time_limit_minutes }} minut</p>
+                            <p class="mb-1"><strong>Liczba pytań:</strong> {{ stage_answers|length }}</p>
+                            <p class="mb-0"><strong>Suma punktów do zdobycia:</strong> 
+                                {{ stage_answers|sum(attribute='question.points') }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Questions and Answers -->
                     {% for answer in stage_answers %}
                     <div class="card mb-3">
                         <div class="card-body">
-                            <h6 class="card-title">{{ answer.question.question_text }}</h6>
-                            {% if answer.question.image %}
-                            <img src="{{ answer.question.image }}" class="img-fluid mb-2" alt="Question image">
-                            {% endif %}
-                            
-                            <div class="answer-content">
-                                {% if answer.question.answer_type == 'TEXT' %}
-                                    <p>{{ answer.text_answer }}</p>
-                                {% elif answer.question.answer_type == 'BOOLEAN' %}
-                                    <p>{{ 'Tak' if answer.boolean_answer else 'Nie' }}</p>
-                                {% elif answer.question.answer_type == 'SCALE' %}
-                                    <p>{{ answer.scale_answer }}/5</p>
-                                {% elif answer.question.answer_type == 'SALARY' %}
-                                    <p>{{ answer.numeric_answer }} PLN</p>
-                                {% elif answer.question.answer_type == 'DATE' %}
-                                    <p>{{ answer.date_answer|date }}</p>
-                                {% elif answer.question.answer_type == 'ABCD' %}
-                                    <p>Odpowiedź: {{ answer.abcd_answer }}</p>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="score-info">
-                                <small class="text-muted">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h6 class="card-title mb-0">{{ answer.question.question_text }}</h6>
+                                <span class="badge bg-info">
                                     Punkty: {{ answer.score }}/{{ answer.question.points }}
                                     {% if answer.score_ai %}
                                     (AI: {{ answer.score_ai }})
                                     {% endif %}
-                                </small>
+                                </span>
+                            </div>
+
+                            {% if answer.question.image %}
+                            <img src="{{ answer.question.image }}" class="img-fluid mb-3" alt="Question image">
+                            {% endif %}
+                            
+                            <div class="answer-content">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>Odpowiedź kandydata:</strong><br>
+                                        {% if answer.question.answer_type == 'TEXT' %}
+                                            <p>{{ answer.text_answer }}</p>
+                                        {% elif answer.question.answer_type == 'BOOLEAN' %}
+                                            <p>{{ 'Tak' if answer.boolean_answer else 'Nie' }}</p>
+                                        {% elif answer.question.answer_type == 'SCALE' %}
+                                            <p>{{ answer.scale_answer }}/5</p>
+                                        {% elif answer.question.answer_type == 'SALARY' %}
+                                            <p>{{ answer.numeric_answer }} PLN</p>
+                                        {% elif answer.question.answer_type == 'DATE' %}
+                                            <p>{{ answer.date_answer|date }}</p>
+                                        {% elif answer.question.answer_type == 'ABCD' %}
+                                            <p>Odpowiedź: {{ answer.abcd_answer }}</p>
+                                            {% if answer.question.answer_a %}
+                                            <small class="d-block">A: {{ answer.question.answer_a }}</small>
+                                            <small class="d-block">B: {{ answer.question.answer_b }}</small>
+                                            <small class="d-block">C: {{ answer.question.answer_c }}</small>
+                                            <small class="d-block">D: {{ answer.question.answer_d }}</small>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Poprawna odpowiedź:</strong><br>
+                                        {% if answer.question.answer_type == 'TEXT' %}
+                                            <p>{{ answer.question.correct_answer_text }}</p>
+                                        {% elif answer.question.answer_type == 'BOOLEAN' %}
+                                            <p>{{ 'Tak' if answer.question.correct_answer_boolean else 'Nie' }}</p>
+                                        {% elif answer.question.answer_type == 'SCALE' %}
+                                            <p>{{ answer.question.correct_answer_scale }}/5</p>
+                                        {% elif answer.question.answer_type == 'SALARY' %}
+                                            <p>{{ answer.question.correct_answer_numeric }} PLN</p>
+                                        {% elif answer.question.answer_type == 'DATE' %}
+                                            <p>{{ answer.question.correct_answer_date|date }}</p>
+                                        {% elif answer.question.answer_type == 'ABCD' %}
+                                            <p>Odpowiedź: {{ answer.question.correct_answer_abcd }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -82,11 +195,37 @@
         {% endif %}
         {% endfor %}
     </div>
-</div> <html xmlns:mso="urn:schemas-microsoft-com:office:office" xmlns:msdt="uuid:C2F41010-65B3-11d1-A29F-00AA00C14882"><head>
-<!--[if gte mso 9]><xml>
-<mso:CustomDocumentProperties>
-<mso:LastModifiedDateTime_Client msdt:dt="string">2024-11-15T06:43:26Z</mso:LastModifiedDateTime_Client>
-<mso:CreatedDateTime_Client msdt:dt="string">2024-11-15T06:43:26Z</mso:CreatedDateTime_Client>
-</mso:CustomDocumentProperties>
-</xml><![endif]-->
-</head>
+
+    <!-- Application Details -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">Szczegóły aplikacji</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Data aplikacji:</strong> {{ candidate.created_at|datetime }}</p>
+                    <p><strong>Ostatnia aktualizacja:</strong> {{ candidate.updated_at|datetime }}</p>
+                </div>
+                <div class="col-md-6">
+                    {% if candidate.access_token_po2 %}
+                    <p>
+                        <strong>Token PO2:</strong> {{ candidate.access_token_po2 }}
+                        {% if candidate.access_token_po2_expires_at %}
+                        <br><small class="text-muted">Wygasa: {{ candidate.access_token_po2_expires_at|datetime }}</small>
+                        {% endif %}
+                    </p>
+                    {% endif %}
+                    {% if candidate.access_token_po3 %}
+                    <p>
+                        <strong>Token PO3:</strong> {{ candidate.access_token_po3 }}
+                        {% if candidate.access_token_po3_expires_at %}
+                        <br><small class="text-muted">Wygasa: {{ candidate.access_token_po3_expires_at|datetime }}</small>
+                        {% endif %}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
