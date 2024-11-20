@@ -83,102 +83,40 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const testStartTime = new Date();
-            const timeLimit = parseInt('{{ test.time_limit_minutes }}') * 60;
-            const answers = {};
-            let timeoutModalShown = false;
-            let modalCountdown = 600;
-
-            // Prevent form submission with Enter key
-            document.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    return false;
-                }
-            });
-
-            // Prevent back button
-            history.pushState(null, null, location.href);
-            window.onpopstate = function () {
-                history.go(1);
-            };
-
-            // Save answers periodically
-            document.querySelectorAll('input[type="radio"]').forEach(input => {
-                input.addEventListener('change', function() {
-                    const questionId = this.closest('.question-card').dataset.questionId;
-                    answers[questionId] = this.value;
-                    saveProgress();
-                });
-            });
-
-            function saveProgress() {
-                fetch('{{ url_for("test.save_progress") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        token: '{{ token }}',
-                        answers: answers
-                    })
-                });
-            }
+            let remainingSeconds = parseInt(localStorage.getItem('remainingSeconds')) || 0;
+            let timerInterval;
 
             function updateTimer() {
-                const now = new Date();
-                const timeElapsed = Math.floor((now - testStartTime) / 1000);
-                const timeRemaining = timeLimit - timeElapsed;
-
-                if (timeRemaining <= 0 && !timeoutModalShown) {
-                    showTimeoutModal();
+                if (remainingSeconds <= 0) {
+                    document.getElementById('timeLeft').textContent = '00:00';
+                    document.getElementById('modalCountdown').textContent = '00:00';
+                    clearInterval(timerInterval);
                     return;
                 }
 
-                const minutes = Math.floor(timeRemaining / 60);
-                const seconds = timeRemaining % 60;
+                // Format time as MM:SS
+                const displayMinutes = String(Math.floor(remainingSeconds / 60)).padStart(2, '0');
+                const displaySeconds = String(remainingSeconds % 60).padStart(2, '0');
+                
+                // Update both main timer and modal countdown
                 document.getElementById('timeLeft').textContent = 
-                    `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                    `${displayMinutes}:${displaySeconds}`;
+                document.getElementById('modalCountdown').textContent = 
+                    `${displayMinutes}:${displaySeconds}`;
 
-                // Update progress bar
-                const progress = (timeElapsed / timeLimit) * 100;
+                // Calculate progress
+                const totalSeconds = parseInt("{{ test.time_limit_minutes }}") * 60;
+                const progress = ((totalSeconds - remainingSeconds) / totalSeconds) * 100;
                 document.querySelector('.progress-bar').style.width = `${progress}%`;
+
+                // Update storage after displaying current time
+                localStorage.setItem('remainingSeconds', remainingSeconds);
+                remainingSeconds--;
             }
 
-            function showTimeoutModal() {
-                timeoutModalShown = true;
-                const modal = new bootstrap.Modal(document.getElementById('timeoutModal'));
-                modal.show();
-                startModalCountdown();
-            }
-
-            function startModalCountdown() {
-                const countdownElement = document.getElementById('modalCountdown');
-                const countdownInterval = setInterval(() => {
-                    modalCountdown--;
-                    const minutes = Math.floor(modalCountdown / 60);
-                    const seconds = modalCountdown % 60;
-                    countdownElement.textContent = 
-                        `${minutes}:${seconds.toString().padStart(2, '0')}`;
-
-                    if (modalCountdown <= 0) {
-                        clearInterval(countdownInterval);
-                        cancelTest();
-                    }
-                }, 1000);
-            }
-
-            function submitTest() {
-                document.getElementById('testForm').submit();
-            }
-
-            function cancelTest() {
-                window.location.href = '{{ url_for("test.cancel_test", token=token) }}';
-            }
-
-            // Start timer
-            setInterval(updateTimer, 1000);
+            // Initial update before starting interval
             updateTimer();
+            timerInterval = setInterval(updateTimer, 1000);
         });
     </script>
 </body>

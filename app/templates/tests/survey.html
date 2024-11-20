@@ -294,18 +294,31 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Handle both text and image options
-            document.querySelectorAll('.abcd-text-option, .abcd-image-option').forEach(option => {
-                option.addEventListener('click', function() {
-                    // Remove selected class from all options in this group
-                    const name = this.querySelector('input').name;
-                    document.querySelectorAll(`input[name="${name}"]`).forEach(input => {
-                        input.closest('.abcd-text-option, .abcd-image-option').classList.remove('selected');
-                    });
-                    // Add selected class to clicked option
-                    this.classList.add('selected');
-                });
-            });
+            let remainingSeconds = parseInt(localStorage.getItem('remainingSeconds')) || 0;
+            let timerInterval;
+
+            function updateTimer() {
+                if (remainingSeconds <= 0) {
+                    document.getElementById('timer').textContent = '00:00';
+                    clearInterval(timerInterval);
+                    return;
+                }
+
+                // Format time as MM:SS
+                const displayMinutes = String(Math.floor(remainingSeconds / 60)).padStart(2, '0');
+                const displaySeconds = String(remainingSeconds % 60).padStart(2, '0');
+                
+                document.getElementById('timer').textContent = 
+                    `${displayMinutes}:${displaySeconds}`;
+
+                // Update storage after displaying current time
+                localStorage.setItem('remainingSeconds', remainingSeconds);
+                remainingSeconds--;
+            }
+
+            // Initial update before starting interval
+            updateTimer();
+            timerInterval = setInterval(updateTimer, 1000);
         });
     </script>
 </body>

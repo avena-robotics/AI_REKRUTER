@@ -34,7 +34,7 @@
 
                 <div class="mt-4">
                     <form id="startTestForm" method="POST" action="{{ url_for('test.start_test', token=token) }}">
-                        <button type="submit" class="btn btn-primary btn-lg">
+                        <button type="submit" class="btn btn-primary btn-lg" onclick="setTestStartTime()">
                             Rozpocznij test
                         </button>
                     </form>
@@ -50,6 +50,11 @@
         window.onpopstate = function () {
             history.go(1);
         };
+
+        function setTestStartTime() {
+            const totalSeconds = parseInt("{{ test.time_limit_minutes }}") * 60;
+            localStorage.setItem('remainingSeconds', totalSeconds);
+        }
     </script>
 </body>
 </html> 
