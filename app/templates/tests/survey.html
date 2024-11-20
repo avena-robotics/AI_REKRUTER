@@ -152,7 +152,7 @@
             </div>
 
             <!-- Candidate Form -->
-            <form id="testForm" method="POST" action="{{ url_for('test.submit', token=token) }}">
+            <form id="testForm" method="POST" action="{{ url_for('test.submit_test', token=token) }}">
                 <!-- Personal Information Section -->
                 <div class="card mb-4">
                     <div class="card-header">
@@ -189,7 +189,7 @@
                         <h4 class="card-title mb-3">
                             {{ question.question_text }}
                             {% if question.is_required %}
-                            <small class="text-muted ms-2">(wymagane)</small>
+                            <small class="text-muted ms-2">*</small>
                             {% endif %}
                         </h4>
                         

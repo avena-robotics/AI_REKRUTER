@@ -1,8 +1,192 @@
-from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
+from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, abort
 from database import supabase
-import json
+from datetime import datetime, timedelta
+import secrets
 
 test_bp = Blueprint('test', __name__)
+
+def get_test_info(token):
+    """Get test information based on token type"""
+    # Try universal access token first
+    campaign = supabase.table('campaigns')\
+        .select('*, po1:tests!campaigns_po1_test_id_fkey(*)')\
+        .eq('universal_access_token', token)\
+        .single()\
+        .execute()
+    
+    if campaign.data:
+        return {
+            'campaign': campaign.data,
+            'test': campaign.data['po1'],
+            'stage': 'PO1'
+        }
+    
+    # Try PO2 token
+    candidate = supabase.table('candidates')\
+        .select('*, campaign:campaigns(*), test:tests(*)')\
+        .eq('access_token_po2', token)\
+        .single()\
+        .execute()
+    
+    if candidate.data and not candidate.data.get('access_token_po2_is_used'):
+        return {
+            'campaign': candidate.data['campaign'],
+            'test': candidate.data['test'],
+            'stage': 'PO2',
+            'candidate': candidate.data
+        }
+    
+    # Try PO3 token
+    candidate = supabase.table('candidates')\
+        .select('*, campaign:campaigns(*), test:tests(*)')\
+        .eq('access_token_po3', token)\
+        .single()\
+        .execute()
+    
+    if candidate.data and not candidate.data.get('access_token_po3_is_used'):
+        return {
+            'campaign': candidate.data['campaign'],
+            'test': candidate.data['test'],
+            'stage': 'PO3',
+            'candidate': candidate.data
+        }
+    
+    return None
+
+@test_bp.route('/test/<token>')
+def landing(token):
+    """Landing page for test"""
+    test_info = get_test_info(token)
+    if not test_info:
+        abort(404)
+    
+    return render_template('tests/landing.html',
+                         campaign=test_info['campaign'],
+                         test=test_info['test'],
+                         token=token)
+
+@test_bp.route('/test/<token>/start', methods=['POST'])
+def start_test(token):
+    """Start the test"""
+    test_info = get_test_info(token)
+    if not test_info:
+        abort(404)
+    
+    # Get questions for the test
+    questions = supabase.table('questions')\
+        .select('*')\
+        .eq('test_id', test_info['test']['id'])\
+        .order('order_number')\
+        .execute()
+    
+    template = 'tests/survey.html'
+    if test_info['test']['test_type'] in ['IQ', 'EQ']:
+        template = 'tests/cognitive.html'
+    
+    return render_template(template,
+                         campaign=test_info['campaign'],
+                         test=test_info['test'],
+                         questions=questions.data,
+                         token=token)
+
+@test_bp.route('/test/save-progress', methods=['POST'])
+def save_progress():
+    """Save partial test progress"""
+    data = request.json
+    token = data.get('token')
+    answers = data.get('answers')
+    
+    test_info = get_test_info(token)
+    if not test_info:
+        return jsonify({'success': False, 'error': 'Invalid token'}), 400
+    
+    # Save answers to temporary storage
+    # You might want to create a new table for temporary answers
+    return jsonify({'success': True})
+
+@test_bp.route('/test/submit', methods=['POST'])
+def submit_test():
+    """Submit the test"""
+    token = request.form.get('token')
+    test_info = get_test_info(token)
+    if not test_info:
+        abort(404)
+    
+    # Calculate score based on answers
+    total_score = 0
+    for key, value in request.form.items():
+        if key.startswith('answer_'):
+            question_id = int(key.split('_')[1])
+            # Get question details
+            question = supabase.table('questions')\
+                .select('*')\
+                .eq('id', question_id)\
+                .single()\
+                .execute()
+            
+            if question.data:
+                # Save answer
+                answer_data = {
+                    'candidate_id': test_info.get('candidate', {}).get('id'),
+                    'question_id': question_id,
+                    'created_at': datetime.now().isoformat()
+                }
+                
+                # Set appropriate answer field based on type
+                answer_type = question.data['answer_type']
+                if answer_type == 'ABCD':
+                    answer_data['abcd_answer'] = value
+                    if value == question.data['correct_answer_abcd']:
+                        total_score += question.data['points']
+                
+                supabase.table('candidate_answers').insert(answer_data).execute()
+    
+    # Update candidate status and score
+    if test_info['stage'] == 'PO1':
+        # Create new candidate for PO1
+        candidate_data = {
+            'campaign_id': test_info['campaign']['id'],
+            'first_name': request.form.get('first_name'),
+            'last_name': request.form.get('last_name'),
+            'email': request.form.get('email'),
+            'phone': request.form.get('phone'),
+            'recruitment_status': 'PO1',
+            'po1_score': total_score,
+            'po1_completed_at': datetime.now().isoformat()
+        }
+        supabase.table('candidates').insert(candidate_data).execute()
+    else:
+        # Update existing candidate
+        update_data = {
+            f'{test_info["stage"].lower()}_score': total_score,
+            f'{test_info["stage"].lower()}_completed_at': datetime.now().isoformat(),
+            f'access_token_{test_info["stage"].lower()}_is_used': True
+        }
+        supabase.table('candidates')\
+            .update(update_data)\
+            .eq('id', test_info['candidate']['id'])\
+            .execute()
+    
+    return redirect(url_for('test.complete'))
+
+@test_bp.route('/test/<token>/cancel', methods=['GET'])
+def cancel_test(token):
+    """Cancel the test"""
+    test_info = get_test_info(token)
+    if not test_info:
+        abort(404)
+    
+    # Mark token as used if it's PO2 or PO3
+    if test_info.get('candidate'):
+        update_data = {
+            f'access_token_{test_info["stage"].lower()}_is_used': True
+        }
+        supabase.table('candidates')\
+            .update(update_data)\
+            .eq('id', test_info['candidate']['id'])\
+            .execute()
+    
+    return render_template('tests/cancelled.html')
 
 @test_bp.route('/tests')
 def list():

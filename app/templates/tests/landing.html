@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ test.test_type }} - AI Rekruter</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="card">
+            <div class="card-header">
+                <h2>{{ campaign.title }}</h2>
+            </div>
+            <div class="card-body">
+                <h3>{{ test.test_type }} - Informacje o teście</h3>
+                
+                <div class="alert alert-info mt-4">
+                    <h4>Ważne informacje:</h4>
+                    <ul>
+                        <li>Czas na wykonanie testu: {{ test.time_limit_minutes }} minut</li>
+                        <li>Test rozpocznie się po kliknięciu przycisku "Rozpocznij test"</li>
+                        <li>Nie można wstrzymać testu po jego rozpoczęciu</li>
+                        <li>Upewnij się, że masz stabilne połączenie internetowe</li>
+                    </ul>
+                </div>
+
+                {% if test.description %}
+                <div class="mt-4">
+                    <h4>Opis testu:</h4>
+                    <p>{{ test.description }}</p>
+                </div>
+                {% endif %}
+
+                <div class="mt-4">
+                    <form id="startTestForm" method="POST" action="{{ url_for('test.start_test', token=token) }}">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            Rozpocznij test
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Prevent back button
+        history.pushState(null, null, location.href);
+        window.onpopstate = function () {
+            history.go(1);
+        };
+    </script>
+</body>
+</html> 

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ test.test_type }} - AI Rekruter</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-3">
+        <div class="progress mb-3">
+            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+        </div>
+
+        <div id="timer" class="alert alert-info text-center">
+            Pozostały czas: <span id="timeLeft"></span>
+        </div>
+
+        <form id="testForm" method="POST" action="{{ url_for('test.submit_test') }}">
+            <input type="hidden" name="token" value="{{ token }}">
+            
+            {% for question in questions %}
+            <div class="card mb-4 question-card" data-question-id="{{ question.id }}">
+                <div class="card-header">
+                    <h5>Pytanie {{ question.order_number }}</h5>
+                </div>
+                <div class="card-body">
+                    <p class="question-text">{{ question.question_text }}</p>
+                    
+                    {% if question.image %}
+                    <img src="{{ question.image }}" class="img-fluid mb-3" alt="Question image">
+                    {% endif %}
+
+                    {% if question.answer_type == 'ABCD' %}
+                    <div class="list-group">
+                        <label class="list-group-item">
+                            <input type="radio" name="answer_{{ question.id }}" value="A" class="me-2">
+                            {{ question.answer_a }}
+                        </label>
+                        <label class="list-group-item">
+                            <input type="radio" name="answer_{{ question.id }}" value="B" class="me-2">
+                            {{ question.answer_b }}
+                        </label>
+                        <label class="list-group-item">
+                            <input type="radio" name="answer_{{ question.id }}" value="C" class="me-2">
+                            {{ question.answer_c }}
+                        </label>
+                        <label class="list-group-item">
+                            <input type="radio" name="answer_{{ question.id }}" value="D" class="me-2">
+                            {{ question.answer_d }}
+                        </label>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+
+            <div class="text-center mb-5">
+                <button type="submit" class="btn btn-primary btn-lg">Zakończ test</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Timeout Modal -->
+    <div class="modal fade" id="timeoutModal" data-bs-backdrop="static" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Czas się kończy!</h5>
+                </div>
+                <div class="modal-body">
+                    <p>Czy chcesz zapisać swoje odpowiedzi?</p>
+                    <p class="text-danger">Pozostało: <span id="modalCountdown">10:00</span></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="cancelTest()">Anuluj test</button>
+                    <button type="button" class="btn btn-primary" onclick="submitTest()">Zapisz odpowiedzi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const testStartTime = new Date();
+            const timeLimit = parseInt('{{ test.time_limit_minutes }}') * 60;
+            const answers = {};
+            let timeoutModalShown = false;
+            let modalCountdown = 600;
+
+            // Prevent form submission with Enter key
+            document.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+
+            // Prevent back button
+            history.pushState(null, null, location.href);
+            window.onpopstate = function () {
+                history.go(1);
+            };
+
+            // Save answers periodically
+            document.querySelectorAll('input[type="radio"]').forEach(input => {
+                input.addEventListener('change', function() {
+                    const questionId = this.closest('.question-card').dataset.questionId;
+                    answers[questionId] = this.value;
+                    saveProgress();
+                });
+            });
+
+            function saveProgress() {
+                fetch('{{ url_for("test.save_progress") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        token: '{{ token }}',
+                        answers: answers
+                    })
+                });
+            }
+
+            function updateTimer() {
+                const now = new Date();
+                const timeElapsed = Math.floor((now - testStartTime) / 1000);
+                const timeRemaining = timeLimit - timeElapsed;
+
+                if (timeRemaining <= 0 && !timeoutModalShown) {
+                    showTimeoutModal();
+                    return;
+                }
+
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                document.getElementById('timeLeft').textContent = 
+                    `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+                // Update progress bar
+                const progress = (timeElapsed / timeLimit) * 100;
+                document.querySelector('.progress-bar').style.width = `${progress}%`;
+            }
+
+            function showTimeoutModal() {
+                timeoutModalShown = true;
+                const modal = new bootstrap.Modal(document.getElementById('timeoutModal'));
+                modal.show();
+                startModalCountdown();
+            }
+
+            function startModalCountdown() {
+                const countdownElement = document.getElementById('modalCountdown');
+                const countdownInterval = setInterval(() => {
+                    modalCountdown--;
+                    const minutes = Math.floor(modalCountdown / 60);
+                    const seconds = modalCountdown % 60;
+                    countdownElement.textContent = 
+                        `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+                    if (modalCountdown <= 0) {
+                        clearInterval(countdownInterval);
+                        cancelTest();
+                    }
+                }, 1000);
+            }
+
+            function submitTest() {
+                document.getElementById('testForm').submit();
+            }
+
+            function cancelTest() {
+                window.location.href = '{{ url_for("test.cancel_test", token=token) }}';
+            }
+
+            // Start timer
+            setInterval(updateTimer, 1000);
+            updateTimer();
+        });
+    </script>
+</body>
+</html> 
