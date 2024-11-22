@@ -83,13 +83,51 @@ def get_candidate_test_info(token):
     
     return None
 
+# Add new function to check token status
+def check_token_status(token):
+    """Check if token is used and get test info"""
+    try:
+        # Try PO2 token first
+        candidate = supabase.table('candidates')\
+            .select('*, campaign:campaigns(*)')\
+            .eq('access_token_po2', token)\
+            .single()\
+            .execute()
+        
+        if candidate.data:
+            is_used = candidate.data.get('access_token_po2_is_used', False)
+            stage = 'PO2'
+            completed_at = candidate.data.get('po2_completed_at')
+            return candidate.data, is_used, stage, completed_at
+
+        # Try PO3 token
+        candidate = supabase.table('candidates')\
+            .select('*, campaign:campaigns(*)')\
+            .eq('access_token_po3', token)\
+            .single()\
+            .execute()
+        
+        if candidate.data:
+            is_used = candidate.data.get('access_token_po3_is_used', False)
+            stage = 'PO3'
+            completed_at = candidate.data.get('po3_completed_at')
+            return candidate.data, is_used, stage, completed_at
+
+    except:
+        pass
+    
+    return None, False, None, None
+
 # Universal test routes
 @test_bp.route('/test/<token>')
 def landing(token):
     """Landing page for universal test"""
     test_info = get_universal_test_info(token)
     if not test_info:
-        abort(404)
+        return render_template('tests/error.html',
+                             title="Test nie został znaleziony",
+                             message="Nie znaleziono testu dla podanego linku.",
+                             error_type="test_not_found")
     
     return render_template('tests/landing.html',
                          campaign=test_info['campaign'],
@@ -119,9 +157,48 @@ def start_test(token):
 @test_bp.route('/test/candidate/<token>')
 def candidate_landing(token):
     """Landing page for candidate test"""
+    try:
+        # Check both PO2 and PO3 tokens
+        po2_candidates = supabase.table('candidates')\
+            .select('access_token_po2_is_used')\
+            .eq('access_token_po2', token)\
+            .execute()
+        
+        po3_candidates = supabase.table('candidates')\
+            .select('access_token_po3_is_used')\
+            .eq('access_token_po3', token)\
+            .execute()
+        
+        # Get first result if exists
+        po2_candidate = po2_candidates.data[0] if po2_candidates.data else None
+        po3_candidate = po3_candidates.data[0] if po3_candidates.data else None
+        
+        # Check if token exists in either PO2 or PO3
+        if not (po2_candidate or po3_candidate):
+            return render_template('tests/error.html',
+                                 title="Token nie został znaleziony",
+                                 message="Nie znaleziono testu dla podanego linku.",
+                                 error_type="token_not_found")
+        
+        # Check if token is used
+        if (po2_candidate and po2_candidate.get('access_token_po2_is_used', False)) or \
+           (po3_candidate and po3_candidate.get('access_token_po3_is_used', False)):
+            return render_template('tests/used.html')
+            
+    except Exception as e:
+        print(f"Error checking token: {str(e)}")
+        return render_template('tests/error.html',
+                             title="Wystąpił błąd",
+                             message="Nie udało się zweryfikować tokenu testowego.",
+                             error_type="unexpected_error")
+    
+    # If we get here, token exists and is not used
     test_info = get_candidate_test_info(token)
     if not test_info:
-        abort(404)
+        return render_template('tests/error.html',
+                             title="Test nie został znaleziony",
+                             message="Nie znaleziono testu dla podanego linku.",
+                             error_type="test_not_found")
     
     return render_template('tests/landing.html',
                          campaign=test_info['campaign'],
@@ -327,21 +404,40 @@ def calculate_answer_score(answer_type, value, question, form_data):
 @test_bp.route('/test/<token>/cancel', methods=['GET'])
 def cancel_test(token):
     """Cancel the test"""
-    test_info = get_test_info(token)
-    if not test_info:
-        abort(404)
-    
-    # Mark token as used if it's PO2 or PO3
-    if test_info.get('candidate'):
-        update_data = {
-            f'access_token_{test_info["stage"].lower()}_is_used': True
-        }
-        supabase.table('candidates')\
-            .update(update_data)\
-            .eq('id', test_info['candidate']['id'])\
-            .execute()
-    
-    return render_template('tests/cancelled.html')
+    try:
+        # Try universal test first
+        test_info = get_universal_test_info(token)
+        if test_info:
+            return render_template('tests/cancelled.html')
+        
+        # Try candidate test
+        test_info = get_candidate_test_info(token)
+        if test_info:
+            # Mark token as used
+            stage = test_info['stage']
+            update_data = {
+                f'access_token_{stage.lower()}_is_used': True,
+                'updated_at': datetime.now().isoformat()
+            }
+            
+            supabase.table('candidates')\
+                .update(update_data)\
+                .eq('id', test_info['candidate']['id'])\
+                .execute()
+            
+            return render_template('tests/cancelled.html')
+        
+        return render_template('tests/error.html',
+                             title="Test nie został znaleziony",
+                             message="Nie znaleziono testu dla podanego linku.",
+                             error_type="test_not_found")
+            
+    except Exception as e:
+        print(f"Error cancelling test: {str(e)}")
+        return render_template('tests/error.html',
+                             title="Wystąpił błąd",
+                             message="Nie udało się anulować testu.",
+                             error_type="unexpected_error")
 
 @test_bp.route('/tests')
 def list():

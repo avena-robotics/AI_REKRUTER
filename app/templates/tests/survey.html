@@ -286,63 +286,90 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             let remainingSeconds = parseInt(localStorage.getItem('remainingSeconds')) || 0;
-            let timerInterval;
+            let timeoutModalShown = false;
+            let modalTimeoutId = null;
 
             function updateTimer() {
                 if (remainingSeconds <= 0) {
-                    document.getElementById('timer').textContent = '00:00';
                     clearInterval(timerInterval);
+                    if (!timeoutModalShown) {
+                        showTimeoutModal();
+                    }
                     return;
                 }
 
-                // Format time as MM:SS
-                const displayMinutes = String(Math.floor(remainingSeconds / 60)).padStart(2, '0');
-                const displaySeconds = String(remainingSeconds % 60).padStart(2, '0');
-                
-                document.getElementById('timer').textContent = 
-                    `${displayMinutes}:${displaySeconds}`;
+                const minutes = Math.floor(remainingSeconds / 60);
+                const seconds = remainingSeconds % 60;
+                document.getElementById('timeLeft').textContent = 
+                    `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
-                // Update storage after displaying current time
                 localStorage.setItem('remainingSeconds', remainingSeconds);
                 remainingSeconds--;
             }
 
-            // Initial update before starting interval
+            function showTimeoutModal() {
+                timeoutModalShown = true;
+                const modal = new bootstrap.Modal(document.getElementById('timeoutModal'));
+                modal.show();
+
+                // Start 5-minute countdown for modal
+                let modalSeconds = 300;
+                const modalInterval = setInterval(() => {
+                    if (modalSeconds <= 0) {
+                        clearInterval(modalInterval);
+                        cancelTest();
+                        return;
+                    }
+                    const min = Math.floor(modalSeconds / 60);
+                    const sec = modalSeconds % 60;
+                    document.getElementById('modalCountdown').textContent = 
+                        `${min}:${String(sec).padStart(2, '0')}`;
+                    modalSeconds--;
+                }, 1000);
+
+                modalTimeoutId = setTimeout(() => {
+                    clearInterval(modalInterval);
+                    cancelTest();
+                }, 300000); // 5 minutes
+            }
+
+            function submitTest() {
+                if (modalTimeoutId) clearTimeout(modalTimeoutId);
+                document.getElementById('testForm').submit();
+            }
+
+            function cancelTest() {
+                if (modalTimeoutId) clearTimeout(modalTimeoutId);
+                window.location.href = "{{ url_for('test.cancel_test', token=token) }}";
+            }
+
+            // Initial update and start interval
             updateTimer();
-            timerInterval = setInterval(updateTimer, 1000);
+            const timerInterval = setInterval(updateTimer, 1000);
 
-            // Add ABCDEF selection handler
-            document.querySelectorAll('.abcdef-text-option').forEach(item => {
-                item.addEventListener('click', function() {
-                    // Remove selected class from all items in the same question
-                    const questionCard = this.closest('.question-card');
-                    questionCard.querySelectorAll('.abcdef-text-option').forEach(i => {
-                        i.classList.remove('selected');
-                    });
-                    // Add selected class to clicked item
-                    this.classList.add('selected');
-                    // Check the radio input
-                    const radio = this.querySelector('input[type="radio"]');
-                    if (radio) radio.checked = true;
-                });
-            });
-
-            // Add ABCDEF image selection handler
-            document.querySelectorAll('.abcdef-image-option').forEach(item => {
-                item.addEventListener('click', function() {
-                    // Remove selected class from all items in the same question
-                    const questionCard = this.closest('.question-card');
-                    questionCard.querySelectorAll('.abcdef-image-option').forEach(i => {
-                        i.classList.remove('selected');
-                    });
-                    // Add selected class to clicked item
-                    this.classList.add('selected');
-                    // Check the radio input
-                    const radio = this.querySelector('input[type="radio"]');
-                    if (radio) radio.checked = true;
-                });
-            });
+            // Make functions globally available
+            window.submitTest = submitTest;
+            window.cancelTest = cancelTest;
         });
     </script>
+
+    <!-- Add Timeout Modal -->
+    <div class="modal fade" id="timeoutModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Czas się kończy!</h5>
+                </div>
+                <div class="modal-body">
+                    <p>Czy chcesz zapisać swoje odpowiedzi?</p>
+                    <p class="text-danger">Pozostało: <span id="modalCountdown">5:00</span></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="cancelTest()">Anuluj test</button>
+                    <button type="button" class="btn btn-primary" onclick="submitTest()">Zapisz odpowiedzi</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html> 
