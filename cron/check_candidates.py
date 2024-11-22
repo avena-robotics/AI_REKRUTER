@@ -386,7 +386,7 @@ def update_candidates(supabase: Client, config: Config):
                    not candidate.get('access_token_po2'):
                     
                     token = generate_access_token()
-                    test_url = f"{config.BASE_URL}/test/{token}"
+                    test_url = f"{config.BASE_URL}/test/candidate/{token}"
                     
                     updates = {
                         'access_token_po2': token,

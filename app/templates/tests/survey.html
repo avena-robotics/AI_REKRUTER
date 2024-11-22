@@ -132,6 +132,26 @@
         .abcdef-text-option.selected .option-letter {
             color: #0d6efd;
         }
+
+        .list-group-item {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        
+        .list-group-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .list-group-item.active {
+            background-color: #0d6efd;
+            color: white;
+            border-color: #0d6efd;
+        }
+        
+        .list-group-item input[type="radio"] {
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -256,13 +276,15 @@
                         </div>
 
                         {% elif question.answer_type == 'ABCDEF' %}
-                        <div class="abcdef-options">
+                        <div class="list-group">
                             {% for letter in ['A', 'B', 'C', 'D', 'E', 'F'] %}
-                            <label class="abcdef-text-option w-100" for="answer_{{ question.id }}_{{ letter }}">
-                                <input type="radio" name="answer_{{ question.id }}" 
-                                       value="{{ letter }}" id="answer_{{ question.id }}_{{ letter }}"
+                            <label class="list-group-item" style="cursor: pointer;">
+                                <input type="radio" 
+                                       name="answer_{{ question.id }}" 
+                                       value="{{ letter }}" 
+                                       class="me-2"
                                        {% if question.is_required %}required{% endif %}>
-                                <span class="option-letter">{{ letter }}</span>
+                                <span class="ms-2">{{ letter }}</span>
                             </label>
                             {% endfor %}
                         </div>
@@ -350,6 +372,25 @@
             // Make functions globally available
             window.submitTest = submitTest;
             window.cancelTest = cancelTest;
+
+            document.querySelectorAll('.list-group-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    // Ensure radio input is checked even if clicking on label
+                    const radio = this.querySelector('input[type="radio"]');
+                    if (radio) {
+                        radio.checked = true;
+                        
+                        // Remove active class from all items in the same question
+                        const questionCard = this.closest('.card');
+                        questionCard.querySelectorAll('.list-group-item').forEach(i => {
+                            i.classList.remove('active');
+                        });
+                        
+                        // Add active class to clicked item
+                        this.classList.add('active');
+                    }
+                });
+            });
         });
     </script>
 

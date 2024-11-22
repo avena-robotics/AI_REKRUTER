@@ -8,12 +8,12 @@
 </head>
 <body>
     <div class="container mt-3">
-        <div id="timer" class="alert alert-info text-center">
-            Pozostały czas: <span id="timeLeft"></span>
-        </div>
-
         <div class="progress mb-3">
             <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+        </div>
+
+        <div id="timer" class="alert alert-info text-center">
+            Pozostały czas: <span id="timeLeft"></span>
         </div>
 
         <form id="testForm" method="POST" action="{{ url_for('test.submit_candidate_test', token=token) if candidate else url_for('test.submit_test', token=token) }}">
@@ -65,7 +65,7 @@
     </div>
 
     <!-- Timeout Modal -->
-    <div class="modal fade" id="timeoutModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal fade" id="timeoutModal" data-bs-backdrop="static" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -73,7 +73,7 @@
                 </div>
                 <div class="modal-body">
                     <p>Czy chcesz zapisać swoje odpowiedzi?</p>
-                    <p class="text-danger">Pozostało: <span id="modalCountdown">5:00</span></p>
+                    <p class="text-danger">Pozostało: <span id="modalCountdown">10:00</span></p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="cancelTest()">Anuluj test</button>
@@ -87,79 +87,59 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             let remainingSeconds = parseInt(localStorage.getItem('remainingSeconds')) || 0;
-            const totalSeconds = parseInt("{{ test.time_limit_minutes }}") * 60;
-            let timeoutModalShown = false;
-            let modalTimeoutId = null;
-            
+            let timerInterval;
+
             function updateTimer() {
                 if (remainingSeconds <= 0) {
+                    document.getElementById('timeLeft').textContent = '00:00';
+                    document.getElementById('modalCountdown').textContent = '00:00';
                     clearInterval(timerInterval);
-                    cancelTest();
                     return;
                 }
 
-                // Update timer text
-                const minutes = Math.floor(remainingSeconds / 60);
-                const seconds = remainingSeconds % 60;
+                // Format time as MM:SS
+                const displayMinutes = String(Math.floor(remainingSeconds / 60)).padStart(2, '0');
+                const displaySeconds = String(remainingSeconds % 60).padStart(2, '0');
+                
+                // Update both main timer and modal countdown
                 document.getElementById('timeLeft').textContent = 
-                    `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                    `${displayMinutes}:${displaySeconds}`;
+                document.getElementById('modalCountdown').textContent = 
+                    `${displayMinutes}:${displaySeconds}`;
 
-                // Update progress bar
-                const progressBar = document.querySelector('.progress-bar');
-                progressBar.style.width = `${(remainingSeconds / totalSeconds) * 100}%`;
+                // Calculate progress
+                const totalSeconds = parseInt("{{ test.time_limit_minutes }}") * 60;
+                const progress = ((totalSeconds - remainingSeconds) / totalSeconds) * 100;
+                document.querySelector('.progress-bar').style.width = `${progress}%`;
 
-                // Show timeout modal when 5 minutes remaining
-                if (remainingSeconds <= 300 && !timeoutModalShown) {
-                    showTimeoutModal();
-                }
-
+                // Update storage after displaying current time
                 localStorage.setItem('remainingSeconds', remainingSeconds);
                 remainingSeconds--;
             }
 
-            function showTimeoutModal() {
-                timeoutModalShown = true;
-                const modal = new bootstrap.Modal(document.getElementById('timeoutModal'));
-                modal.show();
-
-                // Start 5-minute countdown for modal
-                let modalSeconds = 300;
-                const modalInterval = setInterval(() => {
-                    if (modalSeconds <= 0) {
-                        clearInterval(modalInterval);
-                        cancelTest();
-                        return;
-                    }
-                    const min = Math.floor(modalSeconds / 60);
-                    const sec = modalSeconds % 60;
-                    document.getElementById('modalCountdown').textContent = 
-                        `${min}:${String(sec).padStart(2, '0')}`;
-                    modalSeconds--;
-                }, 1000);
-
-                modalTimeoutId = setTimeout(() => {
-                    clearInterval(modalInterval);
-                    cancelTest();
-                }, 300000); // 5 minutes
-            }
-
-            function submitTest() {
-                if (modalTimeoutId) clearTimeout(modalTimeoutId);
-                document.getElementById('testForm').submit();
-            }
-
-            function cancelTest() {
-                if (modalTimeoutId) clearTimeout(modalTimeoutId);
-                window.location.href = "{{ url_for('test.cancel_test', token=token) }}";
-            }
-
-            // Initial update and start interval
+            // Initial update before starting interval
             updateTimer();
-            const timerInterval = setInterval(updateTimer, 1000);
+            timerInterval = setInterval(updateTimer, 1000);
 
-            // Make functions globally available
-            window.submitTest = submitTest;
-            window.cancelTest = cancelTest;
+            // Add ABCDEF selection handler
+            document.querySelectorAll('.list-group-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    // Ensure radio input is checked even if clicking on label
+                    const radio = this.querySelector('input[type="radio"]');
+                    if (radio) {
+                        radio.checked = true;
+                        
+                        // Remove active class from all items in the same question
+                        const questionCard = this.closest('.question-card');
+                        questionCard.querySelectorAll('.list-group-item').forEach(i => {
+                            i.classList.remove('active');
+                        });
+                        
+                        // Add active class to clicked item
+                        this.classList.add('active');
+                    }
+                });
+            });
         });
     </script>
 
