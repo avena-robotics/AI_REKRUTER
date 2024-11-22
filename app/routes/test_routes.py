@@ -207,9 +207,9 @@ def submit_test(token):
                         total_score += question.data['points']
                         answer_data['score'] = question.data['points']
                         
-                elif answer_type == 'ABCD':
-                    answer_data['abcd_answer'] = value
-                    if value == question.data['correct_answer_abcd']:
+                elif answer_type == 'ABCDEF':
+                    answer_data['abcdef_answer'] = value
+                    if value == question.data['correct_answer_abcdef']:
                         total_score += question.data['points']
                         answer_data['score'] = question.data['points']
                 

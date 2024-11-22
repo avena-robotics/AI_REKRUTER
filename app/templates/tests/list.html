@@ -466,9 +466,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                     if (dateInput) dateInput.value = question.correct_answer_date || '';
                                     break;
                                     
-                                case 'ABCD':
-                                    const abcdSelect = questionCard.querySelector(`[name$="[correct_answer_abcd]"]`);
-                                    if (abcdSelect) abcdSelect.value = question.correct_answer_abcd || '';
+                                case 'ABCDEF':
+                                    const abcdefSelect = questionCard.querySelector(`[name$="[correct_answer_abcdef]"]`);
+                                    if (abcdefSelect) abcdefSelect.value = question.correct_answer_abcdef || '';
                                     break;
                             }
                             
@@ -541,7 +541,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                         <option value="SCALE" ${q.answer_type === 'SCALE' ? 'selected' : ''}>Skala (0-5)</option>
                                         <option value="SALARY" ${q.answer_type === 'SALARY' ? 'selected' : ''}>Wynagrodzenie (PLN)</option>
                                         <option value="DATE" ${q.answer_type === 'DATE' ? 'selected' : ''}>Data</option>
-                                        <option value="ABCD" ${q.answer_type === 'ABCD' ? 'selected' : ''}>ABCD</option>
+                                        <option value="ABCDEF" ${q.answer_type === 'ABCDEF' ? 'selected' : ''}>ABCDEF</option>
                                     </select>
                                 </div>
                             </div>
@@ -591,18 +591,20 @@ document.addEventListener('DOMContentLoaded', function() {
         let html = '';
         
         switch (answerType) {
-            case 'ABCD':
+            case 'ABCDEF':
                 html = `
                     <div class="row">
                         <div class="col-md-12">
                             <label class="form-label">Poprawna odpowiedź*</label>
                             <select class="form-select" 
-                                    name="questions[${questionCounter}][correct_answer_abcd]" required>
+                                    name="questions[${questionCounter}][correct_answer_abcdef]" required>
                                 <option value="">Wybierz odpowiedź</option>
-                                <option value="A" ${question?.correct_answer_abcd === 'A' ? 'selected' : ''}>A</option>
-                                <option value="B" ${question?.correct_answer_abcd === 'B' ? 'selected' : ''}>B</option>
-                                <option value="C" ${question?.correct_answer_abcd === 'C' ? 'selected' : ''}>C</option>
-                                <option value="D" ${question?.correct_answer_abcd === 'D' ? 'selected' : ''}>D</option>
+                                <option value="A" ${question?.correct_answer_abcdef === 'A' ? 'selected' : ''}>A</option>
+                                <option value="B" ${question?.correct_answer_abcdef === 'B' ? 'selected' : ''}>B</option>
+                                <option value="C" ${question?.correct_answer_abcdef === 'C' ? 'selected' : ''}>C</option>
+                                <option value="D" ${question?.correct_answer_abcdef === 'D' ? 'selected' : ''}>D</option>
+                                <option value="E" ${question?.correct_answer_abcdef === 'E' ? 'selected' : ''}>E</option>
+                                <option value="F" ${question?.correct_answer_abcdef === 'F' ? 'selected' : ''}>F</option>
                             </select>
                         </div>
                     </div>
@@ -739,7 +741,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 correct_answer_numeric: null,
                 correct_answer_scale: null,
                 correct_answer_date: null,
-                correct_answer_abcd: null
+                correct_answer_abcdef: null
             };
 
             // Add correct answer field based on answer type
@@ -764,8 +766,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 case 'DATE':
                     questionData.correct_answer_date = card.querySelector('[name$="[correct_answer_date]"]')?.value || null;
                     break;
-                case 'ABCD':
-                    questionData.correct_answer_abcd = card.querySelector('[name$="[correct_answer_abcd]"]')?.value || null;
+                case 'ABCDEF':
+                    questionData.correct_answer_abcdef = card.querySelector('[name$="[correct_answer_abcdef"]')?.value || null;
                     break;
             }
 

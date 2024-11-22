@@ -14,7 +14,7 @@ DROP TYPE IF EXISTS test_type CASCADE;
 -- Create types first
 create type test_type as enum ('SURVEY', 'EQ', 'IQ');
 create type test_stage as enum ('PO1', 'PO2', 'PO3');
-create type answer_type as enum ('TEXT', 'BOOLEAN', 'SCALE', 'SALARY', 'DATE', 'ABCD');
+create type answer_type as enum ('TEXT', 'BOOLEAN', 'SCALE', 'SALARY', 'DATE', 'ABCDEF');
 create type recruitment_status as enum ('PO1', 'PO2', 'PO3', 'PO4', 'REJECTED', 'ACCEPTED');
 
 -- Create tests table before campaigns (since campaigns references tests)
@@ -61,11 +61,7 @@ create table questions (
     id serial primary key,
     test_id integer references tests(id) ON DELETE CASCADE,           -- Id testu
     question_text text not null,                    -- Pytanie do kandydata     
-    answer_type answer_type not null,               -- TEXT, BOOLEAN, SCALE(0-5), SALARY, DATE, ABCD
-    answer_a text,
-    answer_b text,
-    answer_c text,
-    answer_d text,
+    answer_type answer_type not null,               -- TEXT, BOOLEAN, SCALE(0-5), SALARY, DATE, ABCDEF
     points int not null default 0,                  -- Punkty za pytanie
     order_number integer not null,                  -- Numer pytania w testach
     is_required boolean default true,               -- Czy pytanie jest obowiązkowe
@@ -75,7 +71,7 @@ create table questions (
     correct_answer_numeric numeric,
     correct_answer_scale int,
     correct_answer_date date,
-    correct_answer_abcd text
+    correct_answer_abcdef text
 );
 
 -- Tabela kandydatów
@@ -115,7 +111,7 @@ create table candidate_answers (
     numeric_answer numeric,                        -- Odpowiedź typu numeric
     scale_answer int,                              -- Odpowiedź typu scale
     date_answer date,                              -- Odpowiedź typu date
-    abcd_answer text,                              -- Odpowiedź typu ABCD
+    abcdef_answer text,                            -- Odpowiedź typu ABCDEF
     score int,                                     -- Punkty za odpowiedź
     score_ai int,                                  -- Punkty za odpowiedź AI
     created_at timestamp default now()

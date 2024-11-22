@@ -9,8 +9,8 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/test.css') }}">
     <script src="{{ url_for('static', filename='js/test.js') }}" defer></script>
     <style>
-        /* Custom styles for ABCD text options */
-        .abcd-text-option {
+        /* Custom styles for ABCDEF text options */
+        .abcdef-text-option {
             cursor: pointer;
             border: 2px solid #dee2e6;
             border-radius: 8px;
@@ -19,32 +19,32 @@
             transition: all 0.2s ease;
         }
 
-        .abcd-text-option:hover {
+        .abcdef-text-option:hover {
             border-color: #6c757d;
             background-color: #f8f9fa;
         }
 
-        .abcd-text-option input[type="radio"] {
+        .abcdef-text-option input[type="radio"] {
             display: none;
         }
 
-        .abcd-text-option.selected {
+        .abcdef-text-option.selected {
             border-color: #0d6efd;
             background-color: #f0f7ff;
         }
 
-        .abcd-text-option .option-letter {
+        .abcdef-text-option .option-letter {
             font-weight: bold;
             margin-right: 10px;
             color: #6c757d;
         }
 
-        .abcd-text-option.selected .option-letter {
+        .abcdef-text-option.selected .option-letter {
             color: #0d6efd;
         }
 
-        /* New ABCD image styles */
-        .abcd-image-option {
+        /* New ABCDEF image styles */
+        .abcdef-image-option {
             cursor: pointer;
             border: 2px solid #dee2e6;
             border-radius: 8px;
@@ -54,32 +54,32 @@
             text-align: center;
         }
 
-        .abcd-image-option:hover {
+        .abcdef-image-option:hover {
             border-color: #6c757d;
             background-color: #f8f9fa;
         }
 
-        .abcd-image-option input[type="radio"] {
+        .abcdef-image-option input[type="radio"] {
             display: none;
         }
 
-        .abcd-image-option.selected {
+        .abcdef-image-option.selected {
             border-color: #0d6efd;
             background-color: #f0f7ff;
         }
 
-        .abcd-image-option .option-letter {
+        .abcdef-image-option .option-letter {
             font-weight: bold;
             color: #6c757d;
             display: block;
             margin-bottom: 10px;
         }
 
-        .abcd-image-option.selected .option-letter {
+        .abcdef-image-option.selected .option-letter {
             color: #0d6efd;
         }
 
-        .abcd-image-option img {
+        .abcdef-image-option img {
             max-height: 200px;
             width: auto;
             margin: 0 auto;
@@ -87,20 +87,20 @@
         }
 
         /* Grid layout for image options */
-        .abcd-options {
+        .abcdef-options {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 15px;
         }
 
-        /* ABCD options style */
-        .abcd-options {
+        /* ABCDEF options style */
+        .abcdef-options {
             display: flex;
             gap: 10px;
             margin-top: 10px;
         }
 
-        .abcd-text-option {
+        .abcdef-text-option {
             cursor: pointer;
             border: 2px solid #dee2e6;
             border-radius: 8px;
@@ -110,26 +110,26 @@
             transition: all 0.2s ease;
         }
 
-        .abcd-text-option:hover {
+        .abcdef-text-option:hover {
             border-color: #6c757d;
             background-color: #f8f9fa;
         }
 
-        .abcd-text-option input[type="radio"] {
+        .abcdef-text-option input[type="radio"] {
             display: none;
         }
 
-        .abcd-text-option.selected {
+        .abcdef-text-option.selected {
             border-color: #0d6efd;
             background-color: #f0f7ff;
         }
 
-        .abcd-text-option .option-letter {
+        .abcdef-text-option .option-letter {
             font-weight: bold;
             color: #6c757d;
         }
 
-        .abcd-text-option.selected .option-letter {
+        .abcdef-text-option.selected .option-letter {
             color: #0d6efd;
         }
     </style>
@@ -255,10 +255,10 @@
                             </div>
                         </div>
 
-                        {% elif question.answer_type == 'ABCD' %}
-                        <div class="abcd-options">
-                            {% for letter in ['A', 'B', 'C', 'D'] %}
-                            <label class="abcd-text-option w-100" for="answer_{{ question.id }}_{{ letter }}">
+                        {% elif question.answer_type == 'ABCDEF' %}
+                        <div class="abcdef-options">
+                            {% for letter in ['A', 'B', 'C', 'D', 'E', 'F'] %}
+                            <label class="abcdef-text-option w-100" for="answer_{{ question.id }}_{{ letter }}">
                                 <input type="radio" name="answer_{{ question.id }}" 
                                        value="{{ letter }}" id="answer_{{ question.id }}_{{ letter }}"
                                        {% if question.is_required %}required{% endif %}>
@@ -266,22 +266,6 @@
                             </label>
                             {% endfor %}
                         </div>
-
-                        {% elif question.answer_type == 'ABCD_IMAGE' %}
-                        <div class="abcd-options">
-                            {% for letter in ['A', 'B', 'C', 'D'] %}
-                            <label class="abcd-image-option" for="answer_{{ question.id }}_{{ letter }}">
-                                <input type="radio" name="answer_{{ question.id }}" 
-                                       value="{{ letter }}" id="answer_{{ question.id }}_{{ letter }}"
-                                       {% if question.is_required %}required{% endif %}>
-                                <span class="option-letter">{{ letter }}.</span>
-                                <img src="{{ question['answer_' + letter.lower()] }}" 
-                                     alt="Option {{ letter }}" 
-                                     class="img-fluid">
-                            </label>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}
@@ -326,12 +310,12 @@
             updateTimer();
             timerInterval = setInterval(updateTimer, 1000);
 
-            // Add ABCD selection handler
-            document.querySelectorAll('.abcd-text-option').forEach(item => {
+            // Add ABCDEF selection handler
+            document.querySelectorAll('.abcdef-text-option').forEach(item => {
                 item.addEventListener('click', function() {
                     // Remove selected class from all items in the same question
                     const questionCard = this.closest('.question-card');
-                    questionCard.querySelectorAll('.abcd-text-option').forEach(i => {
+                    questionCard.querySelectorAll('.abcdef-text-option').forEach(i => {
                         i.classList.remove('selected');
                     });
                     // Add selected class to clicked item
@@ -342,12 +326,12 @@
                 });
             });
 
-            // Add ABCD image selection handler
-            document.querySelectorAll('.abcd-image-option').forEach(item => {
+            // Add ABCDEF image selection handler
+            document.querySelectorAll('.abcdef-image-option').forEach(item => {
                 item.addEventListener('click', function() {
                     // Remove selected class from all items in the same question
                     const questionCard = this.closest('.question-card');
-                    questionCard.querySelectorAll('.abcd-image-option').forEach(i => {
+                    questionCard.querySelectorAll('.abcdef-image-option').forEach(i => {
                         i.classList.remove('selected');
                     });
                     // Add selected class to clicked item

@@ -238,8 +238,8 @@
                                         <p>{{ question.correct_answer_numeric }} PLN</p>
                                     {% elif question.answer_type == 'DATE' %}
                                         <p>{{ question.correct_answer_date|datetime }}</p>
-                                    {% elif question.answer_type == 'ABCD' %}
-                                        <p>Odpowiedź: {{ question.correct_answer_abcd }}</p>
+                                    {% elif question.answer_type == 'ABCDEF' %}
+                                        <p>Odpowiedź: {{ question.correct_answer_abcdef }}</p>
                                     {% endif %}
                                 </div>
                                 <div>
@@ -255,8 +255,8 @@
                                             <p>{{ question.answer.numeric_answer }} PLN</p>
                                         {% elif question.answer_type == 'DATE' %}
                                             <p>{{ question.answer.date_answer|datetime }}</p>
-                                        {% elif question.answer_type == 'ABCD' %}
-                                            <p>Odpowiedź: {{ question.answer.abcd_answer }}</p>
+                                        {% elif question.answer_type == 'ABCDEF' %}
+                                            <p>Odpowiedź: {{ question.answer.abcdef_answer }}</p>
                                             {% if question.answer_a %}
                                             <small class="d-block">A: {{ question.answer_a }}</small>
                                             <small class="d-block">B: {{ question.answer_b }}</small>

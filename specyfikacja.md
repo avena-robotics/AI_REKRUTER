@@ -39,8 +39,8 @@ Wspolna baza danych.
                 * przycisk "Dodaj pytanie":
                     * pole text 'Treść pytania'
                     * pole obrazka (opcjonalnie) 
-                    * pole enum 'Typ odpowiedzi' (TEXT, BOOLEAN, SCALE, SALARY, DATE, ABCD)
-                        * jeśli Typ odpowiedzi = ABCD:
+                    * pole enum 'Typ odpowiedzi' (TEXT, BOOLEAN, SCALE, SALARY, DATE, ABCDEF)
+                        * jeśli Typ odpowiedzi = ABCDEF:
                             * pole text lub obrazek 'Odpowiedź A'
                             * pole text lub obrazek 'Odpowiedź B' 
                             * pole text lub obrazek 'Odpowiedź C'
@@ -106,7 +106,7 @@ Jeśli w pytanie jest answer_type:
     - scale,   to pole odpowiedzi ma być wyświetlana w formie suwaka (0-5)
     - salary,  to pole odpowiedzi ma być wyświetlana w formie 2 pól input (min. i max.)
     - date,    to pole odpowiedzi ma być wyświetlana w formie pola input
-    - ABCD,    to pole odpowiedzi ma być wyświetlana w formie 4 radiobuttonów (A, B, C, D)
+    - ABCDEF,    to pole odpowiedzi ma być wyświetlana w formie 4 radiobuttonów (A, B, C, D, E, F)
 Na końcu testu powinien być przycisk "Zakończ test". 
 Po kliknięciu powinien być widoczny komunikat "Dziękujemy za wypełnienie testu".
 Zakończenie testu powinno zapisać wynik do tabeli candidate_answers, obliczyć wynik testu, sprawdzić czy przekroczył próg zaliczenia.
