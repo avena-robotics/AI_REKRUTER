@@ -266,20 +266,6 @@ def submit_candidate_test(token):
         print(f"Error submitting test: {str(e)}")
         abort(500, description="Error submitting test")
 
-@test_bp.route('/test/save-progress', methods=['POST'])
-def save_progress():
-    """Save partial test progress"""
-    data = request.json
-    token = data.get('token')
-    answers = data.get('answers')
-    
-    test_info = get_test_info(token)
-    if not test_info:
-        return jsonify({'success': False, 'error': 'Invalid token'}), 400
-    
-    # Save answers to temporary storage
-    # You might want to create a new table for temporary answers
-    return jsonify({'success': True})
 
 @test_bp.route('/test/<token>/submit', methods=['POST'])
 def submit_test(token):
