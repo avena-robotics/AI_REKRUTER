@@ -335,10 +335,6 @@ def add():
                 'order_number': question['order_number'],
                 'is_required': question.get('is_required', True),
                 'image': question.get('image'),
-                'answer_a': question.get('answer_a'),
-                'answer_b': question.get('answer_b'),
-                'answer_c': question.get('answer_c'),
-                'answer_d': question.get('answer_d')
             }
             
             if question['answer_type'] == 'SALARY':
@@ -414,6 +410,8 @@ def edit(test_id):
             .execute()
         
         questions = json.loads(request.form.get('questions', '[]'))
+        print("Received questions data:", questions)  # Debug log
+        
         existing_questions = [q['id'] for q in questions if q.get('id')]
         
         if existing_questions:
@@ -437,11 +435,7 @@ def edit(test_id):
                 'points': int(question.get('points', 0)),
                 'order_number': question.get('order_number', 1),
                 'is_required': question.get('is_required', True),
-                'image': question.get('image'),
-                'answer_a': question.get('answer_a'),
-                'answer_b': question.get('answer_b'),
-                'answer_c': question.get('answer_c'),
-                'answer_d': question.get('answer_d')
+                'image': question.get('image')
             }
             
             if question['answer_type'] == 'SALARY':
@@ -451,7 +445,6 @@ def edit(test_id):
                 answer_field = f'correct_answer_{question["answer_type"].lower()}'
                 if answer_field in question and question[answer_field] is not None:
                     clean_question[answer_field] = question[answer_field]
-            
             
             if question.get('id'):
                 supabase.from_('questions')\

@@ -31,14 +31,14 @@
 
                     {% if question.answer_type == 'ABCDEF' %}
                     <div class="list-group">
-                        {% for letter, answer in [('A', question.answer_a), ('B', question.answer_b), ('C', question.answer_c), ('D', question.answer_d)] %}
+                        {% for letter in ['A', 'B', 'C', 'D', 'E', 'F'] %}
                         <label class="list-group-item" style="cursor: pointer;">
                             <input type="radio" 
                                    name="answer_{{ question.id }}" 
                                    value="{{ letter }}" 
                                    class="me-2"
                                    {% if question.is_required %}required{% endif %}>
-                            <span class="ms-2">{{ answer }}</span>
+                            <span class="ms-2">{{ letter }}</span>
                         </label>
                         {% endfor %}
                     </div>

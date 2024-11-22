@@ -69,9 +69,9 @@
                 <th>Typ testu</th>
                 <th>Etap</th>
                 <th>Limit czasu</th>
-                <th>Próg zaliczenia</th>
                 <th>Liczba pytań</th>
                 <th>Suma punktów do zdobycia</th>
+                <th>Próg zaliczenia</th>
                 <th>Akcje</th>
             </tr>
         </thead>
@@ -89,9 +89,9 @@
                 </td>
                 <td>{{ test.stage }}</td>
                 <td>{{ test.time_limit_minutes }} min</td>
-                <td>{{ test.passing_threshold }}</td>
                 <td>{{ test.question_count }}</td>
                 <td>{{ test.total_points }}</td>
+                <td>{{ test.passing_threshold }}</td>
                 <td>
                     <div class="btn-group">
                         <button type="button" class="btn btn-sm btn-warning" 
@@ -592,6 +592,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         switch (answerType) {
             case 'ABCDEF':
+                console.log('Creating ABCDEF answer field for question:', question); // Debug log
                 html = `
                     <div class="row">
                         <div class="col-md-12">
@@ -716,14 +717,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const form = this;
         const formData = new FormData(form);
         const isEdit = form.id === 'editTestForm';
-        const submitButton = form.querySelector('button[type="submit"]');
-        const spinner = submitButton.querySelector('.spinner-border');
-        const buttonText = submitButton.querySelector('.button-text');
         
-        // Show loading state
-        submitButton.disabled = true;
-        spinner.classList.remove('d-none');
-        buttonText.textContent = 'Zapisywanie...';
+        // Debug logging for form data
+        console.log('Form data before submission:');
+        for (let pair of formData.entries()) {
+            console.log(pair[0], pair[1]);
+        }
         
         // Add questions data
         const questions = [];
@@ -735,48 +734,32 @@ document.addEventListener('DOMContentLoaded', function() {
                 points: parseInt(card.querySelector('[name$="[points]"]').value || '0'),
                 order_number: index + 1,
                 is_required: card.querySelector('[name$="[is_required]"]').checked,
-                image: card.querySelector('input[name$="[image]"]')?.value || null,  // Add image data
-                correct_answer_text: null,
-                correct_answer_boolean: null,
-                correct_answer_numeric: null,
-                correct_answer_scale: null,
-                correct_answer_date: null,
-                correct_answer_abcdef: null
+                image: card.querySelector('input[name$="[image]"]')?.value || null
             };
 
-            // Add correct answer field based on answer type
-            switch (questionData.answer_type) {
-                case 'TEXT':
-                    questionData.correct_answer_text = card.querySelector('[name$="[correct_answer_text]"]')?.value || null;
-                    break;
-                case 'BOOLEAN':
-                    const booleanValue = card.querySelector('[name$="[correct_answer_boolean]"]:checked')?.value;
-                    questionData.correct_answer_boolean = booleanValue ? booleanValue === 'true' : null;
-                    break;
-                case 'SCALE':
-                    const scaleValue = card.querySelector('[name$="[correct_answer_scale]"]')?.value;
-                    questionData.correct_answer_scale = scaleValue ? parseInt(scaleValue) : null;
-                    break;
-                case 'SALARY':
-                    const numericValue = card.querySelector('[name$="[correct_answer_numeric]"]')?.value;
-                    console.log('SALARY value before conversion:', numericValue); // Debug log
-                    questionData.correct_answer_numeric = numericValue ? Number(numericValue) : null;
-                    console.log('SALARY value after conversion:', questionData.correct_answer_numeric); // Debug log
-                    break;
-                case 'DATE':
-                    questionData.correct_answer_date = card.querySelector('[name$="[correct_answer_date]"]')?.value || null;
-                    break;
-                case 'ABCDEF':
-                    questionData.correct_answer_abcdef = card.querySelector('[name$="[correct_answer_abcdef"]')?.value || null;
-                    break;
+            // Handle answer type specific fields
+            const answerType = questionData.answer_type;
+            if (answerType === 'ABCDEF') {
+                const abcdefSelect = card.querySelector('[name$="[correct_answer_abcdef]"]');
+                questionData.correct_answer_abcdef = abcdefSelect ? abcdefSelect.value : null;
+                console.log('ABCDEF answer value:', questionData.correct_answer_abcdef); // Debug log
+            } else if (answerType === 'SALARY') {
+                const numericValue = card.querySelector('[name$="[correct_answer_numeric]"]')?.value;
+                questionData.correct_answer_numeric = numericValue ? Number(numericValue) : null;
+            } else {
+                const answerField = `correct_answer_${answerType.toLowerCase()}`;
+                const answerInput = card.querySelector(`[name$="[${answerField}]"]`);
+                if (answerInput) {
+                    questionData[answerField] = answerInput.value;
+                }
             }
 
             questions.push(questionData);
         });
-        
+
         console.log('Questions data before submit:', questions); // Debug log
         formData.append('questions', JSON.stringify(questions));
-
+        
         fetch(form.action, {
             method: 'POST',
             body: formData

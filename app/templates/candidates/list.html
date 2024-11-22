@@ -89,10 +89,10 @@
                         {{ candidate.recruitment_status }}
                     </span>
                 </td>
-                <td>{{ candidate.po1_score if candidate.po1_score else '-' }}</td>
-                <td>{{ candidate.po2_score if candidate.po2_score else '-' }}</td>
-                <td>{{ candidate.po3_score if candidate.po3_score else '-' }}</td>
-                <td>{{ candidate.total_score if candidate.total_score else '-' }}</td>
+                <td>{{ candidate.po1_score if candidate.po1_score is not none else '-' }}</td>
+                <td>{{ candidate.po2_score if candidate.po2_score is not none else '-' }}</td>
+                <td>{{ candidate.po3_score if candidate.po3_score is not none else '-' }}</td>
+                <td>{{ candidate.total_score if candidate.total_score is not none else '-' }}</td>
                 <td>{{ candidate.created_at|datetime }}</td>
                 <td>
                     <div class="dropdown">
