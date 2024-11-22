@@ -16,7 +16,7 @@
             Pozostały czas: <span id="timeLeft"></span>
         </div>
 
-        <form id="testForm" method="POST" action="{{ url_for('test.submit_test', token=token) }}">
+        <form id="testForm" method="POST" action="{{ url_for('test.submit_candidate_test', token=token) if candidate else url_for('test.submit_test', token=token) }}">
             {% for question in questions %}
             <div class="card mb-4 question-card" data-question-id="{{ question.id }}">
                 <div class="card-header">

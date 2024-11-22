@@ -21,6 +21,10 @@
                         <li>Test rozpocznie się po kliknięciu przycisku "Rozpocznij test"</li>
                         <li>Nie można wstrzymać testu po jego rozpoczęciu</li>
                         <li>Upewnij się, że masz stabilne połączenie internetowe</li>
+                        {% if test.test_type in ['IQ', 'EQ'] %}
+                        <li>Test zawiera pytania jednokrotnego wyboru</li>
+                        <li>Na każde pytanie jest tylko jedna poprawna odpowiedź</li>
+                        {% endif %}
                     </ul>
                 </div>
 
@@ -32,7 +36,8 @@
                 {% endif %}
 
                 <div class="mt-4">
-                    <form id="startTestForm" method="POST" action="{{ url_for('test.start_test', token=token) }}">
+                    <form id="startTestForm" method="POST" 
+                          action="{{ url_for('test.start_candidate_test', token=token) if candidate else url_for('test.start_test', token=token) }}">
                         <button type="submit" class="btn btn-primary btn-lg" onclick="setTestStartTime()">
                             Rozpocznij test
                         </button>

@@ -132,11 +132,11 @@
                             <div class="mb-3">
                                 <div class="input-group">
                                     <code class="form-control form-control-sm bg-light">
-                                        {{ url_for('test.landing', token=candidate.access_token_po2, _external=True) }}
+                                        {{ url_for('test.candidate_landing', token=candidate.access_token_po2, _external=True) }}
                                     </code>
                                     <button class="btn btn-outline-primary btn-sm copy-link" 
-                                            data-link="{{ url_for('test.landing', token=candidate.access_token_po2, _external=True) }}">
-                                        <i class="bi bi-clipboard me-1"></i> Kopiuj
+                                            data-link="{{ url_for('test.candidate_landing', token=candidate.access_token_po2, _external=True) }}">
+                                        <i class="bi bi-clipboard"></i> Kopiuj link
                                     </button>
                                 </div>
                             </div>
@@ -172,11 +172,11 @@
                             <div class="mb-3">
                                 <div class="input-group">
                                     <code class="form-control form-control-sm bg-light">
-                                        {{ url_for('test.landing', token=candidate.access_token_po3, _external=True) }}
+                                        {{ url_for('test.candidate_landing', token=candidate.access_token_po3, _external=True) }}
                                     </code>
                                     <button class="btn btn-outline-primary btn-sm copy-link" 
-                                            data-link="{{ url_for('test.landing', token=candidate.access_token_po3, _external=True) }}">
-                                        <i class="bi bi-clipboard me-1"></i> Kopiuj
+                                            data-link="{{ url_for('test.candidate_landing', token=candidate.access_token_po3, _external=True) }}">
+                                        <i class="bi bi-clipboard"></i> Kopiuj link
                                     </button>
                                 </div>
                             </div>
@@ -309,13 +309,21 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Copy link functionality
+    // Copy link functionality - updated to match list.html implementation
     document.querySelectorAll('.copy-link').forEach(button => {
         button.addEventListener('click', function() {
             const link = this.dataset.link;
-            navigator.clipboard.writeText(link).then(() => {
-                showToast('Link został skopiowany do schowka', 'success');
-            });
+            // Add protocol and host if not present
+            const fullLink = link.startsWith('http') ? link : window.location.origin + link;
+            
+            navigator.clipboard.writeText(fullLink)
+                .then(() => {
+                    showToast('Link został skopiowany do schowka', 'success');
+                })
+                .catch(err => {
+                    console.error('Failed to copy:', err);
+                    showToast('Nie udało się skopiować linku', 'error');
+                });
         });
     });
 
@@ -395,4 +403,33 @@ document.addEventListener('DOMContentLoaded', function() {
     updateTimeRemaining();
     setInterval(updateTimeRemaining, 60000);
 });
+
+// Add showToast function if not defined globally
+if (typeof showToast !== 'function') {
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0 position-fixed top-0 start-50 translate-middle-x mt-3`;
+        toast.setAttribute('role', 'alert');
+        toast.setAttribute('aria-live', 'assertive');
+        toast.setAttribute('aria-atomic', 'true');
+        toast.style.zIndex = '1070';
+        
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+        bsToast.show();
+        
+        toast.addEventListener('hidden.bs.toast', () => {
+            toast.remove();
+        });
+    }
+}
 </script>
