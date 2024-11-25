@@ -77,7 +77,7 @@
         </thead>
         <tbody>
             {% for test in tests %}
-            <tr data-test-id="{{ test.id }}" data-created-at="{{ test.created_at }}">
+            <tr data-test-id="{{ test.id }}" ondblclick="editTest('{{ test.id }}')" style="cursor: pointer;">
                 <td>
                     {% if test.test_type == 'SURVEY' %}
                         Ankieta
@@ -364,6 +364,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 {% block head %}
 {{ super() }}
+<style>
+    .table tbody tr:hover {
+        background-color: rgba(0,0,0,.075);
+    }
+</style>
 <script defer>
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize Sortable for all question containers
@@ -399,6 +404,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         checkPendingToast();
+
+        // Add this to prevent double click from triggering when clicking buttons
+        document.querySelectorAll('.btn-group button').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        });
     });
 
     function editTest(testId) {

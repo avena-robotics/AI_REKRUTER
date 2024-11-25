@@ -33,7 +33,7 @@
         </thead>
         <tbody>
             {% for campaign in campaigns %}
-            <tr data-campaign-id="{{ campaign.id }}">
+            <tr data-campaign-id="{{ campaign.id }}" ondblclick="editCampaign('{{ campaign.id }}')" style="cursor: pointer;">
                 <td>{{ campaign.code }}</td>
                 <td>{{ campaign.title }}</td>
                 <td>{{ campaign.workplace_location }}</td>
@@ -377,6 +377,11 @@
 
 {% block head %}
 {{ super() }}
+<style>
+    .table tbody tr:hover {
+        background-color: rgba(0,0,0,.075);
+    }
+</style>
 <script defer>
     document.addEventListener('DOMContentLoaded', function() {
         // Handle form submissions
@@ -408,6 +413,19 @@
         // Reset modal title when opening normally
         document.querySelector('[data-bs-target="#addCampaignModal"]').addEventListener('click', function() {
             document.querySelector('#addCampaignModal .modal-title').textContent = 'Dodaj nową kampanię';
+        });
+
+        // Add this to prevent double click from triggering when clicking buttons
+        document.querySelectorAll('.btn-group button').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        });
+
+        document.querySelectorAll('.copy-link, .generate-link-list').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
         });
     });
 

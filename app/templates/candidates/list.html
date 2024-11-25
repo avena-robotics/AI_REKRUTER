@@ -77,7 +77,7 @@
         </thead>
         <tbody>
             {% for candidate in candidates %}
-            <tr>
+            <tr ondblclick="viewCandidate('{{ candidate.id }}')" style="cursor: pointer;">
                 <td>{{ candidate.first_name }} {{ candidate.last_name }}</td>
                 <td>{{ candidate.campaigns.code }}</td>
                 <td>{{ candidate.email }}</td>
@@ -214,6 +214,22 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }
+
+    // Add this to prevent double click from triggering when clicking buttons
+    document.querySelectorAll('.dropdown').forEach(dropdown => {
+        dropdown.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
+
+    // Add hover effect CSS
+    const style = document.createElement('style');
+    style.textContent = `
+        .table tbody tr:hover {
+            background-color: rgba(0,0,0,.075);
+        }
+    `;
+    document.head.appendChild(style);
 });
 </script>
 {% endblock %}
