@@ -107,5 +107,24 @@
             cursor: pointer;
         }
     </style>
+
+    <!-- Add Timeout Modal -->
+    <div class="modal fade" id="timeoutModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Czas się kończy!</h5>
+                </div>
+                <div class="modal-body">
+                    <p>Czy chcesz zapisać swoje odpowiedzi?</p>
+                    <p class="text-danger">Pozostało: <span id="modalCountdown">5:00</span></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="cancelTest()">Anuluj test</button>
+                    <button type="button" class="btn btn-primary" onclick="submitTest()">Zapisz odpowiedzi</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html> 
