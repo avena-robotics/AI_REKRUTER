@@ -5,11 +5,14 @@ from routes.campaign_routes import campaign_bp
 from routes.candidate_routes import candidate_bp
 from routes.test_routes import test_bp
 from routes.test_public_routes import test_public_bp
+from routes.auth_routes import auth_bp
 from filters import format_datetime
+import secrets
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+    app.config['SECRET_KEY'] = secrets.token_hex(32)
 
     # Register custom filters
     app.jinja_env.filters['datetime'] = format_datetime
@@ -20,6 +23,7 @@ def create_app(config_class=Config):
     app.register_blueprint(candidate_bp)
     app.register_blueprint(test_bp)
     app.register_blueprint(test_public_bp)
+    app.register_blueprint(auth_bp)
 
     # Register error handlers
     @app.errorhandler(404)

@@ -2,10 +2,12 @@ import json
 from flask import Blueprint, render_template, request, jsonify
 from database import supabase
 from datetime import datetime
+from routes.auth_routes import login_required
 
 test_bp = Blueprint('test', __name__, url_prefix='/tests')
 
 @test_bp.route('/')
+@login_required
 def list():
     try:
         tests = supabase.from_('tests')\

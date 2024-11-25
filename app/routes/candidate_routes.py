@@ -1,10 +1,12 @@
 from flask import Blueprint, render_template, request, jsonify
 from database import supabase
 from datetime import datetime, timedelta
+from routes.auth_routes import login_required
 
 candidate_bp = Blueprint('candidate', __name__, url_prefix='/candidates')
 
 @candidate_bp.route('/')
+@login_required
 def list():
     campaign_code = request.args.get('campaign_code')
     status = request.args.get('status')

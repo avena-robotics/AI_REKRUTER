@@ -3,12 +3,14 @@ from filters import format_datetime
 from database import supabase
 import secrets
 from datetime import datetime
+from routes.auth_routes import login_required
 
 campaign_bp = Blueprint('campaign', __name__, url_prefix='/campaigns')
 
 
 
 @campaign_bp.route('/')
+@login_required
 def list():
     try:
         # Get all campaigns with tests

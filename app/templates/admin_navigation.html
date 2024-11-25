@@ -17,7 +17,7 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
+                <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('campaign.list') }}">Kampanie</a>
                     </li>
@@ -28,19 +28,22 @@
                         <a class="nav-link" href="{{ url_for('test.list') }}">Testy</a>
                     </li>
                 </ul>
+                {% if session.get('user_email') %}
+                <div class="d-flex align-items-center">
+                    <span class="text-light me-3">
+                        <i class="bi bi-person-circle me-1"></i>
+                        {{ session.get('user_email') }}
+                    </span>
+                    <button type="button" class="btn btn-outline-light btn-sm" onclick="handleLogout()">
+                        Wyloguj
+                    </button>
+                </div>
+                {% endif %}
             </div>
         </div>
     </nav>
 
     <div class="container mt-4">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        
         {% block content %}{% endblock %}
     </div>
 
@@ -105,6 +108,26 @@
             });
         }
         return response;
+    }
+
+    function handleLogout() {
+        fetch('/logout')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Store success message for next page
+                    sessionStorage.setItem('pendingToast', JSON.stringify({
+                        message: data.message,
+                        type: data.type
+                    }));
+                    window.location.href = data.redirect;
+                } else {
+                    showToast(data.message || 'Wystąpił błąd podczas wylogowywania', 'error');
+                }
+            })
+            .catch(error => {
+                showToast('Wystąpił błąd podczas wylogowywania', 'error');
+            });
     }
     </script>
 </body>
