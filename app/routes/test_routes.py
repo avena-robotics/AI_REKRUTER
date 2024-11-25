@@ -32,7 +32,6 @@ def get_candidate_test_info(token):
         candidate = supabase.table('candidates')\
             .select('*, campaign:campaigns(*)')\
             .eq('access_token_po2', token)\
-            .not_.is_('access_token_po2_is_used', True)\
             .single()\
             .execute()
         
@@ -59,7 +58,6 @@ def get_candidate_test_info(token):
         candidate = supabase.table('candidates')\
             .select('*, campaign:campaigns(*)')\
             .eq('access_token_po3', token)\
-            .not_.is_('access_token_po3_is_used', True)\
             .single()\
             .execute()
         
@@ -113,9 +111,20 @@ def check_token_status(token):
             completed_at = candidate.data.get('po3_completed_at')
             return candidate.data, is_used, stage, completed_at
 
-    except:
-        pass
-    
+        # Try universal token
+        campaign = supabase.table('campaigns')\
+            .select('*')\
+            .eq('universal_access_token', token)\
+            .single()\
+            .execute()
+        
+        if campaign.data:
+            is_active = campaign.data.get('is_active', False)
+            return campaign.data, not is_active, 'PO1', None
+
+    except Exception as e:
+        print(f"Error checking token status: {str(e)}")
+        
     return None, False, None, None
 
 # Universal test routes
@@ -137,21 +146,40 @@ def landing(token):
 @test_bp.route('/test/<token>/start', methods=['POST'])
 def start_test(token):
     """Start universal test"""
+    # Check if token exists and is valid
     test_info = get_universal_test_info(token)
     if not test_info:
-        abort(404)
+        return render_template('tests/error.html',
+                             title="Test nie został znaleziony",
+                             message="Nie znaleziono testu dla podanego linku.",
+                             error_type="test_not_found")
     
-    questions = supabase.table('questions')\
-        .select('*')\
-        .eq('test_id', test_info['test']['id'])\
-        .order('order_number')\
-        .execute()
+    # Check if campaign is still active
+    if not test_info['campaign'].get('is_active', False):
+        return render_template('tests/error.html',
+                             title="Test niedostępny",
+                             message="Ten test nie jest już dostępny.",
+                             error_type="test_inactive")
     
-    return render_template('tests/survey.html',
-                         campaign=test_info['campaign'],
-                         test=test_info['test'],
-                         questions=questions.data,
-                         token=token)
+    try:
+        questions = supabase.table('questions')\
+            .select('*')\
+            .eq('test_id', test_info['test']['id'])\
+            .order('order_number')\
+            .execute()
+        
+        return render_template('tests/survey.html',
+                             campaign=test_info['campaign'],
+                             test=test_info['test'],
+                             questions=questions.data,
+                             token=token)
+    
+    except Exception as e:
+        print(f"Error starting test: {str(e)}")
+        return render_template('tests/error.html',
+                             title="Wystąpił błąd",
+                             message="Nie udało się rozpocząć testu.",
+                             error_type="unexpected_error")
 
 # Candidate-specific test routes
 @test_bp.route('/test/candidate/<token>')
@@ -209,26 +237,51 @@ def candidate_landing(token):
 @test_bp.route('/test/candidate/<token>/start', methods=['POST'])
 def start_candidate_test(token):
     """Start candidate test"""
+    # First check if token is already used
+    candidate, is_used, stage, completed_at = check_token_status(token)
+    if is_used:
+        return render_template('tests/used.html')
+    
     test_info = get_candidate_test_info(token)
     if not test_info:
         abort(404)
     
-    questions = supabase.table('questions')\
-        .select('*')\
-        .eq('test_id', test_info['test']['id'])\
-        .order('order_number')\
-        .execute()
-    
-    template = 'tests/survey.html'
-    if test_info['test']['test_type'] in ['IQ', 'EQ']:
-        template = 'tests/cognitive.html'
-    
-    return render_template(template,
-                         campaign=test_info['campaign'],
-                         test=test_info['test'],
-                         questions=questions.data,
-                         token=token,
-                         candidate=test_info.get('candidate'))
+    try:
+        # Mark token as used immediately when starting test
+        stage = test_info['stage']
+        update_data = {
+            f'access_token_{stage.lower()}_is_used': True,
+            'updated_at': datetime.now().isoformat()
+        }
+        
+        supabase.table('candidates')\
+            .update(update_data)\
+            .eq('id', test_info['candidate']['id'])\
+            .execute()
+        
+        questions = supabase.table('questions')\
+            .select('*')\
+            .eq('test_id', test_info['test']['id'])\
+            .order('order_number')\
+            .execute()
+        
+        template = 'tests/survey.html'
+        if test_info['test']['test_type'] in ['IQ', 'EQ']:
+            template = 'tests/cognitive.html'
+        
+        return render_template(template,
+                             campaign=test_info['campaign'],
+                             test=test_info['test'],
+                             questions=questions.data,
+                             token=token,
+                             candidate=test_info.get('candidate'))
+                             
+    except Exception as e:
+        print(f"Error starting test: {str(e)}")
+        return render_template('tests/error.html',
+                             title="Wystąpił błąd",
+                             message="Nie udało się rozpocząć testu.",
+                             error_type="unexpected_error")
 
 @test_bp.route('/test/candidate/<token>/submit', methods=['POST'])
 def submit_candidate_test(token):
@@ -394,7 +447,8 @@ def cancel_test(token):
         # Try universal test first
         test_info = get_universal_test_info(token)
         if test_info:
-            return render_template('tests/cancelled.html')
+            return render_template('tests/cancelled.html',
+                                 message="Test został anulowany z powodu upływu czasu.")
         
         # Try candidate test
         test_info = get_candidate_test_info(token)
@@ -411,7 +465,68 @@ def cancel_test(token):
                 .eq('id', test_info['candidate']['id'])\
                 .execute()
             
-            return render_template('tests/cancelled.html')
+            return render_template('tests/cancelled.html',
+                                 message="Test został anulowany z powodu upływu czasu.")
+        
+        return render_template('tests/error.html',
+                             title="Test nie został znaleziony",
+                             message="Nie znaleziono testu dla podanego linku.",
+                             error_type="test_not_found")
+            
+    except Exception as e:
+        print(f"Error cancelling test: {str(e)}")
+        return render_template('tests/error.html',
+                             title="Wystąpił błąd",
+                             message="Nie udało się anulować testu.",
+                             error_type="unexpected_error")
+
+@test_bp.route('/test/candidate/<token>/cancel', methods=['GET'])
+def cancel_candidate_test(token):
+    """Cancel the candidate test"""
+    try:
+        # Try PO2 token first
+        candidate = supabase.table('candidates')\
+            .select('*, campaign:campaigns(*)')\
+            .eq('access_token_po2', token)\
+            .single()\
+            .execute()
+        
+        if candidate.data:
+            # Mark PO2 token as used
+            update_data = {
+                'access_token_po2_is_used': True,
+                'updated_at': datetime.now().isoformat()
+            }
+            
+            supabase.table('candidates')\
+                .update(update_data)\
+                .eq('id', candidate.data['id'])\
+                .execute()
+            
+            return render_template('tests/cancelled.html', 
+                                 message="Test został anulowany z powodu upływu czasu.")
+        
+        # Try PO3 token
+        candidate = supabase.table('candidates')\
+            .select('*, campaign:campaigns(*)')\
+            .eq('access_token_po3', token)\
+            .single()\
+            .execute()
+        
+        if candidate.data:
+            # Mark PO3 token as used
+            update_data = {
+                'access_token_po3_is_used': True,
+                'updated_at': datetime.now().isoformat()
+            }
+            
+            supabase.table('candidates')\
+                .update(update_data)\
+                .eq('id', candidate.data['id'])\
+                .execute()
+            
+            return render_template('tests/cancelled.html',
+                                 message="Test został anulowany z powodu upływu czasu.")
         
         return render_template('tests/error.html',
                              title="Test nie został znaleziony",

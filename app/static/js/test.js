@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.show();
 
         // Start 5-minute countdown for modal
-        let modalSeconds = 300;
+        let modalSeconds = 10;
         const modalInterval = setInterval(() => {
             if (modalSeconds <= 0) {
                 clearInterval(modalInterval);
@@ -94,7 +94,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function cancelTest() {
         if (modalTimeoutId) clearTimeout(modalTimeoutId);
-        window.location.href = "/test/" + window.location.pathname.split('/')[2] + "/cancel";
+        
+        // Check if this is a candidate test based on URL pattern
+        const pathParts = window.location.pathname.split('/');
+        const isCandidateTest = pathParts.includes('candidate');
+        
+        if (isCandidateTest) {
+            window.location.href = "/test/candidate/" + pathParts[3] + "/cancel";
+        } else {
+            window.location.href = "/test/" + pathParts[2] + "/cancel";
+        }
     }
 
     // Initial update and start interval
