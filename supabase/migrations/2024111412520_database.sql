@@ -46,14 +46,14 @@ create table campaigns (
     salary_range_max integer,             -- 5000
     is_active boolean default true,
     universal_access_token text,
+    po1_test_id integer references tests(id),    -- References to tests are kept
+    po2_test_id integer references tests(id),
+    po3_test_id integer references tests(id),
+    po1_test_weight integer,
+    po2_test_weight integer,
+    po3_test_weight integer,
     created_at timestamp default now(),
-    updated_at timestamp default now(),
-    po1_test_id integer REFERENCES tests(id),
-    po2_test_id integer REFERENCES tests(id),
-    po3_test_id integer REFERENCES tests(id),
-    po1_test_weight integer,              -- Waga testu PO1 (%)
-    po2_test_weight integer,              -- Waga testu PO2 (%)
-    po3_test_weight integer               -- Waga testu PO3 (%)
+    updated_at timestamp default now()
 );
 
 -- Tabela pytań
@@ -115,4 +115,45 @@ create table candidate_answers (
     score int,                                     -- Punkty za odpowiedź
     score_ai int,                                  -- Punkty za odpowiedź AI
     created_at timestamp default now()
+);
+
+-- Users table
+create table users (
+    id bigserial primary key,
+    first_name text not null,
+    last_name text not null,
+    email text not null unique,
+    phone text,
+    can_edit_tests boolean default false,
+    created_at timestamp default now(),
+    updated_at timestamp default now()
+);
+
+-- Groups table
+create table groups (
+    id bigserial primary key,
+    name text not null,
+    created_at timestamp default now(),
+    updated_at timestamp default now()
+);
+
+-- Linking table for users and groups
+create table link_groups_users (
+    group_id bigint references groups(id) ON DELETE CASCADE,
+    user_id bigint references users(id) ON DELETE CASCADE,
+    primary key (group_id, user_id)
+);
+
+-- Linking table for campaigns and groups
+create table link_groups_campaigns (
+    group_id bigint references groups(id) ON DELETE CASCADE,
+    campaign_id bigint references campaigns(id) ON DELETE CASCADE,
+    primary key (group_id, campaign_id)
+);
+
+-- Linking table for tests and groups
+create table link_groups_tests (
+    group_id bigint references groups(id) ON DELETE CASCADE,
+    test_id integer references tests(id) ON DELETE CASCADE,
+    primary key (group_id, test_id)
 );
