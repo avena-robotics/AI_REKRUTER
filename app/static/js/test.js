@@ -4,13 +4,36 @@ document.addEventListener('DOMContentLoaded', function() {
     let modalTimeoutId = null;
     let timerInterval;
 
+    function validateForm() {
+        const form = document.getElementById('testForm');
+        if (!form) return false;
+        
+        // Check all required fields
+        const requiredFields = form.querySelectorAll('[required]');
+        for (let field of requiredFields) {
+            if (!field.value) {
+                return false;
+            }
+            if (field.type === 'radio') {
+                const radioGroup = form.querySelectorAll(`[name="${field.name}"]`);
+                const checked = Array.from(radioGroup).some(radio => radio.checked);
+                if (!checked) return false;
+            }
+        }
+        return true;
+    }
+
     function updateTimer() {
         if (remainingSeconds <= 0) {  // Check first
             if (timerInterval) {
                 clearInterval(timerInterval);
             }
             if (!timeoutModalShown) {
-                showTimeoutModal();
+                if (validateForm()) {
+                    showTimeoutModal();
+                } else {
+                    cancelTest(); // Automatically cancel if form is invalid
+                }
             }
             const timerElement = document.getElementById('timer');
             if (timerElement) {
@@ -37,8 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.show();
 
         // Start 5-minute countdown for modal
-        // let modalSeconds = 300;
-        let modalSeconds = 30;
+        let modalSeconds = 300;
         const modalInterval = setInterval(() => {
             if (modalSeconds <= 0) {
                 clearInterval(modalInterval);
@@ -63,7 +85,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function submitTest() {
         if (modalTimeoutId) clearTimeout(modalTimeoutId);
-        document.getElementById('testForm').submit();
+        if (validateForm()) {
+            document.getElementById('testForm').submit();
+        } else {
+            cancelTest();
+        }
     }
 
     function cancelTest() {
