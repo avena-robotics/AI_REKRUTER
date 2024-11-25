@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 from config import Config
 from routes.main_routes import main_bp
 from routes.campaign_routes import campaign_bp
@@ -20,6 +20,19 @@ def create_app(config_class=Config):
     app.register_blueprint(candidate_bp)
     app.register_blueprint(test_bp)
     app.register_blueprint(test_public_bp)
+
+    # Register error handlers
+    @app.errorhandler(404)
+    def page_not_found(error):
+        return render_template('error.html', 
+                             error_code=404,
+                             error_message="Strona, której szukasz nie istnieje."), 404
+
+    @app.errorhandler(500)
+    def internal_error(error):
+        return render_template('error.html',
+                             error_code=500,
+                             error_message="Wystąpił wewnętrzny błąd serwera."), 500
 
     return app
 
