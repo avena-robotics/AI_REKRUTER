@@ -364,6 +364,7 @@ def update_candidates(supabase: Client, config: Config):
         
         current_time = datetime.now(timezone.utc)
         token_expiry = current_time + timedelta(days=7)
+        formatted_expiry = token_expiry.strftime("%Y-%m-%d %H:%M")
 
         for candidate in candidates:
             try:
@@ -407,7 +408,7 @@ def update_candidates(supabase: Client, config: Config):
                         "Dostęp do etapu PO2",
                         f"Gratulacje! Pomyślnie ukończyłeś/aś etap PO1 i otrzymujesz dostęp do kolejnego etapu rekrutacji.\n"
                         f"Link do testu: {test_url}\n"
-                        f"Link jest ważny do: {token_expiry.isoformat()}"
+                        f"Link jest ważny do: {formatted_expiry}"
                     ):
                         logger.info(f"Wysłano token PO2 do kandydata {candidate['id']}")
                 
@@ -417,7 +418,7 @@ def update_candidates(supabase: Client, config: Config):
                    not candidate.get('access_token_po3'):
                     
                     token = generate_access_token()
-                    test_url = f"{config.BASE_URL}/test/{token}"
+                    test_url = f"{config.BASE_URL}/test/candidate/{token}"
                     
                     updates = {
                         'access_token_po3': token,
@@ -438,7 +439,7 @@ def update_candidates(supabase: Client, config: Config):
                         "Dostęp do etapu PO3",
                         f"Gratulacje! Pomyślnie ukończyłeś/aś etap PO2 i otrzymujesz dostęp do kolejnego etapu rekrutacji.\n"
                         f"Link do testu: {test_url}\n"
-                        f"Link jest ważny do: {token_expiry.isoformat()}"
+                        f"Link jest ważny do: {formatted_expiry}"
                     ):
                         logger.info(f"Wysłano token PO3 do kandydata {candidate['id']}")
                 
