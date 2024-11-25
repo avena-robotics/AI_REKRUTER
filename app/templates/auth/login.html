@@ -5,58 +5,79 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Logowanie - AI Rekruter</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         body {
             height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: #f5f5f5;
+            background-color: #f8f9fa;
         }
         .login-form {
             width: 100%;
-            max-width: 330px;
-            padding: 15px;
-            margin: auto;
+            max-width: 400px;
+            padding: 2rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
         }
-        .login-form .form-control {
-            position: relative;
-            box-sizing: border-box;
-            height: auto;
-            padding: 10px;
-            font-size: 16px;
+        .login-title {
+            color: #212529;
+            margin-bottom: 2rem;
+            text-align: center;
+            font-weight: 500;
         }
-        .login-form .form-control:focus {
-            z-index: 2;
+        .input-group-text {
+            background-color: transparent;
+            cursor: pointer;
+            border-left: none;
         }
-        .login-form input[type="text"] {
-            margin-bottom: -1px;
-            border-bottom-right-radius: 0;
-            border-bottom-left-radius: 0;
+        .input-group-text.static {
+            cursor: default;
         }
-        .login-form input[type="password"] {
-            margin-bottom: 10px;
-            border-top-left-radius: 0;
-            border-top-right-radius: 0;
+        .form-control:focus {
+            border-right: none;
+            box-shadow: none;
+        }
+        .form-control:focus + .input-group-text {
+            border-color: #86b7fe;
+            border-left: none;
+        }
+        .form-control {
+            border-right: none;
+        }
+        .btn-login {
+            height: 46px;
+            font-size: 1rem;
+            font-weight: 500;
         }
     </style>
 </head>
 <body>
     <div class="login-form">
-        <h1 class="h3 mb-3 font-weight-normal text-center">AI Rekruter</h1>
+        <h1 class="login-title">AI Rekruter</h1>
         
         <form id="loginForm" method="POST">
-            <div class="form-group mb-3">
-                <label for="username" class="sr-only">Email</label>
-                <input type="text" id="username" name="username" class="form-control" 
-                       placeholder="Email" required autofocus>
+            <div class="mb-3">
+                <div class="input-group">
+                    <input type="text" id="username" name="username" 
+                           class="form-control" placeholder="Email" required autofocus>
+                    <span class="input-group-text static">
+                        <i class="bi bi-envelope"></i>
+                    </span>
+                </div>
             </div>
-            <div class="form-group mb-3">
-                <label for="password" class="sr-only">Hasło</label>
-                <input type="password" id="password" name="password" class="form-control" 
-                       placeholder="Hasło" required>
+            <div class="mb-4">
+                <div class="input-group">
+                    <input type="password" id="password" name="password" 
+                           class="form-control" placeholder="Hasło" required>
+                    <span class="input-group-text" onclick="togglePassword()">
+                        <i class="bi bi-eye-slash" id="togglePasswordIcon"></i>
+                    </span>
+                </div>
             </div>
-            <button class="btn btn-lg btn-primary w-100" type="submit">
+            <button class="btn btn-primary w-100 btn-login" type="submit">
                 <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
                 <span class="button-text">Zaloguj</span>
             </button>
@@ -75,6 +96,21 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.getElementById('togglePasswordIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('bi-eye-slash');
+                toggleIcon.classList.add('bi-eye');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('bi-eye');
+                toggleIcon.classList.add('bi-eye-slash');
+            }
+        }
+
         function showToast(message, type = 'success') {
             const toast = document.getElementById('notificationToast');
             const toastMessage = document.getElementById('toastMessage');

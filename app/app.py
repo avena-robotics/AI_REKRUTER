@@ -6,6 +6,7 @@ from routes.candidate_routes import candidate_bp
 from routes.test_routes import test_bp
 from routes.test_public_routes import test_public_bp
 from routes.auth_routes import auth_bp
+from routes.user_routes import user_bp
 from filters import format_datetime
 import secrets
 
@@ -17,13 +18,14 @@ def create_app(config_class=Config):
     # Register custom filters
     app.jinja_env.filters['datetime'] = format_datetime
 
-    # Register blueprints with consistent naming and url_prefix
+    # Register blueprints
+    app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(campaign_bp)
     app.register_blueprint(candidate_bp)
     app.register_blueprint(test_bp)
     app.register_blueprint(test_public_bp)
-    app.register_blueprint(auth_bp)
+    app.register_blueprint(user_bp)
 
     # Register error handlers
     @app.errorhandler(404)

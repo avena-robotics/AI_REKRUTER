@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
 from functools import wraps
 from database import supabase
-from helpers import ldap_authenticate, check_group_membership
+from ldap import ldap_authenticate
+from routes.user_routes import check_user_by_email_supabase
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -11,7 +12,8 @@ def login_required(f):
         if 'user_email' not in session:
             if request.is_json:
                 return jsonify({'error': 'Unauthorized'}), 401
-            return redirect(url_for('auth.login', next=request.url))
+            session['next_url'] = request.url
+            return redirect(url_for('auth.login'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -23,19 +25,20 @@ def login():
         
         auth_success, auth_message = ldap_authenticate(email, password)
         if auth_success:
-            group_success, group_message = check_group_membership(email, supabase)
-            if group_success:
+            user_success, user_message = check_user_by_email_supabase(email)
+            if user_success:
                 session['user_email'] = email
+                next_url = session.pop('next_url', None)
                 return jsonify({
                     'success': True,
-                    'redirect': url_for('main.dashboard'),
+                    'redirect': next_url or url_for('main.dashboard'),
                     'message': 'Zalogowano pomyślnie',
                     'type': 'success'
                 })
             else:
                 return jsonify({
                     'success': False,
-                    'message': f'Błąd: {group_message}',
+                    'message': f'Błąd: {user_message}',
                     'type': 'error'
                 })
         else:
