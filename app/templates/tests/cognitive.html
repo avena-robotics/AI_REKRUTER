@@ -5,16 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ test.test_type }} - AI Rekruter</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/test.css') }}" rel="stylesheet">
+    <script src="{{ url_for('static', filename='js/test.js') }}" defer></script>
 </head>
 <body>
     <div class="container mt-3">
-        <div class="progress mb-3">
-            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+        {% if test.time_limit_minutes %}
+        <div class="timer-container">
+            <span>Pozostały czas: </span>
+            <span id="timer">{{ test.time_limit_minutes }}</span>
         </div>
-
-        <div id="timer" class="alert alert-info text-center">
-            Pozostały czas: <span id="timeLeft"></span>
-        </div>
+        {% endif %}
 
         <form id="testForm" method="POST" action="{{ url_for('test.submit_candidate_test', token=token) if candidate else url_for('test.submit_test', token=token) }}">
             {% for question in questions %}
@@ -64,78 +65,20 @@
         </form>
     </div>
 
-    <!-- Timeout Modal -->
-    <div class="modal fade" id="timeoutModal" data-bs-backdrop="static" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Czas się kończy!</h5>
-                </div>
-                <div class="modal-body">
-                    <p>Czy chcesz zapisać swoje odpowiedzi?</p>
-                    <p class="text-danger">Pozostało: <span id="modalCountdown">10:00</span></p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="cancelTest()">Anuluj test</button>
-                    <button type="button" class="btn btn-primary" onclick="submitTest()">Zapisz odpowiedzi</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            let remainingSeconds = parseInt(localStorage.getItem('remainingSeconds')) || 0;
-            let timerInterval;
-
-            function updateTimer() {
-                if (remainingSeconds <= 0) {
-                    document.getElementById('timeLeft').textContent = '00:00';
-                    document.getElementById('modalCountdown').textContent = '00:00';
-                    clearInterval(timerInterval);
-                    return;
-                }
-
-                // Format time as MM:SS
-                const displayMinutes = String(Math.floor(remainingSeconds / 60)).padStart(2, '0');
-                const displaySeconds = String(remainingSeconds % 60).padStart(2, '0');
-                
-                // Update both main timer and modal countdown
-                document.getElementById('timeLeft').textContent = 
-                    `${displayMinutes}:${displaySeconds}`;
-                document.getElementById('modalCountdown').textContent = 
-                    `${displayMinutes}:${displaySeconds}`;
-
-                // Calculate progress
-                const totalSeconds = parseInt("{{ test.time_limit_minutes }}") * 60;
-                const progress = ((totalSeconds - remainingSeconds) / totalSeconds) * 100;
-                document.querySelector('.progress-bar').style.width = `${progress}%`;
-
-                // Update storage after displaying current time
-                localStorage.setItem('remainingSeconds', remainingSeconds);
-                remainingSeconds--;
-            }
-
-            // Initial update before starting interval
-            updateTimer();
-            timerInterval = setInterval(updateTimer, 1000);
-
-            // Add ABCDEF selection handler
             document.querySelectorAll('.list-group-item').forEach(item => {
                 item.addEventListener('click', function(e) {
-                    // Ensure radio input is checked even if clicking on label
                     const radio = this.querySelector('input[type="radio"]');
                     if (radio) {
                         radio.checked = true;
                         
-                        // Remove active class from all items in the same question
                         const questionCard = this.closest('.question-card');
                         questionCard.querySelectorAll('.list-group-item').forEach(i => {
                             i.classList.remove('active');
                         });
                         
-                        // Add active class to clicked item
                         this.classList.add('active');
                     }
                 });
