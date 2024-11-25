@@ -172,8 +172,9 @@
             </div>
 
             <!-- Candidate Form -->
-            <form id="testForm" method="POST" action="{{ url_for('test.submit_test', token=token) }}">
+            <form id="testForm" method="POST" action="{{ url_for('test_public.submit_candidate_test', token=token) if candidate else url_for('test_public.submit_test', token=token) }}">
                 <!-- Personal Information Section -->
+                {% if not candidate %}
                 <div class="card mb-4">
                     <div class="card-header">
                         <h3 class="mb-0">Dane osobowe</h3>
@@ -201,6 +202,7 @@
                         </div>
                     </div>
                 </div>
+                {% endif %}
 
                 <!-- Questions Section -->
                 {% for question in questions %}
@@ -317,12 +319,13 @@
                     if (!timeoutModalShown) {
                         showTimeoutModal();
                     }
+                    document.getElementById('timer').textContent = "00:00";
                     return;
                 }
 
                 const minutes = Math.floor(remainingSeconds / 60);
                 const seconds = remainingSeconds % 60;
-                document.getElementById('timeLeft').textContent = 
+                document.getElementById('timer').textContent = 
                     `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
                 localStorage.setItem('remainingSeconds', remainingSeconds);
@@ -362,7 +365,7 @@
 
             function cancelTest() {
                 if (modalTimeoutId) clearTimeout(modalTimeoutId);
-                window.location.href = "{{ url_for('test.cancel_test', token=token) }}";
+                window.location.href = "{{ url_for('test_public.cancel_candidate_test', token=token) if candidate else url_for('test_public.cancel_test', token=token) }}";
             }
 
             // Initial update and start interval

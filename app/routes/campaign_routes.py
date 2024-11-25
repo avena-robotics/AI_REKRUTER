@@ -4,11 +4,11 @@ from database import supabase
 import secrets
 from datetime import datetime
 
-campaign_bp = Blueprint('campaign', __name__)
+campaign_bp = Blueprint('campaign', __name__, url_prefix='/campaigns')
 
 
 
-@campaign_bp.route('/campaigns')
+@campaign_bp.route('/')
 def list():
     try:
         # Get all campaigns with tests
@@ -51,7 +51,7 @@ def list():
                              tests=[],
                              error_message=f'Wystąpił błąd podczas pobierania danych: {str(e)}')
 
-@campaign_bp.route('/campaigns/check-code', methods=['POST'])
+@campaign_bp.route('/check-code', methods=['POST'])
 def check_code():
     try:
         code = request.json.get('code')
@@ -79,7 +79,7 @@ def check_code():
             'error': f'Błąd podczas sprawdzania kodu: {str(e)}'
         })
 
-@campaign_bp.route('/campaigns/add', methods=['POST'])
+@campaign_bp.route('/add', methods=['POST'])
 def add():
     try:
         # First check if code exists
@@ -125,7 +125,7 @@ def add():
         print(f"Error details: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
 
-@campaign_bp.route('/campaigns/<int:campaign_id>/data')
+@campaign_bp.route('/<int:campaign_id>/data')
 def get_campaign_data(campaign_id):
     try:
         campaign = supabase.table('campaigns')\
@@ -153,7 +153,7 @@ def get_campaign_data(campaign_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@campaign_bp.route('/campaigns/<int:campaign_id>/edit', methods=['POST'])
+@campaign_bp.route('/<int:campaign_id>/edit', methods=['POST'])
 def edit(campaign_id):
     try:
         # First check if code exists (excluding current campaign)
@@ -203,7 +203,7 @@ def edit(campaign_id):
         print(f"Error details: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
 
-@campaign_bp.route('/campaigns/<int:campaign_id>/delete', methods=['POST'])
+@campaign_bp.route('/<int:campaign_id>/delete', methods=['POST'])
 def delete(campaign_id):
     try:
         result = supabase.table('campaigns')\
@@ -216,7 +216,7 @@ def delete(campaign_id):
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
-@campaign_bp.route('/campaigns/<int:campaign_id>/generate-link', methods=['POST'])
+@campaign_bp.route('/<int:campaign_id>/generate-link', methods=['POST'])
 def generate_link(campaign_id):
     try:
         token = secrets.token_urlsafe(32)
