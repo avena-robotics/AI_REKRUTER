@@ -138,3 +138,29 @@ textarea.form-control {
         grid-template-columns: 1fr;
     }
 }
+
+.needs-validation.is-invalid {
+    border-color: #dc3545;
+}
+
+.needs-validation.is-invalid ~ .invalid-feedback {
+    display: block;
+}
+
+.form-group .invalid-feedback {
+    display: none;
+    margin-top: 0.25rem;
+}
+
+/* Dodaj te style na końcu pliku */
+.invalid-feedback {
+    display: none;
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.875em;
+    color: #dc3545;
+}
+
+#groupsContainer.border-danger {
+    border-color: #dc3545 !important;
+}
