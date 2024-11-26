@@ -96,10 +96,16 @@
                 <td>{{ candidate.created_at|datetime }}</td>
                 <td>
                     <div class="dropdown">
-                        <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button class="btn btn-primary btn-sm dropdown-toggle" 
+                                type="button" 
+                                id="dropdownMenuButton{{ candidate.id }}" 
+                                data-bs-toggle="dropdown" 
+                                aria-expanded="false">
                             Akcje
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end" style="overflow: visible;">
+                        <ul class="dropdown-menu dropdown-menu-end" 
+                            aria-labelledby="dropdownMenuButton{{ candidate.id }}"
+                            style="z-index: 1021;">
                             <li>
                                 <button class="dropdown-item" onclick="viewCandidate('{{ candidate.id }}')">
                                     Podgląd
@@ -155,8 +161,31 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Upewnij się, że Bootstrap jest załadowany
+    if (typeof bootstrap === 'undefined') {
+        console.error('Bootstrap is not loaded!');
+        return;
+    }
+
+    // Inicjalizacja wszystkich dropdownów
+    document.querySelectorAll('[data-bs-toggle="dropdown"]').forEach(function(dropdownToggle) {
+        new bootstrap.Dropdown(dropdownToggle, {
+            boundary: 'window'
+        });
+    });
+
+    // Zatrzymaj propagację kliknięć w dropdown
+    document.querySelectorAll('.dropdown-menu').forEach(function(dropdownMenu) {
+        dropdownMenu.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
+
     window.viewCandidate = function(candidateId) {
         const modal = new bootstrap.Modal(document.getElementById('candidateModal'));
         fetch(`/candidates/${candidateId}`)
@@ -215,13 +244,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Add this to prevent double click from triggering when clicking buttons
-    document.querySelectorAll('.dropdown').forEach(dropdown => {
-        dropdown.addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-    });
-
     // Add hover effect CSS
     const style = document.createElement('style');
     style.textContent = `
@@ -232,4 +254,26 @@ document.addEventListener('DOMContentLoaded', function() {
     document.head.appendChild(style);
 });
 </script>
+
+<style>
+    /* Upewnij się, że dropdown jest zawsze na wierzchu */
+    .dropdown-menu {
+        z-index: 1021 !important;
+    }
+    
+    /* Zapewnij, że dropdown nie jest obcięty */
+    .table-container {
+        overflow: visible !important;
+    }
+    
+    /* Popraw pozycjonowanie dropdown */
+    .dropdown {
+        position: relative !important;
+    }
+    
+    /* Upewnij się, że komórka tabeli ma odpowiedni overflow */
+    td {
+        overflow: visible !important;
+    }
+</style>
 {% endblock %}

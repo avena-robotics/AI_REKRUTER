@@ -104,7 +104,7 @@ create table candidates (
 -- Tabela odpowiedzi kandydatów
 create table candidate_answers (
     id bigserial primary key,
-    candidate_id bigint references candidates(id),
+    candidate_id bigint references candidates(id) ON DELETE CASCADE,
     question_id integer references questions(id),
     text_answer text,                              -- Odpowiedź tekstowa    
     boolean_answer boolean,                        -- Odpowiedź typu boolean
