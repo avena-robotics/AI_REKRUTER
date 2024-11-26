@@ -210,6 +210,30 @@
                         </div>
                     </div>
                     
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label class="form-label">Grupy*</label>
+                            <div class="form-group">
+                                <div class="border rounded p-3" id="groupsContainer">
+                                    {% for group in groups %}
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input group-checkbox" 
+                                               name="groups[]" value="{{ group.id }}" 
+                                               id="{{ 'add' if modal == 'add' else 'edit' }}_group_{{ group.id }}">
+                                        <label class="form-check-label" 
+                                               for="{{ 'add' if modal == 'add' else 'edit' }}_group_{{ group.id }}">
+                                            {{ group.name }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="invalid-feedback" style="display: none;">
+                                    Aby zapisać kampanię, musisz wybrać przynajmniej jedną grupę
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="text-end">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
                         <button type="submit" class="btn btn-primary ms-2" id="addCampaignSubmit">
@@ -360,6 +384,30 @@
                         </div>
                     </div>
                     
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label class="form-label">Grupy*</label>
+                            <div class="form-group">
+                                <div class="border rounded p-3" id="groupsContainer">
+                                    {% for group in groups %}
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input group-checkbox" 
+                                               name="groups[]" value="{{ group.id }}" 
+                                               id="{{ 'add' if modal == 'add' else 'edit' }}_group_{{ group.id }}">
+                                        <label class="form-check-label" 
+                                               for="{{ 'add' if modal == 'add' else 'edit' }}_group_{{ group.id }}">
+                                            {{ group.name }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="invalid-feedback" style="display: none;">
+                                    Aby zapisać kampanię, musisz wybrać przynajmniej jedną grupę
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="text-end">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
                         <button type="submit" class="btn btn-primary ms-2" id="editCampaignSubmit">
@@ -454,6 +502,12 @@
                 form.querySelector('[name="po3_test_id"]').value = campaign.po3_test_id || '';
                 form.querySelector('[name="is_active"]').checked = campaign.is_active;
                 
+                // Update group checkboxes
+                const campaignGroups = campaign.groups || [];
+                form.querySelectorAll('input[name="groups[]"]').forEach(checkbox => {
+                    checkbox.checked = campaignGroups.some(group => group.id === parseInt(checkbox.value));
+                });
+                
                 new bootstrap.Modal(document.getElementById('editCampaignModal')).show();
             })
             .catch(error => {
@@ -486,6 +540,28 @@
     function handleCampaignFormSubmit(e) {
         e.preventDefault();
         const form = this;
+        
+        // Reset validation states
+        form.querySelectorAll('.is-invalid').forEach(el => {
+            el.classList.remove('is-invalid');
+        });
+        form.querySelectorAll('.border-danger').forEach(el => {
+            el.classList.remove('border-danger');
+        });
+        
+        // Validate groups
+        const checkedGroups = form.querySelectorAll('input[name="groups[]"]:checked');
+        const groupsContainer = form.querySelector('#groupsContainer');
+        if (!checkedGroups.length && groupsContainer) {
+            groupsContainer.classList.add('border-danger');
+            const feedbackDiv = groupsContainer.nextElementSibling;
+            if (feedbackDiv) {
+                feedbackDiv.style.display = 'block';
+            }
+            showToast('Należy wybrać co najmniej jedną grupę', 'error');
+            return;
+        }
+        
         const formData = new FormData(form);
         const code = formData.get('code');
         const campaignId = form.action.includes('/edit') ? form.action.split('/').slice(-2)[0] : null;

@@ -71,3 +71,26 @@ def get_test_groups(test_id):
     except Exception as e:
         print(f"Error fetching test groups: {str(e)}")
         return [] 
+
+def get_campaign_groups(campaign_id):
+    """Get groups assigned to a campaign"""
+    try:
+        response = supabase.from_('link_groups_campaigns')\
+            .select('group_id')\
+            .eq('campaign_id', campaign_id)\
+            .execute()
+        
+        if not response.data:
+            return []
+            
+        group_ids = [item['group_id'] for item in response.data]
+        
+        groups_response = supabase.from_('groups')\
+            .select('*')\
+            .in_('id', group_ids)\
+            .execute()
+            
+        return groups_response.data if groups_response.data else []
+    except Exception as e:
+        print(f"Error fetching campaign groups: {str(e)}")
+        return [] 

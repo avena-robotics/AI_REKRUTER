@@ -1,9 +1,10 @@
-from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
+from flask import Blueprint, render_template, request, jsonify, flash, redirect, session, url_for
 from filters import format_datetime
 from database import supabase
 import secrets
 from datetime import datetime
 from routes.auth_routes import login_required
+from services.group_service import get_user_groups, get_campaign_groups
 
 campaign_bp = Blueprint('campaign', __name__, url_prefix='/campaigns')
 
@@ -23,7 +24,7 @@ def list():
             .order('created_at', desc=True)\
             .execute()
 
-        # Format datetime fields
+        # Format datetime fields and add groups
         campaigns_data = campaigns_response.data or []
         for campaign in campaigns_data:
             if campaign and isinstance(campaign, dict):
@@ -31,6 +32,8 @@ def list():
                     campaign['created_at'] = format_datetime(campaign['created_at'])
                 if campaign.get('updated_at'):
                     campaign['updated_at'] = format_datetime(campaign['updated_at'])
+                # Add groups to each campaign
+                campaign['groups'] = get_campaign_groups(campaign['id'])
 
         # Get all tests for dropdowns
         tests_response = supabase.table('tests')\
@@ -41,15 +44,21 @@ def list():
         
         tests_data = tests_response.data or []
         
+        # Get user groups
+        user_id = session.get('user_id')
+        groups = get_user_groups(user_id)
+        
         return render_template('campaigns/list.html', 
                              campaigns=campaigns_data, 
-                             tests=tests_data)
+                             tests=tests_data,
+                             groups=groups)
     
     except Exception as e:
         print(f"Error in campaign list: {str(e)}")  # Debug log
         return render_template('campaigns/list.html',
                              campaigns=[],
                              tests=[],
+                             groups=[],
                              error_message=f'Wystąpił błąd podczas pobierania danych: {str(e)}')
 
 @campaign_bp.route('/check-code', methods=['POST'])
@@ -96,6 +105,13 @@ def add():
                 'error': 'Kampania o takim kodzie już istnieje'
             })
         
+        groups = request.form.getlist('groups[]')
+        if not groups:
+            return jsonify({
+                'success': False,
+                'error': 'Należy wybrać co najmniej jedną grupę'
+            })
+        
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         campaign_data = {
@@ -120,7 +136,16 @@ def add():
         }
         
         result = supabase.table('campaigns').insert(campaign_data).execute()
-        return jsonify({'success': True, 'id': result.data[0]['id']})
+        campaign_id = result.data[0]['id']
+        
+        # Add group associations
+        for group_id in groups:
+            supabase.from_('link_groups_campaigns').insert({
+                'group_id': int(group_id),
+                'campaign_id': campaign_id
+            }).execute()
+        
+        return jsonify({'success': True, 'id': campaign_id})
     
     except Exception as e:
         print(f"Error details: {str(e)}")
@@ -149,6 +174,9 @@ def get_campaign_data(campaign_id):
         if campaign.data.get('updated_at'):
             campaign.data['updated_at'] = format_datetime(campaign.data['updated_at'])
             
+        # Get assigned groups
+        campaign.data['groups'] = get_campaign_groups(campaign_id)
+            
         return jsonify(campaign.data)
     
     except Exception as e:
@@ -169,6 +197,13 @@ def edit(campaign_id):
             return jsonify({
                 'success': False,
                 'error': 'Kampania o takim kodzie już istnieje'
+            })
+            
+        groups = request.form.getlist('groups[]')
+        if not groups:
+            return jsonify({
+                'success': False,
+                'error': 'Należy wybrać co najmniej jedną grupę'
             })
         
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -197,6 +232,18 @@ def edit(campaign_id):
             .update(campaign_data)\
             .eq('id', campaign_id)\
             .execute()
+            
+        # Update group associations
+        supabase.from_('link_groups_campaigns')\
+            .delete()\
+            .eq('campaign_id', campaign_id)\
+            .execute()
+            
+        for group_id in groups:
+            supabase.from_('link_groups_campaigns').insert({
+                'group_id': int(group_id),
+                'campaign_id': campaign_id
+            }).execute()
             
         return jsonify({'success': True})
     
