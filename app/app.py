@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, session
 from config import Config
 from routes.main_routes import main_bp
 from routes.campaign_routes import campaign_bp
@@ -8,6 +8,7 @@ from routes.test_public_routes import test_public_bp
 from routes.auth_routes import auth_bp
 from routes.user_routes import user_bp
 from filters import format_datetime
+from services.group_service import get_user_groups
 import secrets
 
 def create_app(config_class=Config):
@@ -26,6 +27,15 @@ def create_app(config_class=Config):
     app.register_blueprint(test_bp)
     app.register_blueprint(test_public_bp)
     app.register_blueprint(user_bp)
+
+    # Add context processor at app level
+    @app.context_processor
+    def inject_user_groups():
+        if 'user_id' in session:
+            print("Context processor called for user_id:", session.get('user_id'))
+            user_groups = get_user_groups(session.get('user_id'))
+            return {'user_groups': user_groups}
+        return {'user_groups': []}
 
     # Register error handlers
     @app.errorhandler(404)
