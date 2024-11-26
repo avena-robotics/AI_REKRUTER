@@ -708,10 +708,22 @@
                 form.querySelector('[name="requirements"]').value = campaign.requirements || '';
                 form.querySelector('[name="employer_offerings"]').value = campaign.employer_offerings || '';
                 form.querySelector('[name="job_description"]').value = campaign.job_description || '';
-                form.querySelector('[name="po1_test_id"]').value = campaign.po1_test_id || '';
-                form.querySelector('[name="po2_test_id"]').value = campaign.po2_test_id || '';
-                form.querySelector('[name="po3_test_id"]').value = campaign.po3_test_id || '';
                 form.querySelector('[name="is_active"]').checked = campaign.is_active;
+                
+                // Set group and trigger test updates
+                const groupSelect = form.querySelector('[name="group_id"]');
+                if (campaign.groups && campaign.groups.length > 0) {
+                    groupSelect.value = campaign.groups[0].id;
+                    // Trigger test options update
+                    updateTestOptions(groupSelect);
+                    
+                    // Wait for tests to load before setting test selections
+                    setTimeout(() => {
+                        form.querySelector('[name="po1_test_id"]').value = campaign.po1_test_id || '';
+                        form.querySelector('[name="po2_test_id"]').value = campaign.po2_test_id || '';
+                        form.querySelector('[name="po3_test_id"]').value = campaign.po3_test_id || '';
+                    }, 500);
+                }
                 
                 // Update modal title to indicate cloning
                 document.querySelector('#addCampaignModal .modal-title').textContent = 'Klonuj kampanię';

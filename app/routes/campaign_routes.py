@@ -125,6 +125,7 @@ def add():
         
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
+        # Explicitly define the fields to be inserted
         campaign_data = {
             'code': code,
             'title': request.form.get('title'),
@@ -145,6 +146,10 @@ def add():
             'created_at': current_time,
             'updated_at': current_time
         }
+        
+        # Ensure no ID is included in the insert
+        if 'id' in campaign_data:
+            del campaign_data['id']
         
         result = supabase.table('campaigns').insert(campaign_data).execute()
         campaign_id = result.data[0]['id']
