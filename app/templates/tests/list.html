@@ -48,6 +48,15 @@
                     <option value="asc">Rosnąco</option>
                 </select>
             </div>
+            <div class="col-md-3">
+                <label class="form-label">Grupa</label>
+                <select class="form-select" id="filterGroup">
+                    <option value="">Wszystkie</option>
+                    {% for group in user_groups %}
+                        <option value="{{ group.id }}">{{ group.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
         </div>
         <div class="row mt-3">
             <div class="col-12 text-end">
@@ -77,7 +86,10 @@
         </thead>
         <tbody>
             {% for test in tests %}
-            <tr data-test-id="{{ test.id }}" ondblclick="editTest('{{ test.id }}')" style="cursor: pointer;">
+            <tr data-test-id="{{ test.id }}" 
+                data-groups='{{ test.groups|tojson|safe }}'
+                ondblclick="editTest('{{ test.id }}')" 
+                style="cursor: pointer;">
                 <td>
                     {% if test.test_type == 'SURVEY' %}
                         Ankieta
@@ -335,6 +347,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Reset filter values
         filterTestType.value = '';
         filterStage.value = '';
+        filterGroup.value = '';
         sortBy.value = 'created_at';
         sortOrder.value = 'desc';
         
@@ -358,10 +371,12 @@ document.addEventListener('DOMContentLoaded', function() {
         let rows = originalRows.map(row => row.cloneNode(true));
         
         // Apply filters
-        if (filterTestType.value || filterStage.value) {
+        if (filterTestType.value || filterStage.value || filterGroup.value) {
             rows = rows.filter(row => {
                 const testType = row.querySelector('td:first-child').textContent.trim();
                 const stage = row.querySelector('td:nth-child(2)').textContent.trim();
+                const testId = row.dataset.testId;
+                const testGroups = JSON.parse(row.dataset.groups || '[]');
                 
                 const testTypeMatch = !filterTestType.value || 
                     (filterTestType.value === 'SURVEY' && testType === 'Ankieta') ||
@@ -370,7 +385,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                 const stageMatch = !filterStage.value || stage === filterStage.value;
                 
-                return testTypeMatch && stageMatch;
+                const groupMatch = !filterGroup.value || 
+                    testGroups.some(group => group.id === parseInt(filterGroup.value));
+                
+                return testTypeMatch && stageMatch && groupMatch;
             });
         }
         
@@ -442,6 +460,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Reset filter values
         filterTestType.value = '';
         filterStage.value = '';
+        filterGroup.value = '';
         sortBy.value = 'created_at';
         sortOrder.value = 'desc';
         
@@ -465,10 +484,12 @@ document.addEventListener('DOMContentLoaded', function() {
         let rows = originalRows.map(row => row.cloneNode(true));
         
         // Apply filters
-        if (filterTestType.value || filterStage.value) {
+        if (filterTestType.value || filterStage.value || filterGroup.value) {
             rows = rows.filter(row => {
                 const testType = row.querySelector('td:first-child').textContent.trim();
                 const stage = row.querySelector('td:nth-child(2)').textContent.trim();
+                const testId = row.dataset.testId;
+                const testGroups = JSON.parse(row.dataset.groups || '[]');
                 
                 const testTypeMatch = !filterTestType.value || 
                     (filterTestType.value === 'SURVEY' && testType === 'Ankieta') ||
@@ -477,7 +498,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                 const stageMatch = !filterStage.value || stage === filterStage.value;
                 
-                return testTypeMatch && stageMatch;
+                const groupMatch = !filterGroup.value || 
+                    testGroups.some(group => group.id === parseInt(filterGroup.value));
+                
+                return testTypeMatch && stageMatch && groupMatch;
             });
         }
         
