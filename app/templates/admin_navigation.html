@@ -49,7 +49,10 @@
                 </div>
 
                 <!-- Offcanvas Menu -->
-                <div class="offcanvas offcanvas-end bg-dark text-white" tabindex="-1" id="sideMenu">
+                <div class="offcanvas offcanvas-end bg-dark text-white" 
+                     tabindex="-1" 
+                     id="sideMenu" 
+                     data-bs-backdrop="false">
                     <div class="offcanvas-header">
                         <h5 class="offcanvas-title">
                             <i class="bi bi-person-circle"></i>
@@ -202,6 +205,25 @@
                     showToast('Wystąpił błąd podczas wylogowywania', 'error');
                 });
         }
+    </script>
+
+    <!-- Add this script at the end of the file, before </body> -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const sideMenu = document.getElementById('sideMenu');
+        const offcanvasInstance = bootstrap.Offcanvas.getInstance(sideMenu);
+        
+        document.addEventListener('click', function(event) {
+            // Check if click is outside the offcanvas
+            if (!sideMenu.contains(event.target) && 
+                !event.target.closest('[data-bs-toggle="offcanvas"]')) {
+                const offcanvas = bootstrap.Offcanvas.getInstance(sideMenu);
+                if (offcanvas) {
+                    offcanvas.hide();
+                }
+            }
+        });
+    });
     </script>
 </body>
 </html> 
