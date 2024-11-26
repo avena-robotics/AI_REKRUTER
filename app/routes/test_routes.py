@@ -11,9 +11,13 @@ test_bp = Blueprint('test', __name__, url_prefix='/tests')
 @login_required
 def list():
     try:
-        # Get user's test IDs
+        # Get user's test IDs and available groups
         user_id = session.get('user_id')
         allowed_test_ids = GroupService.get_user_test_ids(user_id)
+        available_groups = GroupService.get_user_available_groups(user_id)
+        
+        print(f"User ID: {user_id}")  # Debug log
+        print(f"Available groups: {available_groups}")  # Debug log
         
         # Get tests filtered by user's access
         tests = supabase.from_('tests')\
@@ -30,12 +34,15 @@ def list():
             test['questions'] = questions.data
             test['question_count'] = len(questions.data)
             test['total_points'] = sum(q.get('points', 0) for q in questions.data)
+            # Get groups for test that user has access to
+            test['groups'] = GroupService.get_test_groups(test['id'], user_id)
+            print(f"Test {test['id']} groups: {test['groups']}")  # Debug log
         
         return render_template('tests/list.html', 
-                             tests=tests.data or [])
-    
+                             tests=tests.data or [],
+                             available_groups=available_groups)
     except Exception as e:
-        print(f"Error in test list: {str(e)}")  # Debug log
+        print(f"Error in test list: {str(e)}")
         return jsonify({
             'success': False,
             'error': f'Wystąpił błąd podczas pobierania testów: {str(e)}'
@@ -60,6 +67,13 @@ def add():
         
         result = supabase.from_('tests').insert(test_data).execute()
         test_id = result.data[0]['id']
+        
+        # Handle group assignments
+        groups = request.form.getlist('groups[]')
+        if groups:
+            group_links = [{'test_id': test_id, 'group_id': int(group_id)} 
+                         for group_id in groups]
+            supabase.from_('link_groups_tests').insert(group_links).execute()
         
         questions = json.loads(request.form.get('questions', '[]'))
         for question in questions:
@@ -113,17 +127,24 @@ def get_test_data(test_id):
         if not test.data:
             return jsonify({'error': 'Test not found'}), 404
         
+        # Get questions
         questions = supabase.from_('questions')\
             .select('*')\
             .eq('test_id', test_id)\
             .execute()
         
-        test.data['questions'] = sorted(
+        # Get groups for this test
+        user_id = session.get('user_id')
+        test_groups = GroupService.get_test_groups(test_id, user_id)
+        
+        test_data = test.data
+        test_data['questions'] = sorted(
             questions.data,
             key=lambda x: x.get('order_number', 0)
         )
+        test_data['groups'] = test_groups
             
-        return jsonify(test.data)
+        return jsonify(test_data)
     
     except Exception as e:
         print(f"Debug - Error in get_test_data: {str(e)}")
@@ -190,6 +211,21 @@ def edit(test_id):
                 supabase.from_('questions')\
                     .insert(clean_question)\
                     .execute()
+        
+        # Update group assignments
+        groups = request.form.getlist('groups[]')
+        
+        # Delete existing group links
+        supabase.from_('link_groups_tests')\
+            .delete()\
+            .eq('test_id', test_id)\
+            .execute()
+        
+        # Insert new group links
+        if groups:
+            group_links = [{'test_id': test_id, 'group_id': int(group_id)} 
+                         for group_id in groups]
+            supabase.from_('link_groups_tests').insert(group_links).execute()
         
         return jsonify({
             'success': True,

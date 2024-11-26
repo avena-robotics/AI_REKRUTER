@@ -138,3 +138,68 @@ textarea.form-control {
         grid-template-columns: 1fr;
     }
 }
+
+/* Add to existing CSS */
+.groups-select {
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+}
+
+.groups-select option {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+}
+
+.groups-select option:checked {
+    background-color: #0d6efd linear-gradient(0deg, #0d6efd 0%, #0d6efd 100%);
+    color: white;
+}
+
+.groups-select option:hover:not(:checked) {
+    background-color: #f8f9fa;
+}
+
+.groups-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Groups styling */
+.groups-container {
+    background-color: #fff;
+    min-height: 100px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.group-chip {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    margin: 0.125rem;
+    border-radius: 1rem;
+    background-color: #f8f9fa;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.form-check-input:checked + .group-chip {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.form-check {
+    padding: 0;
+    margin: 0;
+}
+
+.form-check-input {
+    display: none;
+}
+
+.group-chip:hover {
+    background-color: #e9ecef;
+}
+
+.form-check-input:checked + .group-chip:hover {
+    background-color: #0b5ed7;
+}

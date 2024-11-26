@@ -115,4 +115,78 @@ document.addEventListener('DOMContentLoaded', function() {
     // Make functions globally available
     window.submitTest = submitTest;
     window.cancelTest = cancelTest;
+
+    // Initialize bootstrap-select
+    if ($('.selectpicker').length > 0) {
+        console.log('Initializing selectpicker...'); // Debug log
+        $('.selectpicker').selectpicker({
+            noneSelectedText: 'Wybierz grupy...',
+            selectAllText: 'Zaznacz wszystkie',
+            deselectAllText: 'Odznacz wszystkie',
+            selectedTextFormat: 'count > 2',
+            countSelectedText: '{0} grup wybrano'
+        });
+    }
+
+    // Add modal show event handlers
+    ['addTestModal', 'editTestModal'].forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.addEventListener('show.bs.modal', function() {
+                console.log('Modal showing...'); // Debug log
+                setTimeout(() => {
+                    $('.selectpicker').selectpicker('refresh');
+                }, 0);
+            });
+        }
+    });
+
+    // Update editTest function
+    window.editTest = function(testId) {
+        fetch(`/tests/${testId}/data`)
+            .then(response => response.json())
+            .then(test => {
+                console.log('Test data:', test); // Debug log
+                const form = document.getElementById('editTestForm');
+                form.action = `/tests/${testId}/edit`;
+                
+                // Populate basic test fields
+                form.querySelector('[name="test_type"]').value = test.test_type || '';
+                form.querySelector('[name="stage"]').value = test.stage || '';
+                form.querySelector('[name="description"]').value = test.description || '';
+                form.querySelector('[name="passing_threshold"]').value = test.passing_threshold || 0;
+                form.querySelector('[name="time_limit_minutes"]').value = test.time_limit_minutes || '';
+
+                // Set selected groups
+                if (test.groups) {
+                    test.groups.forEach(groupId => {
+                        const checkbox = form.querySelector(`input[name="groups[]"][value="${groupId}"]`);
+                        if (checkbox) {
+                            checkbox.checked = true;
+                        }
+                    });
+                }
+
+                // Clear and populate questions
+                const questionsContainer = form.querySelector('.questions-container');
+                questionsContainer.innerHTML = '';
+                
+                if (test.questions?.length > 0) {
+                    test.questions
+                        .sort((a, b) => a.order_number - b.order_number)
+                        .forEach(question => {
+                            const questionHtml = createQuestionHtml(question);
+                            questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
+                        });
+                }
+
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('editTestModal'));
+                modal.show();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Błąd podczas ładowania danych testu', 'error');
+            });
+    };
 }); 
