@@ -170,6 +170,18 @@
                     
                     <div class="row mb-3">
                         <div class="col-12 mb-3">
+                            <label class="form-label">Grupa*</label>
+                            <select class="form-select" name="group_id" required onchange="updateTestOptions(this)">
+                                <option value="">Wybierz grupę</option>
+                                {% for group in groups %}
+                                    <option value="{{ group.id }}">{{ group.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">
+                                Należy wybrać grupę
+                            </div>
+                        </div>
+                        <div class="col-12 mb-3">
                             <label class="form-label">Test PO1</label>
                             <select class="form-select" name="po1_test_id">
                                 <option value="">Brak</option>
@@ -207,30 +219,6 @@
                                     {% endif %}
                                 {% endfor %}
                             </select>
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label">Grupy*</label>
-                            <div class="form-group">
-                                <div class="border rounded p-3" id="groupsContainer">
-                                    {% for group in groups %}
-                                    <div class="form-check">
-                                        <input type="checkbox" class="form-check-input group-checkbox" 
-                                               name="groups[]" value="{{ group.id }}" 
-                                               id="{{ 'add' if modal == 'add' else 'edit' }}_group_{{ group.id }}">
-                                        <label class="form-check-label" 
-                                               for="{{ 'add' if modal == 'add' else 'edit' }}_group_{{ group.id }}">
-                                            {{ group.name }}
-                                        </label>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                                <div class="invalid-feedback" style="display: none;">
-                                    Aby zapisać kampanię, musisz wybrać przynajmniej jedną grupę
-                                </div>
-                            </div>
                         </div>
                     </div>
                     
@@ -344,6 +332,18 @@
                     
                     <div class="row mb-3">
                         <div class="col-12 mb-3">
+                            <label class="form-label">Grupa*</label>
+                            <select class="form-select" name="group_id" required onchange="updateTestOptions(this)">
+                                <option value="">Wybierz grupę</option>
+                                {% for group in groups %}
+                                    <option value="{{ group.id }}">{{ group.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">
+                                Należy wybrać grupę
+                            </div>
+                        </div>
+                        <div class="col-12 mb-3">
                             <label class="form-label">Test PO1</label>
                             <select class="form-select" name="po1_test_id">
                                 <option value="">Brak</option>
@@ -381,30 +381,6 @@
                                     {% endif %}
                                 {% endfor %}
                             </select>
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label">Grupy*</label>
-                            <div class="form-group">
-                                <div class="border rounded p-3" id="groupsContainer">
-                                    {% for group in groups %}
-                                    <div class="form-check">
-                                        <input type="checkbox" class="form-check-input group-checkbox" 
-                                               name="groups[]" value="{{ group.id }}" 
-                                               id="{{ 'add' if modal == 'add' else 'edit' }}_group_{{ group.id }}">
-                                        <label class="form-check-label" 
-                                               for="{{ 'add' if modal == 'add' else 'edit' }}_group_{{ group.id }}">
-                                            {{ group.name }}
-                                        </label>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                                <div class="invalid-feedback" style="display: none;">
-                                    Aby zapisać kampanię, musisz wybrać przynajmniej jedną grupę
-                                </div>
-                            </div>
                         </div>
                     </div>
                     
@@ -502,11 +478,19 @@
                 form.querySelector('[name="po3_test_id"]').value = campaign.po3_test_id || '';
                 form.querySelector('[name="is_active"]').checked = campaign.is_active;
                 
-                // Update group checkboxes
-                const campaignGroups = campaign.groups || [];
-                form.querySelectorAll('input[name="groups[]"]').forEach(checkbox => {
-                    checkbox.checked = campaignGroups.some(group => group.id === parseInt(checkbox.value));
-                });
+                // Set group and update tests
+                const groupSelect = form.querySelector('[name="group_id"]');
+                if (campaign.groups && campaign.groups.length > 0) {
+                    groupSelect.value = campaign.groups[0].id;
+                    updateTestOptions(groupSelect);
+                    
+                    // After tests are loaded, set selected tests
+                    setTimeout(() => {
+                        if (campaign.po1_test_id) form.querySelector('[name="po1_test_id"]').value = campaign.po1_test_id;
+                        if (campaign.po2_test_id) form.querySelector('[name="po2_test_id"]').value = campaign.po2_test_id;
+                        if (campaign.po3_test_id) form.querySelector('[name="po3_test_id"]').value = campaign.po3_test_id;
+                    }, 500);
+                }
                 
                 new bootstrap.Modal(document.getElementById('editCampaignModal')).show();
             })
@@ -558,7 +542,7 @@
             if (feedbackDiv) {
                 feedbackDiv.style.display = 'block';
             }
-            showToast('Należy wybrać co najmniej jedną grupę', 'error');
+            showToast('Należy wybrać przynajmniej jedną grupę', 'error');
             return;
         }
         
@@ -740,5 +724,61 @@
                 showToast('Błąd podczas ładowania danych kampanii', 'error');
             });
     }
+
+    function updateTestOptions(groupSelect) {
+        const form = groupSelect.closest('form');
+        const testSelects = form.querySelectorAll('[name$="_test_id"]');
+        const groupId = groupSelect.value;
+        
+        // Clear all test selections
+        testSelects.forEach(select => {
+            select.innerHTML = '<option value="">Brak</option>';
+            select.disabled = !groupId;
+        });
+        
+        if (groupId) {
+            // Fetch tests for selected group
+            fetch(`/campaigns/group/${groupId}/tests`)
+                .then(response => response.json())
+                .then(tests => {
+                    // Group tests by stage
+                    const testsByStage = {
+                        'PO1': [],
+                        'PO2': [],
+                        'PO3': []
+                    };
+                    
+                    tests.forEach(test => {
+                        if (testsByStage[test.stage]) {
+                            testsByStage[test.stage].push(test);
+                        }
+                    });
+                    
+                    // Update each test select with relevant tests
+                    testSelects.forEach(select => {
+                        const stage = select.name.replace('_test_id', '').toUpperCase();
+                        const stageTests = testsByStage[stage] || [];
+                        
+                        stageTests.forEach(test => {
+                            const option = document.createElement('option');
+                            option.value = test.id;
+                            option.textContent = `${test.test_type} - ${test.description || 'Brak opisu'}`;
+                            select.appendChild(option);
+                        });
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching tests:', error);
+                    showToast('Błąd podczas pobierania testów', 'error');
+                });
+        }
+    }
+
+    // Initialize test selects as disabled
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('[name$="_test_id"]').forEach(select => {
+            select.disabled = true;
+        });
+    });
 </script>
 {% endblock %}

@@ -13,6 +13,11 @@ campaign_bp = Blueprint('campaign', __name__, url_prefix='/campaigns')
 @login_required
 def list():
     try:
+        # Get user groups first
+        user_id = session.get('user_id')
+        user_groups = get_user_groups(user_id)
+        user_group_ids = [group['id'] for group in user_groups]
+        
         # Get all campaigns with tests
         campaigns_response = supabase.table('campaigns')\
             .select("""
@@ -24,16 +29,26 @@ def list():
             .order('created_at', desc=True)\
             .execute()
 
-        # Format datetime fields and add groups
+        # Format datetime fields and filter campaigns
+        filtered_campaigns = []
         campaigns_data = campaigns_response.data or []
+        
         for campaign in campaigns_data:
             if campaign and isinstance(campaign, dict):
+                # Format datetime fields
                 if campaign.get('created_at'):
                     campaign['created_at'] = format_datetime(campaign['created_at'])
                 if campaign.get('updated_at'):
                     campaign['updated_at'] = format_datetime(campaign['updated_at'])
-                # Add groups to each campaign
-                campaign['groups'] = get_campaign_groups(campaign['id'])
+                
+                # Get groups for this campaign
+                campaign_groups = get_campaign_groups(campaign['id'])
+                campaign['groups'] = campaign_groups
+                
+                # Check if campaign has any groups that user belongs to
+                campaign_group_ids = [group['id'] for group in campaign_groups]
+                if any(group_id in user_group_ids for group_id in campaign_group_ids):
+                    filtered_campaigns.append(campaign)
 
         # Get all tests for dropdowns
         tests_response = supabase.table('tests')\
@@ -44,14 +59,10 @@ def list():
         
         tests_data = tests_response.data or []
         
-        # Get user groups
-        user_id = session.get('user_id')
-        groups = get_user_groups(user_id)
-        
         return render_template('campaigns/list.html', 
-                             campaigns=campaigns_data, 
+                             campaigns=filtered_campaigns, 
                              tests=tests_data,
-                             groups=groups)
+                             groups=user_groups)
     
     except Exception as e:
         print(f"Error in campaign list: {str(e)}")  # Debug log
@@ -105,11 +116,11 @@ def add():
                 'error': 'Kampania o takim kodzie już istnieje'
             })
         
-        groups = request.form.getlist('groups[]')
-        if not groups:
+        group_id = request.form.get('group_id')
+        if not group_id:
             return jsonify({
                 'success': False,
-                'error': 'Należy wybrać co najmniej jedną grupę'
+                'error': 'Należy wybrać grupę'
             })
         
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -138,12 +149,11 @@ def add():
         result = supabase.table('campaigns').insert(campaign_data).execute()
         campaign_id = result.data[0]['id']
         
-        # Add group associations
-        for group_id in groups:
-            supabase.from_('link_groups_campaigns').insert({
-                'group_id': int(group_id),
-                'campaign_id': campaign_id
-            }).execute()
+        # Add single group association
+        supabase.from_('link_groups_campaigns').insert({
+            'group_id': int(group_id),
+            'campaign_id': campaign_id
+        }).execute()
         
         return jsonify({'success': True, 'id': campaign_id})
     
@@ -199,11 +209,11 @@ def edit(campaign_id):
                 'error': 'Kampania o takim kodzie już istnieje'
             })
             
-        groups = request.form.getlist('groups[]')
-        if not groups:
+        group_id = request.form.get('group_id')
+        if not group_id:
             return jsonify({
                 'success': False,
-                'error': 'Należy wybrać co najmniej jedną grupę'
+                'error': 'Należy wybrać grupę'
             })
         
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -233,17 +243,16 @@ def edit(campaign_id):
             .eq('id', campaign_id)\
             .execute()
             
-        # Update group associations
+        # Update group association
         supabase.from_('link_groups_campaigns')\
             .delete()\
             .eq('campaign_id', campaign_id)\
             .execute()
             
-        for group_id in groups:
-            supabase.from_('link_groups_campaigns').insert({
-                'group_id': int(group_id),
-                'campaign_id': campaign_id
-            }).execute()
+        supabase.from_('link_groups_campaigns').insert({
+            'group_id': int(group_id),
+            'campaign_id': campaign_id
+        }).execute()
             
         return jsonify({'success': True})
     
@@ -282,3 +291,30 @@ def generate_link(campaign_id):
     
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+# Add new endpoint to get tests for a specific group
+@campaign_bp.route('/group/<int:group_id>/tests')
+def get_group_tests(group_id):
+    try:
+        # Get all tests associated with this group
+        link_response = supabase.from_('link_groups_tests')\
+            .select('test_id')\
+            .eq('group_id', group_id)\
+            .execute()
+            
+        if not link_response.data:
+            return jsonify([])
+            
+        test_ids = [item['test_id'] for item in link_response.data]
+        
+        tests_response = supabase.from_('tests')\
+            .select('id, test_type, stage, description')\
+            .in_('id', test_ids)\
+            .order('stage')\
+            .order('test_type')\
+            .execute()
+            
+        return jsonify(tests_response.data or [])
+    except Exception as e:
+        print(f"Error getting group tests: {str(e)}")
+        return jsonify([])
