@@ -1,9 +1,10 @@
-from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
+from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, session
 from filters import format_datetime
 from database import supabase
 import secrets
 from datetime import datetime
 from routes.auth_routes import login_required
+from services.group_service import GroupService
 
 campaign_bp = Blueprint('campaign', __name__, url_prefix='/campaigns')
 
@@ -12,7 +13,11 @@ campaign_bp = Blueprint('campaign', __name__, url_prefix='/campaigns')
 @login_required
 def list():
     try:
-        # Get all campaigns with tests
+        # Get user's campaign IDs
+        user_id = session.get('user_id')
+        allowed_campaign_ids = GroupService.get_user_campaign_ids(user_id)
+        
+        # Get campaigns with tests, filtered by user's access
         campaigns_response = supabase.table('campaigns')\
             .select("""
                 *,
@@ -20,6 +25,7 @@ def list():
                 po2:tests!campaigns_po2_test_id_fkey (test_type, description),
                 po3:tests!campaigns_po3_test_id_fkey (test_type, description)
             """)\
+            .in_('id', allowed_campaign_ids)\
             .order('created_at', desc=True)\
             .execute()
 

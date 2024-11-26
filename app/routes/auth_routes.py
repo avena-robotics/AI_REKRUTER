@@ -9,7 +9,7 @@ auth_bp = Blueprint('auth', __name__)
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'user_email' not in session:
+        if 'user_id' not in session:
             if request.is_json:
                 return jsonify({'error': 'Unauthorized'}), 401
             session['next_url'] = request.url
@@ -25,9 +25,10 @@ def login():
         
         auth_success, auth_message = ldap_authenticate(email, password)
         if auth_success:
-            user_success, user_message = check_user_by_email_supabase(email)
+            user_success, user_data = check_user_by_email_supabase(email)
             if user_success:
                 session['user_email'] = email
+                session['user_id'] = user_data['id']
                 next_url = session.pop('next_url', None)
                 return jsonify({
                     'success': True,
@@ -38,7 +39,7 @@ def login():
             else:
                 return jsonify({
                     'success': False,
-                    'message': f'Błąd: {user_message}',
+                    'message': f'Błąd: {user_data}',
                     'type': 'error'
                 })
         else:

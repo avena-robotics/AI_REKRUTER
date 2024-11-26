@@ -1,8 +1,9 @@
 import json
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, session
 from database import supabase
 from datetime import datetime
 from routes.auth_routes import login_required
+from services.group_service import GroupService
 
 test_bp = Blueprint('test', __name__, url_prefix='/tests')
 
@@ -10,8 +11,14 @@ test_bp = Blueprint('test', __name__, url_prefix='/tests')
 @login_required
 def list():
     try:
+        # Get user's test IDs
+        user_id = session.get('user_id')
+        allowed_test_ids = GroupService.get_user_test_ids(user_id)
+        
+        # Get tests filtered by user's access
         tests = supabase.from_('tests')\
             .select('*, created_at')\
+            .in_('id', allowed_test_ids)\
             .order('created_at', desc=True)\
             .execute()
         

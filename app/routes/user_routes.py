@@ -11,7 +11,7 @@ def check_user_by_email_supabase(email):
             .execute()
         
         if response.data:
-            return True, None
+            return True, response.data[0]
         return False, "Użytkownik nie ma uprawnień do systemu"
         
     except Exception as e:
