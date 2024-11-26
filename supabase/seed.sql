@@ -134,9 +134,8 @@ INSERT INTO link_groups_tests (group_id, test_id) VALUES
 -- Przypisanie testów do Grupy Maciej
 (4, 7), (4, 8), (4, 9), (4, 10), (4, 11), (4, 12),
 
--- Przypisanie testów do obu grup
-(2, 13), (2, 14), (2, 15), (2, 16), (2, 17), (2, 18),
-(4, 13), (4, 14), (4, 15), (4, 16), (4, 17), (4, 18),
+-- Przypisanie testów do grupy wspólnej (Sebastian i Maciej)
+(3, 13), (3, 14), (3, 15), (3, 16), (3, 17), (3, 18),
 
 -- Przypisanie testów do pustej grupy
 (1, 25), (1, 26), (1, 27), (1, 28), (1, 29), (1, 30);
