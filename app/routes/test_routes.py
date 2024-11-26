@@ -51,11 +51,26 @@ def list():
 @test_bp.route('/add', methods=['POST'])
 def add():
     try:
-        passing_threshold = request.form.get('passing_threshold')
+        # Sprawdź czy wybrano grupy
+        groups = request.form.getlist('groups[]')
+        if not groups:
+            return jsonify({
+                'success': False,
+                'error': 'Wybierz przynajmniej jedną grupę'
+            }), 400
+        
+        # Sprawdź limit czasu
         time_limit = request.form.get('time_limit_minutes')
+        if not time_limit or not time_limit.strip() or int(time_limit) < 1:
+            return jsonify({
+                'success': False,
+                'error': 'Podaj prawidłowy limit czasu (minimum 1 minuta)'
+            }), 400
+            
+        passing_threshold = request.form.get('passing_threshold')
         
         passing_threshold = int(passing_threshold) if passing_threshold and passing_threshold.strip() else 0
-        time_limit = int(time_limit) if time_limit and time_limit.strip() else None
+        time_limit = int(time_limit)
         
         test_data = {
             'test_type': request.form.get('test_type'),
@@ -69,7 +84,6 @@ def add():
         test_id = result.data[0]['id']
         
         # Handle group assignments
-        groups = request.form.getlist('groups[]')
         if groups:
             group_links = [{'test_id': test_id, 'group_id': int(group_id)} 
                          for group_id in groups]
@@ -97,23 +111,14 @@ def add():
             
             supabase.from_('questions').insert(clean_question).execute()
         
-        return jsonify({
-            'success': True,
-            'message': 'Test został dodany pomyślnie'
-        })
+        return jsonify({'success': True})
     
     except ValueError as e:
         print(f"Error adding test (value error): {str(e)}")
-        return jsonify({
-            'success': False, 
-            'error': 'Nieprawidłowe wartości numeryczne'
-        })
+        return jsonify({'success': False}), 400
     except Exception as e:
         print(f"Error adding test: {str(e)}")
-        return jsonify({
-            'success': False, 
-            'error': str(e)
-        })
+        return jsonify({'success': False}), 500
 
 @test_bp.route('/<int:test_id>/data')
 def get_test_data(test_id):
@@ -153,12 +158,28 @@ def get_test_data(test_id):
 @test_bp.route('/<int:test_id>/edit', methods=['POST'])
 def edit(test_id):
     try:
+        # Sprawdź czy wybrano grupy
+        groups = request.form.getlist('groups[]')
+        if not groups:
+            return jsonify({
+                'success': False,
+                'error': 'Wybierz przynajmniej jedną grupę'
+            }), 400
+        
+        # Sprawdź limit czasu
+        time_limit = request.form.get('time_limit_minutes')
+        if not time_limit or not time_limit.strip() or int(time_limit) < 1:
+            return jsonify({
+                'success': False,
+                'error': 'Podaj prawidłowy limit czasu (minimum 1 minuta)'
+            }), 400
+            
         test_data = {
             'test_type': request.form.get('test_type'),
             'stage': request.form.get('stage'),
             'description': request.form.get('description'),
             'passing_threshold': int(request.form.get('passing_threshold', 0)),
-            'time_limit_minutes': int(request.form.get('time_limit_minutes', 0)) if request.form.get('time_limit_minutes') else None
+            'time_limit_minutes': int(time_limit)
         }
         
         supabase.from_('tests')\
@@ -166,8 +187,21 @@ def edit(test_id):
             .eq('id', test_id)\
             .execute()
         
-        questions = json.loads(request.form.get('questions', '[]'))
+        # Update group assignments
+        # Delete existing group links
+        supabase.from_('link_groups_tests')\
+            .delete()\
+            .eq('test_id', test_id)\
+            .execute()
         
+        # Insert new group links
+        if groups:
+            group_links = [{'test_id': test_id, 'group_id': int(group_id)} 
+                         for group_id in groups]
+            supabase.from_('link_groups_tests').insert(group_links).execute()
+        
+        # Update questions
+        questions = json.loads(request.form.get('questions', '[]'))
         existing_questions = [q['id'] for q in questions if q.get('id')]
         
         if existing_questions:
@@ -182,7 +216,6 @@ def edit(test_id):
                 .eq('test_id', test_id)\
                 .execute()
         
-        # Update or insert questions
         for question in questions:
             clean_question = {
                 'test_id': test_id,
@@ -212,32 +245,11 @@ def edit(test_id):
                     .insert(clean_question)\
                     .execute()
         
-        # Update group assignments
-        groups = request.form.getlist('groups[]')
-        
-        # Delete existing group links
-        supabase.from_('link_groups_tests')\
-            .delete()\
-            .eq('test_id', test_id)\
-            .execute()
-        
-        # Insert new group links
-        if groups:
-            group_links = [{'test_id': test_id, 'group_id': int(group_id)} 
-                         for group_id in groups]
-            supabase.from_('link_groups_tests').insert(group_links).execute()
-        
-        return jsonify({
-            'success': True,
-            'message': 'Test został zaktualizowany pomyślnie'
-        })
+        return jsonify({'success': True})
     
     except Exception as e:
         print(f"Error editing test: {str(e)}")
-        return jsonify({
-            'success': False, 
-            'error': str(e)
-        })
+        return jsonify({'success': False}), 500
 
 @test_bp.route('/<int:test_id>/delete', methods=['POST'])
 def delete(test_id):

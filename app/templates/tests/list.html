@@ -139,11 +139,11 @@
 
                     <div class="row mb-3">
                         <div class="col-12">
-                            <label class="form-label">Przypisz do grup</label>
+                            <label class="form-label">Przypisz do grup*</label>
                             <div class="groups-container border rounded p-3">
                                 <div class="groups-list">
                                     {% for group in available_groups %} 
-                                        <input class="form-check-input" type="checkbox" 
+                                        <input class="form-check-input group-checkbox" type="checkbox" 
                                                name="groups[]" 
                                                value="{{ group.id }}" 
                                                id="group{{ group.id }}">
@@ -151,6 +151,9 @@
                                             {{ group.name }}
                                         </label> 
                                     {% endfor %}
+                                </div>
+                                <div class="invalid-feedback">
+                                    Wybierz przynajmniej jedną grupę
                                 </div>
                             </div>
                         </div>
@@ -169,8 +172,11 @@
                             <input type="number" class="form-control" name="passing_threshold" required>
                         </div>
                         <div class="col-md-12 mb-3">
-                            <label class="form-label">Limit czasu (minuty)</label>
-                            <input type="number" class="form-control" name="time_limit_minutes">
+                            <label class="form-label">Limit czasu (minuty)*</label>
+                            <input type="number" class="form-control" name="time_limit_minutes" required min="1">
+                            <div class="invalid-feedback">
+                                Podaj limit czasu (minimum 1 minuta)
+                            </div>
                         </div>
                     </div>
 
@@ -231,23 +237,21 @@
 
                     <div class="row mb-3">
                         <div class="col-12">
-                            <label class="form-label">Przypisz do grup</label>
+                            <label class="form-label">Przypisz do grup*</label>
                             <div class="groups-container border rounded p-3">
                                 <div class="groups-list">
                                     {% for group in available_groups %}
-                                    <div class="form-check d-inline-block me-3 mb-2">
-                                        <input class="form-check-input" type="checkbox" 
-                                               name="groups[]" 
-                                               value="{{ group.id }}" 
-                                               id="group{{ group.id }}">
-                                        <label class="form-check-label group-chip" for="group{{ group.id }}">
-                                            {{ group.name }}
-                                        </label>
-                                    </div>
+                                    <input class="form-check-input group-checkbox" type="checkbox" 
+                                           name="groups[]" 
+                                           value="{{ group.id }}" 
+                                           id="editGroup{{ group.id }}">
+                                    <label class="form-check-label group-chip" for="editGroup{{ group.id }}">
+                                        {{ group.name }}
+                                    </label>
                                     {% endfor %}
                                 </div>
-                                <div class="form-text mt-2">
-                                    Możesz przypisać test tylko do grup, do których masz dostęp
+                                <div class="invalid-feedback">
+                                    Wybierz przynajmniej jedną grupę
                                 </div>
                             </div>
                         </div>
@@ -266,8 +270,11 @@
                             <input type="number" class="form-control" name="passing_threshold" required>
                         </div>
                         <div class="col-md-12 mb-3">
-                            <label class="form-label">Limit czasu (minuty)</label>
-                            <input type="number" class="form-control" name="time_limit_minutes">
+                            <label class="form-label">Limit czasu (minuty)*</label>
+                            <input type="number" class="form-control" name="time_limit_minutes" required min="1">
+                            <div class="invalid-feedback">
+                                Podaj limit czasu (minimum 1 minuta)
+                            </div>
                         </div>
                     </div>
 
@@ -471,6 +478,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 form.querySelector('[name="passing_threshold"]').value = test.passing_threshold || 0;
                 form.querySelector('[name="time_limit_minutes"]').value = test.time_limit_minutes || '';
 
+                // Reset all group checkboxes first
+                form.querySelectorAll('input[name="groups[]"]').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+
+                // Check the appropriate group checkboxes
+                if (test.groups && Array.isArray(test.groups)) {
+                    test.groups.forEach(groupId => {
+                        const checkbox = form.querySelector(`input[name="groups[]"][value="${groupId}"]`);
+                        if (checkbox) {
+                            checkbox.checked = true;
+                        }
+                    });
+                }
+
                 // Clear and populate questions
                 const questionsContainer = form.querySelector('.questions-container');
                 questionsContainer.innerHTML = '';
@@ -485,7 +507,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             
                             // After adding HTML, set correct answer based on type
                             const questionCard = questionsContainer.lastElementChild;
-                            const answerType = question.answer_type; // Remove toLowerCase()
+                            const answerType = question.answer_type;
                             
                             // Set answer type specific fields
                             switch (answerType) {
@@ -1006,5 +1028,83 @@ document.addEventListener('DOMContentLoaded', function() {
             reader.readAsDataURL(file);
         }
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        ['addTestForm', 'editTestForm'].forEach(formId => {
+            const form = document.getElementById(formId);
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    // Reset all validation states
+                    form.querySelectorAll('.is-invalid').forEach(el => {
+                        el.classList.remove('is-invalid');
+                    });
+                    form.querySelectorAll('.invalid-feedback').forEach(el => {
+                        el.style.display = 'none';
+                    });
+                    
+                    let isValid = true;
+                    
+                    // Sprawdź czy wybrano grupę
+                    const selectedGroups = form.querySelectorAll('input[name="groups[]"]:checked');
+                    const groupsContainer = form.querySelector('.groups-container');
+                    
+                    if (selectedGroups.length === 0) {
+                        groupsContainer.classList.add('border-danger');
+                        groupsContainer.querySelector('.invalid-feedback').style.display = 'block';
+                        isValid = false;
+                    }
+                    
+                    // Sprawdź limit czasu
+                    const timeLimit = form.querySelector('[name="time_limit_minutes"]');
+                    if (!timeLimit.value || parseInt(timeLimit.value) < 1) {
+                        timeLimit.classList.add('is-invalid');
+                        isValid = false;
+                    }
+                    
+                    if (isValid) {
+                        const formData = new FormData(form);
+                        fetch(form.action, {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                window.location.reload();
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                        });
+                    }
+                });
+                
+                // Dodaj obsługę zmiany checkboxów
+                form.querySelectorAll('.group-checkbox').forEach(checkbox => {
+                    checkbox.addEventListener('change', function() {
+                        const groupsContainer = form.querySelector('.groups-container');
+                        const anyChecked = form.querySelectorAll('input[name="groups[]"]:checked').length > 0;
+                        
+                        if (anyChecked) {
+                            groupsContainer.classList.remove('border-danger');
+                            groupsContainer.querySelector('.invalid-feedback').style.display = 'none';
+                        }
+                    });
+                });
+                
+                // Dodaj obsługę zmiany limitu czasu
+                const timeLimit = form.querySelector('[name="time_limit_minutes"]');
+                if (timeLimit) {
+                    timeLimit.addEventListener('input', function() {
+                        if (this.value && parseInt(this.value) >= 1) {
+                            this.classList.remove('is-invalid');
+                        }
+                    });
+                }
+            }
+        });
+    });
 </script>
 {% endblock %} 

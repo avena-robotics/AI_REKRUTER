@@ -203,3 +203,12 @@ textarea.form-control {
 .form-check-input:checked + .group-chip:hover {
     background-color: #0b5ed7;
 }
+
+.group-chip.checked {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.group-chip.checked:hover {
+    background-color: #0b5ed7;
+}

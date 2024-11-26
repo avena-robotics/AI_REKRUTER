@@ -157,12 +157,32 @@ document.addEventListener('DOMContentLoaded', function() {
                 form.querySelector('[name="passing_threshold"]').value = test.passing_threshold || 0;
                 form.querySelector('[name="time_limit_minutes"]').value = test.time_limit_minutes || '';
 
+                // Reset all group checkboxes first
+                form.querySelectorAll('input[name="groups[]"]').forEach(checkbox => {
+                    checkbox.checked = false;
+                    const chip = checkbox.nextElementSibling;
+                    if (chip) {
+                        chip.classList.remove('checked');
+                    }
+                });
+
                 // Set selected groups
-                if (test.groups) {
+                if (test.groups && Array.isArray(test.groups)) {
+                    console.log('Setting groups:', test.groups); // Debug log
                     test.groups.forEach(groupId => {
-                        const checkbox = form.querySelector(`input[name="groups[]"][value="${groupId}"]`);
+                        // Use the exact ID format from the HTML
+                        const checkbox = form.querySelector(`#editGroup${groupId}`);
+                        console.log(`Looking for checkbox with ID: editGroup${groupId}`); // Debug log
+                        
                         if (checkbox) {
+                            console.log('Found checkbox, setting checked'); // Debug log
                             checkbox.checked = true;
+                            const chip = checkbox.nextElementSibling;
+                            if (chip) {
+                                chip.classList.add('checked');
+                            }
+                        } else {
+                            console.log(`Checkbox not found for group ID: ${groupId}`); // Debug log
                         }
                     });
                 }
@@ -186,7 +206,6 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error:', error);
-                showToast('Błąd podczas ładowania danych testu', 'error');
             });
     };
 }); 

@@ -88,20 +88,16 @@ class GroupService:
     def get_test_groups(test_id, user_id):
         """Get groups for a test that user has access to"""
         try:
-            # Get user's groups first
-            user_groups = GroupService.get_user_available_groups(user_id)
-            user_group_ids = [g['id'] for g in user_groups]
-            
-            # Then get test's groups filtered by user's access
+            # Get test's groups directly first
             response = supabase.table('link_groups_tests')\
                 .select('group_id')\
                 .eq('test_id', test_id)\
-                .in_('group_id', user_group_ids)\
                 .execute()
             
-            groups = [item['group_id'] for item in response.data] if response.data else []
-            print(f"Groups for test {test_id}: {groups}")  # Debug log
-            return groups
+            group_ids = [item['group_id'] for item in response.data] if response.data else []
+            print(f"Found group IDs for test {test_id}: {group_ids}")  # Debug log
+            return group_ids
+            
         except Exception as e:
             print(f"Error getting test groups: {str(e)}")
             return [] 
