@@ -11,12 +11,20 @@ test_bp = Blueprint('test', __name__, url_prefix='/tests')
 @login_required
 def list():
     try:
+        # Get user groups first
+        user_id = session.get('user_id')
+        user_groups = get_user_groups(user_id)
+        user_group_ids = [group['id'] for group in user_groups]
+        
+        # Get all tests with their data
         tests = supabase.from_('tests')\
             .select('*, created_at')\
             .order('created_at', desc=True)\
             .execute()
         
+        filtered_tests = []
         for test in tests.data:
+            # Get questions for each test
             questions = supabase.from_('questions')\
                 .select('*')\
                 .eq('test_id', test['id'])\
@@ -26,15 +34,17 @@ def list():
             test['total_points'] = sum(q.get('points', 0) for q in questions.data)
             
             # Get groups for each test
-            test['groups'] = get_test_groups(test['id'])
-        
-        # Get only groups that user has access to
-        user_id = session.get('user_id')
-        groups = get_user_groups(user_id)
+            test_groups = get_test_groups(test['id'])
+            test['groups'] = test_groups
+            
+            # Check if test has any groups that user belongs to
+            test_group_ids = [group['id'] for group in test_groups]
+            if any(group_id in user_group_ids for group_id in test_group_ids):
+                filtered_tests.append(test)
         
         return render_template('tests/list.html', 
-                             tests=tests.data or [],
-                             groups=groups)
+                             tests=filtered_tests,
+                             groups=user_groups)
     
     except Exception as e:
         print(f"Error in test list: {str(e)}")
