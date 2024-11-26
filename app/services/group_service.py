@@ -48,3 +48,26 @@ def get_user_groups(user_id):
         print(f"Error fetching user groups: {str(e)}")
         print(f"Error type: {type(e)}")
         return [] 
+
+def get_test_groups(test_id):
+    """Get groups assigned to a test"""
+    try:
+        response = supabase.from_('link_groups_tests')\
+            .select('group_id')\
+            .eq('test_id', test_id)\
+            .execute()
+        
+        if not response.data:
+            return []
+            
+        group_ids = [item['group_id'] for item in response.data]
+        
+        groups_response = supabase.from_('groups')\
+            .select('*')\
+            .in_('id', group_ids)\
+            .execute()
+            
+        return groups_response.data if groups_response.data else []
+    except Exception as e:
+        print(f"Error fetching test groups: {str(e)}")
+        return [] 

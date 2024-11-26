@@ -128,6 +128,23 @@
                     </div>
                     <div class="row mb-3">
                         <div class="col-12">
+                            <label class="form-label">Grupy*</label>
+                            <div class="border rounded p-3">
+                                {% for group in groups %}
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" name="groups[]" 
+                                           value="{{ group.id }}" id="add_group_{{ group.id }}">
+                                    <label class="form-check-label" for="add_group_{{ group.id }}">
+                                        {{ group.name }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="form-text">Wybierz co najmniej jedną grupę</div>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-12">
                             <label class="form-label">Etap*</label>
                             <select class="form-select" name="stage" required>
                                 <option value="PO1">PO1</option>
@@ -197,6 +214,23 @@
                                 <option value="EQ">Test EQ</option>
                                 <option value="IQ">Test IQ</option>
                             </select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label class="form-label">Grupy*</label>
+                            <div class="border rounded p-3">
+                                {% for group in groups %}
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" name="groups[]" 
+                                           value="{{ group.id }}" id="edit_group_{{ group.id }}">
+                                    <label class="form-check-label" for="edit_group_{{ group.id }}">
+                                        {{ group.name }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="form-text">Wybierz co najmniej jedną grupę</div>
                         </div>
                     </div>
                     <div class="row mb-3">
@@ -427,6 +461,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 form.querySelector('[name="description"]').value = test.description || '';
                 form.querySelector('[name="passing_threshold"]').value = test.passing_threshold || 0;
                 form.querySelector('[name="time_limit_minutes"]').value = test.time_limit_minutes || '';
+
+                // Set selected groups
+                const groupSelect = form.querySelector('[name="groups[]"]');
+                const testGroups = test.groups || [];
+                Array.from(groupSelect.options).forEach(option => {
+                    option.selected = testGroups.some(group => group.id === parseInt(option.value));
+                });
 
                 // Clear and populate questions
                 const questionsContainer = form.querySelector('.questions-container');
@@ -963,5 +1004,21 @@ document.addEventListener('DOMContentLoaded', function() {
             reader.readAsDataURL(file);
         }
     }
+
+    // Add form validation for groups
+    document.addEventListener('DOMContentLoaded', function() {
+        ['addTestForm', 'editTestForm'].forEach(formId => {
+            const form = document.getElementById(formId);
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    const groupSelect = form.querySelector('[name="groups[]"]');
+                    if (groupSelect && !Array.from(groupSelect.selectedOptions).length) {
+                        e.preventDefault();
+                        showToast('Należy wybrać co najmniej jedną grupę', 'error');
+                    }
+                });
+            }
+        });
+    });
 </script>
 {% endblock %} 

@@ -115,4 +115,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Make functions globally available
     window.submitTest = submitTest;
     window.cancelTest = cancelTest;
+
+    // Update form validation for groups
+    ['addTestForm', 'editTestForm'].forEach(formId => {
+        const form = document.getElementById(formId);
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const checkedGroups = form.querySelectorAll('input[name="groups[]"]:checked');
+                if (!checkedGroups.length) {
+                    e.preventDefault();
+                    showToast('Należy wybrać co najmniej jedną grupę', 'error');
+                }
+            });
+        }
+    });
 }); 

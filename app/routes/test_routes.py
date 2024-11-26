@@ -1,8 +1,9 @@
 import json
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, session
 from database import supabase
 from datetime import datetime
 from routes.auth_routes import login_required
+from services.group_service import get_user_groups, get_test_groups
 
 test_bp = Blueprint('test', __name__, url_prefix='/tests')
 
@@ -23,12 +24,20 @@ def list():
             test['questions'] = questions.data
             test['question_count'] = len(questions.data)
             test['total_points'] = sum(q.get('points', 0) for q in questions.data)
+            
+            # Get groups for each test
+            test['groups'] = get_test_groups(test['id'])
+        
+        # Get only groups that user has access to
+        user_id = session.get('user_id')
+        groups = get_user_groups(user_id)
         
         return render_template('tests/list.html', 
-                             tests=tests.data or [])
+                             tests=tests.data or [],
+                             groups=groups)
     
     except Exception as e:
-        print(f"Error in test list: {str(e)}")  # Debug log
+        print(f"Error in test list: {str(e)}")
         return jsonify({
             'success': False,
             'error': f'Wystąpił błąd podczas pobierania testów: {str(e)}'
@@ -39,6 +48,13 @@ def add():
     try:
         passing_threshold = request.form.get('passing_threshold')
         time_limit = request.form.get('time_limit_minutes')
+        groups = request.form.getlist('groups[]')
+        
+        if not groups:
+            return jsonify({
+                'success': False,
+                'error': 'Należy wybrać co najmniej jedną grupę'
+            })
         
         passing_threshold = int(passing_threshold) if passing_threshold and passing_threshold.strip() else 0
         time_limit = int(time_limit) if time_limit and time_limit.strip() else None
@@ -53,6 +69,13 @@ def add():
         
         result = supabase.from_('tests').insert(test_data).execute()
         test_id = result.data[0]['id']
+        
+        # Add group associations
+        for group_id in groups:
+            supabase.from_('link_groups_tests').insert({
+                'group_id': int(group_id),
+                'test_id': test_id
+            }).execute()
         
         questions = json.loads(request.form.get('questions', '[]'))
         for question in questions:
@@ -81,12 +104,6 @@ def add():
             'message': 'Test został dodany pomyślnie'
         })
     
-    except ValueError as e:
-        print(f"Error adding test (value error): {str(e)}")
-        return jsonify({
-            'success': False, 
-            'error': 'Nieprawidłowe wartości numeryczne'
-        })
     except Exception as e:
         print(f"Error adding test: {str(e)}")
         return jsonify({
@@ -115,6 +132,9 @@ def get_test_data(test_id):
             questions.data,
             key=lambda x: x.get('order_number', 0)
         )
+        
+        # Get assigned groups
+        test.data['groups'] = get_test_groups(test_id)
             
         return jsonify(test.data)
     
@@ -133,10 +153,29 @@ def edit(test_id):
             'time_limit_minutes': int(request.form.get('time_limit_minutes', 0)) if request.form.get('time_limit_minutes') else None
         }
         
+        groups = request.form.getlist('groups[]')
+        if not groups:
+            return jsonify({
+                'success': False,
+                'error': 'Należy wybrać co najmniej jedną grupę'
+            })
+        
         supabase.from_('tests')\
             .update(test_data)\
             .eq('id', test_id)\
             .execute()
+        
+        # Update group associations
+        supabase.from_('link_groups_tests')\
+            .delete()\
+            .eq('test_id', test_id)\
+            .execute()
+            
+        for group_id in groups:
+            supabase.from_('link_groups_tests').insert({
+                'group_id': int(group_id),
+                'test_id': test_id
+            }).execute()
         
         questions = json.loads(request.form.get('questions', '[]'))
         
@@ -154,7 +193,6 @@ def edit(test_id):
                 .eq('test_id', test_id)\
                 .execute()
         
-        # Update or insert questions
         for question in questions:
             clean_question = {
                 'test_id': test_id,
