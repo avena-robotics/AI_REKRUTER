@@ -4,51 +4,122 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}AI Rekruter{% endblock %}</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        .offcanvas {
+            max-width: 300px;
+        }
+        .nav-link {
+            padding: 0.8rem 1rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+        }
+        .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .nav-divider {
+            margin: 1rem 0;
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+    </style>
     {% block head %}{% endblock %}
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
+    <nav class="navbar navbar-dark bg-dark fixed-top">
+        <div class="container-fluid">
             <a class="navbar-brand" href="/">AI Rekruter</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('campaign.list') }}">Kampanie</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('candidate.list') }}">Kandydaci</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('test.list') }}">Testy</a>
-                    </li>
-                </ul>
-                {% if session.get('user_email') %}
+            
+            {% if session.get('user_email') %}
                 <div class="d-flex align-items-center">
-                    <span class="text-light me-3">
-                        <i class="bi bi-person-circle me-1"></i>
+                    <span class="text-light me-3 d-none d-lg-inline">
+                        <i class="bi bi-person-circle"></i>
                         {{ session.get('user_email') }}
                     </span>
-                    <button type="button" class="btn btn-outline-light btn-sm" onclick="handleLogout()">
-                        Wyloguj
+                    <button class="btn btn-dark" type="button" data-bs-toggle="offcanvas" data-bs-target="#sideMenu">
+                        <i class="bi bi-list fs-4"></i>
                     </button>
                 </div>
-                {% endif %}
-            </div>
+
+                <!-- Offcanvas Menu -->
+                <div class="offcanvas offcanvas-end bg-dark text-white" tabindex="-1" id="sideMenu">
+                    <div class="offcanvas-header">
+                        <h5 class="offcanvas-title">
+                            <i class="bi bi-person-circle"></i>
+                            {{ session.get('user_email') }}
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+                    </div>
+                    <div class="offcanvas-body">
+                        <div class="d-flex flex-column h-100">
+                            <!-- Navigation Links -->
+                            <div class="nav flex-column mb-auto">
+                                <a class="nav-link text-white {% if request.endpoint == 'campaign.list' %}active{% endif %}" 
+                                   href="{{ url_for('campaign.list') }}">
+                                    <i class="bi bi-briefcase me-2"></i>
+                                    Kampanie
+                                </a>
+                                <a class="nav-link text-white {% if request.endpoint == 'candidate.list' %}active{% endif %}" 
+                                   href="{{ url_for('candidate.list') }}">
+                                    <i class="bi bi-people me-2"></i>
+                                    Kandydaci
+                                </a>
+                                <a class="nav-link text-white {% if request.endpoint == 'test.list' %}active{% endif %}" 
+                                   href="{{ url_for('test.list') }}">
+                                    <i class="bi bi-clipboard-check me-2"></i>
+                                    Testy
+                                </a>
+                            </div>
+
+                            <!-- Groups Section -->
+                            <hr class="nav-divider">
+                            <div class="nav flex-column">
+                                <div class="nav-link text-white-50">
+                                    <i class="bi bi-people-fill me-2"></i>
+                                    Moje grupy
+                                </div>
+                                {% if user_groups %}
+                                    {% for group in user_groups %}
+                                        <div class="nav-link text-white-50 ps-4">
+                                            <small>{{ group.name }}</small>
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="nav-link text-white-50 ps-4">
+                                        <small>Brak przypisanych grup</small>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Logout Button -->
+                            <hr class="nav-divider mt-auto">
+                            <button class="btn btn-outline-light w-100" onclick="handleLogout()">
+                                <i class="bi bi-box-arrow-right me-2"></i>
+                                Wyloguj
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
         </div>
     </nav>
 
-    <div class="container mt-4">
+    <!-- Main Content with top margin to account for fixed navbar -->
+    <div class="container" style="margin-top: 5rem;">
         {% block content %}{% endblock %}
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <!-- Toast Container -->
     <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index: 1070;">
         <div id="notificationToast" class="toast border-0" role="alert" aria-live="assertive" aria-atomic="true" style="min-width: 400px;">
             <div class="d-flex align-items-center justify-content-between p-3">
@@ -57,78 +128,80 @@
             </div>
         </div>
     </div>
+
+    <!-- Keep existing JavaScript -->
     <script>
-    function showToast(message, type = 'success') {
-        const toast = document.getElementById('notificationToast');
-        const toastMessage = document.getElementById('toastMessage');
-        
-        // Reset classes
-        toast.className = 'toast border-0';
-        
-        // Add styling based on type
-        if (type === 'success') {
-            toast.style.backgroundColor = '#198754';  // Bootstrap success color
-            toast.style.borderLeft = '4px solid #146c43';  // Darker shade
-        } else {
-            toast.style.backgroundColor = '#dc3545';  // Bootstrap danger color
-            toast.style.borderLeft = '4px solid #b02a37';  // Darker shade
-        }
-        
-        // Add common styles
-        toast.classList.add('text-white');
-        
-        // Set message
-        toastMessage.textContent = message;
-        
-        // Show toast
-        const bsToast = new bootstrap.Toast(toast);
-        bsToast.show();
-    }
-
-    // Check for pending toast after page load
-    document.addEventListener('DOMContentLoaded', function() {
-        const pendingToast = sessionStorage.getItem('pendingToast');
-        if (pendingToast) {
-            try {
-                const toastData = JSON.parse(pendingToast);
-                showToast(toastData.message, toastData.type);
-            } catch (error) {
-                console.error('Error showing pending toast:', error);
-            } finally {
-                sessionStorage.removeItem('pendingToast');
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('notificationToast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            // Reset classes
+            toast.className = 'toast border-0';
+            
+            // Add styling based on type
+            if (type === 'success') {
+                toast.style.backgroundColor = '#198754';  // Bootstrap success color
+                toast.style.borderLeft = '4px solid #146c43';  // Darker shade
+            } else {
+                toast.style.backgroundColor = '#dc3545';  // Bootstrap danger color
+                toast.style.borderLeft = '4px solid #b02a37';  // Darker shade
             }
+            
+            // Add common styles
+            toast.classList.add('text-white');
+            
+            // Set message
+            toastMessage.textContent = message;
+            
+            // Show toast
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
         }
-    });
 
-    function handleFetchError(response) {
-        if (!response.ok) {
-            return response.json().then(data => {
-                showToast(data.error || 'Wystąpił nieoczekiwany błąd', 'error');
-                throw new Error(data.error || 'HTTP error');
-            });
-        }
-        return response;
-    }
-
-    function handleLogout() {
-        fetch('/logout')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Store success message for next page
-                    sessionStorage.setItem('pendingToast', JSON.stringify({
-                        message: data.message,
-                        type: data.type
-                    }));
-                    window.location.href = data.redirect;
-                } else {
-                    showToast(data.message || 'Wystąpił błąd podczas wylogowywania', 'error');
+        // Check for pending toast after page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const pendingToast = sessionStorage.getItem('pendingToast');
+            if (pendingToast) {
+                try {
+                    const toastData = JSON.parse(pendingToast);
+                    showToast(toastData.message, toastData.type);
+                } catch (error) {
+                    console.error('Error showing pending toast:', error);
+                } finally {
+                    sessionStorage.removeItem('pendingToast');
                 }
-            })
-            .catch(error => {
-                showToast('Wystąpił błąd podczas wylogowywania', 'error');
-            });
-    }
+            }
+        });
+
+        function handleFetchError(response) {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    showToast(data.error || 'Wystąpił nieoczekiwany błąd', 'error');
+                    throw new Error(data.error || 'HTTP error');
+                });
+            }
+            return response;
+        }
+
+        function handleLogout() {
+            fetch('/logout')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Store success message for next page
+                        sessionStorage.setItem('pendingToast', JSON.stringify({
+                            message: data.message,
+                            type: data.type
+                        }));
+                        window.location.href = data.redirect;
+                    } else {
+                        showToast(data.message || 'Wystąpił błąd podczas wylogowywania', 'error');
+                    }
+                })
+                .catch(error => {
+                    showToast('Wystąpił błąd podczas wylogowywania', 'error');
+                });
+        }
     </script>
 </body>
 </html> 
