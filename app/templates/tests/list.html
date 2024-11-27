@@ -13,8 +13,9 @@
 <!-- Update filters and sort section -->
 <div class="card mb-4">
     <div class="card-body">
-        <div class="row g-3 align-items-end">
-            <div class="col-md-3">
+        <form class="row g-3">
+            <!-- First row -->
+            <div class="col-md-6 col-lg-3">
                 <label class="form-label">Typ testu</label>
                 <select class="form-select" id="filterTestType">
                     <option value="">Wszystkie</option>
@@ -23,22 +24,8 @@
                     <option value="IQ">Test IQ</option>
                 </select>
             </div>
-            <div class="col-md-3">
-                <label class="form-label">Sortuj według</label>
-                <select class="form-select" id="sortBy">
-                    <option value="created_at">Data utworzenia</option>
-                    <option value="time_limit">Limit czasu</option>
-                    <option value="questions">Liczba pytań</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Kolejność</label>
-                <select class="form-select" id="sortOrder">
-                    <option value="desc">Malejąco</option>
-                    <option value="asc">Rosnąco</option>
-                </select>
-            </div>
-            <div class="col-md-3">
+            
+            <div class="col-md-6 col-lg-3">
                 <label class="form-label">Grupa</label>
                 <select class="form-select" id="filterGroup">
                     <option value="">Wszystkie</option>
@@ -47,17 +34,34 @@
                     {% endfor %}
                 </select>
             </div>
-        </div>
-        <div class="row mt-3">
-            <div class="col-12 text-end">
+
+            <div class="col-md-6 col-lg-3">
+                <label class="form-label">Sortuj według</label>
+                <select class="form-select" id="sortBy">
+                    <option value="created_at">Data utworzenia</option>
+                    <option value="time_limit">Limit czasu</option>
+                    <option value="questions">Liczba pytań</option>
+                </select>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <label class="form-label">Kolejność</label>
+                <select class="form-select" id="sortOrder">
+                    <option value="desc">Malejąco</option>
+                    <option value="asc">Rosnąco</option>
+                </select>
+            </div>
+
+            <!-- Second row - buttons -->
+            <div class="col-12 d-flex justify-content-end gap-2 mt-3">
                 <button type="button" class="btn btn-outline-secondary" id="resetFilters">
                     Resetuj filtry
                 </button>
-                <button type="button" class="btn btn-primary ms-2" id="applyFilters">
+                <button type="button" class="btn btn-primary" id="applyFilters">
                     Zastosuj
                 </button>
             </div>
-        </div>
+        </form>
     </div>
 </div>
 
@@ -113,7 +117,7 @@
 </div>
 
 <!-- Add Test Modal -->
-<div class="modal fade" id="addTestModal" tabindex="-1">
+<div class="modal fade" id="addTestModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
@@ -124,7 +128,7 @@
                 <form id="addTestForm" method="POST" action="{{ url_for('test.add') }}">
                     <div class="row mb-3">
                         <div class="col-12">
-                            <label class="form-label">Tytuł testu*</label>
+                            <label class="form-label">Tytuł testu* <span class="text-muted">(Wewnętrzna identyfikacja testu)</span></label>
                             <input type="text" class="form-control" name="title" required>
                         </div>
                     </div>
@@ -142,14 +146,14 @@
                     
                     <div class="row">
                         <div class="col-md-12 mb-3">
-                            <label class="form-label">Opis testu</label>
+                            <label class="form-label">Opis testu <span class="text-muted">(Opis wyświetlany na stronie testu dla kandydata)</span></label>
                             <textarea class="form-control" name="description" rows="2"></textarea>
                         </div>
                     </div>
 
                     <div class="row">
                         <div class="col-md-12 mb-3">
-                            <label class="form-label">Próg zaliczenia* <span class="text-muted">(Ustaw wartość 0, aby test był traktowany jako kwalifikacyjny bez progu)</span></label>
+                            <label class="form-label">Próg zaliczenia* <span class="text-muted">(Ustaw wartość 0, aby test był traktowany jako bez progu)</span></label>
                             <input type="number" class="form-control" name="passing_threshold" required>
                         </div>
                         <div class="col-md-12 mb-3">
@@ -158,12 +162,12 @@
                         </div>
                     </div>
 
-                    <!-- Przeniesiona sekcja grup tuż przed pytaniami -->
+                    <!-- Add this section in the Add Test Modal, right after the time_limit_minutes input -->
                     <div class="row mb-3">
                         <div class="col-12">
                             <label class="form-label">Grupy*</label>
                             <div class="form-group">
-                                <div class="border rounded p-3" id="groupsContainer">
+                                <div class="border rounded p-3" id="addGroupsContainer">
                                     {% for group in groups %}
                                     <div class="form-check">
                                         <input type="checkbox" class="form-check-input group-checkbox" 
@@ -207,7 +211,7 @@
 </div>
 
 <!-- Edit Test Modal -->
-<div class="modal fade" id="editTestModal" tabindex="-1">
+<div class="modal fade" id="editTestModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
@@ -252,12 +256,12 @@
                         </div>
                     </div>
 
-                    <!-- Przeniesiona sekcja grup tuż przed pytaniami -->
+                    <!-- Add groups section -->
                     <div class="row mb-3">
                         <div class="col-12">
                             <label class="form-label">Grupy*</label>
                             <div class="form-group">
-                                <div class="border rounded p-3" id="groupsContainer">
+                                <div class="border rounded p-3" id="editGroupsContainer">
                                     {% for group in groups %}
                                     <div class="form-check">
                                         <input type="checkbox" class="form-check-input group-checkbox" 
@@ -414,6 +418,56 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+<!-- Add this right after the existing script that resets modal title -->
+<script defer>
+// Update the existing click handler
+document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('click', function() {
+    // Reset modal title
+    document.querySelector('#addTestModal .modal-title').textContent = 'Dodaj nowy szablon testu';
+    
+    // Get the form
+    const form = document.getElementById('addTestForm');
+    
+    // Reset all form fields
+    form.reset();
+    
+    // Clear title field explicitly (in case it was filled by duplication)
+    form.querySelector('[name="title"]').value = '';
+    
+    // Clear description field explicitly
+    form.querySelector('[name="description"]').value = '';
+    
+    // Reset numeric fields to empty
+    form.querySelector('[name="passing_threshold"]').value = '';
+    form.querySelector('[name="time_limit_minutes"]').value = '';
+    
+    // Reset test type to first option
+    form.querySelector('[name="test_type"]').selectedIndex = 0;
+    
+    // Clear questions container
+    const questionsContainer = form.querySelector('.questions-container');
+    if (questionsContainer) {
+        questionsContainer.innerHTML = '';
+    }
+    
+    // Uncheck all group checkboxes
+    form.querySelectorAll('input[name="groups[]"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
+    // Reset validation states
+    form.querySelectorAll('.is-invalid').forEach(el => {
+        el.classList.remove('is-invalid');
+    });
+    form.querySelectorAll('.border-danger').forEach(el => {
+        el.classList.remove('border-danger');
+    });
+    form.querySelectorAll('.invalid-feedback').forEach(el => {
+        el.style.display = 'none';
+    });
+});
+</script>
+
 {% endblock %}
 
 {% block head %}
@@ -421,6 +475,12 @@ document.addEventListener('DOMContentLoaded', function() {
 <style>
     .table tbody tr:hover {
         background-color: rgba(0,0,0,.075);
+    }
+    
+    /* Add this new style */
+    .text-muted {
+        font-size: 0.85em;
+        color: #9ca3af !important;
     }
 </style>
 <script defer>
@@ -577,8 +637,8 @@ function editTest(testId) {
             form.action = `/tests/${testId}/edit`;
             
             // Populate basic test fields
+            form.querySelector('[name="title"]').value = test.title || '';
             form.querySelector('[name="test_type"]').value = test.test_type || '';
-            form.querySelector('[name="stage"]').value = test.stage || '';
             form.querySelector('[name="description"]').value = test.description || '';
             form.querySelector('[name="passing_threshold"]').value = test.passing_threshold || 0;
             form.querySelector('[name="time_limit_minutes"]').value = test.time_limit_minutes || '';
@@ -590,7 +650,7 @@ function editTest(testId) {
             });
 
             // Reset validation state
-            const groupsContainer = form.querySelector('#groupsContainer');
+            const groupsContainer = form.querySelector('#editGroupsContainer');
             if (groupsContainer) {
                 groupsContainer.classList.remove('border-danger');
             }
@@ -1259,11 +1319,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById(formId);
         if (form) {
             form.addEventListener('submit', function(e) {
-                const groupSelect = form.querySelector('[name="groups[]"]');
-                if (groupSelect && !Array.from(groupSelect.selectedOptions).length) {
+                const checkedGroups = form.querySelectorAll('input[name="groups[]"]:checked');
+                const groupsContainer = form.querySelector(form.id === 'addTestForm' ? '#addGroupsContainer' : '#editGroupsContainer');
+                const feedbackDiv = groupsContainer.nextElementSibling;
+                
+                if (!checkedGroups.length) {
                     e.preventDefault();
+                    groupsContainer.classList.add('border-danger');
+                    feedbackDiv.style.display = 'block';
                     showToast('Należy wybrać co najmniej jedną grupę', 'error');
+                    return;
                 }
+                
+                groupsContainer.classList.remove('border-danger');
+                feedbackDiv.style.display = 'none';
             });
         }
     });

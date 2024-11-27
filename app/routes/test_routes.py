@@ -86,63 +86,84 @@ def add():
             int(time_limit) if time_limit and time_limit.strip() else None
         )
 
-        # Create test
-        test_data = {
-            "title": request.form.get("title"),
-            "test_type": request.form.get("test_type"),
-            "description": request.form.get("description"),
-            "passing_threshold": passing_threshold,
-            "time_limit_minutes": time_limit,
-        }
+        test_id = None
+        try:
+            # Create test
+            test_data = {
+                "title": request.form.get("title"),
+                "test_type": request.form.get("test_type"),
+                "description": request.form.get("description"),
+                "passing_threshold": passing_threshold,
+                "time_limit_minutes": time_limit,
+            }
 
-        # Insert test and get ID
-        result = supabase.from_("tests").insert(test_data).execute()
-        test_id = result.data[0]["id"]
+            # Insert test and get ID
+            result = supabase.from_("tests").insert(test_data).execute()
+            if not result.data:
+                raise Exception("Nie udało się utworzyć testu")
+                
+            test_id = result.data[0]["id"]
 
-        # Bulk insert group associations
-        group_links = [
-            {"group_id": int(group_id), "test_id": test_id} for group_id in groups
-        ]
-        if group_links:
-            supabase.from_("link_groups_tests").insert(group_links).execute()
+            # Bulk insert group associations
+            group_links = [
+                {"group_id": int(group_id), "test_id": test_id} for group_id in groups
+            ]
+            if group_links:
+                group_result = supabase.from_("link_groups_tests").insert(group_links).execute()
+                if not group_result.data:
+                    raise Exception("Nie udało się powiązać testu z wybranymi grupami")
 
-        # Process questions
-        questions = json.loads(request.form.get("questions", "[]"))
-        if questions:
-            question_data = []
-            for question in questions:
-                clean_question = {
-                    "test_id": test_id,
-                    "question_text": question["question_text"],
-                    "answer_type": question["answer_type"],
-                    "points": int(question.get("points", 0)),
-                    "order_number": question["order_number"],
-                    "is_required": question.get("is_required", True),
-                    "image": question.get("image"),
-                }
+            # Process questions
+            questions = json.loads(request.form.get("questions", "[]"))
+            if questions:
+                question_data = []
+                for i, question in enumerate(questions, 1):
+                    try:
+                        clean_question = {
+                            "test_id": test_id,
+                            "question_text": question["question_text"],
+                            "answer_type": question["answer_type"],
+                            "points": int(question.get("points", 0)),
+                            "order_number": question["order_number"],
+                            "is_required": question.get("is_required", True),
+                            "image": question.get("image"),
+                        }
 
-                if question["answer_type"] == "SALARY":
-                    numeric_value = question.get("correct_answer_numeric")
-                    clean_question["correct_answer_numeric"] = (
-                        float(numeric_value) if numeric_value is not None else None
-                    )
-                else:
-                    answer_field = f'correct_answer_{question["answer_type"].lower()}'
-                    if (
-                        answer_field in question
-                        and question[answer_field] is not None
-                    ):
-                        clean_question[answer_field] = question[answer_field]
+                        if question["answer_type"] == "SALARY":
+                            numeric_value = question.get("correct_answer_numeric")
+                            clean_question["correct_answer_numeric"] = (
+                                float(numeric_value) if numeric_value is not None else None
+                            )
+                        else:
+                            answer_field = f'correct_answer_{question["answer_type"].lower()}'
+                            if (
+                                answer_field in question
+                                and question[answer_field] is not None
+                            ):
+                                clean_question[answer_field] = question[answer_field]
 
-                question_data.append(clean_question)
+                        question_data.append(clean_question)
+                    except Exception as e:
+                        raise Exception(f"Błąd podczas przetwarzania pytania {i}: {str(e)}")
 
-            # Bulk insert questions
-            if question_data:
-                supabase.from_("questions").insert(question_data).execute()
+                # Bulk insert questions
+                if question_data:
+                    question_result = supabase.from_("questions").insert(question_data).execute()
+                    if not question_result.data:
+                        raise Exception("Nie udało się zapisać pytań do testu")
 
-        return jsonify(
-            {"success": True, "message": "Test został dodany pomyślnie"}
-        )
+            return jsonify(
+                {"success": True, "message": "Test został dodany pomyślnie"}
+            )
+
+        except Exception as e:
+            # Clean up on any error
+            if test_id:
+                # Delete in reverse order to maintain referential integrity
+                supabase.from_("questions").delete().eq("test_id", test_id).execute()
+                supabase.from_("link_groups_tests").delete().eq("test_id", test_id).execute()
+                supabase.from_("tests").delete().eq("id", test_id).execute()
+            raise Exception(f"Błąd podczas tworzenia testu: {str(e)}")
 
     except Exception as e:
         print(f"Error adding test: {str(e)}")
@@ -183,6 +204,19 @@ def get_test_data(test_id):
 @test_bp.route("/<int:test_id>/edit", methods=["POST"])
 def edit(test_id):
     try:
+        # Get original test data for potential rollback
+        original_test = supabase.from_("tests").select("*").eq("id", test_id).single().execute()
+        if not original_test.data:
+            return jsonify({"success": False, "error": "Test nie istnieje"})
+
+        # Get original groups
+        original_groups = supabase.from_("link_groups_tests").select("*").eq("test_id", test_id).execute()
+        original_group_ids = [g["group_id"] for g in original_groups.data]
+
+        # Get original questions
+        original_questions = supabase.from_("questions").select("*").eq("test_id", test_id).execute()
+        original_question_ids = [q["id"] for q in original_questions.data]
+
         test_data = {
             "title": request.form.get("title"),
             "test_type": request.form.get("test_type"),
@@ -202,85 +236,94 @@ def edit(test_id):
                 }
             )
 
-        # Update test
-        supabase.from_("tests").update(test_data).eq("id", test_id).execute()
+        try:
+            # Update test
+            test_result = supabase.from_("tests").update(test_data).eq("id", test_id).execute()
+            if not test_result.data:
+                raise Exception("Nie udało się zaktualizować testu")
 
-        # Bulk update group associations
-        supabase.from_("link_groups_tests").delete().eq(
-            "test_id", test_id
-        ).execute()
+            # Handle group associations - only add new ones
+            new_group_ids = [int(gid) for gid in groups if int(gid) not in original_group_ids]
+            if new_group_ids:
+                group_links = [{"group_id": gid, "test_id": test_id} for gid in new_group_ids]
+                group_result = supabase.from_("link_groups_tests").insert(group_links).execute()
+                if not group_result.data:
+                    raise Exception("Nie udało się dodać nowych powiązań z grupami")
 
-        group_links = [
-            {"group_id": int(group_id), "test_id": test_id} for group_id in groups
-        ]
-        if group_links:
-            supabase.from_("link_groups_tests").insert(group_links).execute()
+            # Process questions
+            questions = json.loads(request.form.get("questions", "[]"))
+            questions_to_update = []
+            questions_to_insert = []
 
-        # Process questions
-        questions = json.loads(request.form.get("questions", "[]"))
-        existing_questions = [q["id"] for q in questions if q.get("id")]
+            for question in questions:
+                clean_question = {
+                    "test_id": test_id,
+                    "question_text": question["question_text"],
+                    "answer_type": question["answer_type"],
+                    "points": int(question.get("points", 0)),
+                    "order_number": question.get("order_number", 1),
+                    "is_required": question.get("is_required", True),
+                    "image": question.get("image"),
+                }
 
-        # Bulk delete removed questions
-        if existing_questions:
-            supabase.from_("questions").delete().eq("test_id", test_id).not_.in_(
-                "id", existing_questions
-            ).execute()
-        else:
-            supabase.from_("questions").delete().eq(
-                "test_id", test_id
-            ).execute()
+                if question["answer_type"] == "SALARY":
+                    numeric_value = question.get("correct_answer_numeric")
+                    clean_question["correct_answer_numeric"] = (
+                        float(numeric_value) if numeric_value is not None else None
+                    )
+                else:
+                    answer_field = f'correct_answer_{question["answer_type"].lower()}'
+                    if (
+                        answer_field in question
+                        and question[answer_field] is not None
+                    ):
+                        clean_question[answer_field] = question[answer_field]
 
-        # Prepare questions for bulk operations
-        questions_to_update = []
-        questions_to_insert = []
+                if question.get("id") and int(question["id"]) in original_question_ids:
+                    questions_to_update.append(
+                        {"id": question["id"], **clean_question}
+                    )
+                else:
+                    questions_to_insert.append(clean_question)
 
-        for question in questions:
-            clean_question = {
-                "test_id": test_id,
-                "question_text": question["question_text"],
-                "answer_type": question["answer_type"],
-                "points": int(question.get("points", 0)),
-                "order_number": question.get("order_number", 1),
-                "is_required": question.get("is_required", True),
-                "image": question.get("image"),
-            }
+            # Update existing questions
+            if questions_to_update:
+                for q in questions_to_update:
+                    q_id = q.pop("id")
+                    update_result = supabase.from_("questions").update(q).eq("id", q_id).execute()
+                    if not update_result.data:
+                        raise Exception(f"Nie udało się zaktualizować pytania {q_id}")
 
-            if question["answer_type"] == "SALARY":
-                numeric_value = question.get("correct_answer_numeric")
-                clean_question["correct_answer_numeric"] = (
-                    float(numeric_value) if numeric_value is not None else None
-                )
-            else:
-                answer_field = f'correct_answer_{question["answer_type"].lower()}'
-                if (
-                    answer_field in question
-                    and question[answer_field] is not None
-                ):
-                    clean_question[answer_field] = question[answer_field]
+            # Insert new questions
+            if questions_to_insert:
+                insert_result = supabase.from_("questions").insert(questions_to_insert).execute()
+                if not insert_result.data:
+                    raise Exception("Nie udało się dodać nowych pytań")
 
-            if question.get("id"):
-                questions_to_update.append(
-                    {"id": question["id"], **clean_question}
-                )
-            else:
-                questions_to_insert.append(clean_question)
+            return jsonify(
+                {
+                    "success": True,
+                    "message": "Test został zaktualizowany pomyślnie",
+                }
+            )
 
-        # Bulk update existing questions
-        if questions_to_update:
-            for q in questions_to_update:
-                q_id = q.pop("id")
-                supabase.from_("questions").update(q).eq("id", q_id).execute()
-
-        # Bulk insert new questions
-        if questions_to_insert:
-            supabase.from_("questions").insert(questions_to_insert).execute()
-
-        return jsonify(
-            {
-                "success": True,
-                "message": "Test został zaktualizowany pomyślnie",
-            }
-        )
+        except Exception as e:
+            # Revert changes in case of error
+            supabase.from_("tests").update(original_test.data).eq("id", test_id).execute()
+            
+            # Remove any new group associations
+            if new_group_ids:
+                supabase.from_("link_groups_tests").delete().eq("test_id", test_id).in_("group_id", new_group_ids).execute()
+            
+            # Remove any newly inserted questions
+            if questions_to_insert:
+                supabase.from_("questions").delete().eq("test_id", test_id).not_.in_("id", original_question_ids).execute()
+            
+            # Revert updated questions to their original state
+            for orig_q in original_questions.data:
+                supabase.from_("questions").update(orig_q).eq("id", orig_q["id"]).execute()
+                
+            raise Exception(f"Błąd podczas aktualizacji testu: {str(e)}")
 
     except Exception as e:
         print(f"Error editing test: {str(e)}")
