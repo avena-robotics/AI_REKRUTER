@@ -164,11 +164,11 @@
                     <div class="row">
                         <div class="col-md-12 mb-3">
                             <label class="form-label">Próg zaliczenia* <span class="text-muted">(Ustaw wartość 0, aby test był traktowany jako bez progu)</span></label>
-                            <input type="number" class="form-control" name="passing_threshold" required>
+                            <input type="number" class="form-control" name="passing_threshold" required min="0">
                         </div>
                         <div class="col-md-12 mb-3">
                             <label class="form-label">Limit czasu (minuty)</label>
-                            <input type="number" class="form-control" name="time_limit_minutes">
+                            <input type="number" class="form-control" name="time_limit_minutes" min="0">
                         </div>
                     </div>
 
@@ -258,11 +258,11 @@
                     <div class="row">
                         <div class="col-md-12 mb-3">
                             <label class="form-label">Próg zaliczenia* <span class="text-muted">(Ustaw wartość 0, aby test był traktowany jak bez progu)</span></label>
-                            <input type="number" class="form-control" name="passing_threshold" required>
+                            <input type="number" class="form-control" name="passing_threshold" required min="0">
                         </div>
                         <div class="col-md-12 mb-3">
                             <label class="form-label">Limit czasu (minuty)</label>
-                            <input type="number" class="form-control" name="time_limit_minutes">
+                            <input type="number" class="form-control" name="time_limit_minutes" min="0">
                         </div>
                     </div>
 
@@ -876,32 +876,20 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                              title="Przeciągnij aby zmienić kolejność"
                              style="cursor: move;">☰</div>
                         
-                        <div class="flex-grow-1">
-                            <div class="row">
-                                <div class="col-md-8">
+                        <div class="border-start ps-3 flex-grow-1">
+                            <div class="row mb-3">
+                                <div class="col-12">
                                     <label class="form-label">Treść pytania*</label>
                                     <input type="text" class="form-control" 
                                            name="questions[${questionCounter}][question_text]"
                                            value="${q.question_text || ''}" required>
                                 </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Typ odpowiedzi*</label>
-                                    <select class="form-select answer-type-select" 
-                                            name="questions[${questionCounter}][answer_type]" required>
-                                        <option value="TEXT" ${q.answer_type === 'TEXT' ? 'selected' : ''}>Tekst</option>
-                                        <option value="BOOLEAN" ${q.answer_type === 'BOOLEAN' ? 'selected' : ''}>Tak/Nie</option>
-                                        <option value="SCALE" ${q.answer_type === 'SCALE' ? 'selected' : ''}>Skala (0-5)</option>
-                                        <option value="SALARY" ${q.answer_type === 'SALARY' ? 'selected' : ''}>Wynagrodzenie (PLN)</option>
-                                        <option value="DATE" ${q.answer_type === 'DATE' ? 'selected' : ''}>Data</option>
-                                        <option value="ABCDEF" ${q.answer_type === 'ABCDEF' ? 'selected' : ''}>ABCDEF</option>
-                                    </select>
-                                </div>
                             </div>
                             
                             <!-- Add image upload field -->
-                            <div class="row mt-3">
+                            <div class="row mb-3">
                                 <div class="col-12">
-                                    <label class="form-label">Obrazek (opcjonalnie)</label>
+                                    <label class="form-label">Obrazek</label>
                                     <input type="file" class="form-control" 
                                            name="questions[${questionCounter}][image_file]"
                                            accept="image/*"
@@ -916,12 +904,28 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                                 </div>
                             </div>
                             
-                            <!-- Dynamic answer fields container -->
-                            <div class="answer-fields mt-3">
-                                ${createAnswerFieldsHtml(questionCounter, q)}
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Typ odpowiedzi*</label>
+                                    <select class="form-select answer-type-select" 
+                                            name="questions[${questionCounter}][answer_type]" required>
+                                        <option value="TEXT" ${q.answer_type === 'TEXT' ? 'selected' : ''}>Tekst</option>
+                                        <option value="BOOLEAN" ${q.answer_type === 'BOOLEAN' ? 'selected' : ''}>Tak/Nie</option>
+                                        <option value="SCALE" ${q.answer_type === 'SCALE' ? 'selected' : ''}>Skala (0-5)</option>
+                                        <option value="SALARY" ${q.answer_type === 'SALARY' ? 'selected' : ''}>Wynagrodzenie (PLN)</option>
+                                        <option value="DATE" ${q.answer_type === 'DATE' ? 'selected' : ''}>Data</option>
+                                        <option value="ABCDEF" ${q.answer_type === 'ABCDEF' ? 'selected' : ''}>ABCDEF</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-8">
+                                    <!-- Dynamic answer fields container -->
+                                    <div class="answer-fields">
+                                        ${createAnswerFieldsHtml(questionCounter, q)}
+                                    </div>
+                                </div>
                             </div>
                             
-                            <div class="row mt-3">
+                            <div class="row">
                                 <div class="col-md-4">
                                     <label class="form-label">Punkty za pytanie*</label>
                                     <input type="number" class="form-control" 
@@ -944,13 +948,12 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
         
         switch (answerType) {
             case 'ABCDEF':
-                console.log('Creating ABCDEF answer field for question:', question); // Debug log
                 html = `
                     <div class="row">
                         <div class="col-md-12">
-                            <label class="form-label">Poprawna odpowiedź*</label>
+                            <label class="form-label">Poprawna odpowiedź</label>
                             <select class="form-select" 
-                                    name="questions[${questionCounter}][correct_answer_abcdef]" required>
+                                    name="questions[${questionCounter}][correct_answer_abcdef]">
                                 <option value="">Wybierz odpowiedź</option>
                                 <option value="A" ${question?.correct_answer_abcdef === 'A' ? 'selected' : ''}>A</option>
                                 <option value="B" ${question?.correct_answer_abcdef === 'B' ? 'selected' : ''}>B</option>
@@ -967,17 +970,17 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
             case 'BOOLEAN':
                 html = `
                     <div>
-                        <label class="form-label">Poprawna odpowiedź*</label>
+                        <label class="form-label">Poprawna odpowiedź</label>
                         <div class="form-check">
                             <input type="radio" class="form-check-input" 
                                    name="questions[${questionCounter}][correct_answer_boolean]" 
-                                   value="true" ${question?.correct_answer_boolean === true ? 'checked' : ''} required>
+                                   value="true" ${question?.correct_answer_boolean === true ? 'checked' : ''}>
                             <label class="form-check-label">Prawda</label>
                         </div>
                         <div class="form-check">
                             <input type="radio" class="form-check-input" 
                                    name="questions[${questionCounter}][correct_answer_boolean]" 
-                                   value="false" ${question?.correct_answer_boolean === false ? 'checked' : ''} required>
+                                   value="false" ${question?.correct_answer_boolean === false ? 'checked' : ''}>
                             <label class="form-check-label">Fałsz</label>
                         </div>
                     </div>
@@ -988,11 +991,11 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                 html = `
                     <div class="row">
                         <div class="col-md-6">
-                            <label class="form-label">Poprawna odpowiedź (0-5)*</label>
+                            <label class="form-label">Poprawna odpowiedź (0-5)</label>
                             <input type="number" class="form-control" 
                                    name="questions[${questionCounter}][correct_answer_scale]"
                                    min="0" max="5" 
-                                   value="${question?.correct_answer_scale || ''}" required>
+                                   value="${question?.correct_answer_scale || ''}">
                         </div>
                     </div>
                 `;
@@ -1002,11 +1005,11 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                 html = `
                     <div class="row">
                         <div class="col-md-6">
-                            <label class="form-label">Poprawna odpowiedź (PLN)*</label>
+                            <label class="form-label">Poprawna odpowiedź (PLN)</label>
                             <input type="number" class="form-control" 
                                    name="questions[${questionCounter}][correct_answer_numeric]"
                                    min="0" step="100" 
-                                   value="${question?.correct_answer_numeric !== null ? question.correct_answer_numeric : ''}" required>
+                                   value="${question?.correct_answer_numeric !== null ? question.correct_answer_numeric : ''}">
                         </div>
                     </div>
                 `;
@@ -1016,10 +1019,10 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                 html = `
                     <div class="row">
                         <div class="col-md-6">
-                            <label class="form-label">Poprawna data*</label>
+                            <label class="form-label">Poprawna data</label>
                             <input type="date" class="form-control" 
                                    name="questions[${questionCounter}][correct_answer_date]"
-                                   value="${question?.correct_answer_date || ''}" required>
+                                   value="${question?.correct_answer_date || ''}">
                         </div>
                     </div>
                 `;
