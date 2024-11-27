@@ -1,12 +1,12 @@
 {% extends "admin_navigation.html" %}
 
-{% block title %}Testy - AI Rekruter{% endblock %}
+{% block title %}Szablony testów - AI Rekruter{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Testy</h1>
+    <h1>Szablony testów</h1>
     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTestModal">
-        Dodaj test
+        Dodaj szablon testu
     </button>
 </div>
 
@@ -123,7 +123,7 @@
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Dodaj nowy test</h5>
+                <h5 class="modal-title">Dodaj nowy szablon testu</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -221,7 +221,7 @@
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Edytuj test</h5>
+                <h5 class="modal-title">Edytuj szablon testu</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -1051,19 +1051,22 @@ function handleTestFormSubmit(e) {
 
         // Handle answer type specific fields
         const answerType = questionData.answer_type;
-        if (answerType === 'ABCDEF') {
-            const abcdefSelect = card.querySelector('[name$="[correct_answer_abcdef]"]');
-            questionData.correct_answer_abcdef = abcdefSelect ? abcdefSelect.value : null;
-            console.log('ABCDEF answer value:', questionData.correct_answer_abcdef); // Debug log
-        } else if (answerType === 'SALARY') {
-            const numericValue = card.querySelector('[name$="[correct_answer_numeric]"]')?.value;
-            questionData.correct_answer_numeric = numericValue ? Number(numericValue) : null;
-        } else {
-            const answerField = `correct_answer_${answerType.toLowerCase()}`;
-            const answerInput = card.querySelector(`[name$="[${answerField}]"]`);
-            if (answerInput) {
-                questionData[answerField] = answerInput.value;
-            }
+        switch (answerType) {
+            case 'ABCDEF':
+                const abcdefSelect = card.querySelector('[name$="[correct_answer_abcdef]"]');
+                questionData.correct_answer_abcdef = abcdefSelect ? abcdefSelect.value : null;
+                console.log('ABCDEF answer value:', questionData.correct_answer_abcdef); // Debug log
+                break;
+            case 'SALARY':
+                const numericValue = card.querySelector('[name$="[correct_answer_numeric]"]')?.value;
+                questionData.correct_answer_numeric = numericValue ? Number(numericValue) : null;
+                break;
+            default:
+                const answerField = `correct_answer_${answerType.toLowerCase()}`;
+                const answerInput = card.querySelector(`[name$="[${answerField}]"]`);
+                if (answerInput) {
+                    questionData[answerField] = answerInput.value;
+                }
         }
 
         questions.push(questionData);
