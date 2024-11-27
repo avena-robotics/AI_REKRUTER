@@ -461,9 +461,6 @@
                 form.querySelector('[name="requirements"]').value = campaign.requirements || '';
                 form.querySelector('[name="employer_offerings"]').value = campaign.employer_offerings || '';
                 form.querySelector('[name="job_description"]').value = campaign.job_description || '';
-                form.querySelector('[name="po1_test_id"]').value = campaign.po1_test_id || '';
-                form.querySelector('[name="po2_test_id"]').value = campaign.po2_test_id || '';
-                form.querySelector('[name="po3_test_id"]').value = campaign.po3_test_id || '';
                 form.querySelector('[name="is_active"]').checked = campaign.is_active;
                 
                 // Set group and update tests
@@ -474,9 +471,26 @@
                     
                     // After tests are loaded, set selected tests
                     setTimeout(() => {
-                        if (campaign.po1_test_id) form.querySelector('[name="po1_test_id"]').value = campaign.po1_test_id;
-                        if (campaign.po2_test_id) form.querySelector('[name="po2_test_id"]').value = campaign.po2_test_id;
-                        if (campaign.po3_test_id) form.querySelector('[name="po3_test_id"]').value = campaign.po3_test_id;
+                        const po1Select = form.querySelector('[name="po1_test_id"]');
+                        const po2Select = form.querySelector('[name="po2_test_id"]');
+                        const po3Select = form.querySelector('[name="po3_test_id"]');
+                        
+                        if (campaign.po1_test_id) {
+                            po1Select.value = campaign.po1_test_id;
+                            po2Select.disabled = false;
+                        }
+                        
+                        if (campaign.po2_test_id) {
+                            po2Select.value = campaign.po2_test_id;
+                            po3Select.disabled = false;
+                        }
+                        
+                        if (campaign.po3_test_id) {
+                            po3Select.value = campaign.po3_test_id;
+                        }
+                        
+                        // Update dependencies after setting values
+                        updateTestDependencies(form);
                     }, 500);
                 }
                 
@@ -702,14 +716,30 @@
                 const groupSelect = form.querySelector('[name="group_id"]');
                 if (campaign.groups && campaign.groups.length > 0) {
                     groupSelect.value = campaign.groups[0].id;
-                    // Trigger test options update
                     updateTestOptions(groupSelect);
                     
                     // Wait for tests to load before setting test selections
                     setTimeout(() => {
-                        form.querySelector('[name="po1_test_id"]').value = campaign.po1_test_id || '';
-                        form.querySelector('[name="po2_test_id"]').value = campaign.po2_test_id || '';
-                        form.querySelector('[name="po3_test_id"]').value = campaign.po3_test_id || '';
+                        const po1Select = form.querySelector('[name="po1_test_id"]');
+                        const po2Select = form.querySelector('[name="po2_test_id"]');
+                        const po3Select = form.querySelector('[name="po3_test_id"]');
+                        
+                        if (campaign.po1_test_id) {
+                            po1Select.value = campaign.po1_test_id;
+                            po2Select.disabled = false;
+                        }
+                        
+                        if (campaign.po2_test_id) {
+                            po2Select.value = campaign.po2_test_id;
+                            po3Select.disabled = false;
+                        }
+                        
+                        if (campaign.po3_test_id) {
+                            po3Select.value = campaign.po3_test_id;
+                        }
+                        
+                        // Update dependencies after setting values
+                        updateTestDependencies(form);
                     }, 500);
                 }
                 
@@ -741,31 +771,18 @@
             fetch(`/campaigns/group/${groupId}/tests`)
                 .then(response => response.json())
                 .then(tests => {
-                    // Group tests by stage
-                    const testsByStage = {
-                        'PO1': [],
-                        'PO2': [],
-                        'PO3': []
-                    };
-                    
-                    tests.forEach(test => {
-                        if (testsByStage[test.stage]) {
-                            testsByStage[test.stage].push(test);
-                        }
-                    });
-                    
-                    // Update each test select with relevant tests
+                    // Update each test select with all available tests
                     testSelects.forEach(select => {
-                        const stage = select.name.replace('_test_id', '').toUpperCase();
-                        const stageTests = testsByStage[stage] || [];
-                        
-                        stageTests.forEach(test => {
+                        tests.forEach(test => {
                             const option = document.createElement('option');
                             option.value = test.id;
-                            option.textContent = `${test.test_type} - ${test.description || 'Brak opisu'}`;
+                            option.textContent = `${test.title} - ${test.test_type}`;
                             select.appendChild(option);
                         });
                     });
+                    
+                    // After populating tests, update dependencies
+                    updateTestDependencies(form);
                 })
                 .catch(error => {
                     console.error('Error fetching tests:', error);
@@ -774,10 +791,45 @@
         }
     }
 
-    // Initialize test selects as disabled
+    function updateTestDependencies(form) {
+        const po1Select = form.querySelector('[name="po1_test_id"]');
+        const po2Select = form.querySelector('[name="po2_test_id"]');
+        const po3Select = form.querySelector('[name="po3_test_id"]');
+        
+        // Handle PO2 dependency on PO1
+        if (!po1Select.value) {
+            po2Select.value = '';
+            po2Select.disabled = true;
+        } else {
+            po2Select.disabled = false;
+        }
+        
+        // Handle PO3 dependency on PO2
+        if (!po2Select.value) {
+            po3Select.value = '';
+            po3Select.disabled = true;
+        } else {
+            po3Select.disabled = false;
+        }
+    }
+
+    // Initialize test selects as disabled and set up dependencies
     document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('[name$="_test_id"]').forEach(select => {
-            select.disabled = true;
+        ['addCampaignForm', 'editCampaignForm'].forEach(formId => {
+            const form = document.getElementById(formId);
+            if (form) {
+                // Initial disable state
+                form.querySelectorAll('[name$="_test_id"]').forEach(select => {
+                    select.disabled = true;
+                });
+                
+                // Set up change listeners for PO1 and PO2
+                const po1Select = form.querySelector('[name="po1_test_id"]');
+                const po2Select = form.querySelector('[name="po2_test_id"]');
+                
+                po1Select.addEventListener('change', () => updateTestDependencies(form));
+                po2Select.addEventListener('change', () => updateTestDependencies(form));
+            }
         });
     });
 </script>
