@@ -142,6 +142,9 @@ def add():
             'po1_test_id': request.form.get('po1_test_id') or None,
             'po2_test_id': request.form.get('po2_test_id') or None,
             'po3_test_id': request.form.get('po3_test_id') or None,
+            'po1_test_weight': int(request.form['po1_test_weight']) if request.form.get('po1_test_weight') else 0,
+            'po2_test_weight': int(request.form['po2_test_weight']) if request.form.get('po2_test_weight') else 0,
+            'po3_test_weight': int(request.form['po3_test_weight']) if request.form.get('po3_test_weight') else 0,
             'created_at': current_time,
             'updated_at': current_time
         }
@@ -182,6 +185,11 @@ def get_campaign_data(campaign_id):
         if not campaign.data:
             return jsonify({'error': 'Campaign not found'}), 404
             
+        print(f"Campaign data fetched: {campaign.data}")  # Debug log
+        print(f"Weights: PO1={campaign.data.get('po1_test_weight')}, "
+              f"PO2={campaign.data.get('po2_test_weight')}, "
+              f"PO3={campaign.data.get('po3_test_weight')}")  # Debug log
+            
         # Format datetime fields
         if campaign.data.get('created_at'):
             campaign.data['created_at'] = format_datetime(campaign.data['created_at'])
@@ -194,11 +202,18 @@ def get_campaign_data(campaign_id):
         return jsonify(campaign.data)
     
     except Exception as e:
+        print(f"Error in get_campaign_data: {str(e)}")  # Debug log
         return jsonify({'error': str(e)}), 500
 
 @campaign_bp.route('/<int:campaign_id>/edit', methods=['POST'])
 def edit(campaign_id):
     try:
+        # Log incoming form data
+        print(f"Edit form data: {request.form}")  # Debug log
+        print(f"Weights from form: PO1={request.form.get('po1_test_weight')}, "
+              f"PO2={request.form.get('po2_test_weight')}, "
+              f"PO3={request.form.get('po3_test_weight')}")  # Debug log
+        
         # First check if code exists (excluding current campaign)
         code = request.form.get('code')
         check_result = supabase.table('campaigns')\
@@ -239,13 +254,20 @@ def edit(campaign_id):
             'po1_test_id': request.form.get('po1_test_id') or None,
             'po2_test_id': request.form.get('po2_test_id') or None,
             'po3_test_id': request.form.get('po3_test_id') or None,
+            'po1_test_weight': int(request.form['po1_test_weight']) if request.form.get('po1_test_weight') else 0,
+            'po2_test_weight': int(request.form['po2_test_weight']) if request.form.get('po2_test_weight') else 0,
+            'po3_test_weight': int(request.form['po3_test_weight']) if request.form.get('po3_test_weight') else 0,
             'updated_at': current_time
         }
+        
+        print(f"Campaign data to update: {campaign_data}")  # Debug log
         
         result = supabase.table('campaigns')\
             .update(campaign_data)\
             .eq('id', campaign_id)\
             .execute()
+            
+        print(f"Update result: {result.data}")  # Debug log
             
         # Update group association
         supabase.from_('link_groups_campaigns')\

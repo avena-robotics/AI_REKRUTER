@@ -521,6 +521,7 @@
         fetch(`/campaigns/${campaignId}/data`)
             .then(response => response.json())
             .then(campaign => {
+                console.log('Campaign data received:', campaign); // Debug log
                 const form = document.getElementById('editCampaignForm');
                 form.action = `/campaigns/${campaignId}/edit`;
                 
@@ -539,13 +540,21 @@
                 form.querySelector('[name="job_description"]').value = campaign.job_description || '';
                 form.querySelector('[name="is_active"]').checked = campaign.is_active;
                 
-                // Set group and update tests
+                // Set group and trigger test updates
                 const groupSelect = form.querySelector('[name="group_id"]');
                 if (campaign.groups && campaign.groups.length > 0) {
                     groupSelect.value = campaign.groups[0].id;
                     updateTestOptions(groupSelect);
                     
-                    // After tests are loaded, set selected tests
+                    // Store weights to set after test updates
+                    const weights = {
+                        po1: campaign.po1_test_weight || 0,
+                        po2: campaign.po2_test_weight || 0,
+                        po3: campaign.po3_test_weight || 0
+                    };
+                    console.log('Weights to set:', weights); // Debug log
+                    
+                    // Wait for tests to load before setting test selections
                     setTimeout(() => {
                         const po1Select = form.querySelector('[name="po1_test_id"]');
                         const po2Select = form.querySelector('[name="po2_test_id"]');
@@ -567,13 +576,26 @@
                         
                         // Update dependencies after setting values
                         updateTestDependencies(form);
+                        
+                        // Set weights after dependencies are updated
+                        const po1Weight = form.querySelector('[name="po1_test_weight"]');
+                        const po2Weight = form.querySelector('[name="po2_test_weight"]');
+                        const po3Weight = form.querySelector('[name="po3_test_weight"]');
+                        
+                        po1Weight.value = weights.po1;
+                        po2Weight.value = weights.po2;
+                        po3Weight.value = weights.po3;
+                        
+                        console.log('Weights set:', {
+                            po1: po1Weight.value,
+                            po2: po2Weight.value,
+                            po3: po3Weight.value
+                        }); // Debug log
+                        
+                        // Update max weights after setting values
+                        updateMaxWeights(form);
                     }, 500);
                 }
-                
-                // Add setting weights
-                form.querySelector('[name="po1_test_weight"]').value = campaign.po1_test_weight || 0;
-                form.querySelector('[name="po2_test_weight"]').value = campaign.po2_test_weight || 0;
-                form.querySelector('[name="po3_test_weight"]').value = campaign.po3_test_weight || 0;
                 
                 new bootstrap.Modal(document.getElementById('editCampaignModal')).show();
             })
@@ -770,6 +792,13 @@
                     groupSelect.value = campaign.groups[0].id;
                     updateTestOptions(groupSelect);
                     
+                    // Store weights to set after test updates
+                    const weights = {
+                        po1: campaign.po1_test_weight || 0,
+                        po2: campaign.po2_test_weight || 0,
+                        po3: campaign.po3_test_weight || 0
+                    };
+                    
                     // Wait for tests to load before setting test selections
                     setTimeout(() => {
                         const po1Select = form.querySelector('[name="po1_test_id"]');
@@ -792,13 +821,16 @@
                         
                         // Update dependencies after setting values
                         updateTestDependencies(form);
+                        
+                        // Set weights after dependencies are updated
+                        form.querySelector('[name="po1_test_weight"]').value = weights.po1;
+                        form.querySelector('[name="po2_test_weight"]').value = weights.po2;
+                        form.querySelector('[name="po3_test_weight"]').value = weights.po3;
+                        
+                        // Update max weights after setting values
+                        updateMaxWeights(form);
                     }, 500);
                 }
-                
-                // Add setting weights
-                form.querySelector('[name="po1_test_weight"]').value = campaign.po1_test_weight || 0;
-                form.querySelector('[name="po2_test_weight"]').value = campaign.po2_test_weight || 0;
-                form.querySelector('[name="po3_test_weight"]').value = campaign.po3_test_weight || 0;
                 
                 // Update modal title to indicate duplication
                 document.querySelector('#addCampaignModal .modal-title').textContent = 'Duplikuj kampanię';
