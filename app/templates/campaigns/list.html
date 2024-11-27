@@ -884,9 +884,61 @@
             po3Select.disabled = false;
             po3Weight.disabled = po3Select.disabled;
         }
+        
+        // Update max weights after handling dependencies
+        updateMaxWeights(form);
     }
 
-    // Initialize test selects and weights as disabled
+    // Add new function to update max values
+    function updateMaxWeights(form) {
+        const po1Select = form.querySelector('[name="po1_test_id"]');
+        const po2Select = form.querySelector('[name="po2_test_id"]');
+        const po3Select = form.querySelector('[name="po3_test_id"]');
+        
+        const po1Weight = form.querySelector('[name="po1_test_weight"]');
+        const po2Weight = form.querySelector('[name="po2_test_weight"]');
+        const po3Weight = form.querySelector('[name="po3_test_weight"]');
+        
+        // Calculate total used weight excluding the current input
+        function getUsedWeightExcluding(excludeInput) {
+            let total = 0;
+            if (po1Select.value && po1Weight !== excludeInput) {
+                total += parseInt(po1Weight.value) || 0;
+            }
+            if (po2Select.value && po2Weight !== excludeInput) {
+                total += parseInt(po2Weight.value) || 0;
+            }
+            if (po3Select.value && po3Weight !== excludeInput) {
+                total += parseInt(po3Weight.value) || 0;
+            }
+            return total;
+        }
+        
+        // Update max values for each enabled weight input
+        if (!po1Select.disabled && po1Select.value) {
+            const usedWeight = getUsedWeightExcluding(po1Weight);
+            po1Weight.max = 100 - usedWeight;
+        }
+        
+        if (!po2Select.disabled && po2Select.value) {
+            const usedWeight = getUsedWeightExcluding(po2Weight);
+            po2Weight.max = 100 - usedWeight;
+        }
+        
+        if (!po3Select.disabled && po3Select.value) {
+            const usedWeight = getUsedWeightExcluding(po3Weight);
+            po3Weight.max = 100 - usedWeight;
+        }
+        
+        // Ensure current values don't exceed new max
+        [po1Weight, po2Weight, po3Weight].forEach(weight => {
+            if (parseInt(weight.value) > parseInt(weight.max)) {
+                weight.value = weight.max;
+            }
+        });
+    }
+
+    // Initialize event listeners for weight inputs
     document.addEventListener('DOMContentLoaded', function() {
         ['addCampaignForm', 'editCampaignForm'].forEach(formId => {
             const form = document.getElementById(formId);
@@ -896,6 +948,9 @@
                     select.disabled = true;
                     const weightInput = form.querySelector(`[name="po${index + 1}_test_weight"]`);
                     weightInput.disabled = true;
+                    
+                    // Add input event listener for weight changes
+                    weightInput.addEventListener('input', () => updateMaxWeights(form));
                 });
                 
                 // Set up change listeners for PO1 and PO2
