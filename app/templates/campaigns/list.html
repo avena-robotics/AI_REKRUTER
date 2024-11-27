@@ -186,11 +186,9 @@
                             <select class="form-select" name="po1_test_id">
                                 <option value="">Brak</option>
                                 {% for test in tests %}
-                                    {% if test.stage == 'PO1' %}
-                                        <option value="{{ test.id }}">
-                                            {{ test.test_type }} - {{ test.description or 'Brak opisu' }}
-                                        </option>
-                                    {% endif %}
+                                    <option value="{{ test.id }}">
+                                        {{ test.title }} - {{ test.test_type }}
+                                    </option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -199,11 +197,9 @@
                             <select class="form-select" name="po2_test_id">
                                 <option value="">Brak</option>
                                 {% for test in tests %}
-                                    {% if test.stage == 'PO2' %}
-                                        <option value="{{ test.id }}">
-                                            {{ test.test_type }} - {{ test.description or 'Brak opisu' }}
-                                        </option>
-                                    {% endif %}
+                                    <option value="{{ test.id }}">
+                                        {{ test.title }} - {{ test.test_type }}
+                                    </option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -212,11 +208,9 @@
                             <select class="form-select" name="po3_test_id">
                                 <option value="">Brak</option>
                                 {% for test in tests %}
-                                    {% if test.stage == 'PO3' %}
-                                        <option value="{{ test.id }}">
-                                            {{ test.test_type }} - {{ test.description or 'Brak opisu' }}
-                                        </option>
-                                    {% endif %}
+                                    <option value="{{ test.id }}">
+                                        {{ test.title }} - {{ test.test_type }}
+                                    </option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -348,11 +342,9 @@
                             <select class="form-select" name="po1_test_id">
                                 <option value="">Brak</option>
                                 {% for test in tests %}
-                                    {% if test.stage == 'PO1' %}
-                                        <option value="{{ test.id }}">
-                                            {{ test.test_type }} - {{ test.description or 'Brak opisu' }}
-                                        </option>
-                                    {% endif %}
+                                    <option value="{{ test.id }}">
+                                        {{ test.title }} - {{ test.test_type }}
+                                    </option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -361,11 +353,9 @@
                             <select class="form-select" name="po2_test_id">
                                 <option value="">Brak</option>
                                 {% for test in tests %}
-                                    {% if test.stage == 'PO2' %}
-                                        <option value="{{ test.id }}">
-                                            {{ test.test_type }} - {{ test.description or 'Brak opisu' }}
-                                        </option>
-                                    {% endif %}
+                                    <option value="{{ test.id }}">
+                                        {{ test.title }} - {{ test.test_type }}
+                                    </option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -374,11 +364,9 @@
                             <select class="form-select" name="po3_test_id">
                                 <option value="">Brak</option>
                                 {% for test in tests %}
-                                    {% if test.stage == 'PO3' %}
-                                        <option value="{{ test.id }}">
-                                            {{ test.test_type }} - {{ test.description or 'Brak opisu' }}
-                                        </option>
-                                    {% endif %}
+                                    <option value="{{ test.id }}">
+                                        {{ test.title }} - {{ test.test_type }}
+                                    </option>
                                 {% endfor %}
                             </select>
                         </div>

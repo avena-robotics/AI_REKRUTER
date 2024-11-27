@@ -30,46 +30,46 @@ INSERT INTO link_groups_users (group_id, user_id) VALUES
 (4, 3);                    
 
 -- 4. Testy (brak zależności)
-INSERT INTO tests (id, test_type, stage, description, passing_threshold, time_limit_minutes) VALUES
+INSERT INTO tests (id, title, test_type, description, passing_threshold, time_limit_minutes) VALUES
 -- Testy dla Grupy Sebastian (grupa 2)
-(1, 'SURVEY', 'PO1', 'Test PO1 Grupa Sebastian - Ankieta', 70, 30),
-(2, 'IQ', 'PO1', 'Test PO1 Grupa Sebastian - IQ', 75, 45),
-(3, 'SURVEY', 'PO2', 'Test PO2 Grupa Sebastian - Ankieta', 70, 30),
-(4, 'EQ', 'PO2', 'Test PO2 Grupa Sebastian - EQ', 80, 60),
-(5, 'IQ', 'PO3', 'Test PO3 Grupa Sebastian - IQ', 85, 45),
-(6, 'EQ', 'PO3', 'Test PO3 Grupa Sebastian - EQ', 75, 60),
+(1, 'Ankieta wstępna PO1', 'SURVEY', 'Test PO1 Grupa Sebastian - Ankieta', 70, 30),
+(2, 'Test IQ - Etap PO1', 'IQ', 'Test PO1 Grupa Sebastian - IQ', 75, 45),
+(3, 'Ankieta pogłębiona PO2', 'SURVEY', 'Test PO2 Grupa Sebastian - Ankieta', 70, 30),
+(4, 'Test EQ - Etap PO2', 'EQ', 'Test PO2 Grupa Sebastian - EQ', 80, 60),
+(5, 'Test IQ zaawansowany PO3', 'IQ', 'Test PO3 Grupa Sebastian - IQ', 85, 45),
+(6, 'Test EQ zaawansowany PO3', 'EQ', 'Test PO3 Grupa Sebastian - EQ', 75, 60),
 
 -- Testy dla Grupy Maciej (grupa 4)
-(7, 'SURVEY', 'PO1', 'Test PO1 Grupa Maciej - Ankieta', 70, 30),
-(8, 'IQ', 'PO1', 'Test PO1 Grupa Maciej - IQ', 75, 45),
-(9, 'SURVEY', 'PO2', 'Test PO2 Grupa Maciej - Ankieta', 70, 30),
-(10, 'EQ', 'PO2', 'Test PO2 Grupa Maciej - EQ', 80, 60),
-(11, 'IQ', 'PO3', 'Test PO3 Grupa Maciej - IQ', 85, 45),
-(12, 'EQ', 'PO3', 'Test PO3 Grupa Maciej - EQ', 75, 60),
+(7, 'Ankieta kwalifikacyjna PO1', 'SURVEY', 'Test PO1 Grupa Maciej - Ankieta', 70, 30),
+(8, 'Test IQ podstawowy PO1', 'IQ', 'Test PO1 Grupa Maciej - IQ', 75, 45),
+(9, 'Ankieta kompetencyjna PO2', 'SURVEY', 'Test PO2 Grupa Maciej - Ankieta', 70, 30),
+(10, 'Test EQ podstawowy PO2', 'EQ', 'Test PO2 Grupa Maciej - EQ', 80, 60),
+(11, 'Test IQ rozszerzony PO3', 'IQ', 'Test PO3 Grupa Maciej - IQ', 85, 45),
+(12, 'Test EQ rozszerzony PO3', 'EQ', 'Test PO3 Grupa Maciej - EQ', 75, 60),
 
 -- Testy dla obu grup (Sebastian + Maciej)
-(13, 'SURVEY', 'PO1', 'Test PO1 Grupy Sebastian+Maciej - Ankieta', 70, 30),
-(14, 'IQ', 'PO1', 'Test PO1 Grupy Sebastian+Maciej - IQ', 75, 45),
-(15, 'SURVEY', 'PO2', 'Test PO2 Grupy Sebastian+Maciej - Ankieta', 70, 30),
-(16, 'EQ', 'PO2', 'Test PO2 Grupy Sebastian+Maciej - EQ', 80, 60),
-(17, 'IQ', 'PO3', 'Test PO3 Grupy Sebastian+Maciej - IQ', 85, 45),
-(18, 'EQ', 'PO3', 'Test PO3 Grupy Sebastian+Maciej - EQ', 75, 60),
+(13, 'Ankieta wspólna PO1', 'SURVEY', 'Test PO1 Grupy Sebastian+Maciej - Ankieta', 70, 30),
+(14, 'Test IQ wspólny PO1', 'IQ', 'Test PO1 Grupy Sebastian+Maciej - IQ', 75, 45),
+(15, 'Ankieta wspólna PO2', 'SURVEY', 'Test PO2 Grupy Sebastian+Maciej - Ankieta', 70, 30),
+(16, 'Test EQ wspólny PO2', 'EQ', 'Test PO2 Grupy Sebastian+Maciej - EQ', 80, 60),
+(17, 'Test IQ wspólny PO3', 'IQ', 'Test PO3 Grupy Sebastian+Maciej - IQ', 85, 45),
+(18, 'Test EQ wspólny PO3', 'EQ', 'Test PO3 Grupy Sebastian+Maciej - EQ', 75, 60),
 
 -- Testy bez przypisanej grupy
-(19, 'SURVEY', 'PO1', 'Test PO1 Bez Grupy - Ankieta', 70, 30),
-(20, 'IQ', 'PO1', 'Test PO1 Bez Grupy - IQ', 75, 45),
-(21, 'SURVEY', 'PO2', 'Test PO2 Bez Grupy - Ankieta', 70, 30),
-(22, 'EQ', 'PO2', 'Test PO2 Bez Grupy - EQ', 80, 60),
-(23, 'IQ', 'PO3', 'Test PO3 Bez Grupy - IQ', 85, 45),
-(24, 'EQ', 'PO3', 'Test PO3 Bez Grupy - EQ', 75, 60),
+(19, 'Ankieta ogólna PO1', 'SURVEY', 'Test PO1 Bez Grupy - Ankieta', 70, 30),
+(20, 'Test IQ ogólny PO1', 'IQ', 'Test PO1 Bez Grupy - IQ', 75, 45),
+(21, 'Ankieta ogólna PO2', 'SURVEY', 'Test PO2 Bez Grupy - Ankieta', 70, 30),
+(22, 'Test EQ ogólny PO2', 'EQ', 'Test PO2 Bez Grupy - EQ', 80, 60),
+(23, 'Test IQ ogólny PO3', 'IQ', 'Test PO3 Bez Grupy - IQ', 85, 45),
+(24, 'Test EQ ogólny PO3', 'EQ', 'Test PO3 Bez Grupy - EQ', 75, 60),
 
 -- Testy dla pustej grupy
-(25, 'SURVEY', 'PO1', 'Test PO1 Grupa Pusta - Ankieta', 70, 30),
-(26, 'IQ', 'PO1', 'Test PO1 Grupa Pusta - IQ', 75, 45),
-(27, 'SURVEY', 'PO2', 'Test PO2 Grupa Pusta - Ankieta', 70, 30),
-(28, 'EQ', 'PO2', 'Test PO2 Grupa Pusta - EQ', 80, 60),
-(29, 'IQ', 'PO3', 'Test PO3 Grupa Pusta - IQ', 85, 45),
-(30, 'EQ', 'PO3', 'Test PO3 Grupa Pusta - EQ', 75, 60);
+(25, 'Ankieta standardowa PO1', 'SURVEY', 'Test PO1 Grupa Pusta - Ankieta', 70, 30),
+(26, 'Test IQ standardowy PO1', 'IQ', 'Test PO1 Grupa Pusta - IQ', 75, 45),
+(27, 'Ankieta standardowa PO2', 'SURVEY', 'Test PO2 Grupa Pusta - Ankieta', 70, 30),
+(28, 'Test EQ standardowy PO2', 'EQ', 'Test PO2 Grupa Pusta - EQ', 80, 60),
+(29, 'Test IQ standardowy PO3', 'IQ', 'Test PO3 Grupa Pusta - IQ', 85, 45),
+(30, 'Test EQ standardowy PO3', 'EQ', 'Test PO3 Grupa Pusta - EQ', 75, 60);
 
 -- 5. Pytania (zależne od tests)
 INSERT INTO questions (

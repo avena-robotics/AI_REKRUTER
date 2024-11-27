@@ -88,8 +88,8 @@ def add():
 
         # Create test
         test_data = {
+            "title": request.form.get("title"),
             "test_type": request.form.get("test_type"),
-            "stage": request.form.get("stage"),
             "description": request.form.get("description"),
             "passing_threshold": passing_threshold,
             "time_limit_minutes": time_limit,
@@ -184,8 +184,8 @@ def get_test_data(test_id):
 def edit(test_id):
     try:
         test_data = {
+            "title": request.form.get("title"),
             "test_type": request.form.get("test_type"),
-            "stage": request.form.get("stage"),
             "description": request.form.get("description"),
             "passing_threshold": int(request.form.get("passing_threshold", 0)),
             "time_limit_minutes": int(request.form.get("time_limit_minutes", 0))

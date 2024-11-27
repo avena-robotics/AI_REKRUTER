@@ -22,9 +22,9 @@ def list():
         campaigns_response = supabase.table('campaigns')\
             .select("""
                 *,
-                po1:tests!campaigns_po1_test_id_fkey (test_type, description),
-                po2:tests!campaigns_po2_test_id_fkey (test_type, description),
-                po3:tests!campaigns_po3_test_id_fkey (test_type, description)
+                po1:tests!campaigns_po1_test_id_fkey (test_type, title, description),
+                po2:tests!campaigns_po2_test_id_fkey (test_type, title, description),
+                po3:tests!campaigns_po3_test_id_fkey (test_type, title, description)
             """)\
             .order('created_at', desc=True)\
             .execute()
@@ -52,8 +52,7 @@ def list():
 
         # Get all tests for dropdowns
         tests_response = supabase.table('tests')\
-            .select('id, test_type, stage, description')\
-            .order('stage')\
+            .select('id, test_type, title, description')\
             .order('test_type')\
             .execute()
         
@@ -313,9 +312,8 @@ def get_group_tests(group_id):
         test_ids = [item['test_id'] for item in link_response.data]
         
         tests_response = supabase.from_('tests')\
-            .select('id, test_type, stage, description')\
+            .select('id, test_type, title, description')\
             .in_('id', test_ids)\
-            .order('stage')\
             .order('test_type')\
             .execute()
             

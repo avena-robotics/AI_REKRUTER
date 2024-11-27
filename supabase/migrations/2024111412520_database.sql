@@ -1,4 +1,9 @@
 -- Drop tables first (in reverse order of dependencies)
+DROP TABLE IF EXISTS link_groups_users CASCADE;
+DROP TABLE IF EXISTS link_groups_tests CASCADE;
+DROP TABLE IF EXISTS link_groups_campaigns CASCADE;
+DROP TABLE IF EXISTS groups CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS candidate_answers CASCADE;
 DROP TABLE IF EXISTS candidates CASCADE;
 DROP TABLE IF EXISTS questions CASCADE;
@@ -8,20 +13,18 @@ DROP TABLE IF EXISTS campaigns CASCADE;
 -- Drop custom types
 DROP TYPE IF EXISTS recruitment_status CASCADE;
 DROP TYPE IF EXISTS answer_type CASCADE;
-DROP TYPE IF EXISTS test_stage CASCADE;
 DROP TYPE IF EXISTS test_type CASCADE;
 
 -- Create types first
 create type test_type as enum ('SURVEY', 'EQ', 'IQ');
-create type test_stage as enum ('PO1', 'PO2', 'PO3');
 create type answer_type as enum ('TEXT', 'BOOLEAN', 'SCALE', 'SALARY', 'DATE', 'ABCDEF');
 create type recruitment_status as enum ('PO1', 'PO2', 'PO3', 'PO4', 'REJECTED', 'ACCEPTED');
 
 -- Create tests table before campaigns (since campaigns references tests)
 create table tests (
     id serial primary key,
+    title text not null,
     test_type test_type not null,
-    stage test_stage not null,
     description text,
     passing_threshold int not null,
     time_limit_minutes int,

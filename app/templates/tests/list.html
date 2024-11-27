@@ -24,19 +24,9 @@
                 </select>
             </div>
             <div class="col-md-3">
-                <label class="form-label">Etap</label>
-                <select class="form-select" id="filterStage">
-                    <option value="">Wszystkie</option>
-                    <option value="PO1">PO1</option>
-                    <option value="PO2">PO2</option>
-                    <option value="PO3">PO3</option>
-                </select>
-            </div>
-            <div class="col-md-3">
                 <label class="form-label">Sortuj według</label>
                 <select class="form-select" id="sortBy">
                     <option value="created_at">Data utworzenia</option>
-                    <option value="stage">Etap</option>
                     <option value="time_limit">Limit czasu</option>
                     <option value="questions">Liczba pytań</option>
                 </select>
@@ -75,12 +65,13 @@
     <table class="table table-striped">
         <thead>
             <tr>
+                <th>Tytuł</th>
                 <th>Typ testu</th>
-                <th>Etap</th>
                 <th>Limit czasu</th>
                 <th>Liczba pytań</th>
                 <th>Suma punktów do zdobycia</th>
                 <th>Próg zaliczenia</th>
+                <th>Data utworzenia</th>
                 <th>Akcje</th>
             </tr>
         </thead>
@@ -90,6 +81,7 @@
                 data-groups='{{ test.groups|tojson|safe }}'
                 ondblclick="editTest('{{ test.id }}')" 
                 style="cursor: pointer;">
+                <td>{{ test.title }}</td>
                 <td>
                     {% if test.test_type == 'SURVEY' %}
                         Ankieta
@@ -99,15 +91,17 @@
                         Test IQ
                     {% endif %}
                 </td>
-                <td>{{ test.stage }}</td>
                 <td>{{ test.time_limit_minutes }} min</td>
                 <td>{{ test.question_count }}</td>
                 <td>{{ test.total_points }}</td>
                 <td>{{ test.passing_threshold }}</td>
+                <td>{{ test.created_at|datetime }}</td>
                 <td>
                     <div class="btn-group">
                         <button type="button" class="btn btn-sm btn-warning" 
                                 onclick="editTest('{{ test.id }}')">Edytuj</button>
+                        <button type="button" class="btn btn-sm btn-info" 
+                                onclick="duplicateTest('{{ test.id }}')">Duplikuj</button>
                         <button type="button" class="btn btn-sm btn-danger" 
                                 onclick="confirmDeleteTest('{{ test.id }}')">Usuń</button>
                     </div>
@@ -130,6 +124,13 @@
                 <form id="addTestForm" method="POST" action="{{ url_for('test.add') }}">
                     <div class="row mb-3">
                         <div class="col-12">
+                            <label class="form-label">Tytuł testu*</label>
+                            <input type="text" class="form-control" name="title" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-12">
                             <label class="form-label">Typ testu*</label>
                             <select class="form-select" name="test_type" required>
                                 <option value="SURVEY">Ankieta</option>
@@ -139,17 +140,6 @@
                         </div>
                     </div>
                     
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label">Etap*</label>
-                            <select class="form-select" name="stage" required>
-                                <option value="PO1">PO1</option>
-                                <option value="PO2">PO2</option>
-                                <option value="PO3">PO3</option>
-                            </select>
-                        </div>
-                    </div>
-
                     <div class="row">
                         <div class="col-md-12 mb-3">
                             <label class="form-label">Opis testu</label>
@@ -228,6 +218,13 @@
                 <form id="editTestForm" method="POST">
                     <div class="row mb-3">
                         <div class="col-12">
+                            <label class="form-label">Tytuł testu*</label>
+                            <input type="text" class="form-control" name="title" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-12">
                             <label class="form-label">Typ testu*</label>
                             <select class="form-select" name="test_type" required>
                                 <option value="SURVEY">Ankieta</option>
@@ -237,17 +234,6 @@
                         </div>
                     </div>
                     
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label">Etap*</label>
-                            <select class="form-select" name="stage" required>
-                                <option value="PO1">PO1</option>
-                                <option value="PO2">PO2</option>
-                                <option value="PO3">PO3</option>
-                            </select>
-                        </div>
-                    </div>
-
                     <div class="row">
                         <div class="col-md-12 mb-3">
                             <label class="form-label">Opis testu</label>
@@ -1281,6 +1267,116 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+});
+
+function duplicateTest(testId) {
+    fetch(`/tests/${testId}/data`)
+        .then(response => response.json())
+        .then(test => {
+            const form = document.getElementById('addTestForm');
+            
+            // Populate form fields except unique identifiers
+            form.querySelector('[name="title"]').value = test.title ? `${test.title} - kopia` : '';
+            form.querySelector('[name="test_type"]').value = test.test_type || '';
+            form.querySelector('[name="description"]').value = test.description || '';
+            form.querySelector('[name="passing_threshold"]').value = test.passing_threshold || 0;
+            form.querySelector('[name="time_limit_minutes"]').value = test.time_limit_minutes || '';
+
+            // Set groups
+            if (test.groups) {
+                test.groups.forEach(group => {
+                    const checkbox = form.querySelector(`input[name="groups[]"][value="${group.id}"]`);
+                    if (checkbox) checkbox.checked = true;
+                });
+            }
+
+            // Clear existing questions container
+            const questionsContainer = form.querySelector('.questions-container');
+            questionsContainer.innerHTML = '';
+
+            // Add questions
+            if (test.questions && test.questions.length > 0) {
+                test.questions
+                    .sort((a, b) => a.order_number - b.order_number)
+                    .forEach(question => {
+                        // Remove ID from question to create new one
+                        delete question.id;
+                        const questionHtml = createQuestionHtml(question);
+                        questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
+
+                        // Set answer type specific fields
+                        const questionCard = questionsContainer.lastElementChild;
+                        const answerType = question.answer_type;
+                        
+                        switch (answerType) {
+                            case 'TEXT':
+                                const textInput = questionCard.querySelector(`[name$="[correct_answer_text]"]`);
+                                if (textInput) textInput.value = question.correct_answer_text || '';
+                                break;
+                                
+                            case 'BOOLEAN':
+                                const boolValue = question.correct_answer_boolean;
+                                if (boolValue !== null) {
+                                    const radio = questionCard.querySelector(`[name$="[correct_answer_boolean]"][value="${boolValue}"]`);
+                                    if (radio) radio.checked = true;
+                                }
+                                break;
+                                
+                            case 'SCALE':
+                                const scaleInput = questionCard.querySelector(`[name$="[correct_answer_scale]"]`);
+                                if (scaleInput && question.correct_answer_scale !== null) {
+                                    scaleInput.value = question.correct_answer_scale;
+                                }
+                                break;
+                                
+                            case 'SALARY':
+                                const salaryInput = questionCard.querySelector(`[name$="[correct_answer_numeric]"]`);
+                                if (salaryInput && question.correct_answer_numeric !== null) {
+                                    salaryInput.value = question.correct_answer_numeric;
+                                }
+                                break;
+                                
+                            case 'DATE':
+                                const dateInput = questionCard.querySelector(`[name$="[correct_answer_date]"]`);
+                                if (dateInput) dateInput.value = question.correct_answer_date || '';
+                                break;
+                                
+                            case 'ABCDEF':
+                                const abcdefSelect = questionCard.querySelector(`[name$="[correct_answer_abcdef]"]`);
+                                if (abcdefSelect) abcdefSelect.value = question.correct_answer_abcdef || '';
+                                break;
+                        }
+
+                        // Handle image if exists
+                        if (question.image) {
+                            const imagePreview = questionCard.querySelector('.image-preview');
+                            if (imagePreview) {
+                                imagePreview.innerHTML = `
+                                    <img src="${question.image}" class="img-thumbnail" style="max-height: 100px">
+                                    <input type="hidden" 
+                                           name="questions[${questionCard.dataset.questionIndex}][image]"
+                                           value="${question.image}">
+                                `;
+                            }
+                        }
+                    });
+            }
+
+            // Update modal title to indicate duplication
+            document.querySelector('#addTestModal .modal-title').textContent = 'Duplikuj szablon testu';
+            
+            // Show the modal
+            new bootstrap.Modal(document.getElementById('addTestModal')).show();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Błąd podczas ładowania danych testu', 'error');
+        });
+}
+
+// Add this to reset modal title when opening normally
+document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('click', function() {
+    document.querySelector('#addTestModal .modal-title').textContent = 'Dodaj nowy szablon testu';
 });
 </script>
 {% endblock %} 
