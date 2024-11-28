@@ -120,7 +120,7 @@ create table candidate_answers (
     question_id integer references questions(id),
     text_answer text,                              -- Odpowiedź tekstowa    
     boolean_answer boolean,                        -- Odpowiedź typu boolean
-    numeric_answer numeric,                        -- Odpowiedź typu numeric
+    salary_answer numeric,                        -- Odpowiedź typu numeric
     scale_answer int,                              -- Odpowiedź typu scale
     date_answer date,                              -- Odpowiedź typu date
     abcdef_answer text,                            -- Odpowiedź typu ABCDEF
