@@ -285,7 +285,7 @@
                                         {% elif question.answer_type == 'SCALE' %}
                                             <p>{{ question.answer.scale_answer }}/5</p>
                                         {% elif question.answer_type == 'SALARY' %}
-                                            <p>{{ question.answer.numeric_answer }} PLN</p>
+                                            <p>{{ question.answer.salary_answer }} PLN</p>
                                         {% elif question.answer_type == 'DATE' %}
                                             <p>{{ question.answer.date_answer|datetime }}</p>
                                         {% elif question.answer_type == 'ABCDEF' %}

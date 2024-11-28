@@ -167,7 +167,7 @@ def process_test_answers(candidate_id, test_id, form_data):
             elif answer_type == 'SALARY':
                 min_value = float(form_data.get(f'answer_{question_id}_min', 0))
                 max_value = float(form_data.get(f'answer_{question_id}_max', 0))
-                answer_data['numeric_answer'] = (min_value + max_value) / 2
+                answer_data['salary_answer'] = (min_value + max_value) / 2
             elif answer_type == 'DATE':
                 answer_data['date_answer'] = value
             elif answer_type == 'ABCDEF':

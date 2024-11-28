@@ -35,7 +35,7 @@ INSERT INTO tests (id, title, test_type, description, passing_threshold, time_li
 (1, 'Ankieta wstępna PO1', 'SURVEY', 'Test PO1 Grupa Sebastian - Ankieta', 70, 30),
 (2, 'Test IQ - Etap PO1', 'IQ', 'Test PO1 Grupa Sebastian - IQ', 75, 45),
 (3, 'Ankieta pogłębiona PO2', 'SURVEY', 'Test PO2 Grupa Sebastian - Ankieta', 70, 30),
-(4, 'Test EQ - Etap PO2', 'EQ', 'Test PO2 Grupa Sebastian - EQ', 80, 60),
+(4, 'Test Belbin Team Roles', 'EQ', 'Test PO2 Grupa Sebastian - EQ', 80, 60),
 (5, 'Test IQ zaawansowany PO3', 'IQ', 'Test PO3 Grupa Sebastian - IQ', 85, 45),
 (6, 'Test EQ zaawansowany PO3', 'EQ', 'Test PO3 Grupa Sebastian - EQ', 75, 60),
 
@@ -43,7 +43,7 @@ INSERT INTO tests (id, title, test_type, description, passing_threshold, time_li
 (7, 'Ankieta kwalifikacyjna PO1', 'SURVEY', 'Test PO1 Grupa Maciej - Ankieta', 70, 30),
 (8, 'Test IQ podstawowy PO1', 'IQ', 'Test PO1 Grupa Maciej - IQ', 75, 45),
 (9, 'Ankieta kompetencyjna PO2', 'SURVEY', 'Test PO2 Grupa Maciej - Ankieta', 70, 30),
-(10, 'Test EQ podstawowy PO2', 'EQ', 'Test PO2 Grupa Maciej - EQ', 80, 60),
+(10, 'Test Belbin Team Roles', 'EQ', 'Test PO2 Grupa Maciej - EQ', 80, 60),
 (11, 'Test IQ rozszerzony PO3', 'IQ', 'Test PO3 Grupa Maciej - IQ', 85, 45),
 (12, 'Test EQ rozszerzony PO3', 'EQ', 'Test PO3 Grupa Maciej - EQ', 75, 60),
 
@@ -270,7 +270,7 @@ INSERT INTO candidates (
 
 -- 10. Odpowiedzi kandydatów (zależne od candidates i questions)
 INSERT INTO candidate_answers (
-    candidate_id, question_id, text_answer, boolean_answer, numeric_answer,
+    candidate_id, question_id, text_answer, boolean_answer, salary_answer,
     scale_answer, date_answer, abcdef_answer, score, score_ai
 ) VALUES
 -- Odpowiedzi Anny na Test 1 (wszystkie typy odpowiedzi)
@@ -308,3 +308,173 @@ INSERT INTO candidate_answers (
 -- Odpowiedzi Ewy na test z pustej grupy
 (8, 30, 'Zarządzanie zespołem 10-osobowym', null, null, null, null, null, 9, 8),
 (8, 31, null, null, null, null, null, 'D', 15, 15);
+
+-- In tests table, remove tests 6, 12, 18, 24, 30 (redundant EQ tests)
+-- and keep only tests 4, 10, 16, 28 for each group
+
+-- Update the EQ test descriptions
+UPDATE tests 
+SET description = 'Test Belbin Team Roles'
+WHERE id IN (4, 10, 16, 28);
+
+-- Clear existing questions for EQ tests
+DELETE FROM questions 
+WHERE test_id IN (4, 10, 16, 28);
+
+-- Insert new questions for EQ test (showing for test_id 4 as example)
+INSERT INTO questions (
+    test_id,
+    question_text,
+    answer_type,
+    points,
+    order_number,
+    is_required,
+    options
+) VALUES
+(4, 'I. Oto co mogę wnieść w pracę zespołu:', 'AH_POINTS', 0, 1, true, 
+ '{"a": "Mam umiejętności szybkiego dostrzegania i wykorzystywania nadarzających się okazji.",
+   "b": "Potrafię pracować z bardzo różnymi ludźmi",
+   "c": "Bardzo łatwo przychodzi mi wymyślanie nowych rozwiązań",
+   "d": "Potrafię umiejętnie zachęcać ludzi do aktywnego udziału kiedy widzę, że mogą wnieść coś wartościowego do pracy zespołu",
+   "e": "Potrafię doprowadzić realizację zadania do końca",
+   "f": "Potrafię znieść chwilową krytykę, jeśli ostatecznie prowadzi to do osiągnięcia celu",
+   "g": "Jestem w stanie błyskawicznie ocenić jakie działanie będzie skuteczne w sytuacji, z którą zetknąłem się już w przeszłości",
+   "h": "Potrafię podać rozsądne i obiektywne uzasadnienie różnych kierunków działania"}'
+),
+(4, 'II. Moje problemy w pracy zespołu, to przede wszystkim:', 'AH_POINTS', 0, 2, true,
+ '{"a": "Jestem niespokojny, jeśli spotkanie nie jest właściwie zorganizowane, kontrolowane i prowadzone",
+   "b": "Poświęcam zbyt wiele uwagi opiniom, które mimo iż są interesujące nie zostały do końca przedyskutowane",
+   "c": "Często mówię zbyt dużo, gdy grupa rozważa nowe propozycje",
+   "d": "Moje obiektywne spojrzenie sprawia, iż trudno jest mi spontanicznie i entuzjastycznie przyłączyć się do grupy",
+   "e": "Kiedy dążę do realizacji zadania jestem czasami oceniany jako bezwzględny i autokratyczny",
+   "f": "Trudno mi kierować zespołem \"twardą ręką\", prawdopodobnie dlatego, że jestem wyczulony na atmosferę panującą w grupie",
+   "g": "Często zbytnio koncentruje się na nowych pomysłach tracę kontrolę nad rozwojem sytuacji",
+   "h": "Moi koledzy uważają, że często przejmuje się drobiazgami i martwię się na zapas"}'
+),
+(4, 'III. W trakcie pracy w zespole:', 'AH_POINTS', 0, 3, true,
+ '{"a": "Mam umiejętność przekonywania ludzi bez wywierania presji",
+   "b": "Moja czujność pozwala uniknąć pomyłek i przeoczeń",
+   "c": "Jestem gotów wywrzeć nacisk na zebranych kiedy widzę, że marnujemy czas lub tracimy z pola widzenia zasadnicze kwestie",
+   "d": "Można być pewnym, że zaproponuję coś oryginalnego",
+   "e": "Zawsze jestem gotów poprzeć wartościową sugestię jeśli służy to wspólnemu interesowi",
+   "f": "Chętnie poszukuję nowych pomysłów i rozwiązań",
+   "g": "Wierzę, że wysoko oceniana jest moja umiejętność chłodnej oceny",
+   "h": "Potrafię dopilnować tego, aby wszystkie najważniejsze działania były właściwie zorganizowane"}'
+),
+(4, 'IV. Charakterystyczną cechą mojej pracy w zespole jest to, że:', 'AH_POINTS', 0, 4, true,
+ '{"a": "Jestem zainteresowany bliższym poznaniem kolegów",
+   "b": "Nie waham się krytykować opinii innych i wyrażać sądów nie podzielanych przez większość",
+   "c": "Zwykle potrafię znaleźć argumenty przeciwko nierozsądnym propozycjom",
+   "d": "Sądzę, że mam umiejętność wprowadzania przyjętych planów w życie",
+   "e": "Często odrzucam to, co oczywiste i proponuję zaskakujące rozwiązania",
+   "f": "Wprowadzam perfekcjonizm do każdej pracy zespołowej",
+   "g": "Potrafię wykorzystać kontakty poza grupą",
+   "h": "Chociaż pragnę poznać wszystkie opinie, w momencie podejmowania decyzji polegam głównie na własnym zdaniu"}'
+),
+(4, 'V. Czerpię satysfakcję z pracy w zespole, ponieważ:', 'AH_POINTS', 0, 5, true,
+ '{"a": "Lubię analizować sytuacje i rozważać możliwe rozwiązania",
+   "b": "Interesuje mnie wypracowywanie praktycznych rozwiązań",
+   "c": "Lubię mieć świadomość, że mam wpływ na dobre stosunki w grupie",
+   "d": "Wywieram znaczny wpływ na podejmowane decyzje",
+   "e": "Spotykam ludzi, którzy mają coś nowego do zaoferowania",
+   "f": "Potrafię przekonać ludzi do przyjęcia danego kierunku działań",
+   "g": "Czuję się znakomicie, kiedy mogę jednemu zadaniu poświęcić całkowitą uwagę",
+   "h": "Lubię dziedziny, które pobudzają moją wyobraźnię"}'
+),
+(4, 'VI. Gdybym nagle otrzymał do wykonania zadanie w znacznie ograniczonym czasie i we współpracy z nieznanymi ludźmi:', 'AH_POINTS', 0, 6, true,
+ '{"a": "Zanim przystąpilibyśmy do wspólnej pracy miałbym ochotę wycofać się w cień, aby znaleźć optymalny sposób działania",
+   "b": "Chętnie pracowałbym z kimś, kto wykazywałby pozytywne nastawienie, nawet gdyby był trudny we współpracy",
+   "c": "Znalazłbym sposób łatwiejszej realizacji zadania poprzez ustalenie jaki optymalny wkład mogą wnieść poszczególni członkowie zespołu",
+   "d": "Moje poczucie obowiązku pomogłoby dotrzymać wyznaczone terminy",
+   "e": "Wierzę, że zachowałbym zimną krew i zdolność jasnego myślenia",
+   "f": "Konsekwentnie realizowałbym zadanie pomimo odczuwanej presji",
+   "g": "Byłbym gotów przejąć kierownictwo gdybym dostrzegł, że grupa stoi w miejscu",
+   "h": "Rozpocząłbym dyskusję, aby wprowadzić nowe pomysły i ruszyć do przodu"}'
+),
+(4, 'VII. Problemy jakie mogę mieć w pracy w grupie, to przede wszystkim to, że:', 'AH_POINTS', 0, 7, true,
+ '{"a": "Okazuję zniecierpliwienie w stosunku do tych, którzy opóźniają pracę",
+   "b": "Można mi zarzucić, że myślę w sposób zbyt analityczny i rzadko kieruję się intuicją",
+   "c": "Moje pragnienie, aby zadanie zostało wykonane jak najlepiej może zwalniać tempo pracy",
+   "d": "Szybko się nudzę i liczę na to, że bardziej dynamiczni członkowie grupy pobudzą mnie do działania",
+   "e": "Trudno mi rozpocząć pracę dopóki cele nie są całkowicie jasne",
+   "f": "Czasami mam trudności z wyjaśnianiem skomplikowanych kwestii",
+   "g": "Zdaję sobie sprawę, że wymagam od innych tego, czego sam nie potrafię zrobić",
+   "h": "Waham się przedstawić moje poglądy w sytuacji, gdy inni mają odmienne zdanie"}'
+);
+
+-- Skopiuj te same pytania dla pozostałych testów EQ (10, 16, 28)
+INSERT INTO questions (
+    test_id,
+    question_text,
+    answer_type,
+    points,
+    order_number,
+    is_required,
+    options
+)
+SELECT 
+    10 as test_id,
+    question_text,
+    answer_type,
+    points,
+    order_number,
+    is_required,
+    options
+FROM questions 
+WHERE test_id = 4;
+
+INSERT INTO questions (
+    test_id,
+    question_text,
+    answer_type,
+    points,
+    order_number,
+    is_required,
+    options
+)
+SELECT 
+    16 as test_id,
+    question_text,
+    answer_type,
+    points,
+    order_number,
+    is_required,
+    options
+FROM questions 
+WHERE test_id = 4;
+
+INSERT INTO questions (
+    test_id,
+    question_text,
+    answer_type,
+    points,
+    order_number,
+    is_required,
+    options
+)
+SELECT 
+    28 as test_id,
+    question_text,
+    answer_type,
+    points,
+    order_number,
+    is_required,
+    options
+FROM questions 
+WHERE test_id = 4;
+
+-- Usuń niepotrzebne testy EQ
+DELETE FROM tests 
+WHERE id IN (6, 12, 18, 24, 30);
+
+-- Zaktualizuj referencje w kampaniach
+UPDATE campaigns
+SET po3_test_id = NULL
+WHERE po3_test_id IN (6, 12, 18, 24, 30);
+
+-- Usuń odpowiedzi do usuniętych testów
+DELETE FROM candidate_answers
+WHERE question_id IN (
+    SELECT id FROM questions 
+    WHERE test_id IN (6, 12, 18, 24, 30)
+);

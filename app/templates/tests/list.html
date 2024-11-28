@@ -799,8 +799,8 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                             questionData.correct_answer_abcdef = abcdefSelect ? abcdefSelect.value : null;
                             break;
                         case 'SALARY':
-                            const numericValue = card.querySelector('[name$="[correct_answer_salary]"]')?.value;
-                            questionData.correct_answer_salary = numericValue ? Number(numericValue) : null;
+                            const salaryValue = card.querySelector('[name$="[correct_answer_salary]"]')?.value;
+                            questionData.correct_answer_salary = salaryValue ? Number(salaryValue) : null;
                             break;
                         default:
                             const answerField = `correct_answer_${answerType.toLowerCase()}`;
@@ -1101,8 +1101,8 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                     console.log('ABCDEF answer value:', questionData.correct_answer_abcdef); // Debug log
                     break;
                 case 'SALARY':
-                    const numericValue = card.querySelector('[name$="[correct_answer_salary]"]')?.value;
-                    questionData.correct_answer_salary = numericValue ? Number(numericValue) : null;
+                    const salaryValue = card.querySelector('[name$="[correct_answer_salary]"]')?.value;
+                    questionData.correct_answer_salary = salaryValue ? Number(salaryValue) : null;
                     break;
                 default:
                     const answerField = `correct_answer_${answerType.toLowerCase()}`;

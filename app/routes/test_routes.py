@@ -130,9 +130,9 @@ def add():
                         }
 
                         if question["answer_type"] == "SALARY":
-                            numeric_value = question.get("correct_answer_salary")
+                            salary_value = question.get("correct_answer_salary")
                             clean_question["correct_answer_salary"] = (
-                                float(numeric_value) if numeric_value is not None else None
+                                float(salary_value) if salary_value is not None else None
                             )
                         else:
                             answer_field = f'correct_answer_{question["answer_type"].lower()}'
@@ -267,9 +267,9 @@ def edit(test_id):
                 }
 
                 if question["answer_type"] == "SALARY":
-                    numeric_value = question.get("correct_answer_salary")
+                    salary_value = question.get("correct_answer_salary")
                     clean_question["correct_answer_salary"] = (
-                        float(numeric_value) if numeric_value is not None else None
+                        float(salary_value) if salary_value is not None else None
                     )
                 else:
                     answer_field = f'correct_answer_{question["answer_type"].lower()}'

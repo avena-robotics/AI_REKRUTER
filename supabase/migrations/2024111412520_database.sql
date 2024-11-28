@@ -63,9 +63,9 @@ create table campaigns (
 create table questions (
     id serial primary key,
     test_id integer references tests(id) ON DELETE CASCADE,         -- Id testu
-    section text,                                                   -- Dla testów EQ sekcje I-VII  
-    question_text text not null,                                    -- Pytanie do kandydata     
+    question_text text not null,                                    -- Pytanie do kandydata lub sekcja (I-VII) dla testu EQ     
     answer_type answer_type not null,                               -- TEXT, BOOLEAN, SCALE(0-5), SALARY, DATE, ABCDEF, AH_POINTS
+    options jsonb,                                                  -- Opcje dla testu EQ (a-h)
     points int not null default 0,                                  -- Punkty za pytanie
     order_number integer not null,                                  -- Numer pytania w testach
     is_required boolean default true,                               -- Czy pytanie jest obowiązkowe
@@ -101,6 +101,14 @@ create table candidates (
     access_token_po3_is_used boolean default false, -- Czy token PO3 został użyty
     access_token_po2_expires_at timestamp with time zone, -- Data ważności tokenu PO2
     access_token_po3_expires_at timestamp with time zone, -- Data ważności tokenu PO3
+    score_ko int,
+    score_re int,
+    score_w int,
+    score_in int,
+    score_pz int,
+    score_kz int,
+    score_dz int,
+    score_sw int,
     created_at timestamp default now(),
     updated_at timestamp default now()
 );
@@ -116,7 +124,7 @@ create table candidate_answers (
     scale_answer int,                              -- Odpowiedź typu scale
     date_answer date,                              -- Odpowiedź typu date
     abcdef_answer text,                            -- Odpowiedź typu ABCDEF
-    ah_points jsonb,                               -- Format JSON, np. {"a": 3, "b": 5, "c": 0}
+    points_per_option jsonb,                       -- Format JSON, np. {"a": 3, "b": 5, "c": 0}
     score int,                                     -- Punkty za odpowiedź
     score_ai int,                                  -- Punkty za odpowiedź AI,
     created_at timestamp default now()
