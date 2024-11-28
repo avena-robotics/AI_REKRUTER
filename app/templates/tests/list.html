@@ -915,6 +915,7 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                                         <option value="SALARY" ${q.answer_type === 'SALARY' ? 'selected' : ''}>Wynagrodzenie (PLN)</option>
                                         <option value="DATE" ${q.answer_type === 'DATE' ? 'selected' : ''}>Data</option>
                                         <option value="ABCDEF" ${q.answer_type === 'ABCDEF' ? 'selected' : ''}>ABCDEF</option>
+                                        <option value="AH_POINTS" ${q.answer_type === 'AH_POINTS' ? 'selected' : ''}>Test EQ (A-H)</option>
                                     </select>
                                 </div>
                                 <div class="col-md-8">
@@ -947,21 +948,31 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
         let html = '';
         
         switch (answerType) {
-            case 'ABCDEF':
+            case 'AH_POINTS':
+                const options = question?.options || '';
+                
                 html = `
                     <div class="row">
-                        <div class="col-md-12">
-                            <label class="form-label">Poprawna odpowiedź</label>
-                            <select class="form-select" 
-                                    name="questions[${questionCounter}][correct_answer_abcdef]">
-                                <option value="">Wybierz odpowiedź</option>
-                                <option value="A" ${question?.correct_answer_abcdef === 'A' ? 'selected' : ''}>A</option>
-                                <option value="B" ${question?.correct_answer_abcdef === 'B' ? 'selected' : ''}>B</option>
-                                <option value="C" ${question?.correct_answer_abcdef === 'C' ? 'selected' : ''}>C</option>
-                                <option value="D" ${question?.correct_answer_abcdef === 'D' ? 'selected' : ''}>D</option>
-                                <option value="E" ${question?.correct_answer_abcdef === 'E' ? 'selected' : ''}>E</option>
-                                <option value="F" ${question?.correct_answer_abcdef === 'F' ? 'selected' : ''}>F</option>
-                            </select>
+                        <div class="col-12">
+                            <label class="form-label">Opcje odpowiedzi (A-H)*</label>
+                            <div class="options-container">
+                                ${['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(letter => {
+                                    const letterLower = letter.toLowerCase();
+                                    return `
+                                        <div class="option-row">
+                                            <div class="option-letter">${letter}.</div>
+                                            <div class="option-input">
+                                                <input type="text" 
+                                                       class="form-control"
+                                                       name="questions[${questionCounter}][options][${letterLower}]"
+                                                       value="${options[letterLower] || ''}"
+                                                       placeholder="Treść opcji ${letter}"
+                                                       required>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
                         </div>
                     </div>
                 `;
@@ -1459,6 +1470,32 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
     .text-muted {
         font-size: 0.85em;
         color: #9ca3af !important;
+    }
+    
+    .options-container {
+        padding: 15px;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+    }
+    
+    .option-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .option-row:last-child {
+        margin-bottom: 0;
+    }
+    
+    .option-letter {
+        width: 30px;
+        font-weight: bold;
+        color: #495057;
+    }
+    
+    .option-input {
+        flex: 1;
     }
 </style>
 {% endblock %} 
