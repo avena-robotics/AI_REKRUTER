@@ -184,7 +184,7 @@ def calculate_test_score(supabase: Client, candidate_id: int, test_id: int) -> O
                 points,
                 correct_answer_text,
                 correct_answer_boolean,
-                correct_answer_numeric,
+                correct_answer_salary,
                 correct_answer_scale,
                 correct_answer_date,
                 correct_answer_abcdef
@@ -216,7 +216,7 @@ def calculate_test_score(supabase: Client, candidate_id: int, test_id: int) -> O
             elif answer_type == 'SCALE':
                 is_correct = answer.get('scale_answer') == question.get('correct_answer_scale')
             elif answer_type == 'SALARY':
-                correct_answer = question.get('correct_answer_numeric')
+                correct_answer = question.get('correct_answer_salary')
                 is_correct = answer.get('numeric_answer') == correct_answer if correct_answer is not None else False
             elif answer_type == 'DATE':
                 is_correct = answer.get('date_answer') == question.get('correct_answer_date')

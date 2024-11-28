@@ -76,7 +76,7 @@ INSERT INTO questions (
     id,  -- Dodajemy explicit id
     test_id, question_text, answer_type, points, order_number, 
     is_required, correct_answer_text, correct_answer_boolean, 
-    correct_answer_numeric, correct_answer_scale, correct_answer_date, 
+    correct_answer_salary, correct_answer_scale, correct_answer_date, 
     correct_answer_abcdef
 ) VALUES
 -- Test 1 (PO1 Grupa Sebastian - Ankieta) - wszystkie typy pytań

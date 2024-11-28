@@ -17,7 +17,7 @@ DROP TYPE IF EXISTS test_type CASCADE;
 
 -- Create types first
 create type test_type as enum ('SURVEY', 'EQ', 'IQ');
-create type answer_type as enum ('TEXT', 'BOOLEAN', 'SCALE', 'SALARY', 'DATE', 'ABCDEF');
+create type answer_type as enum ('TEXT', 'BOOLEAN', 'SCALE', 'SALARY', 'DATE', 'ABCDEF', 'AH_POINTS');
 create type recruitment_status as enum ('PO1', 'PO2', 'PO3', 'PO4', 'REJECTED', 'ACCEPTED');
 
 -- Create tests table before campaigns (since campaigns references tests)
@@ -62,16 +62,17 @@ create table campaigns (
 -- Tabela pytań
 create table questions (
     id serial primary key,
-    test_id integer references tests(id) ON DELETE CASCADE,           -- Id testu
-    question_text text not null,                    -- Pytanie do kandydata     
-    answer_type answer_type not null,               -- TEXT, BOOLEAN, SCALE(0-5), SALARY, DATE, ABCDEF
-    points int not null default 0,                  -- Punkty za pytanie
-    order_number integer not null,                  -- Numer pytania w testach
-    is_required boolean default true,               -- Czy pytanie jest obowiązkowe
-    image text,                                     -- Add image URL field
+    test_id integer references tests(id) ON DELETE CASCADE,         -- Id testu
+    section text,                                                   -- Dla testów EQ sekcje I-VII  
+    question_text text not null,                                    -- Pytanie do kandydata     
+    answer_type answer_type not null,                               -- TEXT, BOOLEAN, SCALE(0-5), SALARY, DATE, ABCDEF, AH_POINTS
+    points int not null default 0,                                  -- Punkty za pytanie
+    order_number integer not null,                                  -- Numer pytania w testach
+    is_required boolean default true,                               -- Czy pytanie jest obowiązkowe
+    image text,                                                     -- Add image URL field
     correct_answer_text text,
     correct_answer_boolean boolean,
-    correct_answer_numeric numeric,
+    correct_answer_salary numeric,
     correct_answer_scale int,
     correct_answer_date date,
     correct_answer_abcdef text
@@ -115,8 +116,9 @@ create table candidate_answers (
     scale_answer int,                              -- Odpowiedź typu scale
     date_answer date,                              -- Odpowiedź typu date
     abcdef_answer text,                            -- Odpowiedź typu ABCDEF
+    ah_points jsonb,                               -- Format JSON, np. {"a": 3, "b": 5, "c": 0}
     score int,                                     -- Punkty za odpowiedź
-    score_ai int,                                  -- Punkty za odpowiedź AI
+    score_ai int,                                  -- Punkty za odpowiedź AI,
     created_at timestamp default now()
 );
 

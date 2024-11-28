@@ -687,9 +687,9 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                                     break;
                                     
                                 case 'SALARY':
-                                    const salaryInput = questionCard.querySelector(`[name$="[correct_answer_numeric]"]`);
-                                    if (salaryInput && question.correct_answer_numeric !== null) {
-                                        salaryInput.value = question.correct_answer_numeric;
+                                    const salaryInput = questionCard.querySelector(`[name$="[correct_answer_salary]"]`);
+                                    if (salaryInput && question.correct_answer_salary !== null) {
+                                        salaryInput.value = question.correct_answer_salary;
                                     }
                                     break;
                                     
@@ -799,8 +799,8 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                             questionData.correct_answer_abcdef = abcdefSelect ? abcdefSelect.value : null;
                             break;
                         case 'SALARY':
-                            const numericValue = card.querySelector('[name$="[correct_answer_numeric]"]')?.value;
-                            questionData.correct_answer_numeric = numericValue ? Number(numericValue) : null;
+                            const numericValue = card.querySelector('[name$="[correct_answer_salary]"]')?.value;
+                            questionData.correct_answer_salary = numericValue ? Number(numericValue) : null;
                             break;
                         default:
                             const answerField = `correct_answer_${answerType.toLowerCase()}`;
@@ -1007,9 +1007,9 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                         <div class="col-md-6">
                             <label class="form-label">Poprawna odpowiedź (PLN)</label>
                             <input type="number" class="form-control" 
-                                   name="questions[${questionCounter}][correct_answer_numeric]"
+                                   name="questions[${questionCounter}][correct_answer_salary]"
                                    min="0" step="100" 
-                                   value="${question?.correct_answer_numeric !== null ? question.correct_answer_numeric : ''}">
+                                   value="${question?.correct_answer_salary !== null ? question.correct_answer_salary : ''}">
                         </div>
                     </div>
                 `;
@@ -1101,8 +1101,8 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                     console.log('ABCDEF answer value:', questionData.correct_answer_abcdef); // Debug log
                     break;
                 case 'SALARY':
-                    const numericValue = card.querySelector('[name$="[correct_answer_numeric]"]')?.value;
-                    questionData.correct_answer_numeric = numericValue ? Number(numericValue) : null;
+                    const numericValue = card.querySelector('[name$="[correct_answer_salary]"]')?.value;
+                    questionData.correct_answer_salary = numericValue ? Number(numericValue) : null;
                     break;
                 default:
                     const answerField = `correct_answer_${answerType.toLowerCase()}`;
@@ -1396,9 +1396,9 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                                     break;
                                     
                                 case 'SALARY':
-                                    const salaryInput = questionCard.querySelector(`[name$="[correct_answer_numeric]"]`);
-                                    if (salaryInput && question.correct_answer_numeric !== null) {
-                                        salaryInput.value = question.correct_answer_numeric;
+                                    const salaryInput = questionCard.querySelector(`[name$="[correct_answer_salary]"]`);
+                                    if (salaryInput && question.correct_answer_salary !== null) {
+                                        salaryInput.value = question.correct_answer_salary;
                                     }
                                     break;
                                     

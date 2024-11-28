@@ -189,7 +189,7 @@ def calculate_answer_score(answer_type, value, question, form_data):
     elif answer_type == 'SALARY':
         min_value = float(form_data.get(f'answer_{question["id"]}_min', 0))
         max_value = float(form_data.get(f'answer_{question["id"]}_max', 0))
-        correct_value = question['correct_answer_numeric']
+        correct_value = question['correct_answer_salary']
         return question['points'] if min_value <= correct_value <= max_value else 0
     elif answer_type == 'DATE':
         answer_date = datetime.strptime(value, '%Y-%m-%d').date()
