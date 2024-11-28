@@ -623,6 +623,7 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
     
     // Functions moved from test.js
     function editTest(testId) {
+        console.log(`Starting edit process for test ID: ${testId}`);
         fetch(`/tests/${testId}/data`)
             .then(response => response.json())
             .then(test => {
@@ -630,33 +631,45 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                 const form = document.getElementById('editTestForm');
                 form.action = `/tests/${testId}/edit`;
                 
+                // Log form population
+                console.log('Populating form fields:', {
+                    title: test.title,
+                    test_type: test.test_type,
+                    description: test.description,
+                    passing_threshold: test.passing_threshold,
+                    time_limit_minutes: test.time_limit_minutes
+                });
+
                 // Populate basic test fields
                 form.querySelector('[name="title"]').value = test.title || '';
                 form.querySelector('[name="test_type"]').value = test.test_type || '';
                 form.querySelector('[name="description"]').value = test.description || '';
                 form.querySelector('[name="passing_threshold"]').value = test.passing_threshold || 0;
                 form.querySelector('[name="time_limit_minutes"]').value = test.time_limit_minutes || '';
-    
+
                 // Update group checkboxes
                 const testGroups = test.groups || [];
+                console.log('Setting group checkboxes:', testGroups);
                 form.querySelectorAll('input[name="groups[]"]').forEach(checkbox => {
                     checkbox.checked = testGroups.some(group => group.id === parseInt(checkbox.value));
                 });
-    
+
                 // Reset validation state
                 const groupsContainer = form.querySelector('#editGroupsContainer');
                 if (groupsContainer) {
                     groupsContainer.classList.remove('border-danger');
                 }
-    
+
                 // Clear and populate questions
                 const questionsContainer = form.querySelector('.questions-container');
                 questionsContainer.innerHTML = '';
                 
                 if (test.questions?.length > 0) {
+                    console.log(`Processing ${test.questions.length} questions`);
                     test.questions
                         .sort((a, b) => a.order_number - b.order_number)
                         .forEach(question => {
+                            console.log('Processing question:', question);
                             const questionHtml = createQuestionHtml(question);
                             questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
                             
@@ -664,18 +677,26 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                             const questionCard = questionsContainer.lastElementChild;
                             const answerType = question.answer_type;
                             
+                            console.log(`Setting answer for type: ${answerType}`);
+                            
                             // Set answer type specific fields
                             switch (answerType) {
                                 case 'TEXT':
                                     const textInput = questionCard.querySelector(`[name$="[correct_answer_text]"]`);
-                                    if (textInput) textInput.value = question.correct_answer_text || '';
+                                    if (textInput) {
+                                        textInput.value = question.correct_answer_text || '';
+                                        console.log('Set TEXT answer:', textInput.value);
+                                    }
                                     break;
                                     
                                 case 'BOOLEAN':
                                     const boolValue = question.correct_answer_boolean;
                                     if (boolValue !== null) {
                                         const radio = questionCard.querySelector(`[name$="[correct_answer_boolean]"][value="${boolValue}"]`);
-                                        if (radio) radio.checked = true;
+                                        if (radio) {
+                                            radio.checked = true;
+                                            console.log('Set BOOLEAN answer:', boolValue);
+                                        }
                                     }
                                     break;
                                     
@@ -683,6 +704,7 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                                     const scaleInput = questionCard.querySelector(`[name$="[correct_answer_scale]"]`);
                                     if (scaleInput && question.correct_answer_scale !== null) {
                                         scaleInput.value = question.correct_answer_scale;
+                                        console.log('Set SCALE answer:', scaleInput.value);
                                     }
                                     break;
                                     
@@ -690,22 +712,30 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                                     const salaryInput = questionCard.querySelector(`[name$="[correct_answer_salary]"]`);
                                     if (salaryInput && question.correct_answer_salary !== null) {
                                         salaryInput.value = question.correct_answer_salary;
+                                        console.log('Set SALARY answer:', salaryInput.value);
                                     }
                                     break;
                                     
                                 case 'DATE':
                                     const dateInput = questionCard.querySelector(`[name$="[correct_answer_date]"]`);
-                                    if (dateInput) dateInput.value = question.correct_answer_date || '';
+                                    if (dateInput) {
+                                        dateInput.value = question.correct_answer_date || '';
+                                        console.log('Set DATE answer:', dateInput.value);
+                                    }
                                     break;
                                     
                                 case 'ABCDEF':
                                     const abcdefSelect = questionCard.querySelector(`[name$="[correct_answer_abcdef]"]`);
-                                    if (abcdefSelect) abcdefSelect.value = question.correct_answer_abcdef || '';
+                                    if (abcdefSelect) {
+                                        abcdefSelect.value = question.correct_answer_abcdef || '';
+                                        console.log('Set ABCDEF answer:', abcdefSelect.value);
+                                    }
                                     break;
                             }
                             
                             // Set image if exists
                             if (question.image) {
+                                console.log('Setting image:', question.image);
                                 const imagePreview = questionCard.querySelector('.image-preview');
                                 if (imagePreview) {
                                     imagePreview.innerHTML = `
@@ -718,11 +748,12 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                             }
                         });
                 }
-    
+
+                console.log('Form population completed');
                 new bootstrap.Modal(document.getElementById('editTestModal')).show();
             })
             .catch(error => {
-                console.error('Error:', error);
+                console.error('Error loading test data:', error);
                 showToast('Błąd podczas ładowania danych testu', 'error');
             });
     }
@@ -793,14 +824,18 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
     
                     // Handle answer type specific fields
                     const answerType = questionData.answer_type;
+                    console.log(`Processing question with answer type: ${answerType}`);
+                    
                     switch (answerType) {
                         case 'ABCDEF':
                             const abcdefSelect = card.querySelector('[name$="[correct_answer_abcdef]"]');
                             questionData.correct_answer_abcdef = abcdefSelect ? abcdefSelect.value : null;
+                            console.log('ABCDEF answer value:', questionData.correct_answer_abcdef);
                             break;
                         case 'SALARY':
                             const salaryValue = card.querySelector('[name$="[correct_answer_salary]"]')?.value;
                             questionData.correct_answer_salary = salaryValue ? Number(salaryValue) : null;
+                            console.log('SALARY answer value:', questionData.correct_answer_salary);
                             break;
                         default:
                             const answerField = `correct_answer_${answerType.toLowerCase()}`;
@@ -808,29 +843,43 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                             if (answerInput) {
                                 questionData[answerField] = answerInput.type === 'checkbox' ? 
                                     answerInput.checked : answerInput.value;
+                                console.log(`${answerType} answer value:`, questionData[answerField]);
                             }
                     }
     
                     questions.push(questionData);
                 });
     
+                console.log('Questions data before submit:', questions);
                 formData.append('questions', JSON.stringify(questions));
-    
+                
                 fetch(form.action, {
                     method: 'POST',
                     body: formData
                 })
                 .then(response => response.json())
                 .then(data => {
+                    console.log('Server response:', data);
                     if (data.success) {
-                        window.location.reload();
+                        console.log('Form submitted successfully');
+                        sessionStorage.setItem('pendingToast', JSON.stringify({
+                            message: data.message || (isEdit ? 'Test został zaktualizowany' : 'Test został dodany'),
+                            type: 'success'
+                        }));
+
+                        const modal = bootstrap.Modal.getInstance(form.closest('.modal'));
+                        modal.hide();
+                        
+                        modal._element.addEventListener('hidden.bs.modal', function () {
+                            window.location.reload();
+                        }, { once: true });
                     } else {
-                        throw new Error(data.error || 'Wystąpił błąd podczas zapisywania');
+                        throw new Error(data.error || 'Wystąpił błąd');
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
-                    showToast(error.message || 'Wystąpił błąd podczas zapisywania', 'error');
+                    console.error('Error submitting form:', error);
+                    showToast(error.message, 'error');
                 });
             });
     
@@ -852,8 +901,9 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
         const questionCounter = document.querySelectorAll('.question-card').length;
         
         return `
-            <div class="card mb-2 question-card" data-question-id="${q.id || ''}" 
-                 data-order="${q.order_number || questionCounter + 1}">
+            <div class="card mb-2 question-card" 
+                 data-question-id="${q.id || ''}" 
+                 data-question-index="${questionCounter}">
                 <input type="hidden" name="questions[${questionCounter}][id]" value="${q.id || ''}">
                 <input type="hidden" name="questions[${questionCounter}][order_number]" 
                        value="${q.order_number || questionCounter + 1}">
@@ -949,7 +999,7 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
         
         switch (answerType) {
             case 'AH_POINTS':
-                const options = question?.options || '';
+                const options = question?.options || {};
                 
                 html = `
                     <div class="row">
@@ -959,9 +1009,9 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                                 ${['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(letter => {
                                     const letterLower = letter.toLowerCase();
                                     return `
-                                        <div class="option-row">
-                                            <div class="option-letter">${letter}.</div>
-                                            <div class="option-input">
+                                        <div class="option-row mb-2">
+                                            <div class="input-group">
+                                                <span class="input-group-text">${letter}.</span>
                                                 <input type="text" 
                                                        class="form-control"
                                                        name="questions[${questionCounter}][options][${letterLower}]"
@@ -1084,6 +1134,8 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
         const formData = new FormData(form);
         const isEdit = form.id === 'editTestForm';
         
+        console.log(`Handling ${isEdit ? 'edit' : 'add'} form submission`);
+        
         // Debug logging for form data
         console.log('Form data before submission:');
         for (let pair of formData.entries()) {
@@ -1103,30 +1155,51 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                 image: card.querySelector('input[name$="[image]"]')?.value || null
             };
     
+            // Add debug logging
+            console.log('Question card dataset:', card.dataset);
+            console.log('Processing question data:', questionData);
+    
             // Handle answer type specific fields
             const answerType = questionData.answer_type;
+            console.log(`Processing question with answer type: ${answerType}`);
+            
             switch (answerType) {
                 case 'ABCDEF':
                     const abcdefSelect = card.querySelector('[name$="[correct_answer_abcdef]"]');
                     questionData.correct_answer_abcdef = abcdefSelect ? abcdefSelect.value : null;
-                    console.log('ABCDEF answer value:', questionData.correct_answer_abcdef); // Debug log
+                    console.log('ABCDEF answer value:', questionData.correct_answer_abcdef);
                     break;
                 case 'SALARY':
                     const salaryValue = card.querySelector('[name$="[correct_answer_salary]"]')?.value;
                     questionData.correct_answer_salary = salaryValue ? Number(salaryValue) : null;
+                    console.log('SALARY answer value:', questionData.correct_answer_salary);
+                    break;
+                case 'AH_POINTS':
+                    const options = {};
+                    card.querySelectorAll('[name*="[options]"]').forEach(input => {
+                        const letterMatch = input.name.match(/\[options\]\[([a-h])\]/);
+                        if (letterMatch) {
+                            const letter = letterMatch[1];
+                            options[letter] = input.value.trim();
+                        }
+                    });
+                    questionData.options = options;
+                    console.log('AH_POINTS options:', options);
                     break;
                 default:
                     const answerField = `correct_answer_${answerType.toLowerCase()}`;
                     const answerInput = card.querySelector(`[name$="[${answerField}]"]`);
                     if (answerInput) {
-                        questionData[answerField] = answerInput.value;
+                        questionData[answerField] = answerInput.type === 'checkbox' ? 
+                            answerInput.checked : answerInput.value;
+                        console.log(`${answerType} answer value:`, questionData[answerField]);
                     }
             }
     
             questions.push(questionData);
         });
     
-        console.log('Questions data before submit:', questions); // Debug log
+        console.log('Questions data before submit:', questions);
         formData.append('questions', JSON.stringify(questions));
         
         fetch(form.action, {
@@ -1135,18 +1208,17 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
         })
         .then(response => response.json())
         .then(data => {
+            console.log('Server response:', data);
             if (data.success) {
-                // Store toast message in sessionStorage
+                console.log('Form submitted successfully');
                 sessionStorage.setItem('pendingToast', JSON.stringify({
                     message: data.message || (isEdit ? 'Test został zaktualizowany' : 'Test został dodany'),
                     type: 'success'
                 }));
-    
-                // Close modal before reload
+
                 const modal = bootstrap.Modal.getInstance(form.closest('.modal'));
                 modal.hide();
                 
-                // Reload after modal is hidden
                 modal._element.addEventListener('hidden.bs.modal', function () {
                     window.location.reload();
                 }, { once: true });
@@ -1155,13 +1227,8 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
             }
         })
         .catch(error => {
-            console.error('Error:', error);
+            console.error('Error submitting form:', error);
             showToast(error.message, 'error');
-            
-            // Reset button state
-            submitButton.disabled = false;
-            spinner.classList.add('d-none');
-            buttonText.textContent = isEdit ? 'Zapisz zmiany' : 'Zapisz test';
         });
     }
     
@@ -1481,21 +1548,13 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
     .option-row {
         display: flex;
         align-items: center;
-        margin-bottom: 10px;
     }
     
-    .option-row:last-child {
-        margin-bottom: 0;
-    }
-    
-    .option-letter {
-        width: 30px;
+    .option-row .input-group-text {
+        width: 40px;
+        justify-content: center;
         font-weight: bold;
-        color: #495057;
-    }
-    
-    .option-input {
-        flex: 1;
+        background-color: #f8f9fa;
     }
 </style>
 {% endblock %} 
