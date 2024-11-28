@@ -35,14 +35,12 @@ INSERT INTO tests (id, title, test_type, description, passing_threshold, time_li
 (1, 'Ankieta wstępna PO1', 'SURVEY', 'Test PO1 Grupa Sebastian - Ankieta', 70, 30, now(), now()),
 (2, 'Test IQ - Etap PO1', 'IQ', 'Test PO1 Grupa Sebastian - IQ', 75, 45, now(), now()),
 (3, 'Ankieta pogłębiona PO2', 'SURVEY', 'Test PO2 Grupa Sebastian - Ankieta', 70, 30, now(), now()),
-(4, 'Test Belbin Team Roles', 'EQ', 'Test PO2 Grupa Sebastian - EQ', 80, 60, now(), now()),
 (5, 'Test IQ zaawansowany PO3', 'IQ', 'Test PO3 Grupa Sebastian - IQ', 85, 45, now(), now()), 
 
 -- Testy dla Grupy Maciej (grupa 4)
 (7, 'Ankieta kwalifikacyjna PO1', 'SURVEY', 'Test PO1 Grupa Maciej - Ankieta', 70, 30, now(), now()),
 (8, 'Test IQ podstawowy PO1', 'IQ', 'Test PO1 Grupa Maciej - IQ', 75, 45, now(), now()),
 (9, 'Ankieta kompetencyjna PO2', 'SURVEY', 'Test PO2 Grupa Maciej - Ankieta', 70, 30, now(), now()),
-(10, 'Test Belbin Team Roles', 'EQ', 'Test PO2 Grupa Maciej - EQ', 80, 60, now(), now()),
 (11, 'Test IQ rozszerzony PO3', 'IQ', 'Test PO3 Grupa Maciej - IQ', 85, 45, now(), now()), 
 
 -- Testy dla obu grup (Sebastian + Maciej)
@@ -84,14 +82,12 @@ INSERT INTO questions (
 -- Pozostałe testy Grupy Sebastian
 (7, 2, 'Test IQ: Rozwiąż ciąg: 2,4,6,8,...', 'TEXT', null, 10, 1, true, '10', null, null, null, null, null),
 (8, 3, 'Opisz swoje największe osiągnięcie zawodowe', 'TEXT', null, 15, 1, true, null, null, null, null, null, null),
-(9, 4, 'Oceń swoją odporność na stres', 'SCALE', null, 10, 1, true, null, null, null, 4, null, null),
 (10, 5, 'Rozwiąż zadanie logiczne...', 'TEXT', null, 20, 1, true, 'Odpowiedź C', null, null, null, null, null),
 
 -- Testy Grupy Maciej
 (12, 7, 'Jakie są twoje mocne strony?', 'TEXT', null, 10, 1, true, null, null, null, null, null, null),
 (13, 8, 'Test IQ: Znajdź brakujący element', 'ABCDEF', null, 15, 1, true, null, null, null, null, null, 'C'),
 (14, 9, 'Opisz swoją idealną kulturę organizacyjną', 'TEXT', null, 10, 1, true, null, null, null, null, null, null),
-(15, 10, 'Jak radzisz sobie z krytyką?', 'SCALE', null, 10, 1, true, null, null, null, 3, null, null),
 (16, 11, 'Rozwiąż zagadkę logiczną...', 'TEXT', null, 20, 1, true, 'Odpowiedź D', null, null, null, null, null),
 
 -- Testy dla obu grup
@@ -194,10 +190,10 @@ INSERT INTO questions (
 -- 6. Powiązania testów z grupami
 INSERT INTO link_groups_tests (group_id, test_id) VALUES
 -- Przypisanie testów do Grupy Sebastian
-(2, 1), (2, 2), (2, 3), (2, 4), (2, 5),
+(2, 1), (2, 2), (2, 3), (2, 5),
 
 -- Przypisanie testów do Grupy Maciej
-(4, 7), (4, 8), (4, 9), (4, 10), (4, 11),
+(4, 7), (4, 8), (4, 9), (4, 11),
 
 -- Przypisanie testów do grupy wspólnej (Sebastian i Maciej)
 (3, 13), (3, 14), (3, 15), (3, 17), (3, 18),
