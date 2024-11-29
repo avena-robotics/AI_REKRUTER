@@ -110,11 +110,16 @@ def list():
 @test_bp.route("/add", methods=["POST"])
 def add():
     try:
+        print("Starting test creation process")
+        
         passing_threshold = request.form.get("passing_threshold")
         time_limit = request.form.get("time_limit_minutes")
         groups = request.form.getlist("groups[]")
+        
+        print(f"Received groups: {groups}")
 
         if not groups:
+            print("No groups selected - returning error")
             return jsonify(
                 {
                     "success": False,
@@ -141,25 +146,39 @@ def add():
                 "passing_threshold": passing_threshold,
                 "time_limit_minutes": time_limit,
             }
+            print(f"Creating test with data: {test_data}")
 
             # Insert test and get ID
-            result = supabase.from_("tests").insert(test_data).execute()
-            if not result.data:
-                raise Exception("Nie udało się utworzyć testu")
-                
+            def create_test_operation():
+                result = supabase.from_("tests").insert(test_data).execute()
+                if not result.data:
+                    raise Exception("Nie udało się utworzyć testu")
+                return result
+            
+            result = retry_on_disconnect(create_test_operation)
             test_id = result.data[0]["id"]
+            print(f"Test created successfully with ID: {test_id}")
 
             # Bulk insert group associations
             group_links = [
                 {"group_id": int(group_id), "test_id": test_id} for group_id in groups
             ]
+            print(f"Creating group associations: {group_links}")
+            
             if group_links:
-                group_result = supabase.from_("link_groups_tests").insert(group_links).execute()
-                if not group_result.data:
-                    raise Exception("Nie udało się powiązać testu z wybranymi grupami")
+                def create_group_links_operation():
+                    result = supabase.from_("link_groups_tests").insert(group_links).execute()
+                    if not result.data:
+                        raise Exception("Nie udało się powiązać testu z wybranymi grupami")
+                    return result
+                
+                retry_on_disconnect(create_group_links_operation)
+                print("Group associations created successfully")
 
             # Process questions
             questions = json.loads(request.form.get("questions", "[]"))
+            print(f"Processing {len(questions)} questions")
+            
             if questions:
                 question_data = []
                 for i, question in enumerate(questions, 1):
@@ -174,7 +193,15 @@ def add():
                             "image": question.get("image"),
                         }
 
-                        if question["answer_type"] == "SALARY":
+                        # Handle AH_POINTS type specifically
+                        if question["answer_type"] == "AH_POINTS":
+                            if "options" in question and isinstance(question["options"], dict):
+                                clean_question["options"] = {
+                                    k: v for k, v in question["options"].items()
+                                    if k in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] and v
+                                }
+                            print(f"Processing AH_POINTS options for question {i}: {clean_question.get('options')}")
+                        elif question["answer_type"] == "SALARY":
                             salary_value = question.get("correct_answer_salary")
                             clean_question["correct_answer_salary"] = (
                                 float(salary_value) if salary_value is not None else None
@@ -187,27 +214,53 @@ def add():
                             ):
                                 clean_question[answer_field] = question[answer_field]
 
+                        print(f"Processed question {i}: {clean_question}")
                         question_data.append(clean_question)
                     except Exception as e:
                         raise Exception(f"Błąd podczas przetwarzania pytania {i}: {str(e)}")
 
-                # Bulk insert questions
-                if question_data:
-                    question_result = supabase.from_("questions").insert(question_data).execute()
-                    if not question_result.data:
-                        raise Exception("Nie udało się zapisać pytań do testu")
+                # Bulk insert questions in batches
+                BATCH_SIZE = 3
+                for i in range(0, len(question_data), BATCH_SIZE):
+                    batch = question_data[i:i + BATCH_SIZE]
+                    print(f"Processing question batch {i//BATCH_SIZE + 1} of {(len(question_data) + BATCH_SIZE - 1)//BATCH_SIZE}")
+                    
+                    def insert_questions_operation():
+                        result = supabase.from_("questions").insert(batch).execute()
+                        if not result.data:
+                            raise Exception("Nie udało się zapisać pytań do testu")
+                        return result
+                    
+                    retry_on_disconnect(insert_questions_operation)
+                    
+                    if i + BATCH_SIZE < len(question_data):
+                        time.sleep(0.5)  # Small delay between batches
+                
+                print("All questions created successfully")
 
+            print("Test creation completed successfully")
             return jsonify(
                 {"success": True, "message": "Test został dodany pomyślnie"}
             )
 
         except Exception as e:
+            print(f"Error during test creation, starting rollback. Error: {str(e)}")
             # Clean up on any error
             if test_id:
-                # Delete in reverse order to maintain referential integrity
-                supabase.from_("questions").delete().eq("test_id", test_id).execute()
-                supabase.from_("link_groups_tests").delete().eq("test_id", test_id).execute()
-                supabase.from_("tests").delete().eq("id", test_id).execute()
+                try:
+                    print("Rolling back - deleting questions")
+                    supabase.from_("questions").delete().eq("test_id", test_id).execute()
+                    
+                    print("Rolling back - deleting group associations")
+                    supabase.from_("link_groups_tests").delete().eq("test_id", test_id).execute()
+                    
+                    print("Rolling back - deleting test")
+                    supabase.from_("tests").delete().eq("id", test_id).execute()
+                    
+                    print("Rollback completed successfully")
+                except Exception as rollback_error:
+                    print(f"Error during rollback: {str(rollback_error)}")
+                
             raise Exception(f"Błąd podczas tworzenia testu: {str(e)}")
 
     except Exception as e:

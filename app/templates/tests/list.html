@@ -339,11 +339,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const originalRows = Array.from(tbody.querySelectorAll('tr'));
     
     // Add button click handlers
-    applyFilters.addEventListener('click', function() {
+    applyFilters?.addEventListener('click', function() {
         updateTable(true);
     });
     
-    resetFilters.addEventListener('click', function() {
+    resetFilters?.addEventListener('click', function() {
         // Reset filter values
         filterTestType.value = '';
         filterGroup.value = '';
@@ -479,9 +479,9 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
 </script>
 <script defer>
     document.addEventListener('DOMContentLoaded', function() {
-        // Original list.html filtering and sorting code
+        // Filtering and sorting code
         const filterTestType = document.getElementById('filterTestType');
-        const filterStage = document.getElementById('filterStage');
+        const filterGroup = document.getElementById('filterGroup');
         const sortBy = document.getElementById('sortBy');
         const sortOrder = document.getElementById('sortOrder');
         const applyFilters = document.getElementById('applyFilters');
@@ -492,14 +492,13 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
         const originalRows = Array.from(tbody.querySelectorAll('tr'));
         
         // Add button click handlers
-        applyFilters.addEventListener('click', function() {
+        applyFilters?.addEventListener('click', function() {
             updateTable(true);
         });
         
-        resetFilters.addEventListener('click', function() {
+        resetFilters?.addEventListener('click', function() {
             // Reset filter values
             filterTestType.value = '';
-            filterStage.value = '';
             filterGroup.value = '';
             sortBy.value = 'created_at';
             sortOrder.value = 'desc';
@@ -508,116 +507,102 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
             updateTable(false);
         });
         
-        function updateTable(applyFilters) {
-            const tbody = document.querySelector('tbody');
-            
-            if (!applyFilters) {
-                // Reset to original state
-                tbody.innerHTML = '';
-                originalRows.forEach(row => {
-                    tbody.appendChild(row.cloneNode(true));
-                });
-                return;
-            }
-            
-            // Clone original rows for filtering
-            let rows = originalRows.map(row => row.cloneNode(true));
-            
-            // Apply filters
-            if (filterTestType.value || filterStage.value || filterGroup.value) {
-                rows = rows.filter(row => {
-                    const testType = row.querySelector('td:first-child').textContent.trim();
-                    const stage = row.querySelector('td:nth-child(2)').textContent.trim();
-                    const testId = row.dataset.testId;
-                    const testGroups = JSON.parse(row.dataset.groups || '[]');
-                    
-                    const testTypeMatch = !filterTestType.value || 
-                        (filterTestType.value === 'SURVEY' && testType === 'Ankieta') ||
-                        (filterTestType.value === 'EQ' && testType === 'Test EQ') ||
-                        (filterTestType.value === 'IQ' && testType === 'Test IQ');
-                        
-                    const stageMatch = !filterStage.value || stage === filterStage.value;
-                    
-                    const groupMatch = !filterGroup.value || 
-                        testGroups.some(group => group.id === parseInt(filterGroup.value));
-                    
-                    return testTypeMatch && stageMatch && groupMatch;
-                });
-            }
-            
-            // Apply sorting
-            if (sortBy.value) {
-                rows.sort((a, b) => {
-                    const aValue = getRowValue(a, sortBy.value);
-                    const bValue = getRowValue(b, sortBy.value);
-                    
-                    const order = sortOrder.value === 'asc' ? 1 : -1;
-                    
-                    if (aValue < bValue) return -1 * order;
-                    if (aValue > bValue) return 1 * order;
-                    return 0;
-                });
-            }
-            
-            // Update table
-            tbody.innerHTML = '';
-            rows.forEach(row => tbody.appendChild(row));
-        }
-        
-        function getRowValue(row, sortField) {
-            switch (sortField) {
-                case 'stage':
-                    return row.querySelector('td:nth-child(2)').textContent.trim();
-                case 'time_limit':
-                    return parseInt(row.querySelector('td:nth-child(3)').textContent) || 0;
-                case 'questions':
-                    return parseInt(row.querySelector('td:nth-child(5)').textContent) || 0;
-                case 'created_at':
-                    return row.dataset.createdAt || '0';
-                default:
-                    return 0;
-            }
-        }
-    
         // Initialize Sortable for all question containers
         document.querySelectorAll('.questions-container').forEach(container => {
             initializeSortable(container);
         });
-    
-        // Handle form submissions
+        
+        // Form submission and validation
         ['addTestForm', 'editTestForm'].forEach(formId => {
             const form = document.getElementById(formId);
             if (form) {
-                form.addEventListener('submit', handleTestFormSubmit);
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Validation
+                    let isValid = true;
+                    let errorMessage = '';
+
+                    // Reset validation states
+                    form.querySelectorAll('.is-invalid').forEach(el => {
+                        el.classList.remove('is-invalid');
+                    });
+                    form.querySelectorAll('.border-danger').forEach(el => {
+                        el.classList.remove('border-danger');
+                    });
+
+                    // Validate required fields
+                    form.querySelectorAll('[required]').forEach(field => {
+                        if (!field.value.trim()) {
+                            field.classList.add('is-invalid');
+                            isValid = false;
+                            errorMessage = 'Uzupełnij wszystkie wymagane pola';
+                        }
+                    });
+
+                    // Validate passing threshold
+                    const threshold = form.querySelector('[name="passing_threshold"]');
+                    if (threshold && (!threshold.value.trim() || isNaN(threshold.value))) {
+                        threshold.classList.add('is-invalid');
+                        isValid = false;
+                        errorMessage = 'Wprowadź poprawny próg zaliczenia';
+                    }
+
+                    // Validate groups
+                    const checkedGroups = form.querySelectorAll('input[name="groups[]"]:checked');
+                    const groupsContainer = form.querySelector('#groupsContainer');
+                    if (!checkedGroups.length && groupsContainer) {
+                        groupsContainer.classList.add('border-danger');
+                        isValid = false;
+                        errorMessage = errorMessage || 'Aby zapisać test, musisz wybrać przynajmniej jedną grupę';
+                    }
+
+                    if (!isValid) {
+                        showToast(errorMessage, 'error');
+                        return;
+                    }
+
+                    // If validation passes, submit the form
+                    handleTestFormSubmit.call(this, e);
+                });
+
+                // Add group checkbox change handler
+                form.querySelectorAll('.group-checkbox').forEach(checkbox => {
+                    checkbox.addEventListener('change', function() {
+                        const groupsContainer = this.closest('#groupsContainer');
+                        if (groupsContainer) {
+                            groupsContainer.classList.remove('border-danger');
+                        }
+                    });
+                });
             }
         });
-    
-        // Add question button handlers
+
+        // Handle pending toasts
+        checkPendingToast();
+
+        // Add event listeners for "add question" buttons
         document.querySelectorAll('.add-question').forEach(button => {
-            button.addEventListener('click', handleAddQuestion);
+            button.addEventListener('click', function(e) {
+                const container = e.target.closest('.questions-section').querySelector('.questions-container');
+                const questionHtml = createQuestionHtml();
+                container.insertAdjacentHTML('beforeend', questionHtml);
+                
+                // Initialize any new answer type selects
+                const newQuestion = container.lastElementChild;
+                const answerTypeSelect = newQuestion.querySelector('[name$="[answer_type]"]');
+                if (answerTypeSelect) {
+                    answerTypeSelect.addEventListener('change', handleAnswerTypeChange);
+                }
+            });
         });
-    
-        // Question type change handler
-        document.addEventListener('change', function(e) {
-            if (e.target.classList.contains('answer-type-select')) {
-                handleAnswerTypeChange(e);
-            }
-        });
-    
-        // Remove question handler
+
+        // Add event delegation for dynamically added elements
         document.addEventListener('click', function(e) {
-            if (e.target.classList.contains('remove-question')) {
+            if (e.target.matches('.remove-question')) {
                 handleRemoveQuestion(e);
             }
-        });
-    
-        checkPendingToast();
-    
-        // Prevent double click from triggering when clicking buttons
-        document.querySelectorAll('.btn-group button').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.stopPropagation();
-            });
         });
     });
     
@@ -758,143 +743,6 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
             });
     }
     
-    // Form validation and submission
-    ['addTestForm', 'editTestForm'].forEach(formId => {
-        const form = document.getElementById(formId);
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                let isValid = true;
-                let errorMessage = '';
-    
-                // Reset validation states
-                form.querySelectorAll('.is-invalid').forEach(el => {
-                    el.classList.remove('is-invalid');
-                });
-                form.querySelectorAll('.border-danger').forEach(el => {
-                    el.classList.remove('border-danger');
-                });
-    
-                // Validate required fields
-                form.querySelectorAll('[required]').forEach(field => {
-                    if (!field.value.trim()) {
-                        field.classList.add('is-invalid');
-                        isValid = false;
-                        errorMessage = 'Uzupełnij wszystkie wymagane pola';
-                    }
-                });
-    
-                // Validate passing threshold
-                const threshold = form.querySelector('[name="passing_threshold"]');
-                if (threshold && (!threshold.value.trim() || isNaN(threshold.value))) {
-                    threshold.classList.add('is-invalid');
-                    isValid = false;
-                    errorMessage = 'Wprowadź poprawny próg zaliczenia';
-                }
-    
-                // Validate groups
-                const checkedGroups = form.querySelectorAll('input[name="groups[]"]:checked');
-                const groupsContainer = form.querySelector('#groupsContainer');
-                if (!checkedGroups.length && groupsContainer) {
-                    groupsContainer.classList.add('border-danger');
-                    isValid = false;
-                    errorMessage = errorMessage || 'Aby zapisać test, musisz wybrać przynajmniej jedną grupę';
-                }
-    
-                if (!isValid) {
-                    showToast(errorMessage, 'error');
-                    return;
-                }
-    
-                // If everything is valid, submit the form
-                const formData = new FormData(form);
-                
-                // Get questions data
-                const questions = [];
-                form.querySelectorAll('.question-card').forEach((card, index) => {
-                    const questionData = {
-                        id: card.dataset.questionId || '',
-                        question_text: card.querySelector('[name$="[question_text]"]').value,
-                        answer_type: card.querySelector('[name$="[answer_type]"]').value,
-                        points: parseInt(card.querySelector('[name$="[points]"]').value || '0'),
-                        order_number: index + 1,
-                        is_required: card.querySelector('[name$="[is_required]"]').checked,
-                        image: card.querySelector('input[name$="[image]"]')?.value || null
-                    };
-    
-                    // Handle answer type specific fields
-                    const answerType = questionData.answer_type;
-                    console.log(`Processing question with answer type: ${answerType}`);
-                    
-                    switch (answerType) {
-                        case 'ABCDEF':
-                            const abcdefSelect = card.querySelector('[name$="[correct_answer_abcdef]"]');
-                            questionData.correct_answer_abcdef = abcdefSelect ? abcdefSelect.value : null;
-                            console.log('ABCDEF answer value:', questionData.correct_answer_abcdef);
-                            break;
-                        case 'SALARY':
-                            const salaryValue = card.querySelector('[name$="[correct_answer_salary]"]')?.value;
-                            questionData.correct_answer_salary = salaryValue ? Number(salaryValue) : null;
-                            console.log('SALARY answer value:', questionData.correct_answer_salary);
-                            break;
-                        default:
-                            const answerField = `correct_answer_${answerType.toLowerCase()}`;
-                            const answerInput = card.querySelector(`[name$="[${answerField}]"]`);
-                            if (answerInput) {
-                                questionData[answerField] = answerInput.type === 'checkbox' ? 
-                                    answerInput.checked : answerInput.value;
-                                console.log(`${answerType} answer value:`, questionData[answerField]);
-                            }
-                    }
-    
-                    questions.push(questionData);
-                });
-    
-                console.log('Questions data before submit:', questions);
-                formData.append('questions', JSON.stringify(questions));
-                
-                fetch(form.action, {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Server response:', data);
-                    if (data.success) {
-                        console.log('Form submitted successfully');
-                        sessionStorage.setItem('pendingToast', JSON.stringify({
-                            message: data.message || (isEdit ? 'Test został zaktualizowany' : 'Test został dodany'),
-                            type: 'success'
-                        }));
-
-                        const modal = bootstrap.Modal.getInstance(form.closest('.modal'));
-                        modal.hide();
-                        
-                        modal._element.addEventListener('hidden.bs.modal', function () {
-                            window.location.reload();
-                        }, { once: true });
-                    } else {
-                        throw new Error(data.error || 'Wystąpił błąd');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error submitting form:', error);
-                    showToast(error.message, 'error');
-                });
-            });
-    
-            // Reset validation state when any checkbox is clicked
-            form.querySelectorAll('.group-checkbox').forEach(checkbox => {
-                checkbox.addEventListener('change', function() {
-                    const groupsContainer = this.closest('#groupsContainer');
-                    if (groupsContainer) {
-                        groupsContainer.classList.remove('border-danger');
-                    }
-                });
-            });
-        }
-    });
-    
     // Helper functions
     function createQuestionHtml(question = null) {
         const q = question || {};
@@ -1000,6 +848,7 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
         switch (answerType) {
             case 'AH_POINTS':
                 const options = question?.options || {};
+                console.log('Creating AH_POINTS fields with options:', options);
                 
                 html = `
                     <div class="row">
@@ -1008,6 +857,8 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                             <div class="options-container">
                                 ${['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(letter => {
                                     const letterLower = letter.toLowerCase();
+                                    const value = options[letterLower] || '';
+                                    console.log(`Setting option ${letter}:`, value);
                                     return `
                                         <div class="option-row mb-2">
                                             <div class="input-group">
@@ -1015,8 +866,9 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                                                 <input type="text" 
                                                        class="form-control"
                                                        name="questions[${questionCounter}][options][${letterLower}]"
-                                                       value="${options[letterLower] || ''}"
+                                                       value="${value}"
                                                        placeholder="Treść opcji ${letter}"
+                                                       data-letter="${letterLower}"
                                                        required>
                                             </div>
                                         </div>
@@ -1176,15 +1028,21 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                     break;
                 case 'AH_POINTS':
                     const options = {};
-                    card.querySelectorAll('[name*="[options]"]').forEach(input => {
+                    const optionInputs = card.querySelectorAll('[name*="[options]"]');
+                    console.log(`Found ${optionInputs.length} option inputs`);
+                    
+                    optionInputs.forEach(input => {
                         const letterMatch = input.name.match(/\[options\]\[([a-h])\]/);
                         if (letterMatch) {
                             const letter = letterMatch[1];
-                            options[letter] = input.value.trim();
+                            const value = input.value.trim();
+                            console.log(`Processing option ${letter}:`, value);
+                            options[letter] = value;  // Always store the value, even if empty
                         }
                     });
-                    questionData.options = options;
-                    console.log('AH_POINTS options:', options);
+                    
+                    questionData.options = options;  // Always include options object
+                    console.log('Final AH_POINTS options:', options);
                     break;
                 default:
                     const answerField = `correct_answer_${answerType.toLowerCase()}`;
