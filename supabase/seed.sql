@@ -17,8 +17,7 @@ INSERT INTO users (id, first_name, last_name, email, phone, can_edit_tests) VALU
 (3, 'Maciej', 'Szulc', 'maciej.szulc@pomagier.info', null, true);
 
 -- 2. Grupy (brak zależności)
-INSERT INTO groups (id, name) VALUES
-(1, 'Grupa Pusta'),                  
+INSERT INTO groups (id, name) VALUES             
 (2, 'Grupa Sebastian'),              
 (3, 'Grupa Sebastian i Maciej'),     
 (4, 'Grupa Maciej');                 
@@ -35,32 +34,20 @@ INSERT INTO tests (id, title, test_type, description, passing_threshold, time_li
 (1, 'Ankieta wstępna PO1', 'SURVEY', 'Test PO1 Grupa Sebastian - Ankieta', 70, 30, now(), now()),
 (2, 'Test IQ - Etap PO1', 'IQ', 'Test PO1 Grupa Sebastian - IQ', 75, 45, now(), now()),
 (3, 'Ankieta pogłębiona PO2', 'SURVEY', 'Test PO2 Grupa Sebastian - Ankieta', 70, 30, now(), now()),
-(5, 'Test IQ zaawansowany PO3', 'IQ', 'Test PO3 Grupa Sebastian - IQ', 85, 45, now(), now()), 
+(4, 'Test IQ zaawansowany PO3', 'IQ', 'Test PO3 Grupa Sebastian - IQ', 85, 45, now(), now()),
 
 -- Testy dla Grupy Maciej (grupa 4)
-(7, 'Ankieta kwalifikacyjna PO1', 'SURVEY', 'Test PO1 Grupa Maciej - Ankieta', 70, 30, now(), now()),
-(8, 'Test IQ podstawowy PO1', 'IQ', 'Test PO1 Grupa Maciej - IQ', 75, 45, now(), now()),
-(9, 'Ankieta kompetencyjna PO2', 'SURVEY', 'Test PO2 Grupa Maciej - Ankieta', 70, 30, now(), now()),
-(11, 'Test IQ rozszerzony PO3', 'IQ', 'Test PO3 Grupa Maciej - IQ', 85, 45, now(), now()), 
+(5, 'Ankieta kwalifikacyjna PO1', 'SURVEY', 'Test PO1 Grupa Maciej - Ankieta', 70, 30, now(), now()),
+(6, 'Test IQ podstawowy PO1', 'IQ', 'Test PO1 Grupa Maciej - IQ', 75, 45, now(), now()),
+(7, 'Ankieta kompetencyjna PO2', 'SURVEY', 'Test PO2 Grupa Maciej - Ankieta', 70, 30, now(), now()),
+(8, 'Test IQ rozszerzony PO3', 'IQ', 'Test PO3 Grupa Maciej - IQ', 85, 45, now(), now()),
 
 -- Testy dla obu grup (Sebastian + Maciej)
-(13, 'Ankieta wspólna PO1', 'SURVEY', 'Test PO1 Grupy Sebastian+Maciej - Ankieta', 70, 30, now(), now()),
-(14, 'Test IQ wspólny PO1', 'IQ', 'Test PO1 Grupy Sebastian+Maciej - IQ', 75, 45, now(), now()),
-(15, 'Ankieta wspólna PO2', 'SURVEY', 'Test PO2 Grupy Sebastian+Maciej - Ankieta', 70, 30, now(), now()), 
-(17, 'Test IQ wspólny PO3', 'IQ', 'Test PO3 Grupy Sebastian+Maciej - IQ', 85, 45, now(), now()),
-(18, 'Test EQ wspólny PO3', 'EQ', 'Test PO3 Grupy Sebastian+Maciej - EQ', 75, 60, now(), now()),
-
--- Testy bez przypisanej grupy
-(19, 'Ankieta ogólna PO1', 'SURVEY', 'Test PO1 Bez Grupy - Ankieta', 70, 30, now(), now()),
-(20, 'Test IQ ogólny PO1', 'IQ', 'Test PO1 Bez Grupy - IQ', 75, 45, now(), now()),
-(21, 'Ankieta ogólna PO2', 'SURVEY', 'Test PO2 Bez Grupy - Ankieta', 70, 30, now(), now()), 
-(23, 'Test IQ ogólny PO3', 'IQ', 'Test PO3 Bez Grupy - IQ', 85, 45, now(), now()), 
-
--- Testy dla pustej grupy
-(25, 'Ankieta standardowa PO1', 'SURVEY', 'Test PO1 Grupa Pusta - Ankieta', 70, 30, now(), now()),
-(26, 'Test IQ standardowy PO1', 'IQ', 'Test PO1 Grupa Pusta - IQ', 75, 45, now(), now()),
-(27, 'Ankieta standardowa PO2', 'SURVEY', 'Test PO2 Grupa Pusta - Ankieta', 70, 30, now(), now()), 
-(29, 'Test IQ standardowy PO3', 'IQ', 'Test PO3 Grupa Pusta - IQ', 85, 45, now(), now());
+(9, 'Ankieta wspólna PO1', 'SURVEY', 'Test PO1 Grupy Sebastian+Maciej - Ankieta', 70, 30, now(), now()),
+(10, 'Test IQ wspólny PO1', 'IQ', 'Test PO1 Grupy Sebastian+Maciej - IQ', 75, 45, now(), now()),
+(11, 'Ankieta wspólna PO2', 'SURVEY', 'Test PO2 Grupy Sebastian+Maciej - Ankieta', 70, 30, now(), now()),
+(12, 'Test IQ wspólny PO3', 'IQ', 'Test PO3 Grupy Sebastian+Maciej - IQ', 85, 45, now(), now()),
+(13, 'Test EQ wspólny PO3', 'EQ', 'Test PO3 Grupy Sebastian+Maciej - EQ', 75, 60, now(), now());
 
 -- 5. Pytania (zależne od tests)
 INSERT INTO questions (
@@ -79,127 +66,76 @@ INSERT INTO questions (
 (5, 1, 'Od kiedy możesz rozpocząć pracę?', 'DATE', null, 0, 5, true, null, null, null, null, '2024-03-01', null),
 (6, 1, 'Wybierz preferowany typ umowy: A) UoP, B) B2B, C) UZ, D) UoD', 'ABCDEF', null, 5, 6, true, null, null, null, null, null, 'A'),
 
--- Pozostałe testy Grupy Sebastian
+-- Test 2 (PO1 Grupa Sebastian - IQ)
 (7, 2, 'Test IQ: Rozwiąż ciąg: 2,4,6,8,...', 'TEXT', null, 10, 1, true, '10', null, null, null, null, null),
-(8, 3, 'Opisz swoje największe osiągnięcie zawodowe', 'TEXT', null, 15, 1, true, null, null, null, null, null, null),
-(10, 5, 'Rozwiąż zadanie logiczne...', 'TEXT', null, 20, 1, true, 'Odpowiedź C', null, null, null, null, null),
+(8, 2, 'Test IQ: Znajdź brakujący element w sekwencji', 'ABCDEF', null, 15, 2, true, null, null, null, null, null, 'C'),
 
--- Testy Grupy Maciej
-(12, 7, 'Jakie są twoje mocne strony?', 'TEXT', null, 10, 1, true, null, null, null, null, null, null),
-(13, 8, 'Test IQ: Znajdź brakujący element', 'ABCDEF', null, 15, 1, true, null, null, null, null, null, 'C'),
-(14, 9, 'Opisz swoją idealną kulturę organizacyjną', 'TEXT', null, 10, 1, true, null, null, null, null, null, null),
-(16, 11, 'Rozwiąż zagadkę logiczną...', 'TEXT', null, 20, 1, true, 'Odpowiedź D', null, null, null, null, null),
+-- Test 3 (PO2 Grupa Sebastian - Ankieta)
+(9, 3, 'Opisz swoje największe osiągnięcie zawodowe', 'TEXT', null, 15, 1, true, null, null, null, null, null, null),
+(10, 3, 'Jakie są twoje cele zawodowe?', 'TEXT', null, 10, 2, true, null, null, null, null, null, null),
 
--- Testy dla obu grup
-(18, 13, 'Jakie są twoje cele zawodowe?', 'TEXT', null, 10, 1, true, null, null, null, null, null, null),
-(19, 14, 'Test IQ: Uzupełnij analogię', 'ABCDEF', null, 15, 1, true, null, null, null, null, null, 'B'),
-(20, 15, 'Opisz trudną sytuację zawodową', 'TEXT', null, 10, 1, true, null, null, null, null, null, null),
-(22, 17, 'Rozwiąż problem matematyczny...', 'TEXT', null, 20, 1, true, '42', null, null, null, null, null),
+-- Test 4 (PO3 Grupa Sebastian - IQ)
+(11, 4, 'Rozwiąż zadanie logiczne...', 'TEXT', null, 20, 1, true, 'Odpowiedź C', null, null, null, null, null),
+(12, 4, 'Wybierz prawidłową odpowiedź', 'ABCDEF', null, 15, 2, true, null, null, null, null, null, 'B'),
 
--- Testy bez grupy
-(24, 19, 'Co wiesz o naszej firmie?', 'TEXT', null, 10, 1, true, null, null, null, null, null, null),
-(25, 20, 'Test IQ: Znajdź prawidłowość', 'ABCDEF', null, 15, 1, true, null, null, null, null, null, 'E'),
-(26, 21, 'Opisz swój największy projekt', 'TEXT', null, 10, 1, true, null, null, null, null, null, null),
-(28, 23, 'Rozwiąż zadanie logiczne...', 'TEXT', null, 20, 1, true, 'Odpowiedź A', null, null, null, null, null),
+-- Test 13 (PO3 Grupy Sebastian+Maciej - EQ) - Test Belbina
+(13, 13, 'I. Oto co mogę wnieść w pracę zespołu:', 'AH_POINTS', '{"a": "Potrafię szybko dostrzegać i wykorzystywać nowe możliwości", "b": "Potrafię dobrze współpracować z bardzo różnymi ludźmi", "c": "Generowanie pomysłów to mój naturalny talent", "d": "Potrafię wydobyć z ludzi wszystko, co mogą wnieść do realizacji celów grupowych", "e": "Moja zdolność doprowadzania spraw do końca w dużej mierze wynika z mojej efektywności osobistej", "f": "Jestem gotów stawić czoła czasowej niepopularności, jeśli prowadzi to do wartościowych wyników", "g": "Zwykle potrafię wyczuć, co jest realistyczne i może zadziałać", "h": "Potrafię przedstawić różne alternatywne działania i możliwości"}', 0, 1, true, null, null, null, null, null, null),
 
--- Testy grupy pustej
-(30, 25, 'Jakie masz doświadczenie w zarządzaniu?', 'TEXT', null, 10, 1, true, null, null, null, null, null, null),
-(31, 26, 'Test IQ: Wybierz następny element', 'ABCDEF', null, 15, 1, true, null, null, null, null, null, 'D'),
-(32, 27, 'Opisz swój styl pracy', 'TEXT', null, 10, 1, true, null, null, null, null, null, null),
-(34, 29, 'Rozwiąż problem logiczny...', 'TEXT', null, 20, 1, true, 'Odpowiedź B', null, null, null, null, null),
+(14, 13, 'II. Moje słabości w pracy zespołowej:', 'AH_POINTS', '{"a": "Nie jestem spokojny, dopóki spotkania nie są dobrze ustrukturyzowane i kontrolowane", "b": "Mam skłonność do poświęcania zbyt dużej uwagi osobom, których punkt widzenia nie został właściwie uwzględniony", "c": "Mam tendencję do mówienia zbyt dużo, gdy grupa zajmuje się nowymi pomysłami", "d": "Mój obiektywny ogląd utrudnia mi łatwe i entuzjastyczne przyłączanie się do kolegów", "e": "Czasami jestem postrzegany jako wywierający zbyt silny nacisk i autorytatywny, gdy trzeba coś zrobić", "f": "Trudno mi przewodzić z pozycji lidera, być może dlatego, że jestem zbyt wrażliwy na atmosferę w grupie", "g": "Mam skłonność do zbytniego angażowania się w pomysły, które przychodzą mi do głowy, i tracenia orientacji w tym, co się dzieje", "h": "Moi koledzy mają tendencję do postrzegania mnie jako niepotrzebnie martwiącego się szczegółami i możliwością, że sprawy mogą pójść źle"}', 0, 2, true, null, null, null, null, null, null),
 
--- Test EQ
-(36, 18, 'I. Oto co mogę wnieść w pracę zespołu:', 'AH_POINTS',
-    '{"a": "Mam umiejętności szybkiego dostrzegania i wykorzystywania nadarzających się okazji.",
-      "b": "Potrafię pracować z bardzo różnymi ludźmi",
-      "c": "Bardzo łatwo przychodzi mi wymyślanie nowych rozwiązań",
-      "d": "Potrafię umiejętnie zachęcać ludzi do aktywnego udziału kiedy widzę, że mogą wnieść coś wartościowego do pracy zespołu",
-      "e": "Potrafię doprowadzić realizację zadania do końca",
-      "f": "Potrafię znieść chwilową krytykę, jeśli ostatecznie prowadzi to do osiągnięcia celu",
-      "g": "Jestem w stanie błyskawicznie ocenić jakie działanie będzie skuteczne w sytuacji, z którą zetknąłem się już w przeszłości",
-      "h": "Potrafię podać rozsądne i obiektywne uzasadnienie różnych kierunków działania"}',
-    0, 1, true, null, null, null, null, null, null),
+(15, 13, 'III. Kiedy angażuję się w projekt z innymi ludźmi:', 'AH_POINTS', '{"a": "Mam zdolność wpływania na ludzi bez wywierania na nich presji", "b": "Moja czujność pozwala zapobiegać wielu pomyłkom i błędom", "c": "Jestem gotów naciskać na działanie, aby upewnić się, że zebranie nie marnuje czasu ani nie traci z oczu głównego celu", "d": "Można na mnie polegać, jeśli chodzi o wnoszenie oryginalnych pomysłów", "e": "Zawsze jestem gotów poprzeć dobre sugestie służące wspólnym interesom", "f": "Lubię szukać najnowszych pomysłów i wydarzeń", "g": "Wierzę, że moja zdolność osądu może pomóc w podjęciu właściwych decyzji", "h": "Można na mnie polegać, jeśli chodzi o dopilnowanie, aby cała istotna praca została zorganizowana"}', 0, 3, true, null, null, null, null, null, null),
 
-(37, 18, 'II. Moje problemy w pracy zespołu, to przede wszystkim:', 'AH_POINTS',
-    '{"a": "Jestem niespokojny, jeśli spotkanie nie jest właściwie zorganizowane, kontrolowane i prowadzone",
-      "b": "Poświęcam zbyt wiele uwagi opiniom, które mimo iż są interesujące nie zostały do końca przedyskutowane",
-      "c": "Często mówię zbyt dużo, gdy grupa rozważa nowe propozycje",
-      "d": "Moje obiektywne spojrzenie sprawia, iż trudno jest mi spontanicznie i entuzjastycznie przyłączyć się do grupy",
-      "e": "Kiedy dążę do realizacji zadania jestem czasami oceniany jako bezwzględny i autokratyczny",
-      "f": "Trudno mi kierować zespołem \"twardą ręką\", prawdopodobnie dlatego, że jestem wyczulony na atmosferę panującą w grupie",
-      "g": "Często zbytnio koncentruje się na nowych pomysłach tracę kontrolę nad rozwojem sytuacji",
-      "h": "Moi koledzy uważają, że często przejmuje się drobiazgami i martwię się na zapas"}',
-    0, 2, true, null, null, null, null, null, null),
+(16, 13, 'IV. Moje charakterystyczne podejście do pracy grupowej:', 'AH_POINTS', '{"a": "Mam spokojne zainteresowanie lepszym poznaniem kolegów", "b": "Nie waham się przeciwstawiać poglądom innych ani podtrzymywać swojego stanowiska, nawet wobec opozycji", "c": "Zwykle potrafię znaleźć argumenty na odrzucenie niesłusznych propozycji", "d": "Sądzę, że mam talent do wprowadzania rzeczy w życie, gdy trzeba realizować plan", "e": "Mam tendencję do unikania oczywistego i wychodzenia z czymś nieoczekiwanym", "f": "Wnoszę perfekcjonizm do każdego zespołowego zadania", "g": "Jestem gotów wykorzystywać kontakty poza grupą", "h": "Interesują mnie wszystkie punkty widzenia, ale nie waham się podjąć decyzji, gdy trzeba"}', 0, 4, true, null, null, null, null, null, null),
 
-(38, 18, 'III. W trakcie pracy w zespole:', 'AH_POINTS',
-    '{"a": "Mam umiejętność przekonywania ludzi bez wywierania presji",
-      "b": "Moja czujność pozwala uniknąć pomyłek i przeoczeń",
-      "c": "Jestem gotów wywrzeć nacisk na zebranych kiedy widzę, że marnujemy czas lub tracimy z pola widzenia zasadnicze kwestie",
-      "d": "Można być pewnym, że zaproponuję coś oryginalnego",
-      "e": "Zawsze jestem gotów poprzeć wartościową sugestię jeśli służy to wspólnemu interesowi",
-      "f": "Chętnie poszukuję nowych pomysłów i rozwiązań",
-      "g": "Wierzę, że wysoko oceniana jest moja umiejętność chłodnej oceny",
-      "h": "Potrafię dopilnować tego, aby wszystkie najważniejsze działania były właściwie zorganizowane"}',
-    0, 3, true, null, null, null, null, null, null),
+(17, 13, 'V. Czerpię satysfakcję z pracy, ponieważ:', 'AH_POINTS', '{"a": "Lubię analizować sytuacje i rozważać wszystkie możliwości", "b": "Interesuje mnie znajdowanie praktycznych rozwiązań problemów", "c": "Lubię czuć, że wspieram dobre relacje w pracy", "d": "Mogę mieć silny wpływ na decyzje", "e": "Mogę spotykać ludzi, którzy mają coś nowego do zaoferowania", "f": "Potrafię doprowadzać ludzi do zgody co do koniecznego trybu działania", "g": "Czuję się w swoim żywiole, gdy mogę poświęcić zadaniu pełną uwagę", "h": "Lubię znajdować obszary, które poszerzają moją wyobraźnię"}', 0, 5, true, null, null, null, null, null, null),
 
-(39, 18, 'IV. Charakterystyczną cechą mojej pracy w zespole jest to, że:', 'AH_POINTS',
-    '{"a": "Jestem zainteresowany bliższym poznaniem kolegów",
-      "b": "Nie waham się krytykować opinii innych i wyrażać sądów nie podzielanych przez większość",
-      "c": "Zwykle potrafię znaleźć argumenty przeciwko nierozsądnym propozycjom",
-      "d": "Sądzę, że mam umiejętność wprowadzania przyjętych planów w życie",
-      "e": "Często odrzucam to, co oczywiste i proponuję zaskakujące rozwiązania",
-      "f": "Wprowadzam perfekcjonizm do każdej pracy zespołowej",
-      "g": "Potrafię wykorzystać kontakty poza grupą",
-      "h": "Chociaż pragnę poznać wszystkie opinie, w momencie podejmowania decyzji polegam głównie na własnym zdaniu"}',
-    0, 4, true, null, null, null, null, null, null),
+(18, 13, 'VI. Gdy otrzymuję trudne zadanie do wykonania w ograniczonym czasie:', 'AH_POINTS', '{"a": "Chciałbym się wycofać i opracować rozwiązanie, zanim rozwinę plan działania", "b": "Byłbym gotów pracować z osobą wykazującą najbardziej pozytywne podejście", "c": "Znalazłbym sposób na zmniejszenie złożoności zadania, ustalając, co mogą wnieść różne osoby", "d": "Moje naturalne poczucie pilności pomogłoby zapewnić, że nie przekroczymy harmonogramu", "e": "Wierzę, że zachowałbym spokój i zdolność do jasnego myślenia", "f": "Utrzymałbym stałość celu mimo presji", "g": "Byłbym gotów przejąć konstruktywne przywództwo, gdybym czuł, że grupa nie robi postępów", "h": "Otworzyłbym dyskusję, aby stymulować nowe myśli i uruchomić coś"}', 0, 6, true, null, null, null, null, null, null),
 
-(40, 18, 'V. Czerpię satysfakcję z pracy w zespole, ponieważ:', 'AH_POINTS',
-    '{"a": "Lubię analizować sytuacje i rozważać możliwe rozwiązania",
-      "b": "Interesuje mnie wypracowywanie praktycznych rozwiązań",
-      "c": "Lubię mieć świadomość, że mam wpływ na dobre stosunki w grupie",
-      "d": "Wywieram znaczny wpływ na podejmowane decyzje",
-      "e": "Spotykam ludzi, którzy mają coś nowego do zaoferowania",
-      "f": "Potrafię przekonać ludzi do przyjęcia danego kierunku działań",
-      "g": "Czuję się znakomicie, kiedy mogę jednemu zadaniu poświęcić całkowitą uwagę",
-      "h": "Lubię dziedziny, które pobudzają moją wyobraźnię"}',
-    0, 5, true, null, null, null, null, null, null),
+(19, 13, 'VII. Problemy, jakim podlegam, pracując w grupach:', 'AH_POINTS', '{"a": "Mam skłonność do okazywania niecierpliwości wobec tych, którzy hamują postęp", "b": "Inni mogą mnie krytykować za zbytnią analityczność i niewystarczającą intuicyjność", "c": "Moje dążenie do zapewnienia właściwego wykonania pracy może wstrzymywać postęp", "d": "Mam tendencję do znudzenia i liczenia na jedną lub dwie stymulujące osoby, które rozpalą mój zapał", "e": "Trudno mi zacząć, jeśli cele nie są jasne", "f": "Czasami nie udaje mi się wyjaśnić złożonych spraw, które przychodzą mi do głowy", "g": "Mam świadomość, że wymagam od innych rzeczy, których sam nie potrafię zrobić", "h": "Waham się, gdy powinienem forsować swoje punkty widzenia wobec prawdziwej opozycji"}', 0, 7, true, null, null, null, null, null, null),
 
-(41, 18, 'VI. Gdybym nagle otrzymał do wykonania zadanie w znacznie ograniczonym czasie i we współpracy z nieznanymi ludźmi:', 'AH_POINTS',
-    '{"a": "Zanim przystąpilibyśmy do wspólnej pracy miałbym ochotę wycofać się w cień, aby znaleźć optymalny sposób działania",
-      "b": "Chętnie pracowałbym z kimś, kto wykazywałby pozytywne nastawienie, nawet gdyby był trudny we współpracy",
-      "c": "Znalazłbym sposób łatwiejszej realizacji zadania poprzez ustalenie jaki optymalny wkład mogą wnieść poszczególni członkowie zespołu",
-      "d": "Moje poczucie obowiązku pomogłoby dotrzymać wyznaczone terminy",
-      "e": "Wierzę, że zachowałbym zimną krew i zdolność jasnego myślenia",
-      "f": "Konsekwentnie realizowałbym zadanie pomimo odczuwanej presji",
-      "g": "Byłbym gotów przejąć kierownictwo gdybym dostrzegł, że grupa stoi w miejscu",
-      "h": "Rozpocząłbym dyskusję, aby wprowadzić nowe pomysły i ruszyć do przodu"}',
-    0, 6, true, null, null, null, null, null, null),
+-- Test 5 (PO1 Grupa Maciej - Ankieta)
+(20, 5, 'Opisz swoje doświadczenie w branży', 'TEXT', null, 10, 1, true, null, null, null, null, null, null),
+(21, 5, 'Czy masz doświadczenie w zarządzaniu zespołem?', 'BOOLEAN', null, 5, 2, true, null, true, null, null, null, null),
+(22, 5, 'Oceń swoją znajomość metodyk zwinnych', 'SCALE', null, 15, 3, true, null, null, null, 4, null, null),
 
-(42, 18, 'VII. Problemy jakie mogę mieć w pracy w grupie, to przede wszystkim to, że:', 'AH_POINTS',
-    '{"a": "Okazuję zniecierpliwienie w stosunku do tych, którzy opóźniają pracę",
-      "b": "Można mi zarzucić, że myślę w sposób zbyt analityczny i rzadko kieruję się intuicją",
-      "c": "Moje pragnienie, aby zadanie zostało wykonane jak najlepiej może zwalniać tempo pracy",
-      "d": "Szybko się nudzę i liczę na to, że bardziej dynamiczni członkowie grupy pobudzą mnie do działania",
-      "e": "Trudno mi rozpocząć pracę dopóki cele nie są całkowicie jasne",
-      "f": "Czasami mam trudności z wyjaśnianiem skomplikowanych kwestii",
-      "g": "Zdaję sobie sprawę, że wymagam od innych tego, czego sam nie potrafię zrobić",
-      "h": "Waham się przedstawić moje poglądy w sytuacji, gdy inni mają odmienne zdanie"}',
-    0, 7, true, null, null, null, null, null, null);
+-- Test 6 (PO1 Grupa Maciej - IQ)
+(23, 6, 'Rozwiąż zagadkę logiczną...', 'TEXT', null, 15, 1, true, 'Odpowiedź A', null, null, null, null, null),
+(24, 6, 'Wybierz prawidłową sekwencję', 'ABCDEF', null, 15, 2, true, null, null, null, null, null, 'D'),
 
+-- Test 7 (PO2 Grupa Maciej - Ankieta)
+(25, 7, 'Jakie są twoje mocne strony?', 'TEXT', null, 10, 1, true, null, null, null, null, null, null),
+(26, 7, 'Opisz swoją idealną kulturę organizacyjną', 'TEXT', null, 10, 2, true, null, null, null, null, null, null),
+
+-- Test 8 (PO3 Grupa Maciej - IQ)
+(27, 8, 'Rozwiąż problem matematyczny...', 'TEXT', null, 20, 1, true, '42', null, null, null, null, null),
+(28, 8, 'Wybierz prawidłowe rozwiązanie', 'ABCDEF', null, 15, 2, true, null, null, null, null, null, 'E'),
+
+-- Test 9 (PO1 Grupy Sebastian+Maciej - Ankieta)
+(29, 9, 'Opisz swoje największe wyzwanie zawodowe', 'TEXT', null, 15, 1, true, null, null, null, null, null, null),
+(30, 9, 'Jakie są twoje oczekiwania wobec pracodawcy?', 'TEXT', null, 10, 2, true, null, null, null, null, null, null),
+
+-- Test 10 (PO1 Grupy Sebastian+Maciej - IQ)
+(31, 10, 'Rozwiąż ciąg logiczny...', 'TEXT', null, 15, 1, true, '15', null, null, null, null, null),
+(32, 10, 'Wybierz prawidłową odpowiedź', 'ABCDEF', null, 15, 2, true, null, null, null, null, null, 'A'),
+
+-- Test 11 (PO2 Grupy Sebastian+Maciej - Ankieta)
+(33, 11, 'Jak radzisz sobie ze stresem?', 'TEXT', null, 10, 1, true, null, null, null, null, null, null),
+(34, 11, 'Opisz sytuację konfliktową i jak ją rozwiązałeś', 'TEXT', null, 15, 2, true, null, null, null, null, null, null),
+
+-- Test 12 (PO3 Grupy Sebastian+Maciej - IQ)
+(35, 12, 'Rozwiąż złożone zadanie logiczne...', 'TEXT', null, 20, 1, true, 'Odpowiedź B', null, null, null, null, null),
+(36, 12, 'Wybierz prawidłową sekwencję', 'ABCDEF', null, 15, 2, true, null, null, null, null, null, 'C');
 
 -- 6. Powiązania testów z grupami
 INSERT INTO link_groups_tests (group_id, test_id) VALUES
 -- Przypisanie testów do Grupy Sebastian
-(2, 1), (2, 2), (2, 3), (2, 5),
+(2, 1), (2, 2), (2, 3), (2, 4),
 
 -- Przypisanie testów do Grupy Maciej
-(4, 7), (4, 8), (4, 9), (4, 11),
+(4, 5), (4, 6), (4, 7), (4, 8),
 
 -- Przypisanie testów do grupy wspólnej (Sebastian i Maciej)
-(3, 13), (3, 14), (3, 15), (3, 17), (3, 18),
-
--- Przypisanie testów do pustej grupy
-(1, 25), (1, 26), (1, 27), (1, 29);
+(3, 9), (3, 10), (3, 11), (3, 12), (3, 13);
 
 -- 7. Kampanie (zależne od tests)
 INSERT INTO campaigns (
@@ -212,182 +148,24 @@ INSERT INTO campaigns (
 (1, 'KAM_SEB_2024', 'Kampania Grupa Sebastian', 'Warszawa', 'Umowa o pracę', 'Pełny etat',
     '2024-06-01', 'Prowadzenie terapii logopedycznej', 'Wykształcenie kierunkowe', 
     'Konkurencyjne wynagrodzenie', 'Poszukujemy doświadczonego logopedy',
-    5000, 7000, 1, 3, 5,
+    5000, 7000, 1, 3, 4,
     30, 30, 40, 'univ_token_KAM_SEB_2024', true, now(), now()),
 
 (2, 'KAM_MAC_2024', 'Kampania Grupa Maciej', 'Kraków', 'B2B', 'Pełny etat',
     '2024-07-01', 'Wsparcie psychologiczne', 'Doświadczenie w terapii', 
     'Elastyczne godziny pracy', 'Zatrudnimy psychologa',
-    6000, 9000, 7, 9, 11,
+    6000, 9000, 5, 7, 8,
     30, 30, 40, 'univ_token_KAM_MAC_2024', true, now(), now()),
 
 (3, 'KAM_OBA_2024', 'Kampania Obu Grup', 'Gdańsk', 'B2B', 'Pełny etat',
     '2024-08-01', 'Rozwój oprogramowania', 'JavaScript, Python', 
     'Praca zdalna', 'Poszukujemy programisty',
-    10000, 15000, 13, 15, 17,
-    30, 30, 40, 'univ_token_KAM_OBA_2024', true, now(), now()),
-
-(4, 'KAM_BEZ_2024', 'Kampania Bez Grupy', 'Poznań', 'Umowa o pracę', 'Pełny etat',
-    '2024-09-01', 'Administracja biura', 'Doświadczenie w administracji', 
-    'Przyjazna atmosfera', 'Szukamy administratora',
-    4000, 6000, 19, 21, 23,
-    30, 30, 40, 'univ_token_KAM_BEZ_2024', true, now(), now()),
-
-(5, 'KAM_PUS_2024', 'Kampania Grupa Pusta', 'Wrocław', 'Umowa o pracę', 'Pełny etat',
-    '2024-10-01', 'Rekrutacja pracowników', 'Doświadczenie w HR', 
-    'Szkolenia', 'Rekruter',
-    7000, 9000, 25, 27, 29,
-    30, 30, 40, 'univ_token_KAM_PUS_2024', true, now(), now());
+    10000, 15000, 9, 11, 12,
+    30, 30, 40, 'univ_token_KAM_OBA_2024', true, now(), now());
 
 -- 8. Powiązania kampanii z grupami
 INSERT INTO link_groups_campaigns (group_id, campaign_id) VALUES
 (2, 1),        -- Kampania Grupa Sebastian -> Grupa Sebastian
 (4, 2),        -- Kampania Grupa Maciej -> Grupa Maciej
 (2, 3),        -- Kampania Obu Grup -> Grupa Sebastian
-(4, 3),        -- Kampania Obu Grup -> Grupa Maciej
-(1, 5);        -- Kampania Grupa Pusta -> Grupa Pusta
--- Kampania 4 (Bez Grupy) nie jest przypisana do żadnej grupy
-
--- 9. Kandydaci (zależni od campaigns)
-INSERT INTO candidates (
-    id, campaign_id, first_name, last_name, email, phone, 
-    recruitment_status, po1_score, po2_score, po3_score, po4_score, total_score,
-    po1_completed_at, po2_completed_at, po3_completed_at,
-    access_token_po2, access_token_po3,
-    access_token_po2_is_used, access_token_po3_is_used,
-    access_token_po2_expires_at, access_token_po3_expires_at,
-    score_ko, score_re, score_w, score_in, score_pz, score_kz, score_dz, score_sw,
-    created_at, updated_at
-) VALUES
--- Kandydat dla Kampanii Sebastian (wszystkie etapy)
-(1, 1, 'Anna', 'Nowak', 'anna.nowak@example.com', '+48123456789', 
-    'PO3', 85, 78, 92, null, 255,
-    '2024-01-15 10:00:00', '2024-01-16 14:30:00', '2024-01-17 11:15:00',
-    'token_po2_anna', 'token_po3_anna', 
-    true, true,
-    '2024-02-15 10:00:00', '2024-03-15 10:00:00',
-    null, null, null, null, null, null, null, null,
-    '2024-01-15 10:00:00', '2024-01-17 11:15:00'),
-
--- Kandydat dla Kampanii Maciej (etap PO2)
-(2, 2, 'Jan', 'Kowalski', 'jan.kowalski@example.com', '+48987654321', 
-    'PO2', 90, 85, null, null, 175,
-    '2024-01-16 09:00:00', '2024-01-17 13:45:00', null,
-    'token_po2_jan', 'token_po3_jan', 
-    true, false,
-    '2024-02-16 09:00:00', '2024-03-16 09:00:00',
-    null, null, null, null, null, null, null, null,
-    '2024-01-16 09:00:00', '2024-01-17 13:45:00'),
-
--- Kandydat dla Kampanii Obu Grup (etap PO1)
-(3, 3, 'Maria', 'Wiśniewska', 'maria.wisniewska@example.com', '+48111222333', 
-    'PO1', 75, null, null, null, 75,
-    '2024-01-17 11:30:00', null, null,
-    'token_po2_maria', null, 
-    false, false,
-    '2024-02-17 11:30:00', null,
-    null, null, null, null, null, null, null, null,
-    '2024-01-17 11:30:00', '2024-01-17 11:30:00'),
-
--- Kandydat REJECTED na etapie PO2
-(4, 1, 'Tomasz', 'Rejected', 'tomasz.rejected@example.com', '+48333444555',
-    'REJECTED', 75, 45, null, null, 120,
-    '2024-01-18 10:00:00', '2024-01-19 14:30:00', null,
-    'token_po2_tomasz', null,
-    true, false,
-    '2024-02-18 10:00:00', null,
-    null, null, null, null, null, null, null, null,
-    '2024-01-18 10:00:00', '2024-01-19 14:30:00'),
-
--- Kandydat ACCEPTED po wszystkich etapach
-(5, 1, 'Alicja', 'Accepted', 'alicja.accepted@example.com', '+48444555666',
-    'ACCEPTED', 90, 85, 95, 90, 360,
-    '2024-01-18 11:00:00', '2024-01-19 15:30:00', '2024-01-20 12:00:00',
-    'token_po2_alicja', 'token_po3_alicja',
-    true, true,
-    '2024-02-18 11:00:00', '2024-03-18 11:00:00',
-    null, null, null, null, null, null, null, null,
-    '2024-01-18 11:00:00', '2024-01-20 12:00:00'),
-
--- Kandydat na etapie PO4
-(6, 2, 'Piotr', 'Final', 'piotr.final@example.com', '+48555666777',
-    'PO4', 85, 80, 90, null, 255,
-    '2024-01-18 12:00:00', '2024-01-19 16:30:00', '2024-01-20 13:00:00',
-    'token_po2_piotr', 'token_po3_piotr',
-    true, true,
-    '2024-02-18 12:00:00', '2024-03-18 12:00:00',
-    null, null, null, null, null, null, null, null,
-    '2024-01-18 12:00:00', '2024-01-20 13:00:00'),
-
--- Kandydat dla kampanii bez grupy
-(7, 4, 'Adam', 'Bezgrupowy', 'adam.bezgrupowy@example.com', '+48666777888',
-    'PO1', 70, null, null, null, 70,
-    '2024-01-19 10:00:00', null, null,
-    'token_po2_adam', null,
-    false, false,
-    '2024-02-19 10:00:00', null,
-    null, null, null, null, null, null, null, null,
-    '2024-01-19 10:00:00', '2024-01-19 10:00:00'),
-
--- Kandydat dla kampanii z pustej grupy
-(8, 5, 'Ewa', 'Pusta', 'ewa.pusta@example.com', '+48777888999',
-    'PO2', 80, 75, null, null, 155,
-    '2024-01-19 11:00:00', '2024-01-20 15:30:00', null,
-    'token_po2_ewa', 'token_po3_ewa',
-    true, false,
-    '2024-02-19 11:00:00', '2024-03-19 11:00:00',
-    null, null, null, null, null, null, null, null,
-    '2024-01-19 11:00:00', '2024-01-20 15:30:00');
-
--- 10. Odpowiedzi kandydatów (zależne od candidates i questions)
-INSERT INTO candidate_answers (
-    id, candidate_id, question_id, 
-    text_answer, boolean_answer, salary_answer,
-    scale_answer, date_answer, abcdef_answer, 
-    points_per_option,
-    score, score_ai,
-    created_at
-) VALUES
-(1, 1, 1, '5 lat doświadczenia jako logopeda', null, null, null, null, null, 
-    null, 10, 9, now()),
-(2, 1, 36, null, null, null, null, null, null,
-    '{"a": 3, "b": 2, "c": 1, "d": 0, "e": 2, "f": 1, "g": 0, "h": 3}',
-    10, 9, now()),
-(3, 1, 2, null, true, null, null, null, null, 
-    null, 5, 5, now()),
-(4, 1, 3, null, null, null, 4, null, null, 
-    null, 15, 15, now()),
-(5, 1, 4, null, null, 6000, null, null, null, 
-    null, 0, 0, now()),
-(6, 1, 5, null, null, null, null, '2024-04-01', null, 
-    null, 5, 5, now()),
-(7, 2, 7, 'Empatia, komunikatywność, cierpliwość', null, null, null, null, null, 
-    null, 9, 8, now()),
-(8, 2, 8, null, null, null, null, null, 'C', 
-    null, 15, 15, now()),
-(9, 3, 13, 'Rozwój w obszarze programowania, awans na senior developera', null, null, null, null, null, 
-    null, 8, 7, now()),
-(10, 3, 14, null, null, null, null, null, 'B', 
-    null, 15, 15, now()),
-(11, 4, 1, '2 lata doświadczenia jako stażysta', null, null, null, null, null, 
-    null, 5, 4, now()),
-(12, 4, 2, null, false, null, null, null, null, 
-    null, 0, 0, now()),
-(13, 5, 1, '8 lat doświadczenia jako senior', null, null, null, null, null, 
-    null, 10, 10, now()),
-(14, 5, 2, null, true, null, null, null, null, 
-    null, 5, 5, now()),
-(15, 6, 7, 'Doskonała organizacja, zarządzanie zespołem', null, null, null, null, null, 
-    null, 10, 9, now()),
-(16, 6, 8, null, null, null, null, null, 'C', 
-    null, 15, 15, now()),
-(17, 7, 24, 'Firma zajmuje się rozwojem oprogramowania', null, null, null, null, null, 
-    null, 8, 7, now()),
-(18, 7, 25, null, null, null, null, null, 'E', 
-    null, 15, 15, now()),
-(19, 8, 30, 'Zarządzanie zespołem 10-osobowym', null, null, null, null, null, 
-    null, 9, 8, now()),
-(20, 8, 31, null, null, null, null, null, 'D', 
-    null, 15, 15, now());
-
- 
+(4, 3);        -- Kampania Obu Grup -> Grupa Maciej
