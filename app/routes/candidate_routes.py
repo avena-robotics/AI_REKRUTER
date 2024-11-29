@@ -1,7 +1,11 @@
-from flask import Blueprint, render_template, request, jsonify
+import secrets
+from flask import Blueprint, render_template, request, jsonify, current_app
 from database import supabase
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from routes.auth_routes import login_required
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 candidate_bp = Blueprint("candidate", __name__, url_prefix="/candidates")
 
@@ -124,11 +128,6 @@ def view(id):
                 "score": candidate.data.get(f"{stage.lower()}_score"),
                 "completed_at": candidate.data.get(f"{stage.lower()}_completed_at"),
             }
-
-            print(f"Processed {stage} data:")
-            print(f"- Questions count: {len(processed_questions)}")
-            print(f"- Total points: {tests_data[stage]['total_points']}")
-            print(f"- Score: {tests_data[stage]['score']}")
 
         return render_template(
             "candidates/view.html",
@@ -279,4 +278,101 @@ def extend_token(id, stage):
                 }
             ),
             500,
-        ) 
+        )
+
+
+@candidate_bp.route("/<int:id>/next-stage", methods=["POST"])
+def next_stage(id):
+    try:
+        # Get current candidate data
+        candidate = (
+            supabase.from_("candidates")
+            .select("*, campaigns(*)")
+            .eq("id", id)
+            .single()
+            .execute()
+        )
+        
+        if not candidate.data:
+            return jsonify({"success": False, "error": "Nie znaleziono kandydata"}), 404
+
+        current_status = candidate.data["recruitment_status"]
+        campaign = candidate.data["campaigns"]
+        
+        # Define next stage based on current status
+        if current_status == "PO1":
+            next_status = "PO2"
+            test_id = campaign.get("po2_test_id")
+        elif current_status == "PO2":
+            next_status = "PO3"
+            test_id = campaign.get("po3_test_id")
+        elif current_status == "PO3":
+            next_status = "PO4"
+            test_id = None
+        else:
+            return jsonify({"success": False, "error": "Nieprawidłowy obecny etap"}), 400
+
+        # Generate token and send email for PO2 and PO3
+        updates = {"recruitment_status": next_status}
+        
+        if next_status in ["PO2", "PO3"] and test_id:
+            # Generate token and expiry date
+            token = secrets.token_urlsafe(32) 
+            token_expiry = datetime.now(timezone.utc) + timedelta(days=7)
+            formatted_expiry = token_expiry.strftime("%Y-%m-%d %H:%M")
+            
+            # Add token fields to updates
+            updates.update({
+                f"access_token_{next_status.lower()}": token,
+                f"access_token_{next_status.lower()}_expires_at": token_expiry.isoformat(),
+                f"access_token_{next_status.lower()}_is_used": False,
+            })
+            
+            # Prepare and send email
+            test_url = f"{request.host_url.rstrip('/')}/test/candidate/{token}"
+            email_body = (
+                f"Gratulacje! Pomyślnie ukończyłeś/aś etap {current_status} "
+                f"i otrzymujesz dostęp do kolejnego etapu rekrutacji.\n"
+                f"Link do testu: {test_url}\n"
+                f"Link jest ważny do: {formatted_expiry}"
+            )
+            
+            # Send email using SMTP
+            try:
+                msg = MIMEMultipart()
+                msg["From"] = current_app.config["SENDER_EMAIL"]
+                msg["To"] = candidate.data["email"]
+                msg["Subject"] = f"Dostęp do etapu {next_status}"
+                msg.attach(MIMEText(email_body, "plain"))
+                
+                with smtplib.SMTP(
+                    current_app.config["SMTP_SERVER"],
+                    current_app.config["SMTP_PORT"]
+                ) as server:
+                    server.starttls()
+                    server.login(
+                        current_app.config["SMTP_USERNAME"],
+                        current_app.config["SMTP_PASSWORD"]
+                    )
+                    server.send_message(msg)
+            except Exception as e:
+                print(f"Error sending email: {str(e)}")
+                return jsonify({
+                    "success": False,
+                    "error": "Nie udało się wysłać emaila"
+                }), 500
+
+        # Update candidate in database
+        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+        result = (
+            supabase.from_("candidates")
+            .update(updates)
+            .eq("id", id)
+            .execute()
+        )
+
+        return jsonify({"success": True})
+
+    except Exception as e:
+        print(f"Error moving candidate to next stage: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500 
