@@ -2,10 +2,10 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any
 from supabase import Client
-from ..config import Config
-from ..utils.token_utils import generate_access_token
-from .email_service import EmailService
-from .test_service import TestService
+from config import Config
+from utils.token_utils import generate_access_token
+from services.email_service import EmailService
+from services.test_service import TestService
 
 class CandidateService:
     """Serwis do zarządzania kandydatami i ich statusami"""

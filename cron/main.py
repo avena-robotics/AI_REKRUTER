@@ -1,13 +1,17 @@
-import os
 import sys
+import os
 import logging
 from supabase import create_client
 
-from .config import Config
-from .logger import LogManager
-from .services.email_service import EmailService
-from .services.test_service import TestService
-from .services.candidate_service import CandidateService
+# Add the cron directory to Python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from config import Config
+from logger import LogManager
+from services.email_service import EmailService
+from services.test_service import TestService
+from services.candidate_service import CandidateService
 
 def main():
     """Główna funkcja skryptu sprawdzająca i aktualizująca statusy kandydatów"""
