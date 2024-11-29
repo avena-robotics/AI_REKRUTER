@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from supabase import Client
 from config import Config
 from utils.token_utils import generate_access_token
@@ -154,6 +154,17 @@ class CandidateService:
             else:
                 self.logger.info(f"Brak aktualizacji dla kandydata {candidate['id']}")
                 
+            # After any score update, calculate total score
+            if any(key in updates for key in ['po1_score', 'po2_score', 'po3_score']):
+                total_score = self._calculate_total_weighted_score(
+                    po1_score=updates.get('po1_score', candidate.get('po1_score')),
+                    po2_score=updates.get('po2_score', candidate.get('po2_score')),
+                    po3_score=updates.get('po3_score', candidate.get('po3_score')),
+                    campaign=campaign
+                )
+                updates['total_score'] = total_score
+                self.logger.info(f"Zaktualizowano total_score dla kandydata {candidate['id']}: {total_score}")
+                
             return {**candidate, **updates}
             
         except Exception as e:
@@ -162,6 +173,49 @@ class CandidateService:
                 exc_info=True
             )
             return candidate
+
+    def _calculate_total_weighted_score(self, po1_score: Optional[int], 
+                                      po2_score: Optional[int], 
+                                      po3_score: Optional[int], 
+                                      campaign: dict) -> Optional[int]:
+        """
+        Oblicza całkowity ważony wynik na podstawie wyników testów i wag z kampanii
+        
+        Args:
+            po1_score: Wynik testu PO1
+            po2_score: Wynik testu PO2
+            po3_score: Wynik testu PO3
+            campaign: Dane kampanii zawierające wagi testów
+            
+        Returns:
+            Optional[int]: Całkowity ważony wynik lub None jeśli nie można obliczyć
+        """
+        try:
+            scores_and_weights = [
+                (po1_score, campaign.get('po1_test_weight', 0)),
+                (po2_score, campaign.get('po2_test_weight', 0)),
+                (po3_score, campaign.get('po3_test_weight', 0))
+            ]
+
+            # Filter out None scores
+            valid_scores = [(score, weight) for score, weight in scores_and_weights if score is not None]
+            
+            if not valid_scores:
+                return None
+                
+            total_weighted_score = sum(score * weight for score, weight in valid_scores)
+            total_weight = sum(weight for _, weight in valid_scores)
+            
+            if total_weight == 0:
+                self.logger.warning("Wszystkie wagi testów są równe 0")
+                return None
+                
+            # Calculate weighted average and round to nearest integer
+            return round(total_weighted_score / total_weight)
+            
+        except Exception as e:
+            self.logger.error(f"Błąd podczas obliczania całkowitego wyniku: {str(e)}")
+            return None
 
     def update_candidates(self):
         """Aktualizuje statusy i wyniki wszystkich aktywnych kandydatów"""
