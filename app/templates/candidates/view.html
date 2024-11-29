@@ -88,6 +88,61 @@
         </div>
     </div>
 
+    <!-- Po sekcji "Podsumowanie wyników" a przed "Test Answers" -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Szczegółowe wyniki</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr>
+                                <td><strong>Kompetencje osobiste (KO):</strong></td>
+                                <td>{{ candidate.score_ko if candidate.score_ko is not none else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Relacje (RE):</strong></td>
+                                <td>{{ candidate.score_re if candidate.score_re is not none else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Wiedza (W):</strong></td>
+                                <td>{{ candidate.score_w if candidate.score_w is not none else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Innowacyjność (IN):</strong></td>
+                                <td>{{ candidate.score_in if candidate.score_in is not none else '-' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr>
+                                <td><strong>Przedsiębiorczość (PZ):</strong></td>
+                                <td>{{ candidate.score_pz if candidate.score_pz is not none else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Komunikatywność (KZ):</strong></td>
+                                <td>{{ candidate.score_kz if candidate.score_kz is not none else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Działanie (DZ):</strong></td>
+                                <td>{{ candidate.score_dz if candidate.score_dz is not none else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Samoświadomość (SW):</strong></td>
+                                <td>{{ candidate.score_sw if candidate.score_sw is not none else '-' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Application Details -->
     <div class="card mb-4">
         <div class="card-header bg-light">
@@ -207,7 +262,7 @@
 
     <!-- Test Answers -->
     <div class="accordion" id="candidateAccordion">
-        {% for stage in ['PO1', 'PO2', 'PO3'] %}
+        {% for stage in ['PO1', 'PO2', 'PO3', 'PO4'] %}
         {% if tests[stage] %}
         <div class="accordion-item">
             <h2 class="accordion-header">
@@ -218,6 +273,9 @@
                     Etap {{ stage }} - {{ tests[stage].test.test_type }}
                     {% if tests[stage].score %}
                         (Wynik: {{ tests[stage].score }})
+                    {% endif %}
+                    {% if tests[stage].completed_at %}
+                        <small class="ms-2 text-muted">(Ukończono: {{ tests[stage].completed_at|datetime }})</small>
                     {% endif %}
                 </button>
             </h2>
@@ -307,6 +365,7 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Copy link functionality - updated to match list.html implementation

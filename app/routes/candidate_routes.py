@@ -60,7 +60,7 @@ def view(id):
             return jsonify({"error": "Candidate not found"}), 404
 
         tests_data = {}
-        for stage in ["PO1", "PO2", "PO3"]:
+        for stage in ["PO1", "PO2", "PO3", "PO4"]:
             test_id = candidate.data["campaign"].get(f"{stage.lower()}_test_id")
             if not test_id:
                 continue
