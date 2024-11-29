@@ -208,8 +208,9 @@
                                 {% endif %}
                             </div>
                             <div class="small text-muted">
-                                <div>Wygasa: {{ candidate.access_token_po2_expires_at|datetime }}</div>
-                                <div class="time-remaining" data-expires="{{ candidate.access_token_po2_expires_at }}"></div>
+                                <div class="token-expiry" data-stage="PO2" data-type="expiry-date">
+                                    Wygasa: {{ candidate.access_token_po2_expires_at|datetime }}
+                                </div>
                             </div>
                         {% else %}
                             <div class="text-muted">Brak tokenu PO2</div>
@@ -248,8 +249,9 @@
                                 {% endif %}
                             </div>
                             <div class="small text-muted">
-                                <div>Wygasa: {{ candidate.access_token_po3_expires_at|datetime }}</div>
-                                <div class="time-remaining" data-expires="{{ candidate.access_token_po3_expires_at }}"></div>
+                                <div class="token-expiry" data-stage="PO3" data-type="expiry-date">
+                                    Wygasa: {{ candidate.access_token_po3_expires_at|datetime }}
+                                </div>
                             </div>
                         {% else %}
                             <div class="text-muted">Brak tokenu PO3</div>
@@ -434,33 +436,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         return timeText.join(' ');
     }
-
-    function updateTimeRemaining() {
-        document.querySelectorAll('.time-remaining').forEach(span => {
-            const expiresAt = new Date(span.dataset.expires);
-            const now = new Date();
-            const diff = expiresAt - now;
-
-            if (diff <= 0) {
-                span.textContent = 'token wygasł';
-                span.classList.add('text-danger');
-            } else {
-                const timeText = formatTimeRemaining(diff);
-                span.textContent = timeText;
-                
-                // Add warning class if less than 24 hours remaining
-                if (diff < 24 * 60 * 60 * 1000) {
-                    span.classList.add('text-warning');
-                } else {
-                    span.classList.remove('text-warning');
-                }
-            }
-        });
-    }
-
-    // Update time remaining every minute
-    updateTimeRemaining();
-    setInterval(updateTimeRemaining, 60000);
 });
 
 // Add showToast function if not defined globally
