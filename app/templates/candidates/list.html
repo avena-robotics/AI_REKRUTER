@@ -221,6 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.text())
             .then(html => {
                 document.getElementById('candidateModalBody').innerHTML = html;
+                initializeCopyLinks();
                 modal.show();
             });
     }
@@ -282,6 +283,24 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
     document.head.appendChild(style);
 });
+
+function initializeCopyLinks() {
+    document.querySelectorAll('.copy-link').forEach(button => {
+        button.addEventListener('click', function() {
+            const link = this.dataset.link;
+            const fullLink = link.startsWith('http') ? link : window.location.origin + link;
+            
+            navigator.clipboard.writeText(fullLink)
+                .then(() => {
+                    showToast('Link został skopiowany do schowka', 'success');
+                })
+                .catch(err => {
+                    console.error('Failed to copy:', err);
+                    showToast('Nie udało się skopiować linku', 'error');
+                });
+        });
+    });
+}
 </script>
 
 <style>
