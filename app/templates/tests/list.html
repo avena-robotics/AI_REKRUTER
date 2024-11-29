@@ -941,6 +941,26 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                 `;
                 break;
                     
+            case 'ABCDEF':
+                html = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Poprawna odpowiedź</label>
+                            <select class="form-select" 
+                                    name="questions[${questionCounter}][correct_answer_abcdef]">
+                                <option value="" ${!question?.correct_answer_abcdef ? 'selected' : ''}>Wybierz odpowiedź</option>
+                                <option value="A" ${question?.correct_answer_abcdef === 'A' ? 'selected' : ''}>A</option>
+                                <option value="B" ${question?.correct_answer_abcdef === 'B' ? 'selected' : ''}>B</option>
+                                <option value="C" ${question?.correct_answer_abcdef === 'C' ? 'selected' : ''}>C</option>
+                                <option value="D" ${question?.correct_answer_abcdef === 'D' ? 'selected' : ''}>D</option>
+                                <option value="E" ${question?.correct_answer_abcdef === 'E' ? 'selected' : ''}>E</option>
+                                <option value="F" ${question?.correct_answer_abcdef === 'F' ? 'selected' : ''}>F</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+                break;
+                    
             default: // TEXT
                 html = `
                     <div class="row">

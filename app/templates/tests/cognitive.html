@@ -20,12 +20,9 @@
         <form id="testForm" method="POST" action="{{ url_for('test_public.submit_candidate_test', token=token) if candidate else url_for('test_public.submit_test', token=token) }}">
             {% for question in questions %}
             <div class="card mb-4 question-card" data-question-id="{{ question.id }}">
-                <div class="card-header">
-                    <h5>Pytanie {{ question.order_number }}</h5>
-                </div>
-                <div class="card-body">
-                    <p class="question-text">{{ question.question_text }}</p>
-                    
+                <h5>{{ question.question_text }}</h5>
+                 
+                <div class="card-body">                    
                     {% if question.image %}
                     <img src="{{ question.image }}" class="img-fluid mb-3" alt="Question image">
                     {% endif %}
@@ -42,6 +39,40 @@
                             <span class="ms-2">{{ letter }}</span>
                         </label>
                         {% endfor %}
+                    </div>
+                    {% elif question.answer_type == 'AH_POINTS' %}
+                    <div class="ah-points-container">
+                        <div class="alert alert-info mb-3">
+                            Rozdysponuj dokładnie 10 punktów pomiędzy poniższe opcje.
+                            <br>
+                            Pozostało punktów: <span class="points-remaining" data-question="{{ question.id }}">10</span>
+                        </div>
+                        <div class="alert alert-danger mb-3 points-error" style="display: none;" data-question="{{ question.id }}">
+                            Musisz rozdysponować wszystkie punkty w sekcji: {{ question.question_text }}
+                        </div>
+                        <div class="options-grid">
+                            {% for letter in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] %}
+                                {% if question.options[letter] %}
+                                <div class="option-row">
+                                    <div class="option-text">
+                                        <span class="option-letter">{{ letter|upper }}.</span>
+                                        {{ question.options[letter] }}
+                                    </div>
+                                    <div class="option-points">
+                                        <input type="number" 
+                                               class="form-control points-input" 
+                                               name="answer_{{ question.id }}_{{ letter }}"
+                                               min="0" 
+                                               max="10" 
+                                               value="0"
+                                               data-question="{{ question.id }}"
+                                               {% if question.is_required %}required{% endif %}
+                                               onchange="updatePointsTotal('{{ question.id }}')">
+                                    </div>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
                     </div>
                     {% elif question.answer_type == 'DATE' %}
                     <div class="form-group">
@@ -68,6 +99,13 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize timer variables
+            let remainingSeconds = parseInt(localStorage.getItem('remainingSeconds')) || 0;
+            let timeoutModalShown = false;
+            let modalTimeoutId = null;
+            let timerInterval = null;
+
+            // Handle radio button clicks
             document.querySelectorAll('.list-group-item').forEach(item => {
                 item.addEventListener('click', function(e) {
                     const radio = this.querySelector('input[type="radio"]');
@@ -84,9 +122,31 @@
                 });
             });
 
-            function submitTest() {
-                if (modalTimeoutId) clearTimeout(modalTimeoutId);
-                document.getElementById('testForm').submit();
+            // Timer functions
+            function showTimeoutModal() {
+                timeoutModalShown = true;
+                const modal = new bootstrap.Modal(document.getElementById('timeoutModal'));
+                modal.show();
+
+                // Start 5-minute countdown for modal
+                let modalSeconds = 300;
+                const modalInterval = setInterval(() => {
+                    if (modalSeconds <= 0) {
+                        clearInterval(modalInterval);
+                        cancelTest();
+                        return;
+                    }
+                    const min = Math.floor(modalSeconds / 60);
+                    const sec = modalSeconds % 60;
+                    document.getElementById('modalCountdown').textContent = 
+                        `${min}:${String(sec).padStart(2, '0')}`;
+                    modalSeconds--;
+                }, 1000);
+
+                modalTimeoutId = setTimeout(() => {
+                    clearInterval(modalInterval);
+                    cancelTest();
+                }, 300000); // 5 minutes
             }
 
             function updateTimer() {
@@ -108,21 +168,93 @@
                 remainingSeconds--;
             }
 
-            // Make functions globally available
-            window.submitTest = submitTest;
-            window.updateTimer = updateTimer;
+            function submitTest() {
+                if (modalTimeoutId) clearTimeout(modalTimeoutId);
+                document.getElementById('testForm').submit();
+            }
+
+            function cancelTest() {
+                if (modalTimeoutId) clearTimeout(modalTimeoutId);
+                window.location.href = "{{ url_for('test_public.cancel_candidate_test', token=token) if candidate else url_for('test_public.cancel_test', token=token) }}";
+            }
+
+            function updatePointsTotal(questionId) {
+                const inputs = document.querySelectorAll(`input[data-question="${questionId}"]`);
+                let total = 0;
+                
+                // First ensure no negative values and calculate total
+                inputs.forEach(input => {
+                    const value = parseInt(input.value) || 0;
+                    if (value < 0) input.value = 0;
+                    total += parseInt(input.value) || 0;
+                });
+                
+                // Update remaining points display
+                const remainingSpan = document.querySelector(`.points-remaining[data-question="${questionId}"]`);
+                const remaining = Math.max(0, 10 - total);
+                remainingSpan.textContent = remaining;
+
+                // Update max values for all inputs
+                inputs.forEach(input => {
+                    const currentValue = parseInt(input.value) || 0;
+                    // Max value is remaining points plus this input's current value
+                    const maxAllowed = remaining + currentValue;
+                    input.max = maxAllowed;
+                    
+                    // If current value exceeds new max, adjust it
+                    if (currentValue > maxAllowed) {
+                        input.value = maxAllowed;
+                        // Recalculate total after adjustment
+                        updatePointsTotal(questionId);
+                    }
+                });
+            }
 
             // Initialize timer if needed
             if (document.getElementById('timer')) {
                 updateTimer();
-                const timerInterval = setInterval(updateTimer, 1000);
+                timerInterval = setInterval(updateTimer, 1000);
             }
-        });
 
-        function cancelTest() {
-            if (modalTimeoutId) clearTimeout(modalTimeoutId);
-            window.location.href = "{{ url_for('test_public.cancel_candidate_test', token=token) if candidate else url_for('test_public.cancel_test', token=token) }}";
-        }
+            // Form validation
+            document.getElementById('testForm').addEventListener('submit', function(e) {
+                const ahPointsQuestions = document.querySelectorAll('.ah-points-container');
+                let isValid = true;
+
+                // First hide all error messages and remove error styling
+                document.querySelectorAll('.points-error').forEach(error => {
+                    error.style.display = 'none';
+                });
+                document.querySelectorAll('.ah-points-container').forEach(container => {
+                    container.classList.remove('error-container');
+                });
+
+                ahPointsQuestions.forEach(container => {
+                    const questionId = container.querySelector('input').dataset.question;
+                    const inputs = container.querySelectorAll('input');
+                    let total = 0;
+                    
+                    inputs.forEach(input => {
+                        total += parseInt(input.value) || 0;
+                    });
+
+                    if (total !== 10) {
+                        isValid = false;
+                        container.querySelector('.points-error').style.display = 'block';
+                        container.classList.add('error-container');
+                    }
+                });
+
+                if (!isValid) {
+                    e.preventDefault();
+                }
+            });
+
+            // Make functions globally available
+            window.submitTest = submitTest;
+            window.cancelTest = cancelTest;
+            window.updatePointsTotal = updatePointsTotal;
+        });
     </script>
 
     <style>
@@ -144,6 +276,57 @@
         
         .list-group-item input[type="radio"] {
             cursor: pointer;
+        }
+        
+        .ah-points-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .options-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .option-row {
+            display: grid;
+            grid-template-columns: 1fr 120px;
+            gap: 1rem;
+            align-items: center;
+            padding: 0.5rem;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+
+        .option-text {
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        .option-letter {
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+
+        .option-points input {
+            width: 100%;
+            text-align: center;
+        }
+
+        .ah-points-container.error-container {
+            padding: 1rem;
+            border: 2px solid #dc3545;
+            border-radius: 8px;
+            background-color: #fff8f8;
+        }
+
+        .points-error {
+            display: none;
+        }
+
+        /* Remove any existing error styles for inputs */
+        .option-points input.is-invalid {
+            border-color: #ced4da;
         }
     </style>
 

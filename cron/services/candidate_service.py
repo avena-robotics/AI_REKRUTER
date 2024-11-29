@@ -32,18 +32,35 @@ class CandidateService:
         updates = {}
         
         try:
+            self.logger.info(f"Rozpoczęcie aktualizacji wyników dla kandydata {candidate['id']}")
+            
+            # Sprawdź czy kandydat potrzebuje aktualizacji wyników EQ
+            needs_eq_update = all(
+                candidate.get(score_key) is None 
+                for score_key in ['score_ko', 'score_re', 'score_w', 'score_in', 
+                                'score_pz', 'score_kz', 'score_dz', 'score_sw']
+            )
+            
+            self.logger.info(f"Kandydat {candidate['id']} - potrzebuje aktualizacji EQ: {needs_eq_update}")
+
             # Sprawdzenie i obliczenie wyniku PO1
-            if candidate.get('recruitment_status') == 'PO1' and \
-               candidate.get('po1_score') is None and \
-               campaign.get('po1_test_id'):
+            if (candidate.get('recruitment_status') == 'PO1' and 
+                (candidate.get('po1_score') is None or needs_eq_update) and 
+                campaign.get('po1_test_id')):
                 
-                po1_score = self.test_service.calculate_test_score(
+                self.logger.info(f"Obliczanie wyniku PO1 dla kandydata {candidate['id']}, test {campaign['po1_test_id']}")
+                
+                result = self.test_service.calculate_test_score(
                     candidate['id'], 
                     campaign['po1_test_id']
                 )
                 
-                if po1_score is not None:
-                    updates['po1_score'] = po1_score
+                if isinstance(result, dict):  # EQ test results
+                    self.logger.info(f"Otrzymano wyniki EQ dla kandydata {candidate['id']}: {result}")
+                    updates.update(result)
+                elif result is not None:  # Regular test score
+                    self.logger.info(f"Otrzymano standardowy wynik dla kandydata {candidate['id']}: {result}")
+                    updates['po1_score'] = result
                     
                     test_response = self.supabase.table('tests')\
                         .select('passing_threshold')\
@@ -53,22 +70,31 @@ class CandidateService:
                         
                     if test_response.data:
                         passing_threshold = test_response.data['passing_threshold']
-                        if po1_score < passing_threshold:
+                        if result < passing_threshold:
                             updates['recruitment_status'] = 'REJECTED'
-                            self.logger.info(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO1")
+                            self.logger.warning(
+                                f"Kandydat {candidate['id']} nie osiągnął wymaganego progu "
+                                f"{passing_threshold} punktów w PO1 (wynik: {result})"
+                            )
+                else:
+                    self.logger.warning(f"Nie otrzymano wyniku dla kandydata {candidate['id']} w teście PO1")
 
             # Sprawdzenie i obliczenie wyniku PO2
-            elif candidate.get('recruitment_status') == 'PO2' and \
-               candidate.get('po2_score') is None and \
-               campaign.get('po2_test_id'):
+            elif (candidate.get('recruitment_status') == 'PO2' and 
+                  (candidate.get('po2_score') is None or needs_eq_update) and 
+                  campaign.get('po2_test_id')):
                 
-                po2_score = self.test_service.calculate_test_score(
+                self.logger.info(f"Obliczanie wyniku PO2 dla kandydata {candidate['id']}, test {campaign['po2_test_id']}")
+                
+                result = self.test_service.calculate_test_score(
                     candidate['id'], 
                     campaign['po2_test_id']
                 )
                 
-                if po2_score is not None:
-                    updates['po2_score'] = po2_score
+                if isinstance(result, dict):  # EQ test results
+                    updates.update(result)
+                elif result is not None:  # Regular test score
+                    updates['po2_score'] = result
                     
                     test_response = self.supabase.table('tests')\
                         .select('passing_threshold')\
@@ -78,22 +104,26 @@ class CandidateService:
                         
                     if test_response.data:
                         passing_threshold = test_response.data['passing_threshold']
-                        if po2_score < passing_threshold:
+                        if result < passing_threshold:
                             updates['recruitment_status'] = 'REJECTED'
                             self.logger.info(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO2")
 
             # Sprawdzenie i obliczenie wyniku PO3
-            elif candidate.get('recruitment_status') == 'PO3' and \
-               candidate.get('po3_score') is None and \
-               campaign.get('po3_test_id'):
+            elif (candidate.get('recruitment_status') == 'PO3' and 
+                  (candidate.get('po3_score') is None or needs_eq_update) and 
+                  campaign.get('po3_test_id')):
                 
-                po3_score = self.test_service.calculate_test_score(
+                self.logger.info(f"Obliczanie wyniku PO3 dla kandydata {candidate['id']}, test {campaign['po3_test_id']}")
+                
+                result = self.test_service.calculate_test_score(
                     candidate['id'], 
                     campaign['po3_test_id']
                 )
                 
-                if po3_score is not None:
-                    updates['po3_score'] = po3_score
+                if isinstance(result, dict):  # EQ test results
+                    updates.update(result)
+                elif result is not None:  # Regular test score
+                    updates['po3_score'] = result
                     
                     test_response = self.supabase.table('tests')\
                         .select('passing_threshold')\
@@ -103,11 +133,12 @@ class CandidateService:
                         
                     if test_response.data:
                         passing_threshold = test_response.data['passing_threshold']
-                        if po3_score < passing_threshold:
+                        if result < passing_threshold:
                             updates['recruitment_status'] = 'REJECTED'
                             self.logger.info(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO3")
 
             if updates:
+                self.logger.info(f"Aktualizacja danych kandydata {candidate['id']}: {updates}")
                 updates['updated_at'] = datetime.now(timezone.utc).isoformat()
                 
                 self.supabase.table('candidates')\
@@ -118,12 +149,18 @@ class CandidateService:
                 if 'recruitment_status' in updates:
                     self.logger.info(f"Zaktualizowano status kandydata {candidate['id']} na {updates['recruitment_status']}")
                 elif any(key.endswith('_score') for key in updates):
-                    self.logger.info(f"Zaktualizowano wyniki kandydata {candidate['id']}")
+                    self.logger.info(f"Zaktualizowano wyniki kandydata {candidate['id']}: {updates}")
+                
+            else:
+                self.logger.info(f"Brak aktualizacji dla kandydata {candidate['id']}")
                 
             return {**candidate, **updates}
             
         except Exception as e:
-            self.logger.error(f"Błąd podczas aktualizacji wyników kandydata {candidate['id']}: {str(e)}")
+            self.logger.error(
+                f"Błąd podczas aktualizacji wyników kandydata {candidate['id']}: {str(e)}", 
+                exc_info=True
+            )
             return candidate
 
     def update_candidates(self):

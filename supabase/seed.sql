@@ -31,23 +31,23 @@ INSERT INTO link_groups_users (group_id, user_id) VALUES
 -- 4. Testy (brak zależności)
 INSERT INTO tests (id, title, test_type, description, passing_threshold, time_limit_minutes, created_at, updated_at) VALUES
 -- Testy dla Grupy Sebastian (grupa 2)
-(1, 'Ankieta wstępna PO1', 'SURVEY', 'Test PO1 Grupa Sebastian - Ankieta', 70, 30, now(), now()),
-(2, 'Test IQ - Etap PO1', 'IQ', 'Test PO1 Grupa Sebastian - IQ', 75, 45, now(), now()),
-(3, 'Ankieta pogłębiona PO2', 'SURVEY', 'Test PO2 Grupa Sebastian - Ankieta', 70, 30, now(), now()),
-(4, 'Test IQ zaawansowany PO3', 'IQ', 'Test PO3 Grupa Sebastian - IQ', 85, 45, now(), now()),
+(1, 'Ankieta wstępna', 'SURVEY', 'Test Grupa Sebastian - Ankieta', 70, 30, now(), now()),
+(2, 'Test IQ', 'IQ', 'Test Grupa Sebastian - IQ', 75, 45, now(), now()),
+(3, 'Ankieta pogłębiona', 'SURVEY', 'Test Grupa Sebastian - Ankieta', 70, 30, now(), now()),
+(4, 'Test IQ zaawansowany', 'IQ', 'Test Grupa Sebastian - IQ', 85, 45, now(), now()),
 
 -- Testy dla Grupy Maciej (grupa 4)
-(5, 'Ankieta kwalifikacyjna PO1', 'SURVEY', 'Test PO1 Grupa Maciej - Ankieta', 70, 30, now(), now()),
-(6, 'Test IQ podstawowy PO1', 'IQ', 'Test PO1 Grupa Maciej - IQ', 75, 45, now(), now()),
-(7, 'Ankieta kompetencyjna PO2', 'SURVEY', 'Test PO2 Grupa Maciej - Ankieta', 70, 30, now(), now()),
-(8, 'Test IQ rozszerzony PO3', 'IQ', 'Test PO3 Grupa Maciej - IQ', 85, 45, now(), now()),
+(5, 'Ankieta kwalifikacyjna', 'SURVEY', 'Test Grupa Maciej - Ankieta', 70, 30, now(), now()),
+(6, 'Test IQ podstawowy', 'IQ', 'Test Grupa Maciej - IQ', 75, 45, now(), now()),
+(7, 'Ankieta kompetencyjna', 'SURVEY', 'Test Grupa Maciej - Ankieta', 70, 30, now(), now()),
+(8, 'Test IQ rozszerzony', 'IQ', 'Test Grupa Maciej - IQ', 85, 45, now(), now()),
 
 -- Testy dla obu grup (Sebastian + Maciej)
-(9, 'Ankieta wspólna PO1', 'SURVEY', 'Test PO1 Grupy Sebastian+Maciej - Ankieta', 70, 30, now(), now()),
-(10, 'Test IQ wspólny PO1', 'IQ', 'Test PO1 Grupy Sebastian+Maciej - IQ', 75, 45, now(), now()),
-(11, 'Ankieta wspólna PO2', 'SURVEY', 'Test PO2 Grupy Sebastian+Maciej - Ankieta', 70, 30, now(), now()),
-(12, 'Test IQ wspólny PO3', 'IQ', 'Test PO3 Grupy Sebastian+Maciej - IQ', 85, 45, now(), now()),
-(13, 'Test EQ wspólny PO3', 'EQ', 'Test PO3 Grupy Sebastian+Maciej - EQ', 75, 60, now(), now());
+(9, 'Ankieta wspólna', 'SURVEY', 'Test Grupy Sebastian+Maciej - Ankieta', 70, 30, now(), now()),
+(10, 'Test IQ wspólny', 'IQ', 'Test Grupy Sebastian+Maciej - IQ', 75, 45, now(), now()),
+(11, 'Ankieta wspólna', 'SURVEY', 'Test Grupy Sebastian+Maciej - Ankieta', 70, 30, now(), now()),
+(12, 'Test IQ wspólny', 'IQ', 'Test Grupy Sebastian+Maciej - IQ', 85, 45, now(), now()),
+(13, 'Test EQ wspólny', 'EQ', 'Test Grupy Sebastian+Maciej - EQ', 75, 60, now(), now());
 
 -- 5. Pytania (zależne od tests)
 INSERT INTO questions (
