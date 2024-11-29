@@ -271,7 +271,9 @@
                 <button class="accordion-button {% if not loop.first %}collapsed{% endif %}" 
                         type="button" 
                         data-bs-toggle="collapse" 
-                        data-bs-target="#collapse{{ stage }}">
+                        data-bs-target="#collapse{{ stage }}"
+                        aria-expanded="{% if loop.first %}true{% else %}false{% endif %}"
+                        aria-controls="collapse{{ stage }}">
                     Etap {{ stage }} - {{ tests[stage].test.test_type }}
                     {% if tests[stage].score %}
                         (Wynik: {{ tests[stage].score }})
@@ -304,13 +306,15 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-3">
                                 <h6 class="card-title mb-0">{{ question.question_text }}</h6>
-                                {% if question.answer %}
-                                <span class="badge bg-info">
-                                    Punkty: {{ question.answer.score }}/{{ question.points }}
-                                    {% if question.answer.score_ai %}
-                                    (AI: {{ question.answer.score_ai }})
+                                {% if question.answer_type != 'AH_POINTS' %}
+                                    {% if question.answer %}
+                                    <span class="badge bg-info">
+                                        Punkty: {{ question.answer.score }}/{{ question.points }}
+                                        {% if question.answer.score_ai %}
+                                        (AI: {{ question.answer.score_ai }})
+                                        {% endif %}
+                                    </span>
                                     {% endif %}
-                                </span>
                                 {% endif %}
                             </div>
 
@@ -319,42 +323,74 @@
                             {% endif %}
                             
                             <div class="answer-content">
-                                <div class="mb-3">
-                                    <strong>Poprawna odpowiedź:</strong><br>
-                                    {% if question.answer_type == 'TEXT' %}
-                                        <p>{{ question.correct_answer_text }}</p>
-                                    {% elif question.answer_type == 'BOOLEAN' %}
-                                        <p>{{ 'Tak' if question.correct_answer_boolean else 'Nie' }}</p>
-                                    {% elif question.answer_type == 'SCALE' %}
-                                        <p>{{ question.correct_answer_scale }}/5</p>
-                                    {% elif question.answer_type == 'SALARY' %}
-                                        <p>{{ question.correct_answer_salary }} PLN</p>
-                                    {% elif question.answer_type == 'DATE' %}
-                                        <p>{{ question.correct_answer_date|datetime }}</p>
-                                    {% elif question.answer_type == 'ABCDEF' %}
-                                        <p>Odpowiedź: {{ question.correct_answer_abcdef }}</p>
-                                    {% endif %}
-                                </div>
-                                <div>
-                                    <strong>Odpowiedź kandydata:</strong><br>
-                                    {% if question.answer %}
-                                        {% if question.answer_type == 'TEXT' %}
-                                            <p>{{ question.answer.text_answer }}</p>
-                                        {% elif question.answer_type == 'BOOLEAN' %}
-                                            <p>{{ 'Tak' if question.answer.boolean_answer else 'Nie' }}</p>
-                                        {% elif question.answer_type == 'SCALE' %}
-                                            <p>{{ question.answer.scale_answer }}/5</p>
-                                        {% elif question.answer_type == 'SALARY' %}
-                                            <p>{{ question.answer.salary_answer }} PLN</p>
-                                        {% elif question.answer_type == 'DATE' %}
-                                            <p>{{ question.answer.date_answer|datetime }}</p>
-                                        {% elif question.answer_type == 'ABCDEF' %}
-                                            <p>Odpowiedź: {{ question.answer.abcdef_answer }}</p>
-                                        {% endif %}
+                                {% if question.answer_type == 'AH_POINTS' %}
+                                    {% if question.answer and question.answer.points_per_option %}
+                                        <div class="options-container">
+                                            <div class="row">
+                                                <div class="col-10">
+                                                    <strong>Opcje</strong>
+                                                </div>
+                                                <div class="col-2 text-center">
+                                                    <strong>Punkty</strong>
+                                                </div>
+                                            </div>
+                                            {% for letter in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] %}
+                                                {% if question.options and question.options[letter] %}
+                                                    <div class="row align-items-center mb-2">
+                                                        <div class="col-10">
+                                                            <strong>{{ letter|upper }}.</strong> 
+                                                            {{ question.options[letter] }}
+                                                        </div>
+                                                        <div class="col-2 text-center">
+                                                            <span class="badge bg-secondary">
+                                                                {{ question.answer.points_per_option[letter]|default(0) }}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
                                     {% else %}
                                         <p class="text-muted">Brak odpowiedzi</p>
                                     {% endif %}
-                                </div>
+                                {% else %}
+                                    <div class="mb-3">
+                                        <strong>Poprawna odpowiedź:</strong><br>
+                                        {% if question.answer_type == 'TEXT' %}
+                                            <p>{{ question.correct_answer_text }}</p>
+                                        {% elif question.answer_type == 'BOOLEAN' %}
+                                            <p>{{ 'Tak' if question.correct_answer_boolean else 'Nie' }}</p>
+                                        {% elif question.answer_type == 'SCALE' %}
+                                            <p>{{ question.correct_answer_scale }}/5</p>
+                                        {% elif question.answer_type == 'SALARY' %}
+                                            <p>{{ question.correct_answer_salary }} PLN</p>
+                                        {% elif question.answer_type == 'DATE' %}
+                                            <p>{{ question.correct_answer_date|datetime }}</p>
+                                        {% elif question.answer_type == 'ABCDEF' %}
+                                            <p>Odpowiedź: {{ question.correct_answer_abcdef }}</p>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <strong>Odpowiedź kandydata:</strong><br>
+                                        {% if question.answer %}
+                                            {% if question.answer_type == 'TEXT' %}
+                                                <p>{{ question.answer.text_answer }}</p>
+                                            {% elif question.answer_type == 'BOOLEAN' %}
+                                                <p>{{ 'Tak' if question.answer.boolean_answer else 'Nie' }}</p>
+                                            {% elif question.answer_type == 'SCALE' %}
+                                                <p>{{ question.answer.scale_answer }}/5</p>
+                                            {% elif question.answer_type == 'SALARY' %}
+                                                <p>{{ question.answer.salary_answer }} PLN</p>
+                                            {% elif question.answer_type == 'DATE' %}
+                                                <p>{{ question.answer.date_answer|datetime }}</p>
+                                            {% elif question.answer_type == 'ABCDEF' %}
+                                                <p>Odpowiedź: {{ question.answer.abcdef_answer }}</p>
+                                            {% endif %}
+                                        {% else %}
+                                            <p class="text-muted">Brak odpowiedzi</p>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -368,6 +404,18 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .accordion-button:not(.collapsed) {
+        color: var(--bs-body-color);
+        background-color: var(--bs-accordion-btn-bg);
+        box-shadow: none;
+    }
+    
+    .accordion-button:focus {
+        box-shadow: none;
+        border-color: rgba(0,0,0,.125);
+    }
+</style>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Copy link functionality - updated to match list.html implementation
@@ -436,34 +484,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
         return timeText.join(' ');
     }
-});
 
-// Add showToast function if not defined globally
-if (typeof showToast !== 'function') {
-    function showToast(message, type = 'success') {
-        const toast = document.createElement('div');
-        toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0 position-fixed top-0 start-50 translate-middle-x mt-3`;
-        toast.setAttribute('role', 'alert');
-        toast.setAttribute('aria-live', 'assertive');
-        toast.setAttribute('aria-atomic', 'true');
-        toast.style.zIndex = '1070';
-        
-        toast.innerHTML = `
-            <div class="d-flex">
-                <div class="toast-body">
-                    ${message}
+    // Add showToast function if not defined globally
+    if (typeof showToast !== 'function') {
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0 position-fixed top-0 start-50 translate-middle-x mt-3`;
+            toast.setAttribute('role', 'alert');
+            toast.setAttribute('aria-live', 'assertive');
+            toast.setAttribute('aria-atomic', 'true');
+            toast.style.zIndex = '1070';
+            
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-        `;
-        
-        document.body.appendChild(toast);
-        const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
-        bsToast.show();
-        
-        toast.addEventListener('hidden.bs.toast', () => {
-            toast.remove();
-        });
+            `;
+            
+            document.body.appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+            bsToast.show();
+            
+            toast.addEventListener('hidden.bs.toast', () => {
+                toast.remove();
+            });
+        }
     }
-}
+});
 </script>

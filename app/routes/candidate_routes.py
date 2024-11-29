@@ -47,7 +47,7 @@ def list():
 @candidate_bp.route("/<int:id>")
 def view(id):
     try:
-        # Single query to get candidate with campaign data
+        # 1. Get candidate with campaign data
         candidate = (
             supabase.from_("candidates")
             .select("*, campaign:campaigns(*)")
@@ -65,46 +65,70 @@ def view(id):
             if not test_id:
                 continue
 
-            # Single query to get test with questions and answers
-            test_data = (
+            print(f"\nProcessing {stage} test_id: {test_id}")
+
+            # 2. Get test data
+            test = (
                 supabase.from_("tests")
-                .select(
-                    """
-                    *,
-                    questions:questions(
-                        *,
-                        answers:candidate_answers!candidate_id=eq.{id}(*)
-                    )
-                    """.format(
-                        id=id
-                    )
-                )
+                .select("*")
                 .eq("id", test_id)
                 .single()
                 .execute()
             )
-
-            if not test_data.data:
+            
+            if not test.data:
+                print(f"No test found for {stage}")
                 continue
 
-            # Process questions and answers
-            questions = test_data.data.pop("questions", [])
-            processed_questions = []
+            print(f"Test data for {stage}: {test.data}")
 
-            for question in questions:
-                answers = question.pop("answers", [])
-                if answers:
-                    question["answer"] = answers[0]
+            # 3. Get questions for this test
+            questions = (
+                supabase.from_("questions")
+                .select("*")
+                .eq("test_id", test_id)
+                .order("order_number")
+                .execute()
+            )
+
+            print(f"Questions found for {stage}: {len(questions.data)}")
+
+            # 4. Get answers for this candidate and test
+            answers = (
+                supabase.from_("candidate_answers")
+                .select("*")
+                .eq("candidate_id", id)
+                .in_("question_id", [q["id"] for q in questions.data])
+                .execute()
+            )
+
+            print(f"Answers found for {stage}: {len(answers.data)}")
+
+            # Process questions and match with answers
+            processed_questions = []
+            answers_dict = {a["question_id"]: a for a in answers.data}
+
+            for question in questions.data:
+                question_id = question["id"]
+                if question_id in answers_dict:
+                    question["answer"] = answers_dict[question_id]
+                else:
+                    question["answer"] = None
                 processed_questions.append(question)
 
             tests_data[stage] = {
-                "test": test_data.data,
+                "test": test.data,
                 "questions": processed_questions,
                 "question_count": len(processed_questions),
                 "total_points": sum(q.get("points", 0) for q in processed_questions),
                 "score": candidate.data.get(f"{stage.lower()}_score"),
                 "completed_at": candidate.data.get(f"{stage.lower()}_completed_at"),
             }
+
+            print(f"Processed {stage} data:")
+            print(f"- Questions count: {len(processed_questions)}")
+            print(f"- Total points: {tests_data[stage]['total_points']}")
+            print(f"- Score: {tests_data[stage]['score']}")
 
         return render_template(
             "candidates/view.html",
