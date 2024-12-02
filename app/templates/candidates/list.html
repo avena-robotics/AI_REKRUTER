@@ -6,6 +6,15 @@
 <div class="card mb-4">
     <div class="card-body">
         <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-12 mb-3">
+                <label class="form-label">Wyszukaj</label>
+                <input type="text" 
+                       class="form-control" 
+                       id="searchText" 
+                       name="search" 
+                       placeholder="Wyszukaj w imieniu, nazwisku, emailu lub telefonie"
+                       value="{{ request.args.get('search', '') }}">
+            </div>
             <div class="col-md-3">
                 <label class="form-label">Kod kampanii</label>
                 <select class="form-select" id="filterCampaign" name="campaign_code">
@@ -33,6 +42,8 @@
                 <label class="form-label">Sortuj według</label>
                 <select class="form-select" id="sortBy" name="sort_by">
                     <option value="created_at" {% if request.args.get('sort_by', 'created_at') == 'created_at' %}selected{% endif %}>Data aplikacji</option>
+                    <option value="email" {% if request.args.get('sort_by') == 'email' %}selected{% endif %}>Email</option>
+                    <option value="phone" {% if request.args.get('sort_by') == 'phone' %}selected{% endif %}>Telefon</option>
                     <option value="recruitment_status" {% if request.args.get('sort_by') == 'recruitment_status' %}selected{% endif %}>Status rekrutacji</option>
                     <option value="po1_score" {% if request.args.get('sort_by') == 'po1_score' %}selected{% endif %}>PO1</option>
                     <option value="po2_score" {% if request.args.get('sort_by') == 'po2_score' %}selected{% endif %}>PO2</option>
@@ -76,6 +87,7 @@
                     <th>Imię i nazwisko</th>
                     <th>Kod kampanii</th>
                     <th>Email</th>
+                    <th>Telefon</th>
                     <th>Status</th>
                     <th>PO1</th>
                     <th>PO2</th>
@@ -100,6 +112,7 @@
                     <td>{{ candidate.first_name }} {{ candidate.last_name }}</td>
                     <td>{{ candidate.campaigns.code }}</td>
                     <td>{{ candidate.email }}</td>
+                    <td>{{ candidate.phone if candidate.phone else '-' }}</td>
                     <td>
                         <span class="badge 
                             {% if candidate.recruitment_status == 'ACCEPTED' %}bg-success

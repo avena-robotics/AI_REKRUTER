@@ -17,6 +17,7 @@ def list():
     status = request.args.get("status")
     sort_by = request.args.get("sort_by", "created_at")
     sort_order = request.args.get("sort_order", "desc")
+    search = request.args.get("search", "").strip()
 
     # Single query to get campaigns for dropdown
     campaigns = (
@@ -28,6 +29,18 @@ def list():
 
     # Build query for candidates with campaign data
     query = supabase.from_("candidates").select("*, campaigns!inner(*)")
+
+    # Apply search if provided
+    if search:
+        search_pattern = f"%{search.lower()}%"
+        # Build the OR conditions string following PostgREST syntax
+        query = query.or_(
+            f"first_name.ilike.{search_pattern},"
+            f"last_name.ilike.{search_pattern},"
+            f"email.ilike.{search_pattern},"
+            f"phone.ilike.{search_pattern}"
+        )
+        # Add campaign search as a separate filter
 
     # Apply filters
     if campaign_code:

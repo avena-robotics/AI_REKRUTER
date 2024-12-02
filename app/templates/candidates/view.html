@@ -5,9 +5,7 @@
         <div class="col-md-6">
             <h4>{{ candidate.first_name }} {{ candidate.last_name }}</h4>
             <p class="text-muted mb-0">Email: {{ candidate.email }}</p>
-            {% if candidate.phone %}
-            <p class="text-muted mb-0">Telefon: {{ candidate.phone }}</p>
-            {% endif %}
+            <p class="text-muted mb-0">Telefon: {{ candidate.phone if candidate.phone else '-' }}</p>
             <p class="text-muted mb-0">Kampania: {{ candidate.campaign.code }} - {{ candidate.campaign.title }}</p>
         </div>
         <div class="col-md-6 text-md-end">
