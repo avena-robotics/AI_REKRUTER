@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, abort
 from database import supabase
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 test_public_bp = Blueprint('test_public', __name__)
 
@@ -80,8 +80,11 @@ def get_candidate_test_info(token):
     return None
 
 def check_token_status(token):
-    """Check if token is used and get test info"""
+    """Check if token is used or expired and get test info"""
     try:
+        # Use UTC for consistent timezone handling
+        current_time = datetime.now(timezone.utc)
+        
         # Try PO2 token first
         candidate = supabase.table('candidates')\
             .select('*, campaign:campaigns(*)')\
@@ -91,9 +94,28 @@ def check_token_status(token):
         
         if candidate.data:
             is_used = candidate.data.get('access_token_po2_is_used', False)
+            expires_at = candidate.data.get('access_token_po2_expires_at')
+            
+            # Convert expires_at to UTC datetime if it exists
+            is_expired = False
+            if expires_at:
+                try:
+                    # Handle different datetime string formats
+                    if 'Z' in expires_at:
+                        expires_dt = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+                    elif '+' in expires_at:
+                        expires_dt = datetime.fromisoformat(expires_at)
+                    else:
+                        expires_dt = datetime.fromisoformat(expires_at).replace(tzinfo=timezone.utc)
+                    
+                    is_expired = expires_dt < current_time
+                except ValueError as e:
+                    print(f"Error parsing date: {str(e)}")
+                    is_expired = False
+            
             stage = 'PO2'
             completed_at = candidate.data.get('po2_completed_at')
-            return candidate.data, is_used, stage, completed_at
+            return candidate.data, is_used or is_expired, stage, completed_at
 
         # Try PO3 token
         candidate = supabase.table('candidates')\
@@ -104,9 +126,28 @@ def check_token_status(token):
         
         if candidate.data:
             is_used = candidate.data.get('access_token_po3_is_used', False)
+            expires_at = candidate.data.get('access_token_po3_expires_at')
+            
+            # Convert expires_at to UTC datetime if it exists
+            is_expired = False
+            if expires_at:
+                try:
+                    # Handle different datetime string formats
+                    if 'Z' in expires_at:
+                        expires_dt = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+                    elif '+' in expires_at:
+                        expires_dt = datetime.fromisoformat(expires_at)
+                    else:
+                        expires_dt = datetime.fromisoformat(expires_at).replace(tzinfo=timezone.utc)
+                    
+                    is_expired = expires_dt < current_time
+                except ValueError as e:
+                    print(f"Error parsing date: {str(e)}")
+                    is_expired = False
+            
             stage = 'PO3'
             completed_at = candidate.data.get('po3_completed_at')
-            return candidate.data, is_used, stage, completed_at
+            return candidate.data, is_used or is_expired, stage, completed_at
 
         # Try universal token
         campaign = supabase.table('campaigns')\
@@ -478,6 +519,49 @@ def complete():
 @test_public_bp.route('/test/candidate/<token>')
 def candidate_landing(token):
     """Landing page for candidate test"""
+    # Check if token is used or expired
+    candidate, is_invalid, stage, completed_at = check_token_status(token)
+    
+    # Handle invalid token
+    if not candidate:
+        return render_template('tests/error.html',
+                             title="Nieprawidłowy token",
+                             message="Podany link jest nieprawidłowy.",
+                             error_type="token_not_found")
+    
+    # Handle PO2/PO3 specific checks
+    if stage in ['PO2', 'PO3']:
+        # Check if token is expired
+        expires_at = candidate.get(f'access_token_{stage.lower()}_expires_at')
+        if expires_at:
+            try:
+                # Convert expires_at to UTC datetime
+                if 'Z' in expires_at:
+                    expires_dt = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+                elif '+' in expires_at:
+                    expires_dt = datetime.fromisoformat(expires_at)
+                else:
+                    expires_dt = datetime.fromisoformat(expires_at).replace(tzinfo=timezone.utc)
+                
+                current_time = datetime.now(timezone.utc)
+                if expires_dt < current_time:
+                    return render_template('tests/error.html',
+                                        title="Link wygasł",
+                                        message="Link do testu wygasł i nie jest już aktywny.",
+                                        error_type="test_expired")
+            except ValueError as e:
+                print(f"Error parsing date: {str(e)}")
+        
+        # Check if token was already used
+        is_used = candidate.get(f'access_token_{stage.lower()}_is_used', False)
+        if is_used:
+            return render_template('tests/used.html')
+        
+        # Check if test was already completed
+        if completed_at:
+            return render_template('tests/used.html')
+    
+    # Get test info
     test_info = get_candidate_test_info(token)
     if not test_info:
         return render_template('tests/error.html',
@@ -494,6 +578,67 @@ def candidate_landing(token):
 @test_public_bp.route('/test/candidate/<token>/start', methods=['POST'])
 def start_candidate_test(token):
     """Start candidate test"""
+    # Check if token is used or expired
+    candidate, is_invalid, stage, completed_at = check_token_status(token)
+    
+    # Handle invalid token
+    if not candidate:
+        return render_template('tests/error.html',
+                             title="Nieprawidłowy token",
+                             message="Podany link jest nieprawidłowy.",
+                             error_type="token_not_found")
+    
+    # Handle PO2/PO3 specific checks
+    if stage in ['PO2', 'PO3']:
+        # Check if token is expired
+        expires_at = candidate.get(f'access_token_{stage.lower()}_expires_at')
+        if expires_at:
+            try:
+                # Convert expires_at to UTC datetime
+                if 'Z' in expires_at:
+                    expires_dt = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+                elif '+' in expires_at:
+                    expires_dt = datetime.fromisoformat(expires_at)
+                else:
+                    expires_dt = datetime.fromisoformat(expires_at).replace(tzinfo=timezone.utc)
+                
+                current_time = datetime.now(timezone.utc)
+                if expires_dt < current_time:
+                    return render_template('tests/error.html',
+                                        title="Link wygasł",
+                                        message="Link do testu wygasł i nie jest już aktywny.",
+                                        error_type="test_expired")
+            except ValueError as e:
+                print(f"Error parsing date: {str(e)}")
+        
+        # Check if token was already used
+        is_used = candidate.get(f'access_token_{stage.lower()}_is_used', False)
+        if is_used:
+            return render_template('tests/used.html')
+        
+        # Check if test was already completed
+        if completed_at:
+            return render_template('tests/used.html')
+        
+        try:
+            # Mark token as used when starting the test
+            update_data = {
+                f'access_token_{stage.lower()}_is_used': True,
+                'updated_at': datetime.now(timezone.utc).isoformat()
+            }
+            
+            supabase.table('candidates')\
+                .update(update_data)\
+                .eq('id', candidate['id'])\
+                .execute()
+        except Exception as e:
+            print(f"Error marking token as used: {str(e)}")
+            return render_template('tests/error.html',
+                                title="Wystąpił błąd",
+                                message="Nie udało się rozpocząć testu.",
+                                error_type="unexpected_error")
+    
+    # Get test info
     test_info = get_candidate_test_info(token)
     if not test_info:
         return render_template('tests/error.html',
@@ -502,12 +647,20 @@ def start_candidate_test(token):
                              error_type="test_not_found")
     
     try:
+        # Get questions
         questions = supabase.table('questions')\
             .select('*')\
             .eq('test_id', test_info['test']['id'])\
             .order('order_number')\
             .execute()
         
+        if not questions.data:
+            return render_template('tests/error.html',
+                                 title="Brak pytań",
+                                 message="Test nie zawiera żadnych pytań.",
+                                 error_type="no_questions")
+        
+        # Choose template based on test type
         template = 'tests/survey.html'
         if test_info['test']['test_type'] in ['IQ', 'EQ']:
             template = 'tests/cognitive.html'

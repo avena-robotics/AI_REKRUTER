@@ -2,74 +2,99 @@ from flask import Blueprint, render_template, request, jsonify, flash, redirect,
 from filters import format_datetime
 from database import supabase
 import secrets
-from datetime import datetime
+from datetime import datetime, timedelta
 from routes.auth_routes import login_required
 from services.group_service import get_user_groups, get_campaign_groups
+from functools import lru_cache
+import json
 
 campaign_bp = Blueprint('campaign', __name__, url_prefix='/campaigns')
 
+# Cache user groups for 5 minutes
+@lru_cache(maxsize=1000)
+def get_cached_user_groups(user_id, timestamp):
+    return get_user_groups(user_id)
 
 @campaign_bp.route('/')
 @login_required
 def list():
     try:
-        # Get user groups first
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        
+        # Cache timestamp - updates every 5 minutes
+        cache_timestamp = datetime.now().replace(second=0, microsecond=0)
+        cache_timestamp = cache_timestamp.replace(minute=cache_timestamp.minute - (cache_timestamp.minute % 5))
+        
+        # Get user groups with caching
         user_id = session.get('user_id')
-        user_groups = get_user_groups(user_id)
+        user_groups = get_cached_user_groups(user_id, cache_timestamp)
         user_group_ids = [group['id'] for group in user_groups]
         
-        # Get all campaigns with tests
-        campaigns_response = supabase.table('campaigns')\
-            .select("""
-                *,
-                po1:tests!campaigns_po1_test_id_fkey (test_type, title, description),
-                po2:tests!campaigns_po2_test_id_fkey (test_type, title, description),
-                po3:tests!campaigns_po3_test_id_fkey (test_type, title, description)
-            """)\
-            .order('created_at', desc=True)\
-            .execute()
+        # Convert list to tuple for caching
+        user_group_ids_tuple = tuple(user_group_ids)
+        
+        # Optimize the main query to fetch only necessary data and include groups
+        campaigns_response = supabase.rpc('get_campaigns_with_groups', {
+            'p_user_group_ids': user_group_ids,  # Keep as list for the query
+            'p_limit': per_page,
+            'p_offset': (page - 1) * per_page
+        }).execute()
 
-        # Format datetime fields and filter campaigns
-        filtered_campaigns = []
+        # Get total count for pagination
+        count_response = supabase.rpc('get_campaigns_count', {
+            'p_user_group_ids': user_group_ids  # Keep as list for the query
+        }).execute()
+        
+        total_count = count_response.data[0]['count'] if count_response.data else 0
+        total_pages = (total_count + per_page - 1) // per_page
+        
+        # Format datetime fields
         campaigns_data = campaigns_response.data or []
-        
         for campaign in campaigns_data:
-            if campaign and isinstance(campaign, dict):
-                # Format datetime fields
-                if campaign.get('created_at'):
-                    campaign['created_at'] = format_datetime(campaign['created_at'])
-                if campaign.get('updated_at'):
-                    campaign['updated_at'] = format_datetime(campaign['updated_at'])
-                
-                # Get groups for this campaign
-                campaign_groups = get_campaign_groups(campaign['id'])
-                campaign['groups'] = campaign_groups
-                
-                # Check if campaign has any groups that user belongs to
-                campaign_group_ids = [group['id'] for group in campaign_groups]
-                if any(group_id in user_group_ids for group_id in campaign_group_ids):
-                    filtered_campaigns.append(campaign)
-
-        # Get all tests for dropdowns
-        tests_response = supabase.table('tests')\
-            .select('id, test_type, title, description')\
-            .order('test_type')\
-            .execute()
+            if campaign.get('created_at'):
+                campaign['created_at'] = format_datetime(campaign['created_at'])
+            if campaign.get('updated_at'):
+                campaign['updated_at'] = format_datetime(campaign['updated_at'])
         
-        tests_data = tests_response.data or []
+        # Get all tests for dropdowns (cached) - use tuple for caching
+        tests_data = get_cached_tests(user_group_ids_tuple, cache_timestamp)
         
         return render_template('campaigns/list.html', 
-                             campaigns=filtered_campaigns, 
+                             campaigns=campaigns_data, 
                              tests=tests_data,
-                             groups=user_groups)
+                             groups=user_groups,
+                             page=page,
+                             total_pages=total_pages,
+                             per_page=per_page)
     
     except Exception as e:
-        print(f"Error in campaign list: {str(e)}")  # Debug log
+        print(f"Error in campaign list: {str(e)}")
         return render_template('campaigns/list.html',
                              campaigns=[],
                              tests=[],
                              groups=[],
                              error_message=f'Wystąpił błąd podczas pobierania danych: {str(e)}')
+
+# Cache tests for 5 minutes
+@lru_cache(maxsize=100)
+def get_cached_tests(group_ids_tuple, timestamp):
+    """
+    Get tests for groups with caching
+    Args:
+        group_ids_tuple: Tuple of group IDs (must be tuple for caching)
+        timestamp: Cache invalidation timestamp
+    """
+    try:
+        # Convert tuple back to list for the query
+        group_ids_list = list(group_ids_tuple)
+        tests_response = supabase.rpc('get_group_tests', {
+            'p_group_ids': group_ids_list
+        }).execute()
+        return tests_response.data or []
+    except Exception as e:
+        print(f"Error fetching tests: {str(e)}")
+        return []
 
 @campaign_bp.route('/check-code', methods=['POST'])
 def check_code():
@@ -171,33 +196,26 @@ def add():
 @campaign_bp.route('/<int:campaign_id>/data')
 def get_campaign_data(campaign_id):
     try:
-        campaign = supabase.table('campaigns')\
-            .select("""
-                *,
-                po1:tests!campaigns_po1_test_id_fkey (test_type, description),
-                po2:tests!campaigns_po2_test_id_fkey (test_type, description),
-                po3:tests!campaigns_po3_test_id_fkey (test_type, description)
-            """)\
-            .eq('id', campaign_id)\
-            .single()\
-            .execute()
+        # Use RPC to get campaign data with a single query
+        campaign_response = supabase.rpc('get_single_campaign_data', {
+            'p_campaign_id': campaign_id
+        }).execute()
         
-        if not campaign.data:
+        if not campaign_response.data:
             return jsonify({'error': 'Campaign not found'}), 404
-                        
+            
+        campaign = campaign_response.data[0]
+        
         # Format datetime fields
-        if campaign.data.get('created_at'):
-            campaign.data['created_at'] = format_datetime(campaign.data['created_at'])
-        if campaign.data.get('updated_at'):
-            campaign.data['updated_at'] = format_datetime(campaign.data['updated_at'])
+        if campaign.get('created_at'):
+            campaign['created_at'] = format_datetime(campaign['created_at'])
+        if campaign.get('updated_at'):
+            campaign['updated_at'] = format_datetime(campaign['updated_at'])
             
-        # Get assigned groups
-        campaign.data['groups'] = get_campaign_groups(campaign_id)
-            
-        return jsonify(campaign.data)
+        return jsonify(campaign)
     
     except Exception as e:
-        print(f"Error in get_campaign_data: {str(e)}")  # Debug log
+        print(f"Error in get_campaign_data: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @campaign_bp.route('/<int:campaign_id>/edit', methods=['POST'])
@@ -328,3 +346,50 @@ def get_group_tests(group_id):
     except Exception as e:
         print(f"Error getting group tests: {str(e)}")
         return jsonify([])
+
+@campaign_bp.route('/<int:campaign_id>/duplicate', methods=['POST'])
+def duplicate(campaign_id):
+    try:
+        new_code = request.json.get('code')
+        if not new_code:
+            return jsonify({
+                'success': False,
+                'error': 'Nowy kod kampanii jest wymagany'
+            })
+            
+        # Check if code exists
+        check_result = supabase.table('campaigns')\
+            .select('id')\
+            .eq('code', new_code)\
+            .execute()
+            
+        if check_result.data:
+            return jsonify({
+                'success': False,
+                'error': 'Kampania o takim kodzie już istnieje'
+            })
+            
+        # Use the new database function to duplicate campaign
+        result = supabase.rpc('duplicate_campaign', {
+            'p_campaign_id': campaign_id,
+            'p_new_code': new_code
+        }).execute()
+        
+        if result.data:
+            return jsonify({
+                'success': True,
+                'id': result.data[0]['id'],
+                'code': result.data[0]['code']
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Nie udało się zduplikować kampanii'
+            })
+            
+    except Exception as e:
+        print(f"Error duplicating campaign: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'Błąd podczas duplikowania kampanii: {str(e)}'
+        })

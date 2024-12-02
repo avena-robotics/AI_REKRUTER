@@ -170,3 +170,256 @@ create table link_groups_tests (
     test_id integer references tests(id) ON DELETE CASCADE,
     primary key (group_id, test_id)
 );
+
+-- Add indexes for common queries and joins
+CREATE INDEX idx_campaigns_is_active ON campaigns(is_active);
+CREATE INDEX idx_link_groups_campaigns_campaign_id ON link_groups_campaigns(campaign_id);
+CREATE INDEX idx_link_groups_users_user_id ON link_groups_users(user_id);
+
+-- Function to get campaigns with groups in a single query
+CREATE OR REPLACE FUNCTION get_campaigns_with_groups(
+    p_user_group_ids bigint[],
+    p_limit integer,
+    p_offset integer
+) RETURNS TABLE (
+    id bigint,
+    code text,
+    title text,
+    workplace_location text,
+    is_active boolean,
+    universal_access_token text,
+    created_at timestamp,
+    updated_at timestamp,
+    groups jsonb,
+    po1_test jsonb,
+    po2_test jsonb,
+    po3_test jsonb
+) LANGUAGE plpgsql AS $$
+BEGIN
+    RETURN QUERY
+    WITH campaign_groups AS (
+        SELECT DISTINCT c.*, 
+            jsonb_agg(
+                jsonb_build_object(
+                    'id', g.id,
+                    'name', g.name
+                )
+            ) FILTER (WHERE g.id IS NOT NULL) AS groups
+        FROM campaigns c
+        JOIN link_groups_campaigns lgc ON c.id = lgc.campaign_id
+        JOIN groups g ON lgc.group_id = g.id
+        WHERE lgc.group_id = ANY(p_user_group_ids)
+        GROUP BY c.id
+    )
+    SELECT 
+        cg.id,
+        cg.code,
+        cg.title,
+        cg.workplace_location,
+        cg.is_active,
+        cg.universal_access_token,
+        cg.created_at,
+        cg.updated_at,
+        cg.groups,
+        jsonb_build_object(
+            'test_type', t1.test_type,
+            'title', t1.title,
+            'description', t1.description
+        ) AS po1_test,
+        jsonb_build_object(
+            'test_type', t2.test_type,
+            'title', t2.title,
+            'description', t2.description
+        ) AS po2_test,
+        jsonb_build_object(
+            'test_type', t3.test_type,
+            'title', t3.title,
+            'description', t3.description
+        ) AS po3_test
+    FROM campaign_groups cg
+    LEFT JOIN tests t1 ON cg.po1_test_id = t1.id
+    LEFT JOIN tests t2 ON cg.po2_test_id = t2.id
+    LEFT JOIN tests t3 ON cg.po3_test_id = t3.id
+    ORDER BY cg.created_at DESC
+    LIMIT p_limit
+    OFFSET p_offset;
+END;
+$$;
+
+-- Function to get total campaign count
+CREATE OR REPLACE FUNCTION get_campaigns_count(
+    p_user_group_ids bigint[]
+) RETURNS TABLE (count bigint) LANGUAGE plpgsql AS $$
+BEGIN
+    RETURN QUERY
+    SELECT COUNT(DISTINCT c.id)
+    FROM campaigns c
+    JOIN link_groups_campaigns lgc ON c.id = lgc.campaign_id
+    WHERE lgc.group_id = ANY(p_user_group_ids);
+END;
+$$;
+
+-- Function to get tests for groups
+CREATE OR REPLACE FUNCTION get_group_tests(
+    p_group_ids bigint[]
+) RETURNS TABLE (
+    id integer,
+    test_type text,
+    title text,
+    description text
+) LANGUAGE plpgsql AS $$
+BEGIN
+    RETURN QUERY
+    SELECT DISTINCT t.id, t.test_type::text, t.title, t.description
+    FROM tests t
+    JOIN link_groups_tests lgt ON t.id = lgt.test_id
+    WHERE lgt.group_id = ANY(p_group_ids)
+    ORDER BY t.test_type;
+END;
+$$;
+
+-- Function to get single campaign data with all related information
+CREATE OR REPLACE FUNCTION get_single_campaign_data(
+    p_campaign_id bigint
+) RETURNS TABLE (
+    id bigint,
+    code text,
+    title text,
+    workplace_location text,
+    contract_type text,
+    employment_type text,
+    work_start_date date,
+    duties text,
+    requirements text,
+    employer_offerings text,
+    job_description text,
+    salary_range_min integer,
+    salary_range_max integer,
+    is_active boolean,
+    universal_access_token text,
+    po1_test_id integer,
+    po2_test_id integer,
+    po3_test_id integer,
+    po1_test_weight integer,
+    po2_test_weight integer,
+    po3_test_weight integer,
+    created_at timestamp,
+    updated_at timestamp,
+    groups jsonb,
+    po1_test jsonb,
+    po2_test jsonb,
+    po3_test jsonb
+) LANGUAGE plpgsql AS $$
+BEGIN
+    RETURN QUERY
+    WITH campaign_groups AS (
+        SELECT 
+            c.*,
+            jsonb_agg(
+                jsonb_build_object(
+                    'id', g.id,
+                    'name', g.name
+                )
+            ) FILTER (WHERE g.id IS NOT NULL) AS groups
+        FROM campaigns c
+        LEFT JOIN link_groups_campaigns lgc ON c.id = lgc.campaign_id
+        LEFT JOIN groups g ON lgc.group_id = g.id
+        WHERE c.id = p_campaign_id
+        GROUP BY c.id
+    )
+    SELECT 
+        cg.*,
+        jsonb_build_object(
+            'test_type', t1.test_type,
+            'title', t1.title,
+            'description', t1.description
+        ) AS po1_test,
+        jsonb_build_object(
+            'test_type', t2.test_type,
+            'title', t2.title,
+            'description', t2.description
+        ) AS po2_test,
+        jsonb_build_object(
+            'test_type', t3.test_type,
+            'title', t3.title,
+            'description', t3.description
+        ) AS po3_test
+    FROM campaign_groups cg
+    LEFT JOIN tests t1 ON cg.po1_test_id = t1.id
+    LEFT JOIN tests t2 ON cg.po2_test_id = t2.id
+    LEFT JOIN tests t3 ON cg.po3_test_id = t3.id
+    WHERE cg.id = p_campaign_id;
+END;
+$$;
+
+-- Function to duplicate campaign
+CREATE OR REPLACE FUNCTION duplicate_campaign(
+    p_campaign_id bigint,
+    p_new_code text
+) RETURNS TABLE (
+    id bigint,
+    code text
+) LANGUAGE plpgsql AS $$
+DECLARE
+    new_campaign_id bigint;
+BEGIN
+    -- Insert new campaign
+    INSERT INTO campaigns (
+        code,
+        title,
+        workplace_location,
+        contract_type,
+        employment_type,
+        work_start_date,
+        duties,
+        requirements,
+        employer_offerings,
+        job_description,
+        salary_range_min,
+        salary_range_max,
+        is_active,
+        po1_test_id,
+        po2_test_id,
+        po3_test_id,
+        po1_test_weight,
+        po2_test_weight,
+        po3_test_weight,
+        created_at,
+        updated_at
+    )
+    SELECT 
+        p_new_code,
+        title,
+        workplace_location,
+        contract_type,
+        employment_type,
+        work_start_date,
+        duties,
+        requirements,
+        employer_offerings,
+        job_description,
+        salary_range_min,
+        salary_range_max,
+        is_active,
+        po1_test_id,
+        po2_test_id,
+        po3_test_id,
+        po1_test_weight,
+        po2_test_weight,
+        po3_test_weight,
+        now(),
+        now()
+    FROM campaigns
+    WHERE id = p_campaign_id
+    RETURNING id INTO new_campaign_id;
+    
+    -- Copy group associations
+    INSERT INTO link_groups_campaigns (group_id, campaign_id)
+    SELECT group_id, new_campaign_id
+    FROM link_groups_campaigns
+    WHERE campaign_id = p_campaign_id;
+    
+    RETURN QUERY
+    SELECT new_campaign_id, p_new_code;
+END;
+$$;
