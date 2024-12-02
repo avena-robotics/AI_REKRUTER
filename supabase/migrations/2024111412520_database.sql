@@ -423,3 +423,128 @@ BEGIN
     SELECT new_campaign_id, p_new_code;
 END;
 $$;
+
+-- Add after other functions
+CREATE OR REPLACE FUNCTION get_candidate_with_tests(p_candidate_id bigint)
+RETURNS TABLE (
+    candidate_data jsonb,
+    tests_data jsonb
+) LANGUAGE plpgsql AS $$
+BEGIN
+    RETURN QUERY
+    WITH candidate_info AS (
+        -- Get candidate with campaign data
+        SELECT 
+            jsonb_build_object(
+                'id', c.id,
+                'first_name', c.first_name,
+                'last_name', c.last_name,
+                'email', c.email,
+                'phone', c.phone,
+                'recruitment_status', c.recruitment_status,
+                'created_at', c.created_at,
+                'updated_at', c.updated_at,
+                'po1_score', c.po1_score,
+                'po2_score', c.po2_score,
+                'po3_score', c.po3_score,
+                'po4_score', c.po4_score,
+                'total_score', c.total_score,
+                'po1_completed_at', c.po1_completed_at,
+                'po2_completed_at', c.po2_completed_at,
+                'po3_completed_at', c.po3_completed_at,
+                'score_ko', c.score_ko,
+                'score_re', c.score_re,
+                'score_w', c.score_w,
+                'score_in', c.score_in,
+                'score_pz', c.score_pz,
+                'score_kz', c.score_kz,
+                'score_dz', c.score_dz,
+                'score_sw', c.score_sw,
+                'campaign', jsonb_build_object(
+                    'id', camp.id,
+                    'code', camp.code,
+                    'title', camp.title,
+                    'po1_test_id', camp.po1_test_id,
+                    'po2_test_id', camp.po2_test_id,
+                    'po3_test_id', camp.po3_test_id
+                )
+            ) as cand_data
+        FROM candidates c
+        JOIN campaigns camp ON c.campaign_id = camp.id
+        WHERE c.id = p_candidate_id
+    ),
+    questions_with_answers AS (
+        -- Get questions and answers in a separate CTE
+        SELECT 
+            t.id as test_id,
+            jsonb_agg(
+                jsonb_build_object(
+                    'id', q.id,
+                    'question_text', q.question_text,
+                    'answer_type', q.answer_type,
+                    'options', q.options,
+                    'points', q.points,
+                    'order_number', q.order_number,
+                    'is_required', q.is_required,
+                    'image', q.image,
+                    'correct_answer_text', q.correct_answer_text,
+                    'correct_answer_boolean', q.correct_answer_boolean,
+                    'correct_answer_salary', q.correct_answer_salary,
+                    'correct_answer_scale', q.correct_answer_scale,
+                    'correct_answer_date', q.correct_answer_date,
+                    'correct_answer_abcdef', q.correct_answer_abcdef,
+                    'answer', (
+                        SELECT jsonb_build_object(
+                            'id', ca.id,
+                            'text_answer', ca.text_answer,
+                            'boolean_answer', ca.boolean_answer,
+                            'salary_answer', ca.salary_answer,
+                            'scale_answer', ca.scale_answer,
+                            'date_answer', ca.date_answer,
+                            'abcdef_answer', ca.abcdef_answer,
+                            'points_per_option', ca.points_per_option,
+                            'score', ca.score,
+                            'score_ai', ca.score_ai
+                        )
+                        FROM candidate_answers ca
+                        WHERE ca.question_id = q.id 
+                        AND ca.candidate_id = p_candidate_id
+                    )
+                ) ORDER BY q.order_number
+            ) as questions
+        FROM tests t
+        JOIN questions q ON q.test_id = t.id
+        GROUP BY t.id
+    ),
+    test_data AS (
+        -- Get all tests data with questions and answers
+        SELECT 
+            stage,
+            jsonb_build_object(
+                'test', jsonb_build_object(
+                    'id', t.id,
+                    'title', t.title,
+                    'test_type', t.test_type,
+                    'description', t.description,
+                    'passing_threshold', t.passing_threshold,
+                    'time_limit_minutes', t.time_limit_minutes
+                ),
+                'questions', qa.questions
+            ) as test_data
+        FROM (
+            SELECT 'PO1' as stage, po1_test_id as test_id FROM campaigns WHERE id = (SELECT campaign_id FROM candidates WHERE id = p_candidate_id)
+            UNION ALL
+            SELECT 'PO2', po2_test_id FROM campaigns WHERE id = (SELECT campaign_id FROM candidates WHERE id = p_candidate_id)
+            UNION ALL
+            SELECT 'PO3', po3_test_id FROM campaigns WHERE id = (SELECT campaign_id FROM candidates WHERE id = p_candidate_id)
+        ) stages
+        JOIN tests t ON stages.test_id = t.id
+        LEFT JOIN questions_with_answers qa ON qa.test_id = t.id
+    )
+    SELECT 
+        (SELECT cand_data FROM candidate_info) as candidate_data,
+        jsonb_object_agg(stage, test_data) as tests_data
+    FROM test_data
+    GROUP BY 1;
+END;
+$$;

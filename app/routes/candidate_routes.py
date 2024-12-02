@@ -51,78 +51,21 @@ def list():
 @candidate_bp.route("/<int:id>")
 def view(id):
     try:
-        # 1. Get candidate with campaign data
-        candidate = (
-            supabase.from_("candidates")
-            .select("*, campaign:campaigns(*)")
-            .eq("id", id)
-            .single()
-            .execute()
-        )
+        # Get all data in a single query using the new function
+        result = supabase.rpc(
+            'get_candidate_with_tests',
+            {'p_candidate_id': id}
+        ).execute()
 
-        if not candidate.data:
+        if not result.data or not result.data[0]['candidate_data']:
             return jsonify({"error": "Candidate not found"}), 404
 
-        tests_data = {}
-        for stage in ["PO1", "PO2", "PO3", "PO4"]:
-            test_id = candidate.data["campaign"].get(f"{stage.lower()}_test_id")
-            if not test_id:
-                continue
-
-            # 2. Get test data
-            test = (
-                supabase.from_("tests")
-                .select("*")
-                .eq("id", test_id)
-                .single()
-                .execute()
-            )
-            
-            if not test.data:
-                continue
-
-            # 3. Get questions for this test
-            questions = (
-                supabase.from_("questions")
-                .select("*")
-                .eq("test_id", test_id)
-                .order("order_number")
-                .execute()
-            )
-
-            # 4. Get answers for this candidate and test
-            answers = (
-                supabase.from_("candidate_answers")
-                .select("*")
-                .eq("candidate_id", id)
-                .in_("question_id", [q["id"] for q in questions.data])
-                .execute()
-            )
-
-            # Process questions and match with answers
-            processed_questions = []
-            answers_dict = {a["question_id"]: a for a in answers.data}
-
-            for question in questions.data:
-                question_id = question["id"]
-                if question_id in answers_dict:
-                    question["answer"] = answers_dict[question_id]
-                else:
-                    question["answer"] = None
-                processed_questions.append(question)
-
-            tests_data[stage] = {
-                "test": test.data,
-                "questions": processed_questions,
-                "question_count": len(processed_questions),
-                "total_points": sum(q.get("points", 0) for q in processed_questions),
-                "score": candidate.data.get(f"{stage.lower()}_score"),
-                "completed_at": candidate.data.get(f"{stage.lower()}_completed_at"),
-            }
+        candidate_data = result.data[0]['candidate_data']
+        tests_data = result.data[0]['tests_data'] or {}
 
         return render_template(
             "candidates/view.html",
-            candidate=candidate.data,
+            candidate=candidate_data,
             tests=tests_data,
         )
 
