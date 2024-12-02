@@ -660,8 +660,16 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                             const questionHtml = createQuestionHtml(question);
                             questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
                             
-                            // After adding HTML, set correct answer based on type
+                            // Get the newly added question card
                             const questionCard = questionsContainer.lastElementChild;
+                            
+                            // Attach event listener to answer type select
+                            const answerTypeSelect = questionCard.querySelector('[name$="[answer_type]"]');
+                            if (answerTypeSelect) {
+                                answerTypeSelect.addEventListener('change', handleAnswerTypeChange);
+                            }
+                            
+                            // After adding HTML, set correct answer based on type
                             const answerType = question.answer_type;
                             
                             console.log(`Setting answer for type: ${answerType}`);
@@ -982,11 +990,26 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
     function handleAnswerTypeChange(e) {
         const questionCard = e.target.closest('.question-card');
         const answerFieldsContainer = questionCard.querySelector('.answer-fields');
-        const questionCounter = Array.from(questionCard.parentElement.children).indexOf(questionCard);
+        const questionCounter = questionCard.dataset.questionIndex;
         
+        // Remove all existing answer-related hidden inputs
+        const hiddenInputs = questionCard.querySelectorAll('input[type="hidden"]');
+        hiddenInputs.forEach(input => {
+            if (input.name.includes('correct_answer')) {
+                input.remove();
+            }
+        });
+        
+        // Clear the answer fields container and create new fields
         answerFieldsContainer.innerHTML = createAnswerFieldsHtml(questionCounter, {
             answer_type: e.target.value
         });
+        
+        // Add change event listener to new answer type select
+        const newAnswerTypeSelect = questionCard.querySelector('.answer-type-select');
+        if (newAnswerTypeSelect) {
+            newAnswerTypeSelect.addEventListener('change', handleAnswerTypeChange);
+        }
     }
     
     function handleAddQuestion(e) {
