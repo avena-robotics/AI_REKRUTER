@@ -1,4 +1,9 @@
 -- Drop tables first (in reverse order of dependencies)
+DROP TABLE IF EXISTS link_groups_users CASCADE;
+DROP TABLE IF EXISTS link_groups_tests CASCADE;
+DROP TABLE IF EXISTS link_groups_campaigns CASCADE;
+DROP TABLE IF EXISTS groups CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS candidate_answers CASCADE;
 DROP TABLE IF EXISTS candidates CASCADE;
 DROP TABLE IF EXISTS questions CASCADE;
@@ -8,20 +13,18 @@ DROP TABLE IF EXISTS campaigns CASCADE;
 -- Drop custom types
 DROP TYPE IF EXISTS recruitment_status CASCADE;
 DROP TYPE IF EXISTS answer_type CASCADE;
-DROP TYPE IF EXISTS test_stage CASCADE;
 DROP TYPE IF EXISTS test_type CASCADE;
 
 -- Create types first
 create type test_type as enum ('SURVEY', 'EQ', 'IQ');
-create type test_stage as enum ('PO1', 'PO2', 'PO3');
-create type answer_type as enum ('TEXT', 'BOOLEAN', 'SCALE', 'SALARY', 'DATE', 'ABCDEF');
+create type answer_type as enum ('TEXT', 'BOOLEAN', 'SCALE', 'SALARY', 'DATE', 'ABCDEF', 'AH_POINTS');
 create type recruitment_status as enum ('PO1', 'PO2', 'PO3', 'PO4', 'REJECTED', 'ACCEPTED');
 
 -- Create tests table before campaigns (since campaigns references tests)
 create table tests (
     id serial primary key,
+    title text not null,
     test_type test_type not null,
-    stage test_stage not null,
     description text,
     passing_threshold int not null,
     time_limit_minutes int,
@@ -59,16 +62,17 @@ create table campaigns (
 -- Tabela pytań
 create table questions (
     id serial primary key,
-    test_id integer references tests(id) ON DELETE CASCADE,           -- Id testu
-    question_text text not null,                    -- Pytanie do kandydata     
-    answer_type answer_type not null,               -- TEXT, BOOLEAN, SCALE(0-5), SALARY, DATE, ABCDEF
-    points int not null default 0,                  -- Punkty za pytanie
-    order_number integer not null,                  -- Numer pytania w testach
-    is_required boolean default true,               -- Czy pytanie jest obowiązkowe
-    image text,                                     -- Add image URL field
+    test_id integer references tests(id) ON DELETE CASCADE,         -- Id testu
+    question_text text not null,                                    -- Pytanie do kandydata lub sekcja (I-VII) dla testu EQ     
+    answer_type answer_type not null,                               -- TEXT, BOOLEAN, SCALE(0-5), SALARY, DATE, ABCDEF, AH_POINTS
+    options jsonb,                                                  -- Opcje dla testu EQ (a-h)
+    points int not null default 0,                                  -- Punkty za pytanie
+    order_number integer not null,                                  -- Numer pytania w testach
+    is_required boolean default true,                               -- Czy pytanie jest obowiązkowe
+    image text,                                                     -- Add image URL field
     correct_answer_text text,
     correct_answer_boolean boolean,
-    correct_answer_numeric numeric,
+    correct_answer_salary numeric,
     correct_answer_scale int,
     correct_answer_date date,
     correct_answer_abcdef text
@@ -97,6 +101,14 @@ create table candidates (
     access_token_po3_is_used boolean default false, -- Czy token PO3 został użyty
     access_token_po2_expires_at timestamp with time zone, -- Data ważności tokenu PO2
     access_token_po3_expires_at timestamp with time zone, -- Data ważności tokenu PO3
+    score_ko int,
+    score_re int,
+    score_w int,
+    score_in int,
+    score_pz int,
+    score_kz int,
+    score_dz int,
+    score_sw int,
     created_at timestamp default now(),
     updated_at timestamp default now()
 );
@@ -104,16 +116,17 @@ create table candidates (
 -- Tabela odpowiedzi kandydatów
 create table candidate_answers (
     id bigserial primary key,
-    candidate_id bigint references candidates(id),
+    candidate_id bigint references candidates(id) ON DELETE CASCADE,
     question_id integer references questions(id),
     text_answer text,                              -- Odpowiedź tekstowa    
     boolean_answer boolean,                        -- Odpowiedź typu boolean
-    numeric_answer numeric,                        -- Odpowiedź typu numeric
+    salary_answer numeric,                        -- Odpowiedź typu numeric
     scale_answer int,                              -- Odpowiedź typu scale
     date_answer date,                              -- Odpowiedź typu date
     abcdef_answer text,                            -- Odpowiedź typu ABCDEF
+    points_per_option jsonb,                       -- Format JSON, np. {"a": 3, "b": 5, "c": 0}
     score int,                                     -- Punkty za odpowiedź
-    score_ai int,                                  -- Punkty za odpowiedź AI
+    score_ai int,                                  -- Punkty za odpowiedź AI,
     created_at timestamp default now()
 );
 

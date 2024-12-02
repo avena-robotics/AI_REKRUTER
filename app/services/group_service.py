@@ -1,103 +1,68 @@
 from database import supabase
 
-class GroupService:
-    @staticmethod
-    def get_user_groups(user_id):
-        try:
-            response = supabase.table('link_groups_users')\
-                .select('groups(*)')\
-                .eq('user_id', user_id)\
-                .execute()
-            
-            return [item['groups'] for item in response.data] if response.data else []
-        except Exception as e:
-            print(f"Error getting user groups: {str(e)}")
+def get_user_groups(user_id):
+    """
+    Get all groups assigned to a user using a single JOIN query
+    
+    Args:
+        user_id: The ID of the user
+        
+    Returns:
+        list: List of group dictionaries with id and name
+    """
+    try:
+        # Single query using JOIN
+        response = (
+            supabase.from_("link_groups_users")
+            .select("groups:group_id(*)")
+            .eq("user_id", user_id)
+            .execute()
+        )
+        
+        if not response.data:
             return []
+            
+        # Extract groups from nested response
+        return [item["groups"] for item in response.data]
+        
+    except Exception as e:
+        print(f"Error fetching user groups: {str(e)}")
+        return []
 
-    @staticmethod
-    def get_user_test_ids(user_id):
-        try:
-            # First get user's group IDs
-            groups_response = supabase.table('link_groups_users')\
-                .select('group_id')\
-                .eq('user_id', user_id)\
-                .execute()
-            
-            if not groups_response.data:
-                return []
-            
-            group_ids = [item['group_id'] for item in groups_response.data]
-            
-            # Then get test IDs for these groups
-            tests_response = supabase.table('link_groups_tests')\
-                .select('test_id')\
-                .in_('group_id', group_ids)\
-                .execute()
-            
-            test_ids = [item['test_id'] for item in tests_response.data] if tests_response.data else []
-            return list(set(test_ids))  # Remove duplicates
-            
-        except Exception as e:
-            print(f"Error getting user tests: {str(e)}")
+def get_test_groups(test_id):
+    """Get groups assigned to a test using a single JOIN query"""
+    try:
+        response = (
+            supabase.from_("link_groups_tests")
+            .select("groups:group_id(*)")
+            .eq("test_id", test_id)
+            .execute()
+        )
+        
+        if not response.data:
             return []
+            
+        return [item["groups"] for item in response.data]
+        
+    except Exception as e:
+        print(f"Error fetching test groups: {str(e)}")
+        return []
 
-    @staticmethod
-    def get_user_campaign_ids(user_id):
-        try:
-            # First get user's group IDs
-            groups_response = supabase.table('link_groups_users')\
-                .select('group_id')\
-                .eq('user_id', user_id)\
-                .execute()
-            
-            if not groups_response.data:
-                return []
-            
-            group_ids = [item['group_id'] for item in groups_response.data]
-            
-            # Then get campaign IDs for these groups
-            campaigns_response = supabase.table('link_groups_campaigns')\
-                .select('campaign_id')\
-                .in_('group_id', group_ids)\
-                .execute()
-            
-            campaign_ids = [item['campaign_id'] for item in campaigns_response.data] if campaigns_response.data else []
-            return list(set(campaign_ids))  # Remove duplicates
-            
-        except Exception as e:
-            print(f"Error getting user campaigns: {str(e)}")
+def get_campaign_groups(campaign_id):
+    """Get groups assigned to a campaign using a single JOIN query"""
+    try:
+        response = (
+            supabase.from_("link_groups_campaigns")
+            .select("groups:group_id(*)")
+            .eq("campaign_id", campaign_id)
+            .execute()
+        )
+        
+        if not response.data:
             return []
-
-    @staticmethod
-    def get_user_available_groups(user_id):
-        """Get groups that user has access to"""
-        try:
-            response = supabase.table('link_groups_users')\
-                .select('groups(*)')\
-                .eq('user_id', user_id)\
-                .execute()
             
-            groups = [item['groups'] for item in response.data] if response.data else []
-            print(f"Available groups for user {user_id}: {groups}")  # Debug log
-            return groups
-        except Exception as e:
-            print(f"Error getting user available groups: {str(e)}")
-            return []
-
-    @staticmethod
-    def get_test_groups(test_id, user_id):
-        """Get groups for a test that user has access to"""
-        try:
-            # Get test's groups directly first
-            response = supabase.table('link_groups_tests')\
-                .select('group_id')\
-                .eq('test_id', test_id)\
-                .execute()
-            
-            group_ids = [item['group_id'] for item in response.data] if response.data else []
-            print(f"Found group IDs for test {test_id}: {group_ids}")  # Debug log
-            return group_ids
-            
-        except Exception as e:
-            print(f"Error getting test groups: {str(e)}")
-            return [] 
+        return [item["groups"] for item in response.data]
+        
+    except Exception as e:
+        print(f"Error fetching campaign groups: {str(e)}")
+        return []

@@ -1,20 +1,21 @@
 {% extends "admin_navigation.html" %}
 
-{% block title %}Testy - AI Rekruter{% endblock %}
+{% block title %}Szablony testów - AI Rekruter{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Testy</h1>
+    <h1>Szablony testów</h1>
     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTestModal">
-        Dodaj test
+        Dodaj szablon testu
     </button>
 </div>
 
 <!-- Update filters and sort section -->
 <div class="card mb-4">
     <div class="card-body">
-        <div class="row g-3 align-items-end">
-            <div class="col-md-3">
+        <form class="row g-3">
+            <!-- First row -->
+            <div class="col-md-6 col-lg-3">
                 <label class="form-label">Typ testu</label>
                 <select class="form-select" id="filterTestType">
                     <option value="">Wszystkie</option>
@@ -23,42 +24,44 @@
                     <option value="IQ">Test IQ</option>
                 </select>
             </div>
-            <div class="col-md-3">
-                <label class="form-label">Etap</label>
-                <select class="form-select" id="filterStage">
+            
+            <div class="col-md-6 col-lg-3">
+                <label class="form-label">Grupa</label>
+                <select class="form-select" id="filterGroup">
                     <option value="">Wszystkie</option>
-                    <option value="PO1">PO1</option>
-                    <option value="PO2">PO2</option>
-                    <option value="PO3">PO3</option>
+                    {% for group in user_groups %}
+                        <option value="{{ group.id }}">{{ group.name }}</option>
+                    {% endfor %}
                 </select>
             </div>
-            <div class="col-md-3">
+
+            <div class="col-md-6 col-lg-3">
                 <label class="form-label">Sortuj według</label>
                 <select class="form-select" id="sortBy">
                     <option value="created_at">Data utworzenia</option>
-                    <option value="stage">Etap</option>
                     <option value="time_limit">Limit czasu</option>
                     <option value="questions">Liczba pytań</option>
                 </select>
             </div>
-            <div class="col-md-3">
+
+            <div class="col-md-6 col-lg-3">
                 <label class="form-label">Kolejność</label>
                 <select class="form-select" id="sortOrder">
                     <option value="desc">Malejąco</option>
                     <option value="asc">Rosnąco</option>
                 </select>
             </div>
-        </div>
-        <div class="row mt-3">
-            <div class="col-12 text-end">
+
+            <!-- Second row - buttons -->
+            <div class="col-12 d-flex justify-content-end gap-2 mt-3">
                 <button type="button" class="btn btn-outline-secondary" id="resetFilters">
                     Resetuj filtry
                 </button>
-                <button type="button" class="btn btn-primary ms-2" id="applyFilters">
+                <button type="button" class="btn btn-primary" id="applyFilters">
                     Zastosuj
                 </button>
             </div>
-        </div>
+        </form>
     </div>
 </div>
 
@@ -66,18 +69,24 @@
     <table class="table table-striped">
         <thead>
             <tr>
+                <th>Tytuł</th>
                 <th>Typ testu</th>
-                <th>Etap</th>
                 <th>Limit czasu</th>
                 <th>Liczba pytań</th>
                 <th>Suma punktów do zdobycia</th>
                 <th>Próg zaliczenia</th>
+                <th>Grupy</th>
+                <th>Data utworzenia</th>
                 <th>Akcje</th>
             </tr>
         </thead>
         <tbody>
             {% for test in tests %}
-            <tr data-test-id="{{ test.id }}" ondblclick="editTest('{{ test.id }}')" style="cursor: pointer;">
+            <tr data-test-id="{{ test.id }}" 
+                data-groups='{{ test.groups|tojson|safe }}'
+                ondblclick="editTest('{{ test.id }}')" 
+                style="cursor: pointer;">
+                <td>{{ test.title }}</td>
                 <td>
                     {% if test.test_type == 'SURVEY' %}
                         Ankieta
@@ -87,15 +96,26 @@
                         Test IQ
                     {% endif %}
                 </td>
-                <td>{{ test.stage }}</td>
                 <td>{{ test.time_limit_minutes }} min</td>
                 <td>{{ test.question_count }}</td>
                 <td>{{ test.total_points }}</td>
                 <td>{{ test.passing_threshold }}</td>
                 <td>
+                    {% if test.groups %}
+                        {% for group in test.groups %}
+                            <span class="badge bg-secondary me-1">{{ group.name }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <small class="text-muted">Brak przypisanych grup</small>
+                    {% endif %}
+                </td>
+                <td>{{ test.created_at|datetime }}</td>
+                <td>
                     <div class="btn-group">
                         <button type="button" class="btn btn-sm btn-warning" 
                                 onclick="editTest('{{ test.id }}')">Edytuj</button>
+                        <button type="button" class="btn btn-sm btn-info" 
+                                onclick="duplicateTest('{{ test.id }}')">Duplikuj</button>
                         <button type="button" class="btn btn-sm btn-danger" 
                                 onclick="confirmDeleteTest('{{ test.id }}')">Usuń</button>
                     </div>
@@ -107,15 +127,22 @@
 </div>
 
 <!-- Add Test Modal -->
-<div class="modal fade" id="addTestModal" tabindex="-1">
+<div class="modal fade" id="addTestModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Dodaj nowy test</h5>
+                <h5 class="modal-title">Dodaj nowy szablon testu</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="addTestForm" method="POST" action="{{ url_for('test.add') }}">
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label class="form-label">Tytuł testu* <span class="text-muted">(Wewnętrzna identyfikacja testu)</span></label>
+                            <input type="text" class="form-control" name="title" required>
+                        </div>
+                    </div>
+                    
                     <div class="row mb-3">
                         <div class="col-12">
                             <label class="form-label">Typ testu*</label>
@@ -126,56 +153,45 @@
                             </select>
                         </div>
                     </div>
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label">Etap*</label>
-                            <select class="form-select" name="stage" required>
-                                <option value="PO1">PO1</option>
-                                <option value="PO2">PO2</option>
-                                <option value="PO3">PO3</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label">Przypisz do grup*</label>
-                            <div class="groups-container border rounded p-3">
-                                <div class="groups-list">
-                                    {% for group in available_groups %} 
-                                        <input class="form-check-input group-checkbox" type="checkbox" 
-                                               name="groups[]" 
-                                               value="{{ group.id }}" 
-                                               id="group{{ group.id }}">
-                                        <label class="form-check-label group-chip" for="group{{ group.id }}">
-                                            {{ group.name }}
-                                        </label> 
-                                    {% endfor %}
-                                </div>
-                                <div class="invalid-feedback">
-                                    Wybierz przynajmniej jedną grupę
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
+                    
                     <div class="row">
                         <div class="col-md-12 mb-3">
-                            <label class="form-label">Opis testu</label>
+                            <label class="form-label">Opis testu <span class="text-muted">(Opis wyświetlany na stronie testu dla kandydata)</span></label>
                             <textarea class="form-control" name="description" rows="2"></textarea>
                         </div>
                     </div>
 
                     <div class="row">
                         <div class="col-md-12 mb-3">
-                            <label class="form-label">Próg zaliczenia* <span class="text-muted">(Ustaw wartość 0, aby test był traktowany jako kwalifikacyjny bez progu)</span></label>
-                            <input type="number" class="form-control" name="passing_threshold" required>
+                            <label class="form-label">Próg zaliczenia* <span class="text-muted">(Ustaw wartość 0, aby test był traktowany jako bez progu)</span></label>
+                            <input type="number" class="form-control" name="passing_threshold" required min="0">
                         </div>
                         <div class="col-md-12 mb-3">
-                            <label class="form-label">Limit czasu (minuty)*</label>
-                            <input type="number" class="form-control" name="time_limit_minutes" required min="1">
-                            <div class="invalid-feedback">
-                                Podaj limit czasu (minimum 1 minuta)
+                            <label class="form-label">Limit czasu (minuty)</label>
+                            <input type="number" class="form-control" name="time_limit_minutes" min="0">
+                        </div>
+                    </div>
+
+                    <!-- Add this section in the Add Test Modal, right after the time_limit_minutes input -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label class="form-label">Grupy*</label>
+                            <div class="form-group">
+                                <div class="border rounded p-3" id="addGroupsContainer">
+                                    {% for group in groups %}
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input group-checkbox" 
+                                               name="groups[]" value="{{ group.id }}" 
+                                               id="add_group_{{ group.id }}">
+                                        <label class="form-check-label" for="add_group_{{ group.id }}">
+                                            {{ group.name }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="invalid-feedback" style="display: none;">
+                                    Aby zapisać test, musisz wybrać przynajmniej jedną grupę
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -205,15 +221,22 @@
 </div>
 
 <!-- Edit Test Modal -->
-<div class="modal fade" id="editTestModal" tabindex="-1">
+<div class="modal fade" id="editTestModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Edytuj test</h5>
+                <h5 class="modal-title">Edytuj szablon testu</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="editTestForm" method="POST">
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label class="form-label">Tytuł testu*</label>
+                            <input type="text" class="form-control" name="title" required>
+                        </div>
+                    </div>
+                    
                     <div class="row mb-3">
                         <div class="col-12">
                             <label class="form-label">Typ testu*</label>
@@ -224,39 +247,7 @@
                             </select>
                         </div>
                     </div>
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label">Etap*</label>
-                            <select class="form-select" name="stage" required>
-                                <option value="PO1">PO1</option>
-                                <option value="PO2">PO2</option>
-                                <option value="PO3">PO3</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label">Przypisz do grup*</label>
-                            <div class="groups-container border rounded p-3">
-                                <div class="groups-list">
-                                    {% for group in available_groups %}
-                                    <input class="form-check-input group-checkbox" type="checkbox" 
-                                           name="groups[]" 
-                                           value="{{ group.id }}" 
-                                           id="editGroup{{ group.id }}">
-                                    <label class="form-check-label group-chip" for="editGroup{{ group.id }}">
-                                        {{ group.name }}
-                                    </label>
-                                    {% endfor %}
-                                </div>
-                                <div class="invalid-feedback">
-                                    Wybierz przynajmniej jedną grupę
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
+                    
                     <div class="row">
                         <div class="col-md-12 mb-3">
                             <label class="form-label">Opis testu</label>
@@ -267,13 +258,34 @@
                     <div class="row">
                         <div class="col-md-12 mb-3">
                             <label class="form-label">Próg zaliczenia* <span class="text-muted">(Ustaw wartość 0, aby test był traktowany jak bez progu)</span></label>
-                            <input type="number" class="form-control" name="passing_threshold" required>
+                            <input type="number" class="form-control" name="passing_threshold" required min="0">
                         </div>
                         <div class="col-md-12 mb-3">
-                            <label class="form-label">Limit czasu (minuty)*</label>
-                            <input type="number" class="form-control" name="time_limit_minutes" required min="1">
-                            <div class="invalid-feedback">
-                                Podaj limit czasu (minimum 1 minuta)
+                            <label class="form-label">Limit czasu (minuty)</label>
+                            <input type="number" class="form-control" name="time_limit_minutes" min="0">
+                        </div>
+                    </div>
+
+                    <!-- Add groups section -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label class="form-label">Grupy*</label>
+                            <div class="form-group">
+                                <div class="border rounded p-3" id="editGroupsContainer">
+                                    {% for group in groups %}
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input group-checkbox" 
+                                               name="groups[]" value="{{ group.id }}" 
+                                               id="edit_group_{{ group.id }}">
+                                        <label class="form-check-label" for="edit_group_{{ group.id }}">
+                                            {{ group.name }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="invalid-feedback" style="display: none;">
+                                    Aby zapisać test, musisz wybrać przynajmniej jedną grupę
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -316,7 +328,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const filterTestType = document.getElementById('filterTestType');
-    const filterStage = document.getElementById('filterStage');
+    const filterGroup = document.getElementById('filterGroup');
     const sortBy = document.getElementById('sortBy');
     const sortOrder = document.getElementById('sortOrder');
     const applyFilters = document.getElementById('applyFilters');
@@ -327,14 +339,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const originalRows = Array.from(tbody.querySelectorAll('tr'));
     
     // Add button click handlers
-    applyFilters.addEventListener('click', function() {
+    applyFilters?.addEventListener('click', function() {
         updateTable(true);
     });
     
-    resetFilters.addEventListener('click', function() {
+    resetFilters?.addEventListener('click', function() {
         // Reset filter values
         filterTestType.value = '';
-        filterStage.value = '';
+        filterGroup.value = '';
         sortBy.value = 'created_at';
         sortOrder.value = 'desc';
         
@@ -358,19 +370,20 @@ document.addEventListener('DOMContentLoaded', function() {
         let rows = originalRows.map(row => row.cloneNode(true));
         
         // Apply filters
-        if (filterTestType.value || filterStage.value) {
+        if (filterTestType.value || filterGroup.value) {
             rows = rows.filter(row => {
-                const testType = row.querySelector('td:first-child').textContent.trim();
-                const stage = row.querySelector('td:nth-child(2)').textContent.trim();
+                const testType = row.querySelector('td:nth-child(2)').textContent.trim();
+                const testGroups = JSON.parse(row.dataset.groups || '[]');
                 
                 const testTypeMatch = !filterTestType.value || 
                     (filterTestType.value === 'SURVEY' && testType === 'Ankieta') ||
                     (filterTestType.value === 'EQ' && testType === 'Test EQ') ||
                     (filterTestType.value === 'IQ' && testType === 'Test IQ');
                     
-                const stageMatch = !filterStage.value || stage === filterStage.value;
+                const groupMatch = !filterGroup.value || 
+                    testGroups.some(group => group.id === parseInt(filterGroup.value));
                 
-                return testTypeMatch && stageMatch;
+                return testTypeMatch && groupMatch;
             });
         }
         
@@ -381,6 +394,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const bValue = getRowValue(b, sortBy.value);
                 
                 const order = sortOrder.value === 'asc' ? 1 : -1;
+                
+                if (typeof aValue === 'string') {
+                    return aValue.localeCompare(bValue) * order;
+                }
                 
                 if (aValue < bValue) return -1 * order;
                 if (aValue > bValue) return 1 * order;
@@ -395,14 +412,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function getRowValue(row, sortField) {
         switch (sortField) {
-            case 'stage':
-                return row.querySelector('td:nth-child(2)').textContent.trim();
             case 'time_limit':
-                return parseInt(row.querySelector('td:nth-child(3)').textContent) || 0;
+                const timeText = row.querySelector('td:nth-child(3)').textContent;
+                return parseInt(timeText.replace(' min', '')) || 0;
             case 'questions':
-                return parseInt(row.querySelector('td:nth-child(5)').textContent) || 0;
+                return parseInt(row.querySelector('td:nth-child(4)').textContent) || 0;
             case 'created_at':
-                return row.dataset.createdAt || '0';
+                const dateText = row.querySelector('td:nth-child(8)').textContent;
+                // Convert date string to timestamp for proper sorting
+                return new Date(dateText).getTime() || 0;
             default:
                 return 0;
         }
@@ -410,87 +428,221 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-{% endblock %}
-
-{% block head %}
-{{ super() }}
-<style>
-    .table tbody tr:hover {
-        background-color: rgba(0,0,0,.075);
+<!-- Add this right after the existing script that resets modal title -->
+<script defer>
+// Update the existing click handler
+document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('click', function() {
+    // Reset modal title
+    document.querySelector('#addTestModal .modal-title').textContent = 'Dodaj nowy szablon testu';
+    
+    // Get the form
+    const form = document.getElementById('addTestForm');
+    
+    // Reset all form fields
+    form.reset();
+    
+    // Clear title field explicitly (in case it was filled by duplication)
+    form.querySelector('[name="title"]').value = '';
+    
+    // Clear description field explicitly
+    form.querySelector('[name="description"]').value = '';
+    
+    // Reset numeric fields to empty
+    form.querySelector('[name="passing_threshold"]').value = '';
+    form.querySelector('[name="time_limit_minutes"]').value = '';
+    
+    // Reset test type to first option
+    form.querySelector('[name="test_type"]').selectedIndex = 0;
+    
+    // Clear questions container
+    const questionsContainer = form.querySelector('.questions-container');
+    if (questionsContainer) {
+        questionsContainer.innerHTML = '';
     }
-</style>
+    
+    // Uncheck all group checkboxes
+    form.querySelectorAll('input[name="groups[]"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
+    // Reset validation states
+    form.querySelectorAll('.is-invalid').forEach(el => {
+        el.classList.remove('is-invalid');
+    });
+    form.querySelectorAll('.border-danger').forEach(el => {
+        el.classList.remove('border-danger');
+    });
+    form.querySelectorAll('.invalid-feedback').forEach(el => {
+        el.style.display = 'none';
+    });
+});
+</script>
 <script defer>
     document.addEventListener('DOMContentLoaded', function() {
+        // Filtering and sorting code
+        const filterTestType = document.getElementById('filterTestType');
+        const filterGroup = document.getElementById('filterGroup');
+        const sortBy = document.getElementById('sortBy');
+        const sortOrder = document.getElementById('sortOrder');
+        const applyFilters = document.getElementById('applyFilters');
+        const resetFilters = document.getElementById('resetFilters');
+        
+        // Store original table rows
+        const tbody = document.querySelector('tbody');
+        const originalRows = Array.from(tbody.querySelectorAll('tr'));
+        
+        // Add button click handlers
+        applyFilters?.addEventListener('click', function() {
+            updateTable(true);
+        });
+        
+        resetFilters?.addEventListener('click', function() {
+            // Reset filter values
+            filterTestType.value = '';
+            filterGroup.value = '';
+            sortBy.value = 'created_at';
+            sortOrder.value = 'desc';
+            
+            // Restore original rows and order
+            updateTable(false);
+        });
+        
         // Initialize Sortable for all question containers
         document.querySelectorAll('.questions-container').forEach(container => {
             initializeSortable(container);
         });
-
-        // Handle form submissions
+        
+        // Form submission and validation
         ['addTestForm', 'editTestForm'].forEach(formId => {
             const form = document.getElementById(formId);
             if (form) {
-                form.addEventListener('submit', handleTestFormSubmit);
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Validation
+                    let isValid = true;
+                    let errorMessage = '';
+
+                    // Reset validation states
+                    form.querySelectorAll('.is-invalid').forEach(el => {
+                        el.classList.remove('is-invalid');
+                    });
+                    form.querySelectorAll('.border-danger').forEach(el => {
+                        el.classList.remove('border-danger');
+                    });
+
+                    // Validate required fields
+                    form.querySelectorAll('[required]').forEach(field => {
+                        if (!field.value.trim()) {
+                            field.classList.add('is-invalid');
+                            isValid = false;
+                            errorMessage = 'Uzupełnij wszystkie wymagane pola';
+                        }
+                    });
+
+                    // Validate passing threshold
+                    const threshold = form.querySelector('[name="passing_threshold"]');
+                    if (threshold && (!threshold.value.trim() || isNaN(threshold.value))) {
+                        threshold.classList.add('is-invalid');
+                        isValid = false;
+                        errorMessage = 'Wprowadź poprawny próg zaliczenia';
+                    }
+
+                    // Validate groups
+                    const checkedGroups = form.querySelectorAll('input[name="groups[]"]:checked');
+                    const groupsContainer = form.querySelector('#groupsContainer');
+                    if (!checkedGroups.length && groupsContainer) {
+                        groupsContainer.classList.add('border-danger');
+                        isValid = false;
+                        errorMessage = errorMessage || 'Aby zapisać test, musisz wybrać przynajmniej jedną grupę';
+                    }
+
+                    if (!isValid) {
+                        showToast(errorMessage, 'error');
+                        return;
+                    }
+
+                    // If validation passes, submit the form
+                    handleTestFormSubmit.call(this, e);
+                });
+
+                // Add group checkbox change handler
+                form.querySelectorAll('.group-checkbox').forEach(checkbox => {
+                    checkbox.addEventListener('change', function() {
+                        const groupsContainer = this.closest('#groupsContainer');
+                        if (groupsContainer) {
+                            groupsContainer.classList.remove('border-danger');
+                        }
+                    });
+                });
             }
         });
 
-        // Add question button handlers
+        // Handle pending toasts
+        checkPendingToast();
+
+        // Add event listeners for "add question" buttons
         document.querySelectorAll('.add-question').forEach(button => {
-            button.addEventListener('click', handleAddQuestion);
+            button.addEventListener('click', function(e) {
+                const container = e.target.closest('.questions-section').querySelector('.questions-container');
+                const questionHtml = createQuestionHtml();
+                container.insertAdjacentHTML('beforeend', questionHtml);
+                
+                // Initialize any new answer type selects
+                const newQuestion = container.lastElementChild;
+                const answerTypeSelect = newQuestion.querySelector('[name$="[answer_type]"]');
+                if (answerTypeSelect) {
+                    answerTypeSelect.addEventListener('change', handleAnswerTypeChange);
+                }
+            });
         });
 
-        // Question type change handler
-        document.addEventListener('change', function(e) {
-            if (e.target.classList.contains('answer-type-select')) {
-                handleAnswerTypeChange(e);
-            }
-        });
-
-        // Remove question handler
+        // Add event delegation for dynamically added elements
         document.addEventListener('click', function(e) {
-            if (e.target.classList.contains('remove-question')) {
+            if (e.target.matches('.remove-question')) {
                 handleRemoveQuestion(e);
             }
         });
-
-        checkPendingToast();
-
-        // Add this to prevent double click from triggering when clicking buttons
-        document.querySelectorAll('.btn-group button').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.stopPropagation();
-            });
-        });
     });
-
+    
+    // Functions moved from test.js
     function editTest(testId) {
+        console.log(`Starting edit process for test ID: ${testId}`);
         fetch(`/tests/${testId}/data`)
             .then(response => response.json())
             .then(test => {
-                console.log('Test data received:', test); // Debug log
+                console.log('Test data received:', test);
                 const form = document.getElementById('editTestForm');
                 form.action = `/tests/${testId}/edit`;
                 
+                // Log form population
+                console.log('Populating form fields:', {
+                    title: test.title,
+                    test_type: test.test_type,
+                    description: test.description,
+                    passing_threshold: test.passing_threshold,
+                    time_limit_minutes: test.time_limit_minutes
+                });
+
                 // Populate basic test fields
+                form.querySelector('[name="title"]').value = test.title || '';
                 form.querySelector('[name="test_type"]').value = test.test_type || '';
-                form.querySelector('[name="stage"]').value = test.stage || '';
                 form.querySelector('[name="description"]').value = test.description || '';
                 form.querySelector('[name="passing_threshold"]').value = test.passing_threshold || 0;
                 form.querySelector('[name="time_limit_minutes"]').value = test.time_limit_minutes || '';
 
-                // Reset all group checkboxes first
+                // Update group checkboxes
+                const testGroups = test.groups || [];
+                console.log('Setting group checkboxes:', testGroups);
                 form.querySelectorAll('input[name="groups[]"]').forEach(checkbox => {
-                    checkbox.checked = false;
+                    checkbox.checked = testGroups.some(group => group.id === parseInt(checkbox.value));
                 });
 
-                // Check the appropriate group checkboxes
-                if (test.groups && Array.isArray(test.groups)) {
-                    test.groups.forEach(groupId => {
-                        const checkbox = form.querySelector(`input[name="groups[]"][value="${groupId}"]`);
-                        if (checkbox) {
-                            checkbox.checked = true;
-                        }
-                    });
+                // Reset validation state
+                const groupsContainer = form.querySelector('#editGroupsContainer');
+                if (groupsContainer) {
+                    groupsContainer.classList.remove('border-danger');
                 }
 
                 // Clear and populate questions
@@ -498,10 +650,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 questionsContainer.innerHTML = '';
                 
                 if (test.questions?.length > 0) {
-                    console.log('Questions to populate:', test.questions); // Debug log
+                    console.log(`Processing ${test.questions.length} questions`);
                     test.questions
                         .sort((a, b) => a.order_number - b.order_number)
                         .forEach(question => {
+                            console.log('Processing question:', question);
                             const questionHtml = createQuestionHtml(question);
                             questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
                             
@@ -509,18 +662,26 @@ document.addEventListener('DOMContentLoaded', function() {
                             const questionCard = questionsContainer.lastElementChild;
                             const answerType = question.answer_type;
                             
+                            console.log(`Setting answer for type: ${answerType}`);
+                            
                             // Set answer type specific fields
                             switch (answerType) {
                                 case 'TEXT':
                                     const textInput = questionCard.querySelector(`[name$="[correct_answer_text]"]`);
-                                    if (textInput) textInput.value = question.correct_answer_text || '';
+                                    if (textInput) {
+                                        textInput.value = question.correct_answer_text || '';
+                                        console.log('Set TEXT answer:', textInput.value);
+                                    }
                                     break;
                                     
                                 case 'BOOLEAN':
                                     const boolValue = question.correct_answer_boolean;
                                     if (boolValue !== null) {
                                         const radio = questionCard.querySelector(`[name$="[correct_answer_boolean]"][value="${boolValue}"]`);
-                                        if (radio) radio.checked = true;
+                                        if (radio) {
+                                            radio.checked = true;
+                                            console.log('Set BOOLEAN answer:', boolValue);
+                                        }
                                     }
                                     break;
                                     
@@ -528,29 +689,38 @@ document.addEventListener('DOMContentLoaded', function() {
                                     const scaleInput = questionCard.querySelector(`[name$="[correct_answer_scale]"]`);
                                     if (scaleInput && question.correct_answer_scale !== null) {
                                         scaleInput.value = question.correct_answer_scale;
+                                        console.log('Set SCALE answer:', scaleInput.value);
                                     }
                                     break;
                                     
                                 case 'SALARY':
-                                    const salaryInput = questionCard.querySelector(`[name$="[correct_answer_numeric]"]`);
-                                    if (salaryInput && question.correct_answer_numeric !== null) {
-                                        salaryInput.value = question.correct_answer_numeric;
+                                    const salaryInput = questionCard.querySelector(`[name$="[correct_answer_salary]"]`);
+                                    if (salaryInput && question.correct_answer_salary !== null) {
+                                        salaryInput.value = question.correct_answer_salary;
+                                        console.log('Set SALARY answer:', salaryInput.value);
                                     }
                                     break;
                                     
                                 case 'DATE':
                                     const dateInput = questionCard.querySelector(`[name$="[correct_answer_date]"]`);
-                                    if (dateInput) dateInput.value = question.correct_answer_date || '';
+                                    if (dateInput) {
+                                        dateInput.value = question.correct_answer_date || '';
+                                        console.log('Set DATE answer:', dateInput.value);
+                                    }
                                     break;
                                     
                                 case 'ABCDEF':
                                     const abcdefSelect = questionCard.querySelector(`[name$="[correct_answer_abcdef]"]`);
-                                    if (abcdefSelect) abcdefSelect.value = question.correct_answer_abcdef || '';
+                                    if (abcdefSelect) {
+                                        abcdefSelect.value = question.correct_answer_abcdef || '';
+                                        console.log('Set ABCDEF answer:', abcdefSelect.value);
+                                    }
                                     break;
                             }
                             
                             // Set image if exists
                             if (question.image) {
+                                console.log('Setting image:', question.image);
                                 const imagePreview = questionCard.querySelector('.image-preview');
                                 if (imagePreview) {
                                     imagePreview.innerHTML = `
@@ -564,21 +734,24 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                 }
 
+                console.log('Form population completed');
                 new bootstrap.Modal(document.getElementById('editTestModal')).show();
             })
             .catch(error => {
-                console.error('Error:', error);
+                console.error('Error loading test data:', error);
                 showToast('Błąd podczas ładowania danych testu', 'error');
             });
     }
-
+    
+    // Helper functions
     function createQuestionHtml(question = null) {
         const q = question || {};
         const questionCounter = document.querySelectorAll('.question-card').length;
         
         return `
-            <div class="card mb-2 question-card" data-question-id="${q.id || ''}" 
-                 data-order="${q.order_number || questionCounter + 1}">
+            <div class="card mb-2 question-card" 
+                 data-question-id="${q.id || ''}" 
+                 data-question-index="${questionCounter}">
                 <input type="hidden" name="questions[${questionCounter}][id]" value="${q.id || ''}">
                 <input type="hidden" name="questions[${questionCounter}][order_number]" 
                        value="${q.order_number || questionCounter + 1}">
@@ -601,32 +774,20 @@ document.addEventListener('DOMContentLoaded', function() {
                              title="Przeciągnij aby zmienić kolejność"
                              style="cursor: move;">☰</div>
                         
-                        <div class="flex-grow-1">
-                            <div class="row">
-                                <div class="col-md-8">
+                        <div class="border-start ps-3 flex-grow-1">
+                            <div class="row mb-3">
+                                <div class="col-12">
                                     <label class="form-label">Treść pytania*</label>
                                     <input type="text" class="form-control" 
                                            name="questions[${questionCounter}][question_text]"
                                            value="${q.question_text || ''}" required>
                                 </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Typ odpowiedzi*</label>
-                                    <select class="form-select answer-type-select" 
-                                            name="questions[${questionCounter}][answer_type]" required>
-                                        <option value="TEXT" ${q.answer_type === 'TEXT' ? 'selected' : ''}>Tekst</option>
-                                        <option value="BOOLEAN" ${q.answer_type === 'BOOLEAN' ? 'selected' : ''}>Tak/Nie</option>
-                                        <option value="SCALE" ${q.answer_type === 'SCALE' ? 'selected' : ''}>Skala (0-5)</option>
-                                        <option value="SALARY" ${q.answer_type === 'SALARY' ? 'selected' : ''}>Wynagrodzenie (PLN)</option>
-                                        <option value="DATE" ${q.answer_type === 'DATE' ? 'selected' : ''}>Data</option>
-                                        <option value="ABCDEF" ${q.answer_type === 'ABCDEF' ? 'selected' : ''}>ABCDEF</option>
-                                    </select>
-                                </div>
                             </div>
                             
                             <!-- Add image upload field -->
-                            <div class="row mt-3">
+                            <div class="row mb-3">
                                 <div class="col-12">
-                                    <label class="form-label">Obrazek (opcjonalnie)</label>
+                                    <label class="form-label">Obrazek</label>
                                     <input type="file" class="form-control" 
                                            name="questions[${questionCounter}][image_file]"
                                            accept="image/*"
@@ -641,12 +802,29 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </div>
                             </div>
                             
-                            <!-- Dynamic answer fields container -->
-                            <div class="answer-fields mt-3">
-                                ${createAnswerFieldsHtml(questionCounter, q)}
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Typ odpowiedzi*</label>
+                                    <select class="form-select answer-type-select" 
+                                            name="questions[${questionCounter}][answer_type]" required>
+                                        <option value="TEXT" ${q.answer_type === 'TEXT' ? 'selected' : ''}>Tekst</option>
+                                        <option value="BOOLEAN" ${q.answer_type === 'BOOLEAN' ? 'selected' : ''}>Tak/Nie</option>
+                                        <option value="SCALE" ${q.answer_type === 'SCALE' ? 'selected' : ''}>Skala (0-5)</option>
+                                        <option value="SALARY" ${q.answer_type === 'SALARY' ? 'selected' : ''}>Wynagrodzenie (PLN)</option>
+                                        <option value="DATE" ${q.answer_type === 'DATE' ? 'selected' : ''}>Data</option>
+                                        <option value="ABCDEF" ${q.answer_type === 'ABCDEF' ? 'selected' : ''}>ABCDEF</option>
+                                        <option value="AH_POINTS" ${q.answer_type === 'AH_POINTS' ? 'selected' : ''}>Test EQ (A-H)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-8">
+                                    <!-- Dynamic answer fields container -->
+                                    <div class="answer-fields">
+                                        ${createAnswerFieldsHtml(questionCounter, q)}
+                                    </div>
+                                </div>
                             </div>
                             
-                            <div class="row mt-3">
+                            <div class="row">
                                 <div class="col-md-4">
                                     <label class="form-label">Punkty za pytanie*</label>
                                     <input type="number" class="form-control" 
@@ -662,21 +840,115 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
     }
-
+    
     function createAnswerFieldsHtml(questionCounter, question) {
         const answerType = question?.answer_type || 'TEXT';
         let html = '';
         
         switch (answerType) {
-            case 'ABCDEF':
-                console.log('Creating ABCDEF answer field for question:', question); // Debug log
+            case 'AH_POINTS':
+                const options = question?.options || {};
+                console.log('Creating AH_POINTS fields with options:', options);
+                
                 html = `
                     <div class="row">
-                        <div class="col-md-12">
-                            <label class="form-label">Poprawna odpowiedź*</label>
+                        <div class="col-12">
+                            <label class="form-label">Opcje odpowiedzi (A-H)*</label>
+                            <div class="options-container">
+                                ${['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(letter => {
+                                    const letterLower = letter.toLowerCase();
+                                    const value = options[letterLower] || '';
+                                    console.log(`Setting option ${letter}:`, value);
+                                    return `
+                                        <div class="option-row mb-2">
+                                            <div class="input-group">
+                                                <span class="input-group-text">${letter}.</span>
+                                                <input type="text" 
+                                                       class="form-control"
+                                                       name="questions[${questionCounter}][options][${letterLower}]"
+                                                       value="${value}"
+                                                       placeholder="Treść opcji ${letter}"
+                                                       data-letter="${letterLower}"
+                                                       required>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                break;
+                    
+            case 'BOOLEAN':
+                html = `
+                    <div>
+                        <label class="form-label">Poprawna odpowiedź</label>
+                        <div class="form-check">
+                            <input type="radio" class="form-check-input" 
+                                   name="questions[${questionCounter}][correct_answer_boolean]" 
+                                   value="true" ${question?.correct_answer_boolean === true ? 'checked' : ''}>
+                            <label class="form-check-label">Prawda</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="radio" class="form-check-input" 
+                                   name="questions[${questionCounter}][correct_answer_boolean]" 
+                                   value="false" ${question?.correct_answer_boolean === false ? 'checked' : ''}>
+                            <label class="form-check-label">Fałsz</label>
+                        </div>
+                    </div>
+                `;
+                break;
+                    
+            case 'SCALE':
+                html = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Poprawna odpowiedź (0-5)</label>
+                            <input type="number" class="form-control" 
+                                   name="questions[${questionCounter}][correct_answer_scale]"
+                                   min="0" max="5" 
+                                   value="${question?.correct_answer_scale || ''}">
+                        </div>
+                    </div>
+                `;
+                break;
+                    
+            case 'SALARY':
+                html = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Poprawna odpowiedź (PLN)</label>
+                            <input type="number" class="form-control" 
+                                   name="questions[${questionCounter}][correct_answer_salary]"
+                                   min="0" step="100" 
+                                   value="${question?.correct_answer_salary !== null ? question.correct_answer_salary : ''}">
+                        </div>
+                    </div>
+                `;
+                break;
+                    
+            case 'DATE':
+                html = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Poprawna data</label>
+                            <input type="date" class="form-control" 
+                                   name="questions[${questionCounter}][correct_answer_date]"
+                                   value="${question?.correct_answer_date || ''}">
+                        </div>
+                    </div>
+                `;
+                break;
+                    
+            case 'ABCDEF':
+                html = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Poprawna odpowiedź</label>
                             <select class="form-select" 
-                                    name="questions[${questionCounter}][correct_answer_abcdef]" required>
-                                <option value="">Wybierz odpowiedź</option>
+                                    name="questions[${questionCounter}][correct_answer_abcdef]">
+                                <option value="" ${!question?.correct_answer_abcdef ? 'selected' : ''}>Wybierz odpowiedź</option>
                                 <option value="A" ${question?.correct_answer_abcdef === 'A' ? 'selected' : ''}>A</option>
                                 <option value="B" ${question?.correct_answer_abcdef === 'B' ? 'selected' : ''}>B</option>
                                 <option value="C" ${question?.correct_answer_abcdef === 'C' ? 'selected' : ''}>C</option>
@@ -688,68 +960,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `;
                 break;
-                
-            case 'BOOLEAN':
-                html = `
-                    <div>
-                        <label class="form-label">Poprawna odpowiedź*</label>
-                        <div class="form-check">
-                            <input type="radio" class="form-check-input" 
-                                   name="questions[${questionCounter}][correct_answer_boolean]" 
-                                   value="true" ${question?.correct_answer_boolean === true ? 'checked' : ''} required>
-                            <label class="form-check-label">Prawda</label>
-                        </div>
-                        <div class="form-check">
-                            <input type="radio" class="form-check-input" 
-                                   name="questions[${questionCounter}][correct_answer_boolean]" 
-                                   value="false" ${question?.correct_answer_boolean === false ? 'checked' : ''} required>
-                            <label class="form-check-label">Fałsz</label>
-                        </div>
-                    </div>
-                `;
-                break;
-                
-            case 'SCALE':
-                html = `
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label class="form-label">Poprawna odpowiedź (0-5)*</label>
-                            <input type="number" class="form-control" 
-                                   name="questions[${questionCounter}][correct_answer_scale]"
-                                   min="0" max="5" 
-                                   value="${question?.correct_answer_scale || ''}" required>
-                        </div>
-                    </div>
-                `;
-                break;
-                
-            case 'SALARY':
-                html = `
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label class="form-label">Poprawna odpowiedź (PLN)*</label>
-                            <input type="number" class="form-control" 
-                                   name="questions[${questionCounter}][correct_answer_numeric]"
-                                   min="0" step="100" 
-                                   value="${question?.correct_answer_numeric !== null ? question.correct_answer_numeric : ''}" required>
-                        </div>
-                    </div>
-                `;
-                break;
-                
-            case 'DATE':
-                html = `
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label class="form-label">Poprawna data*</label>
-                            <input type="date" class="form-control" 
-                                   name="questions[${questionCounter}][correct_answer_date]"
-                                   value="${question?.correct_answer_date || ''}" required>
-                        </div>
-                    </div>
-                `;
-                break;
-                
+                    
             default: // TEXT
                 html = `
                     <div class="row">
@@ -765,7 +976,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         return html;
     }
-
+    
     function handleAnswerTypeChange(e) {
         const questionCard = e.target.closest('.question-card');
         const answerFieldsContainer = questionCard.querySelector('.answer-fields');
@@ -775,25 +986,27 @@ document.addEventListener('DOMContentLoaded', function() {
             answer_type: e.target.value
         });
     }
-
+    
     function handleAddQuestion(e) {
         const container = e.target.closest('.questions-section').querySelector('.questions-container');
         const questionHtml = createQuestionHtml();
         container.insertAdjacentHTML('beforeend', questionHtml);
     }
-
+    
     function handleRemoveQuestion(e) {
         if (confirm('Czy na pewno chcesz usunąć to pytanie?')) {
             const questionCard = e.target.closest('.question-card');
             questionCard.remove();
         }
     }
-
+    
     function handleTestFormSubmit(e) {
         e.preventDefault();
         const form = this;
         const formData = new FormData(form);
         const isEdit = form.id === 'editTestForm';
+        
+        console.log(`Handling ${isEdit ? 'edit' : 'add'} form submission`);
         
         // Debug logging for form data
         console.log('Form data before submission:');
@@ -813,28 +1026,58 @@ document.addEventListener('DOMContentLoaded', function() {
                 is_required: card.querySelector('[name$="[is_required]"]').checked,
                 image: card.querySelector('input[name$="[image]"]')?.value || null
             };
-
+    
+            // Add debug logging
+            console.log('Question card dataset:', card.dataset);
+            console.log('Processing question data:', questionData);
+    
             // Handle answer type specific fields
             const answerType = questionData.answer_type;
-            if (answerType === 'ABCDEF') {
-                const abcdefSelect = card.querySelector('[name$="[correct_answer_abcdef]"]');
-                questionData.correct_answer_abcdef = abcdefSelect ? abcdefSelect.value : null;
-                console.log('ABCDEF answer value:', questionData.correct_answer_abcdef); // Debug log
-            } else if (answerType === 'SALARY') {
-                const numericValue = card.querySelector('[name$="[correct_answer_numeric]"]')?.value;
-                questionData.correct_answer_numeric = numericValue ? Number(numericValue) : null;
-            } else {
-                const answerField = `correct_answer_${answerType.toLowerCase()}`;
-                const answerInput = card.querySelector(`[name$="[${answerField}]"]`);
-                if (answerInput) {
-                    questionData[answerField] = answerInput.value;
-                }
+            console.log(`Processing question with answer type: ${answerType}`);
+            
+            switch (answerType) {
+                case 'ABCDEF':
+                    const abcdefSelect = card.querySelector('[name$="[correct_answer_abcdef]"]');
+                    questionData.correct_answer_abcdef = abcdefSelect ? abcdefSelect.value : null;
+                    console.log('ABCDEF answer value:', questionData.correct_answer_abcdef);
+                    break;
+                case 'SALARY':
+                    const salaryValue = card.querySelector('[name$="[correct_answer_salary]"]')?.value;
+                    questionData.correct_answer_salary = salaryValue ? Number(salaryValue) : null;
+                    console.log('SALARY answer value:', questionData.correct_answer_salary);
+                    break;
+                case 'AH_POINTS':
+                    const options = {};
+                    const optionInputs = card.querySelectorAll('[name*="[options]"]');
+                    console.log(`Found ${optionInputs.length} option inputs`);
+                    
+                    optionInputs.forEach(input => {
+                        const letterMatch = input.name.match(/\[options\]\[([a-h])\]/);
+                        if (letterMatch) {
+                            const letter = letterMatch[1];
+                            const value = input.value.trim();
+                            console.log(`Processing option ${letter}:`, value);
+                            options[letter] = value;  // Always store the value, even if empty
+                        }
+                    });
+                    
+                    questionData.options = options;  // Always include options object
+                    console.log('Final AH_POINTS options:', options);
+                    break;
+                default:
+                    const answerField = `correct_answer_${answerType.toLowerCase()}`;
+                    const answerInput = card.querySelector(`[name$="[${answerField}]"]`);
+                    if (answerInput) {
+                        questionData[answerField] = answerInput.type === 'checkbox' ? 
+                            answerInput.checked : answerInput.value;
+                        console.log(`${answerType} answer value:`, questionData[answerField]);
+                    }
             }
-
+    
             questions.push(questionData);
         });
-
-        console.log('Questions data before submit:', questions); // Debug log
+    
+        console.log('Questions data before submit:', questions);
         formData.append('questions', JSON.stringify(questions));
         
         fetch(form.action, {
@@ -843,18 +1086,17 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.json())
         .then(data => {
+            console.log('Server response:', data);
             if (data.success) {
-                // Store toast message in sessionStorage
+                console.log('Form submitted successfully');
                 sessionStorage.setItem('pendingToast', JSON.stringify({
                     message: data.message || (isEdit ? 'Test został zaktualizowany' : 'Test został dodany'),
                     type: 'success'
                 }));
 
-                // Close modal before reload
                 const modal = bootstrap.Modal.getInstance(form.closest('.modal'));
                 modal.hide();
                 
-                // Reload after modal is hidden
                 modal._element.addEventListener('hidden.bs.modal', function () {
                     window.location.reload();
                 }, { once: true });
@@ -863,16 +1105,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .catch(error => {
-            console.error('Error:', error);
+            console.error('Error submitting form:', error);
             showToast(error.message, 'error');
-            
-            // Reset button state
-            submitButton.disabled = false;
-            spinner.classList.add('d-none');
-            buttonText.textContent = isEdit ? 'Zapisz zmiany' : 'Zapisz test';
         });
     }
-
+    
     function confirmDeleteTest(testId) {
         if (confirm('Czy na pewno chcesz usunąć ten test?')) {
             fetch(`/tests/${testId}/delete`, {
@@ -896,7 +1133,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }
-
+    
     function showToast(message, type = 'success') {
         const toast = document.getElementById('notificationToast');
         const toastMessage = document.getElementById('toastMessage');
@@ -923,7 +1160,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const bsToast = new bootstrap.Toast(toast);
         bsToast.show();
     }
-
+    
     function initializeSortable(container) {
         if (container.sortableInstance) {
             container.sortableInstance.destroy();
@@ -937,14 +1174,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-
+    
     function updateQuestionOrders(container) {
         container.querySelectorAll('.question-card').forEach((card, index) => {
             card.dataset.order = index + 1;
             card.querySelector('input[name$="[order_number]"]').value = index + 1;
         });
     }
-
+    
     function convertToBase64(fileInput, fieldName) {
         const file = fileInput.files[0];
         if (file) {
@@ -974,7 +1211,7 @@ document.addEventListener('DOMContentLoaded', function() {
             reader.readAsDataURL(file);
         }
     }
-
+    
     function checkPendingToast() {
         const pendingToast = sessionStorage.getItem('pendingToast');
         if (pendingToast) {
@@ -988,7 +1225,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
-
+    
     // Add image handling function
     function handleImageUpload(input) {
         const file = input.files[0];
@@ -1028,83 +1265,174 @@ document.addEventListener('DOMContentLoaded', function() {
             reader.readAsDataURL(file);
         }
     }
-
+    
+    // Add form validation for groups
     document.addEventListener('DOMContentLoaded', function() {
         ['addTestForm', 'editTestForm'].forEach(formId => {
             const form = document.getElementById(formId);
             if (form) {
                 form.addEventListener('submit', function(e) {
-                    e.preventDefault();
+                    const checkedGroups = form.querySelectorAll('input[name="groups[]"]:checked');
+                    const groupsContainer = form.querySelector(form.id === 'addTestForm' ? '#addGroupsContainer' : '#editGroupsContainer');
+                    const feedbackDiv = groupsContainer.nextElementSibling;
                     
-                    // Reset all validation states
-                    form.querySelectorAll('.is-invalid').forEach(el => {
-                        el.classList.remove('is-invalid');
-                    });
-                    form.querySelectorAll('.invalid-feedback').forEach(el => {
-                        el.style.display = 'none';
-                    });
-                    
-                    let isValid = true;
-                    
-                    // Sprawdź czy wybrano grupę
-                    const selectedGroups = form.querySelectorAll('input[name="groups[]"]:checked');
-                    const groupsContainer = form.querySelector('.groups-container');
-                    
-                    if (selectedGroups.length === 0) {
+                    if (!checkedGroups.length) {
+                        e.preventDefault();
                         groupsContainer.classList.add('border-danger');
-                        groupsContainer.querySelector('.invalid-feedback').style.display = 'block';
-                        isValid = false;
+                        feedbackDiv.style.display = 'block';
+                        showToast('Należy wybrać co najmniej jedną grupę', 'error');
+                        return;
                     }
                     
-                    // Sprawdź limit czasu
-                    const timeLimit = form.querySelector('[name="time_limit_minutes"]');
-                    if (!timeLimit.value || parseInt(timeLimit.value) < 1) {
-                        timeLimit.classList.add('is-invalid');
-                        isValid = false;
-                    }
-                    
-                    if (isValid) {
-                        const formData = new FormData(form);
-                        fetch(form.action, {
-                            method: 'POST',
-                            body: formData
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                window.location.reload();
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                        });
-                    }
+                    groupsContainer.classList.remove('border-danger');
+                    feedbackDiv.style.display = 'none';
                 });
-                
-                // Dodaj obsługę zmiany checkboxów
-                form.querySelectorAll('.group-checkbox').forEach(checkbox => {
-                    checkbox.addEventListener('change', function() {
-                        const groupsContainer = form.querySelector('.groups-container');
-                        const anyChecked = form.querySelectorAll('input[name="groups[]"]:checked').length > 0;
-                        
-                        if (anyChecked) {
-                            groupsContainer.classList.remove('border-danger');
-                            groupsContainer.querySelector('.invalid-feedback').style.display = 'none';
-                        }
-                    });
-                });
-                
-                // Dodaj obsługę zmiany limitu czasu
-                const timeLimit = form.querySelector('[name="time_limit_minutes"]');
-                if (timeLimit) {
-                    timeLimit.addEventListener('input', function() {
-                        if (this.value && parseInt(this.value) >= 1) {
-                            this.classList.remove('is-invalid');
-                        }
-                    });
-                }
             }
         });
     });
-</script>
+    
+    function duplicateTest(testId) {
+        fetch(`/tests/${testId}/data`)
+            .then(response => response.json())
+            .then(test => {
+                const form = document.getElementById('addTestForm');
+                
+                // Populate form fields except unique identifiers
+                form.querySelector('[name="title"]').value = test.title ? `${test.title} - kopia` : '';
+                form.querySelector('[name="test_type"]').value = test.test_type || '';
+                form.querySelector('[name="description"]').value = test.description || '';
+                form.querySelector('[name="passing_threshold"]').value = test.passing_threshold || 0;
+                form.querySelector('[name="time_limit_minutes"]').value = test.time_limit_minutes || '';
+    
+                // Set groups
+                if (test.groups) {
+                    test.groups.forEach(group => {
+                        const checkbox = form.querySelector(`input[name="groups[]"][value="${group.id}"]`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                }
+    
+                // Clear existing questions container
+                const questionsContainer = form.querySelector('.questions-container');
+                questionsContainer.innerHTML = '';
+    
+                // Add questions
+                if (test.questions && test.questions.length > 0) {
+                    test.questions
+                        .sort((a, b) => a.order_number - b.order_number)
+                        .forEach(question => {
+                            // Remove ID from question to create new one
+                            delete question.id;
+                            const questionHtml = createQuestionHtml(question);
+                            questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
+    
+                            // Set answer type specific fields
+                            const questionCard = questionsContainer.lastElementChild;
+                            const answerType = question.answer_type;
+                            
+                            switch (answerType) {
+                                case 'TEXT':
+                                    const textInput = questionCard.querySelector(`[name$="[correct_answer_text]"]`);
+                                    if (textInput) textInput.value = question.correct_answer_text || '';
+                                    break;
+                                    
+                                case 'BOOLEAN':
+                                    const boolValue = question.correct_answer_boolean;
+                                    if (boolValue !== null) {
+                                        const radio = questionCard.querySelector(`[name$="[correct_answer_boolean]"][value="${boolValue}"]`);
+                                        if (radio) radio.checked = true;
+                                    }
+                                    break;
+                                    
+                                case 'SCALE':
+                                    const scaleInput = questionCard.querySelector(`[name$="[correct_answer_scale]"]`);
+                                    if (scaleInput && question.correct_answer_scale !== null) {
+                                        scaleInput.value = question.correct_answer_scale;
+                                    }
+                                    break;
+                                    
+                                case 'SALARY':
+                                    const salaryInput = questionCard.querySelector(`[name$="[correct_answer_salary]"]`);
+                                    if (salaryInput && question.correct_answer_salary !== null) {
+                                        salaryInput.value = question.correct_answer_salary;
+                                    }
+                                    break;
+                                    
+                                case 'DATE':
+                                    const dateInput = questionCard.querySelector(`[name$="[correct_answer_date]"]`);
+                                    if (dateInput) dateInput.value = question.correct_answer_date || '';
+                                    break;
+                                    
+                                case 'ABCDEF':
+                                    const abcdefSelect = questionCard.querySelector(`[name$="[correct_answer_abcdef]"]`);
+                                    if (abcdefSelect) abcdefSelect.value = question.correct_answer_abcdef || '';
+                                    break;
+                            }
+    
+                            // Handle image if exists
+                            if (question.image) {
+                                const imagePreview = questionCard.querySelector('.image-preview');
+                                if (imagePreview) {
+                                    imagePreview.innerHTML = `
+                                        <img src="${question.image}" class="img-thumbnail" style="max-height: 100px">
+                                        <input type="hidden" 
+                                               name="questions[${questionCard.dataset.questionIndex}][image]"
+                                               value="${question.image}">
+                                    `;
+                                }
+                            }
+                        });
+                }
+    
+                // Update modal title to indicate duplication
+                document.querySelector('#addTestModal .modal-title').textContent = 'Duplikuj szablon testu';
+                
+                // Show the modal
+                new bootstrap.Modal(document.getElementById('addTestModal')).show();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Błąd podczas ładowania danych testu', 'error');
+            });
+    }
+    
+    // Add this to reset modal title when opening normally
+    document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('click', function() {
+        document.querySelector('#addTestModal .modal-title').textContent = 'Dodaj nowy szablon testu';
+    });
+    </script>
+
+{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+    .table tbody tr:hover {
+        background-color: rgba(0,0,0,.075);
+    }
+    
+    /* Add this new style */
+    .text-muted {
+        font-size: 0.85em;
+        color: #9ca3af !important;
+    }
+    
+    .options-container {
+        padding: 15px;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+    }
+    
+    .option-row {
+        display: flex;
+        align-items: center;
+    }
+    
+    .option-row .input-group-text {
+        width: 40px;
+        justify-content: center;
+        font-weight: bold;
+        background-color: #f8f9fa;
+    }
+</style>
 {% endblock %} 

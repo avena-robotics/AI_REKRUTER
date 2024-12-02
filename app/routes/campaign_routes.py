@@ -1,10 +1,10 @@
-from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, session
+from flask import Blueprint, render_template, request, jsonify, flash, redirect, session, url_for
 from filters import format_datetime
 from database import supabase
 import secrets
 from datetime import datetime
 from routes.auth_routes import login_required
-from services.group_service import GroupService
+from services.group_service import get_user_groups, get_campaign_groups
 
 campaign_bp = Blueprint('campaign', __name__, url_prefix='/campaigns')
 
@@ -13,49 +13,62 @@ campaign_bp = Blueprint('campaign', __name__, url_prefix='/campaigns')
 @login_required
 def list():
     try:
-        # Get user's campaign IDs
+        # Get user groups first
         user_id = session.get('user_id')
-        allowed_campaign_ids = GroupService.get_user_campaign_ids(user_id)
+        user_groups = get_user_groups(user_id)
+        user_group_ids = [group['id'] for group in user_groups]
         
-        # Get campaigns with tests, filtered by user's access
+        # Get all campaigns with tests
         campaigns_response = supabase.table('campaigns')\
             .select("""
                 *,
-                po1:tests!campaigns_po1_test_id_fkey (test_type, description),
-                po2:tests!campaigns_po2_test_id_fkey (test_type, description),
-                po3:tests!campaigns_po3_test_id_fkey (test_type, description)
+                po1:tests!campaigns_po1_test_id_fkey (test_type, title, description),
+                po2:tests!campaigns_po2_test_id_fkey (test_type, title, description),
+                po3:tests!campaigns_po3_test_id_fkey (test_type, title, description)
             """)\
-            .in_('id', allowed_campaign_ids)\
             .order('created_at', desc=True)\
             .execute()
 
-        # Format datetime fields
+        # Format datetime fields and filter campaigns
+        filtered_campaigns = []
         campaigns_data = campaigns_response.data or []
+        
         for campaign in campaigns_data:
             if campaign and isinstance(campaign, dict):
+                # Format datetime fields
                 if campaign.get('created_at'):
                     campaign['created_at'] = format_datetime(campaign['created_at'])
                 if campaign.get('updated_at'):
                     campaign['updated_at'] = format_datetime(campaign['updated_at'])
+                
+                # Get groups for this campaign
+                campaign_groups = get_campaign_groups(campaign['id'])
+                campaign['groups'] = campaign_groups
+                
+                # Check if campaign has any groups that user belongs to
+                campaign_group_ids = [group['id'] for group in campaign_groups]
+                if any(group_id in user_group_ids for group_id in campaign_group_ids):
+                    filtered_campaigns.append(campaign)
 
         # Get all tests for dropdowns
         tests_response = supabase.table('tests')\
-            .select('id, test_type, stage, description')\
-            .order('stage')\
+            .select('id, test_type, title, description')\
             .order('test_type')\
             .execute()
         
         tests_data = tests_response.data or []
         
         return render_template('campaigns/list.html', 
-                             campaigns=campaigns_data, 
-                             tests=tests_data)
+                             campaigns=filtered_campaigns, 
+                             tests=tests_data,
+                             groups=user_groups)
     
     except Exception as e:
         print(f"Error in campaign list: {str(e)}")  # Debug log
         return render_template('campaigns/list.html',
                              campaigns=[],
                              tests=[],
+                             groups=[],
                              error_message=f'Wystąpił błąd podczas pobierania danych: {str(e)}')
 
 @campaign_bp.route('/check-code', methods=['POST'])
@@ -102,8 +115,16 @@ def add():
                 'error': 'Kampania o takim kodzie już istnieje'
             })
         
+        group_id = request.form.get('group_id')
+        if not group_id:
+            return jsonify({
+                'success': False,
+                'error': 'Należy wybrać grupę'
+            })
+        
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
+        # Explicitly define the fields to be inserted
         campaign_data = {
             'code': code,
             'title': request.form.get('title'),
@@ -121,12 +142,27 @@ def add():
             'po1_test_id': request.form.get('po1_test_id') or None,
             'po2_test_id': request.form.get('po2_test_id') or None,
             'po3_test_id': request.form.get('po3_test_id') or None,
+            'po1_test_weight': int(request.form['po1_test_weight']) if request.form.get('po1_test_weight') else 0,
+            'po2_test_weight': int(request.form['po2_test_weight']) if request.form.get('po2_test_weight') else 0,
+            'po3_test_weight': int(request.form['po3_test_weight']) if request.form.get('po3_test_weight') else 0,
             'created_at': current_time,
             'updated_at': current_time
         }
         
+        # Ensure no ID is included in the insert
+        if 'id' in campaign_data:
+            del campaign_data['id']
+        
         result = supabase.table('campaigns').insert(campaign_data).execute()
-        return jsonify({'success': True, 'id': result.data[0]['id']})
+        campaign_id = result.data[0]['id']
+        
+        # Add single group association
+        supabase.from_('link_groups_campaigns').insert({
+            'group_id': int(group_id),
+            'campaign_id': campaign_id
+        }).execute()
+        
+        return jsonify({'success': True, 'id': campaign_id})
     
     except Exception as e:
         print(f"Error details: {str(e)}")
@@ -148,16 +184,20 @@ def get_campaign_data(campaign_id):
         
         if not campaign.data:
             return jsonify({'error': 'Campaign not found'}), 404
-            
+                        
         # Format datetime fields
         if campaign.data.get('created_at'):
             campaign.data['created_at'] = format_datetime(campaign.data['created_at'])
         if campaign.data.get('updated_at'):
             campaign.data['updated_at'] = format_datetime(campaign.data['updated_at'])
             
+        # Get assigned groups
+        campaign.data['groups'] = get_campaign_groups(campaign_id)
+            
         return jsonify(campaign.data)
     
     except Exception as e:
+        print(f"Error in get_campaign_data: {str(e)}")  # Debug log
         return jsonify({'error': str(e)}), 500
 
 @campaign_bp.route('/<int:campaign_id>/edit', methods=['POST'])
@@ -175,6 +215,13 @@ def edit(campaign_id):
             return jsonify({
                 'success': False,
                 'error': 'Kampania o takim kodzie już istnieje'
+            })
+            
+        group_id = request.form.get('group_id')
+        if not group_id:
+            return jsonify({
+                'success': False,
+                'error': 'Należy wybrać grupę'
             })
         
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -196,13 +243,27 @@ def edit(campaign_id):
             'po1_test_id': request.form.get('po1_test_id') or None,
             'po2_test_id': request.form.get('po2_test_id') or None,
             'po3_test_id': request.form.get('po3_test_id') or None,
+            'po1_test_weight': int(request.form['po1_test_weight']) if request.form.get('po1_test_weight') else 0,
+            'po2_test_weight': int(request.form['po2_test_weight']) if request.form.get('po2_test_weight') else 0,
+            'po3_test_weight': int(request.form['po3_test_weight']) if request.form.get('po3_test_weight') else 0,
             'updated_at': current_time
         }
-        
-        result = supabase.table('campaigns')\
+
+        supabase.table('campaigns')\
             .update(campaign_data)\
             .eq('id', campaign_id)\
             .execute()
+
+        # Update group association
+        supabase.from_('link_groups_campaigns')\
+            .delete()\
+            .eq('campaign_id', campaign_id)\
+            .execute()
+            
+        supabase.from_('link_groups_campaigns').insert({
+            'group_id': int(group_id),
+            'campaign_id': campaign_id
+        }).execute()
             
         return jsonify({'success': True})
     
@@ -213,7 +274,7 @@ def edit(campaign_id):
 @campaign_bp.route('/<int:campaign_id>/delete', methods=['POST'])
 def delete(campaign_id):
     try:
-        result = supabase.table('campaigns')\
+        supabase.table('campaigns')\
             .delete()\
             .eq('id', campaign_id)\
             .execute()
@@ -241,3 +302,29 @@ def generate_link(campaign_id):
     
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+# Add new endpoint to get tests for a specific group
+@campaign_bp.route('/group/<int:group_id>/tests')
+def get_group_tests(group_id):
+    try:
+        # Get all tests associated with this group
+        link_response = supabase.from_('link_groups_tests')\
+            .select('test_id')\
+            .eq('group_id', group_id)\
+            .execute()
+            
+        if not link_response.data:
+            return jsonify([])
+            
+        test_ids = [item['test_id'] for item in link_response.data]
+        
+        tests_response = supabase.from_('tests')\
+            .select('id, test_type, title, description')\
+            .in_('id', test_ids)\
+            .order('test_type')\
+            .execute()
+            
+        return jsonify(tests_response.data or [])
+    except Exception as e:
+        print(f"Error getting group tests: {str(e)}")
+        return jsonify([])

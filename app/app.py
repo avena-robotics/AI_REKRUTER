@@ -8,7 +8,7 @@ from routes.test_public_routes import test_public_bp
 from routes.auth_routes import auth_bp
 from routes.user_routes import user_bp
 from filters import format_datetime
-from services.group_service import GroupService
+from services.group_service import get_user_groups
 import secrets
 
 def create_app(config_class=Config):
@@ -19,14 +19,6 @@ def create_app(config_class=Config):
     # Register custom filters
     app.jinja_env.filters['datetime'] = format_datetime
 
-    # Add context processor for user groups
-    @app.context_processor
-    def inject_user_groups():
-        user_groups = []
-        if 'user_id' in session:
-            user_groups = GroupService.get_user_groups(session['user_id'])
-        return {'user_groups': user_groups}
-
     # Register blueprints
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
@@ -35,6 +27,15 @@ def create_app(config_class=Config):
     app.register_blueprint(test_bp)
     app.register_blueprint(test_public_bp)
     app.register_blueprint(user_bp)
+
+    # Add context processor at app level
+    @app.context_processor
+    def inject_user_groups():
+        if 'user_id' in session:
+            print("Context processor called for user_id:", session.get('user_id'))
+            user_groups = get_user_groups(session.get('user_id'))
+            return {'user_groups': user_groups}
+        return {'user_groups': []}
 
     # Register error handlers
     @app.errorhandler(404)

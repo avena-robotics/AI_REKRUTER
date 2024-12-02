@@ -37,7 +37,16 @@
                     <option value="po1_score" {% if request.args.get('sort_by') == 'po1_score' %}selected{% endif %}>PO1</option>
                     <option value="po2_score" {% if request.args.get('sort_by') == 'po2_score' %}selected{% endif %}>PO2</option>
                     <option value="po3_score" {% if request.args.get('sort_by') == 'po3_score' %}selected{% endif %}>PO3</option>
+                    <option value="po4_score" {% if request.args.get('sort_by') == 'po4_score' %}selected{% endif %}>PO4</option>
                     <option value="total_score" {% if request.args.get('sort_by') == 'total_score' %}selected{% endif %}>Wynik ogólny</option>
+                    <option value="score_ko" {% if request.args.get('sort_by') == 'score_ko' %}selected{% endif %}>KO</option>
+                    <option value="score_re" {% if request.args.get('sort_by') == 'score_re' %}selected{% endif %}>RE</option>
+                    <option value="score_w" {% if request.args.get('sort_by') == 'score_w' %}selected{% endif %}>W</option>
+                    <option value="score_in" {% if request.args.get('sort_by') == 'score_in' %}selected{% endif %}>IN</option>
+                    <option value="score_pz" {% if request.args.get('sort_by') == 'score_pz' %}selected{% endif %}>PZ</option>
+                    <option value="score_kz" {% if request.args.get('sort_by') == 'score_kz' %}selected{% endif %}>KZ</option>
+                    <option value="score_dz" {% if request.args.get('sort_by') == 'score_dz' %}selected{% endif %}>DZ</option>
+                    <option value="score_sw" {% if request.args.get('sort_by') == 'score_sw' %}selected{% endif %}>SW</option>
                 </select>
             </div>
             <div class="col-md-3">
@@ -59,86 +68,112 @@
     </div>
 </div>
 
-<div class="table-container" style="height: calc(100vh - 300px); overflow: auto;">
-    <table class="table table-striped" id="candidatesTable">
-        <thead style="position: sticky; top: 0; background: white; z-index: 1;">
-            <tr>
-                <th>Imię i nazwisko</th>
-                <th>Kod kampanii</th>
-                <th>Email</th>
-                <th>Status</th>
-                <th>PO1</th>
-                <th>PO2</th>
-                <th>PO3</th>
-                <th>Wynik ogólny</th>
-                <th>Data aplikacji</th>
-                <th>Akcje</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for candidate in candidates %}
-            <tr ondblclick="viewCandidate('{{ candidate.id }}')" style="cursor: pointer;">
-                <td>{{ candidate.first_name }} {{ candidate.last_name }}</td>
-                <td>{{ candidate.campaigns.code }}</td>
-                <td>{{ candidate.email }}</td>
-                <td>
-                    <span class="badge 
-                        {% if candidate.recruitment_status == 'ACCEPTED' %}bg-success
-                        {% elif candidate.recruitment_status == 'REJECTED' %}bg-danger
-                        {% else %}bg-primary{% endif %}">
-                        {{ candidate.recruitment_status }}
-                    </span>
-                </td>
-                <td>{{ candidate.po1_score if candidate.po1_score is not none else '-' }}</td>
-                <td>{{ candidate.po2_score if candidate.po2_score is not none else '-' }}</td>
-                <td>{{ candidate.po3_score if candidate.po3_score is not none else '-' }}</td>
-                <td>{{ candidate.total_score if candidate.total_score is not none else '-' }}</td>
-                <td>{{ candidate.created_at|datetime }}</td>
-                <td>
-                    <div class="dropdown">
-                        <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Akcje
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end" style="overflow: visible;">
-                            <li>
-                                <button class="dropdown-item" onclick="viewCandidate('{{ candidate.id }}')">
-                                    Podgląd
-                                </button>
-                            </li>
-                            {% if candidate.recruitment_status not in ['ACCEPTED', 'REJECTED'] %}
-                            <li>
-                                <button class="dropdown-item" onclick="moveToNextStage('{{ candidate.id }}')">
-                                    Przepchnij do kolejnego etapu
-                                </button>
-                            </li>
-                            <li>
-                                <button class="dropdown-item text-danger" onclick="rejectCandidate('{{ candidate.id }}')">
-                                    Odrzuć
-                                </button>
-                            </li>
-                            <li>
-                                <button class="dropdown-item text-success" onclick="acceptCandidate('{{ candidate.id }}')">
-                                    Zaakceptuj
-                                </button>
-                            </li>
-                            {% endif %}
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <button class="dropdown-item text-danger" onclick="deleteCandidate('{{ candidate.id }}')">
-                                    Usuń aplikację
-                                </button>
-                            </li>
-                        </ul>
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="table-wrapper">
+    <div class="table-scroll">
+        <table class="table table-striped" id="candidatesTable">
+            <thead style="position: sticky; top: 0; background: white; z-index: 1;">
+                <tr>
+                    <th>Imię i nazwisko</th>
+                    <th>Kod kampanii</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>PO1</th>
+                    <th>PO2</th>
+                    <th>PO3</th>
+                    <th>PO4</th>
+                    <th title="Kompetencje osobiste">KO</th>
+                    <th title="Relacje">RE</th>
+                    <th title="Wiedza">W</th>
+                    <th title="Innowacyjność">IN</th>
+                    <th title="Przedsiębiorczość">PZ</th>
+                    <th title="Komunikatywność">KZ</th>
+                    <th title="Działanie">DZ</th>
+                    <th title="Samoświadomość">SW</th>
+                    <th>Wynik ogólny</th>
+                    <th>Data aplikacji</th>
+                    <th>Akcje</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for candidate in candidates %}
+                <tr ondblclick="viewCandidate('{{ candidate.id }}')" style="cursor: pointer;">
+                    <td>{{ candidate.first_name }} {{ candidate.last_name }}</td>
+                    <td>{{ candidate.campaigns.code }}</td>
+                    <td>{{ candidate.email }}</td>
+                    <td>
+                        <span class="badge 
+                            {% if candidate.recruitment_status == 'ACCEPTED' %}bg-success
+                            {% elif candidate.recruitment_status == 'REJECTED' %}bg-danger
+                            {% else %}bg-primary{% endif %}">
+                            {{ candidate.recruitment_status }}
+                        </span>
+                    </td>
+                    <td>{{ candidate.po1_score if candidate.po1_score is not none else '-' }}</td>
+                    <td>{{ candidate.po2_score if candidate.po2_score is not none else '-' }}</td>
+                    <td>{{ candidate.po3_score if candidate.po3_score is not none else '-' }}</td>
+                    <td>{{ candidate.po4_score if candidate.po4_score is not none else '-' }}</td>
+                    <td>{{ candidate.total_score if candidate.total_score is not none else '-' }}</td>
+                    <td>{{ candidate.score_ko if candidate.score_ko is not none else '-' }}</td>
+                    <td>{{ candidate.score_re if candidate.score_re is not none else '-' }}</td>
+                    <td>{{ candidate.score_w if candidate.score_w is not none else '-' }}</td>
+                    <td>{{ candidate.score_in if candidate.score_in is not none else '-' }}</td>
+                    <td>{{ candidate.score_pz if candidate.score_pz is not none else '-' }}</td>
+                    <td>{{ candidate.score_kz if candidate.score_kz is not none else '-' }}</td>
+                    <td>{{ candidate.score_dz if candidate.score_dz is not none else '-' }}</td>
+                    <td>{{ candidate.score_sw if candidate.score_sw is not none else '-' }}</td>
+                    <td>{{ candidate.created_at|datetime }}</td>
+                    <td>
+                        <div class="dropdown">
+                            <button class="btn btn-primary btn-sm dropdown-toggle" 
+                                    type="button" 
+                                    id="dropdownMenuButton{{ candidate.id }}" 
+                                    data-bs-toggle="dropdown" 
+                                    aria-expanded="false">
+                                Akcje
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" 
+                                aria-labelledby="dropdownMenuButton{{ candidate.id }}"
+                                style="z-index: 1021;">
+                                <li>
+                                    <button class="dropdown-item" onclick="viewCandidate('{{ candidate.id }}')">
+                                        Podgląd
+                                    </button>
+                                </li>
+                                {% if candidate.recruitment_status not in ['ACCEPTED', 'REJECTED'] %}
+                                <li>
+                                    <button class="dropdown-item" onclick="moveToNextStage('{{ candidate.id }}')">
+                                        Przepchnij do kolejnego etapu
+                                    </button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item text-danger" onclick="rejectCandidate('{{ candidate.id }}')">
+                                        Odrzuć
+                                    </button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item text-success" onclick="acceptCandidate('{{ candidate.id }}')">
+                                        Zaakceptuj
+                                    </button>
+                                </li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <button class="dropdown-item text-danger" onclick="deleteCandidate('{{ candidate.id }}')">
+                                        Usuń aplikację
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <!-- Modal for candidate details -->
-<div class="modal fade" id="candidateModal" tabindex="-1">
+<div class="modal fade" id="candidateModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -155,14 +190,39 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Upewnij się, że Bootstrap jest załadowany
+    if (typeof bootstrap === 'undefined') {
+        console.error('Bootstrap is not loaded!');
+        return;
+    }
+
+    // Inicjalizacja wszystkich dropdownów
+    document.querySelectorAll('[data-bs-toggle="dropdown"]').forEach(function(dropdownToggle) {
+        new bootstrap.Dropdown(dropdownToggle, {
+            boundary: 'window'
+        });
+    });
+
+    // Zatrzymaj propagację kliknięć w dropdown
+    document.querySelectorAll('.dropdown-menu').forEach(function(dropdownMenu) {
+        dropdownMenu.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
+
     window.viewCandidate = function(candidateId) {
         const modal = new bootstrap.Modal(document.getElementById('candidateModal'));
         fetch(`/candidates/${candidateId}`)
             .then(response => response.text())
             .then(html => {
                 document.getElementById('candidateModalBody').innerHTML = html;
+                initializeCopyLinks();
+                initializeExtendTokens();
                 modal.show();
             });
     }
@@ -204,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     window.deleteCandidate = function(candidateId) {
-        if (confirm('Czy na pewno chcesz usunąć tę aplikację? Ta operacja jest nieodwracalna.')) {
+        if (confirm('Czy na pewno chcesz usunąć t aplikację? Ta operacja jest nieodwracalna.')) {
             fetch(`/candidates/${candidateId}/delete`, {
                 method: 'POST',
             }).then(response => {
@@ -215,13 +275,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Add this to prevent double click from triggering when clicking buttons
-    document.querySelectorAll('.dropdown').forEach(dropdown => {
-        dropdown.addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-    });
-
     // Add hover effect CSS
     const style = document.createElement('style');
     style.textContent = `
@@ -231,5 +284,126 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
     document.head.appendChild(style);
 });
+
+function initializeCopyLinks() {
+    document.querySelectorAll('.copy-link').forEach(button => {
+        button.addEventListener('click', function() {
+            const link = this.dataset.link;
+            const fullLink = link.startsWith('http') ? link : window.location.origin + link;
+            
+            navigator.clipboard.writeText(fullLink)
+                .then(() => {
+                    showToast('Link został skopiowany do schowka', 'success');
+                })
+                .catch(err => {
+                    console.error('Failed to copy:', err);
+                    showToast('Nie udało się skopiować linku', 'error');
+                });
+        });
+    });
+}
+
+function initializeExtendTokens() {
+    document.querySelectorAll('.extend-token').forEach(button => {
+        button.addEventListener('click', async function() {
+            const candidateId = this.dataset.candidateId;
+            const stage = this.dataset.stage;
+            
+            if (confirm('Czy na pewno chcesz przedłużyć ważność tokenu o tydzień?')) {
+                try {
+                    const response = await fetch(`/candidates/${candidateId}/extend-token/${stage}`, {
+                        method: 'POST'
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showToast('Token został przedłużony', 'success');
+                        
+                        // Fetch updated candidate data
+                        const candidateResponse = await fetch(`/candidates/${candidateId}`);
+                        const updatedHtml = await candidateResponse.text();
+                        
+                        // Create a temporary container to parse the HTML
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = updatedHtml;
+                        
+                        // Find the specific expiry date element to update
+                        const currentExpiryDate = document.querySelector(
+                            `.token-expiry[data-stage="${stage}"]`
+                        );
+                        const newExpiryDate = tempDiv.querySelector(
+                            `.token-expiry[data-stage="${stage}"]`
+                        );
+                        
+                        if (currentExpiryDate && newExpiryDate) {
+                            console.log('Updating expiry date:', {
+                                stage,
+                                current: currentExpiryDate.innerHTML,
+                                new: newExpiryDate.innerHTML
+                            });
+                            currentExpiryDate.innerHTML = newExpiryDate.innerHTML;
+                        } else {
+                            console.log('Could not find expiry elements:', {
+                                stage,
+                                currentFound: !!currentExpiryDate,
+                                newFound: !!newExpiryDate
+                            });
+                        }
+                    } else {
+                        throw new Error(data.error || 'Wystąpił błąd');
+                    }
+                } catch (error) {
+                    showToast(error.message, 'error');
+                }
+            }
+        });
+    });
+}
 </script>
+
+<style>
+    .table-wrapper {
+        height: calc(100vh - 300px);
+    }
+    
+    .table-scroll {
+        overflow-x: auto;
+        overflow-y: auto;
+        height: 100%;
+    }
+    
+    /* Upewnij się, że dropdown jest zawsze na wierzchu */
+    .dropdown-menu {
+        z-index: 1021 !important;
+    }
+    
+    /* Zapewnij, że dropdown nie jest obcięty */
+    .table-scroll {
+        overflow: visible !important;
+        overflow-x: auto !important;
+    }
+    
+    /* Popraw pozycjonowanie dropdown */
+    .dropdown {
+        position: relative !important;
+    }
+    
+    /* Upewnij się, że komórka tabeli ma odpowiedni overflow */
+    td {
+        overflow: visible !important;
+    }
+
+    /* Ustaw sticky header */
+    .table thead th {
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 1;
+    }
+
+    /* Dodaj cień pod headerem tabeli */
+    .table thead th {
+        box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+    }
+</style>
 {% endblock %}

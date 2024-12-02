@@ -134,6 +134,45 @@ def process_test_answers(candidate_id, test_id, form_data):
             if '_min' in key or '_max' in key:
                 continue
                 
+            # Handle AH_POINTS type answers
+            if '_a' in key or '_b' in key or '_c' in key or '_d' in key or '_e' in key or '_f' in key or '_g' in key or '_h' in key:
+                # Extract the base question ID (remove the letter suffix)
+                base_question_id = int(key.split('_')[1])
+                
+                # Skip if we've already processed this question
+                if any(a.get('question_id') == base_question_id for a in saved_answers):
+                    continue
+                
+                question = supabase.table('questions')\
+                    .select('*, tests(*)')\
+                    .eq('id', base_question_id)\
+                    .single()\
+                    .execute()
+                
+                if not question.data or question.data['test_id'] != test_id:
+                    continue
+                
+                # Collect all points for this question
+                points_per_option = {}
+                for letter in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']:
+                    points_key = f'answer_{base_question_id}_{letter}'
+                    if points_key in form_data:
+                        points = int(form_data[points_key] or 0)
+                        if points > 0:  # Only include non-zero points
+                            points_per_option[letter] = points
+                
+                answer_data = {
+                    'candidate_id': candidate_id,
+                    'question_id': base_question_id,
+                    'points_per_option': points_per_option,
+                    'created_at': datetime.now().isoformat()
+                }
+                
+                result = supabase.table('candidate_answers').insert(answer_data).execute()
+                saved_answers.append(result.data[0])
+                continue
+                
+            # Handle other answer types...
             question_id = int(key.split('_')[1])
             question = supabase.table('questions')\
                 .select('*, tests(*)')\
@@ -167,7 +206,7 @@ def process_test_answers(candidate_id, test_id, form_data):
             elif answer_type == 'SALARY':
                 min_value = float(form_data.get(f'answer_{question_id}_min', 0))
                 max_value = float(form_data.get(f'answer_{question_id}_max', 0))
-                answer_data['numeric_answer'] = (min_value + max_value) / 2
+                answer_data['salary_answer'] = (min_value + max_value) / 2
             elif answer_type == 'DATE':
                 answer_data['date_answer'] = value
             elif answer_type == 'ABCDEF':
@@ -189,7 +228,7 @@ def calculate_answer_score(answer_type, value, question, form_data):
     elif answer_type == 'SALARY':
         min_value = float(form_data.get(f'answer_{question["id"]}_min', 0))
         max_value = float(form_data.get(f'answer_{question["id"]}_max', 0))
-        correct_value = question['correct_answer_numeric']
+        correct_value = question['correct_answer_salary']
         return question['points'] if min_value <= correct_value <= max_value else 0
     elif answer_type == 'DATE':
         answer_date = datetime.strptime(value, '%Y-%m-%d').date()
