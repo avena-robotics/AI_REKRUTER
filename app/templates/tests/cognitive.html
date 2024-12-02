@@ -85,6 +85,16 @@
                                    style="cursor: pointer;">
                         </div>
                     </div>
+                    {% elif question.answer_type == 'SALARY' %}
+                    <div class="form-group">
+                        <label class="form-label">Wynagrodzenie (Netto PLN)</label>
+                        <input type="number" 
+                               class="form-control" 
+                               name="answer_{{ question.id }}"
+                               min="0" 
+                               step="1"
+                               {% if question.is_required %}required{% endif %}>
+                    </div>
                     {% endif %}
                 </div>
             </div>

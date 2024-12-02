@@ -166,117 +166,94 @@ def check_token_status(token):
     return None, False, None, None
 
 def process_test_answers(candidate_id, test_id, form_data):
-    """Process test answers and return total score"""
-    total_score = 0
-    saved_answers = []
+    """Process test answers"""
+    answers_to_insert = []
     
+    # Get all questions for this test in one query
+    questions = supabase.table('questions')\
+        .select('*')\
+        .eq('test_id', test_id)\
+        .execute()
+    
+    # Create a lookup dictionary for questions
+    questions_lookup = {str(q['id']): q for q in questions.data}
+    
+    # Process regular answers
+    regular_answers = {}
+    ah_points_answers = {}
+    
+    # First pass - organize the data
     for key, value in form_data.items():
-        if key.startswith('answer_'):
-            if '_min' in key or '_max' in key:
-                continue
-                
-            # Handle AH_POINTS type answers
-            if '_a' in key or '_b' in key or '_c' in key or '_d' in key or '_e' in key or '_f' in key or '_g' in key or '_h' in key:
-                # Extract the base question ID (remove the letter suffix)
-                base_question_id = int(key.split('_')[1])
-                
-                # Skip if we've already processed this question
-                if any(a.get('question_id') == base_question_id for a in saved_answers):
-                    continue
-                
-                question = supabase.table('questions')\
-                    .select('*, tests(*)')\
-                    .eq('id', base_question_id)\
-                    .single()\
-                    .execute()
-                
-                if not question.data or question.data['test_id'] != test_id:
-                    continue
-                
-                # Collect all points for this question
-                points_per_option = {}
-                for letter in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']:
-                    points_key = f'answer_{base_question_id}_{letter}'
-                    if points_key in form_data:
-                        points = int(form_data[points_key] or 0)
-                        if points > 0:  # Only include non-zero points
-                            points_per_option[letter] = points
-                
-                answer_data = {
-                    'candidate_id': candidate_id,
-                    'question_id': base_question_id,
-                    'points_per_option': points_per_option,
-                    'created_at': datetime.now().isoformat()
-                }
-                
-                result = supabase.table('candidate_answers').insert(answer_data).execute()
-                saved_answers.append(result.data[0])
-                continue
-                
-            # Handle other answer types...
-            question_id = int(key.split('_')[1])
-            question = supabase.table('questions')\
-                .select('*, tests(*)')\
-                .eq('id', question_id)\
-                .single()\
-                .execute()
+        if not key.startswith('answer_'):
+            continue
             
-            if not question.data or question.data['test_id'] != test_id:
-                continue
+        if '_min' in key or '_max' in key:
+            continue
             
-            answer_data = {
-                'candidate_id': candidate_id,
-                'question_id': question_id,
-                'created_at': datetime.now().isoformat()
-            }
+        # Handle AH_POINTS type answers
+        if any(suffix in key for suffix in ['_a', '_b', '_c', '_d', '_e', '_f', '_g', '_h']):
+            question_id = key.split('_')[1]
+            letter = key.split('_')[2]
             
-            answer_type = question.data['answer_type']
-            score = calculate_answer_score(answer_type, value, question.data, form_data)
+            if question_id not in ah_points_answers:
+                ah_points_answers[question_id] = {}
             
-            if score is not None:
-                total_score += score
-                answer_data['score'] = score
-            
-            # Set the appropriate answer field
-            if answer_type == 'TEXT':
-                answer_data['text_answer'] = value
-            elif answer_type == 'BOOLEAN':
-                answer_data['boolean_answer'] = value.lower() == 'true'
-            elif answer_type == 'SCALE':
-                answer_data['scale_answer'] = int(value)
-            elif answer_type == 'SALARY':
-                min_value = float(form_data.get(f'answer_{question_id}_min', 0))
-                max_value = float(form_data.get(f'answer_{question_id}_max', 0))
-                answer_data['salary_answer'] = (min_value + max_value) / 2
-            elif answer_type == 'DATE':
-                answer_data['date_answer'] = value
-            elif answer_type == 'ABCDEF':
-                answer_data['abcdef_answer'] = value
-            
-            result = supabase.table('candidate_answers').insert(answer_data).execute()
-            saved_answers.append(result.data[0])
-    
-    return total_score
+            if value:  # Only store non-empty values
+                ah_points_answers[question_id][letter] = int(value or 0)
+        else:
+            question_id = key.split('_')[1]
+            regular_answers[question_id] = value
 
-def calculate_answer_score(answer_type, value, question, form_data):
-    """Calculate score for a single answer"""
-    if answer_type == 'TEXT':
-        return question['points'] if value == question['correct_answer_text'] else 0
-    elif answer_type == 'BOOLEAN':
-        return question['points'] if value.lower() == str(question['correct_answer_boolean']).lower() else 0
-    elif answer_type == 'SCALE':
-        return question['points'] if int(value) == question['correct_answer_scale'] else 0
-    elif answer_type == 'SALARY':
-        min_value = float(form_data.get(f'answer_{question["id"]}_min', 0))
-        max_value = float(form_data.get(f'answer_{question["id"]}_max', 0))
-        correct_value = question['correct_answer_salary']
-        return question['points'] if min_value <= correct_value <= max_value else 0
-    elif answer_type == 'DATE':
-        answer_date = datetime.strptime(value, '%Y-%m-%d').date()
-        return question['points'] if answer_date == question['correct_answer_date'] else 0
-    elif answer_type == 'ABCDEF':
-        return question['points'] if value == question['correct_answer_abcdef'] else 0
-    return None
+    # Process AH_POINTS answers
+    for question_id, points in ah_points_answers.items():
+        if not points:  # Skip if no points recorded
+            continue
+            
+        question = questions_lookup.get(question_id)
+        if not question or question['test_id'] != test_id:
+            continue
+            
+        answer_data = {
+            'candidate_id': candidate_id,
+            'question_id': int(question_id),
+            'points_per_option': points,
+            'created_at': datetime.now().isoformat()
+        }
+        answers_to_insert.append(answer_data)
+
+    # Process regular answers
+    for question_id, value in regular_answers.items():
+        question = questions_lookup.get(question_id)
+        if not question or question['test_id'] != test_id:
+            continue
+            
+        answer_data = {
+            'candidate_id': candidate_id,
+            'question_id': int(question_id),
+            'created_at': datetime.now().isoformat()
+        }
+        
+        answer_type = question['answer_type']
+        
+        # Set the appropriate answer field based on type
+        if answer_type == 'TEXT':
+            answer_data['text_answer'] = value
+        elif answer_type == 'BOOLEAN':
+            answer_data['boolean_answer'] = value.lower() == 'true'
+        elif answer_type == 'SCALE':
+            answer_data['scale_answer'] = int(value)
+        elif answer_type == 'SALARY':
+            answer_data['salary_answer'] = float(value) if value else 0
+        elif answer_type == 'DATE':
+            answer_data['date_answer'] = value
+        elif answer_type == 'ABCDEF':
+            answer_data['abcdef_answer'] = value
+            
+        answers_to_insert.append(answer_data)
+
+    # Batch insert all answers
+    if answers_to_insert:
+        supabase.table('candidate_answers').insert(answers_to_insert).execute()
 
 @test_public_bp.route('/test/<token>')
 def landing(token):

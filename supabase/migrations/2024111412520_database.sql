@@ -433,7 +433,6 @@ RETURNS TABLE (
 BEGIN
     RETURN QUERY
     WITH candidate_info AS (
-        -- Get candidate with campaign data
         SELECT 
             jsonb_build_object(
                 'id', c.id,
@@ -474,6 +473,8 @@ BEGIN
                     'contract_type', camp.contract_type,
                     'employment_type', camp.employment_type,
                     'work_start_date', camp.work_start_date,
+                    'salary_range_min', camp.salary_range_min,
+                    'salary_range_max', camp.salary_range_max,
                     'po1_test_id', camp.po1_test_id,
                     'po2_test_id', camp.po2_test_id,
                     'po3_test_id', camp.po3_test_id

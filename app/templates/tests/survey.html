@@ -252,17 +252,14 @@
                         </div>
 
                         {% elif question.answer_type == 'SALARY' %}
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Minimalne wynagrodzenie netto (PLN)</label>
-                                <input type="number" class="form-control" name="answer_{{ question.id }}_min" 
-                                       min="0" {% if question.is_required %}required{% endif %}>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Maksymalne wynagrodzenie netto (PLN)</label>
-                                <input type="number" class="form-control" name="answer_{{ question.id }}_max" 
-                                       min="0" {% if question.is_required %}required{% endif %}>
-                            </div>
+                        <div class="form-group">
+                            <label class="form-label">Wynagrodzenie (Netto PLN)</label>
+                            <input type="number" 
+                                   class="form-control" 
+                                   name="answer_{{ question.id }}"
+                                   min="0" 
+                                   step="1"
+                                   {% if question.is_required %}required{% endif %}>
                         </div>
 
                         {% elif question.answer_type == 'DATE' %}
@@ -399,15 +396,17 @@
             });
 
             document.getElementById('testForm').addEventListener('submit', function(e) {
-                const submitButton = this.querySelector('button[type="submit"]');
+                e.preventDefault();
+                
+                const form = this;
+                const submitButton = form.querySelector('button[type="submit"]');
                 const spinner = submitButton.querySelector('.spinner-border');
                 const buttonText = submitButton.querySelector('.button-text');
                 
-                // Existing validation for AH_POINTS questions
+                // Validate AH_POINTS questions
                 const ahPointsQuestions = document.querySelectorAll('.ah-points-container');
                 let isValid = true;
 
-                // First hide all error messages and remove error styling
                 document.querySelectorAll('.points-error').forEach(error => {
                     error.style.display = 'none';
                 });
@@ -432,7 +431,6 @@
                 });
 
                 if (!isValid) {
-                    e.preventDefault();
                     return;
                 }
 
@@ -440,6 +438,25 @@
                 submitButton.disabled = true;
                 spinner.classList.remove('d-none');
                 buttonText.textContent = 'Zapisywanie...';
+
+                // Submit form
+                fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form)
+                })
+                .then(response => {
+                    if (response.ok) {
+                        window.location.href = response.url;
+                    } else {
+                        throw new Error('Network response was not ok');
+                    }
+                })
+                .catch(error => {
+                    submitButton.disabled = false;
+                    spinner.classList.add('d-none');
+                    buttonText.textContent = 'Zakończ test';
+                    alert('Wystąpił błąd podczas zapisywania odpowiedzi. Spróbuj ponownie.');
+                });
             });
         });
     </script>

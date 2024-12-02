@@ -812,7 +812,7 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                                         <option value="TEXT" ${q.answer_type === 'TEXT' ? 'selected' : ''}>Tekst</option>
                                         <option value="BOOLEAN" ${q.answer_type === 'BOOLEAN' ? 'selected' : ''}>Tak/Nie</option>
                                         <option value="SCALE" ${q.answer_type === 'SCALE' ? 'selected' : ''}>Skala (0-5)</option>
-                                        <option value="SALARY" ${q.answer_type === 'SALARY' ? 'selected' : ''}>Wynagrodzenie (PLN)</option>
+                                        <option value="SALARY" ${q.answer_type === 'SALARY' ? 'selected' : ''}>Wynagrodzenie (Netto PLN)</option>
                                         <option value="DATE" ${q.answer_type === 'DATE' ? 'selected' : ''}>Data</option>
                                         <option value="ABCDEF" ${q.answer_type === 'ABCDEF' ? 'selected' : ''}>ABCDEF</option>
                                         <option value="AH_POINTS" ${q.answer_type === 'AH_POINTS' ? 'selected' : ''}>Test EQ (A-H)</option>
@@ -920,10 +920,10 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                 html = `
                     <div class="row">
                         <div class="col-md-6">
-                            <label class="form-label">Poprawna odpowiedź (PLN)</label>
+                            <label class="form-label">Poprawna odpowiedź (Netto PLN)</label>
                             <input type="number" class="form-control" 
                                    name="questions[${questionCounter}][correct_answer_salary]"
-                                   min="0" step="100" 
+                                   min="0" step="1" 
                                    value="${question?.correct_answer_salary !== null ? question.correct_answer_salary : ''}">
                         </div>
                     </div>
