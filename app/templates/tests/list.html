@@ -1031,6 +1031,16 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
         const formData = new FormData(form);
         const isEdit = form.id === 'editTestForm';
         
+        // Get button elements
+        const submitButton = form.querySelector('button[type="submit"]');
+        const spinner = submitButton.querySelector('.spinner-border');
+        const buttonText = submitButton.querySelector('.button-text');
+        
+        // Show loading state
+        submitButton.disabled = true;
+        spinner.classList.remove('d-none');
+        buttonText.textContent = 'Zapisywanie...';
+        
         console.log(`Handling ${isEdit ? 'edit' : 'add'} form submission`);
         
         // Debug logging for form data
@@ -1132,11 +1142,23 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
         .catch(error => {
             console.error('Error submitting form:', error);
             showToast(error.message, 'error');
+            
+            // Reset button state on error
+            submitButton.disabled = false;
+            spinner.classList.add('d-none');
+            buttonText.textContent = isEdit ? 'Zapisz zmiany' : 'Zapisz test';
         });
     }
     
     function confirmDeleteTest(testId) {
         if (confirm('Czy na pewno chcesz usunąć ten test?')) {
+            const deleteButton = document.querySelector(`tr[data-test-id="${testId}"] .btn-danger`);
+            const originalText = deleteButton.textContent;
+            
+            // Show loading state
+            deleteButton.disabled = true;
+            deleteButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Usuwanie...';
+            
             fetch(`/tests/${testId}/delete`, {
                 method: 'POST',
                 headers: {
@@ -1155,6 +1177,10 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
             .catch(error => {
                 console.error('Error:', error);
                 showToast(error.message, 'error');
+                
+                // Reset button state
+                deleteButton.disabled = false;
+                deleteButton.textContent = originalText;
             });
         }
     }
