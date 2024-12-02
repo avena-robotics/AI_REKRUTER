@@ -69,8 +69,6 @@ def view(id):
             if not test_id:
                 continue
 
-            print(f"\nProcessing {stage} test_id: {test_id}")
-
             # 2. Get test data
             test = (
                 supabase.from_("tests")
@@ -81,10 +79,7 @@ def view(id):
             )
             
             if not test.data:
-                print(f"No test found for {stage}")
                 continue
-
-            print(f"Test data for {stage}: {test.data}")
 
             # 3. Get questions for this test
             questions = (
@@ -95,8 +90,6 @@ def view(id):
                 .execute()
             )
 
-            print(f"Questions found for {stage}: {len(questions.data)}")
-
             # 4. Get answers for this candidate and test
             answers = (
                 supabase.from_("candidate_answers")
@@ -105,8 +98,6 @@ def view(id):
                 .in_("question_id", [q["id"] for q in questions.data])
                 .execute()
             )
-
-            print(f"Answers found for {stage}: {len(answers.data)}")
 
             # Process questions and match with answers
             processed_questions = []

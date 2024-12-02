@@ -31,12 +31,10 @@ def list():
     while retry_count < max_retries:
         try:
             user_id = session.get("user_id")
-            print(f"Fetching data for user_id: {user_id}")
             
             # Get user groups
             try:
                 user_groups = get_user_groups(user_id)
-                print(f"Successfully fetched {len(user_groups)} user groups")
             except Exception as e:
                 print(f"Error fetching user groups: {str(e)}")
                 if retry_count == max_retries - 1:
@@ -46,7 +44,6 @@ def list():
                 continue
 
             user_group_ids = [group["id"] for group in user_groups]
-            print(f"User group IDs: {user_group_ids}")
 
             # Get tests with a single query
             try:
@@ -59,7 +56,6 @@ def list():
                     .order("created_at", desc=True)
                     .execute()
                 )
-                print(f"Successfully fetched {len(tests_response.data)} tests")
             except Exception as e:
                 print(f"Error fetching tests: {str(e)}")
                 if retry_count == max_retries - 1:
@@ -86,7 +82,6 @@ def list():
                 if any(group_id in user_group_ids for group_id in test_group_ids):
                     filtered_tests.append(test)
 
-            print(f"Filtered to {len(filtered_tests)} tests for user")
             return render_template(
                 "tests/list.html", tests=filtered_tests, groups=user_groups
             )
@@ -110,16 +105,11 @@ def list():
 @test_bp.route("/add", methods=["POST"])
 def add():
     try:
-        print("Starting test creation process")
-        
         passing_threshold = request.form.get("passing_threshold")
         time_limit = request.form.get("time_limit_minutes")
         groups = request.form.getlist("groups[]")
         
-        print(f"Received groups: {groups}")
-
         if not groups:
-            print("No groups selected - returning error")
             return jsonify(
                 {
                     "success": False,
@@ -146,7 +136,6 @@ def add():
                 "passing_threshold": passing_threshold,
                 "time_limit_minutes": time_limit,
             }
-            print(f"Creating test with data: {test_data}")
 
             # Insert test and get ID
             def create_test_operation():
@@ -157,13 +146,11 @@ def add():
             
             result = retry_on_disconnect(create_test_operation)
             test_id = result.data[0]["id"]
-            print(f"Test created successfully with ID: {test_id}")
-
+            
             # Bulk insert group associations
             group_links = [
                 {"group_id": int(group_id), "test_id": test_id} for group_id in groups
             ]
-            print(f"Creating group associations: {group_links}")
             
             if group_links:
                 def create_group_links_operation():
@@ -173,11 +160,9 @@ def add():
                     return result
                 
                 retry_on_disconnect(create_group_links_operation)
-                print("Group associations created successfully")
-
+                
             # Process questions
             questions = json.loads(request.form.get("questions", "[]"))
-            print(f"Processing {len(questions)} questions")
             
             if questions:
                 question_data = []
@@ -200,7 +185,6 @@ def add():
                                     k: v for k, v in question["options"].items()
                                     if k in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] and v
                                 }
-                            print(f"Processing AH_POINTS options for question {i}: {clean_question.get('options')}")
                         elif question["answer_type"] == "SALARY":
                             salary_value = question.get("correct_answer_salary")
                             clean_question["correct_answer_salary"] = (
@@ -214,7 +198,6 @@ def add():
                             ):
                                 clean_question[answer_field] = question[answer_field]
 
-                        print(f"Processed question {i}: {clean_question}")
                         question_data.append(clean_question)
                     except Exception as e:
                         raise Exception(f"Błąd podczas przetwarzania pytania {i}: {str(e)}")
@@ -223,7 +206,6 @@ def add():
                 BATCH_SIZE = 3
                 for i in range(0, len(question_data), BATCH_SIZE):
                     batch = question_data[i:i + BATCH_SIZE]
-                    print(f"Processing question batch {i//BATCH_SIZE + 1} of {(len(question_data) + BATCH_SIZE - 1)//BATCH_SIZE}")
                     
                     def insert_questions_operation():
                         result = supabase.from_("questions").insert(batch).execute()
@@ -236,9 +218,6 @@ def add():
                     if i + BATCH_SIZE < len(question_data):
                         time.sleep(0.5)  # Small delay between batches
                 
-                print("All questions created successfully")
-
-            print("Test creation completed successfully")
             return jsonify(
                 {"success": True, "message": "Test został dodany pomyślnie"}
             )
@@ -301,25 +280,19 @@ def get_test_data(test_id):
 
 @test_bp.route("/<int:test_id>/edit", methods=["POST"])
 def edit(test_id):
-    try:
-        print(f"Starting edit process for test ID: {test_id}")
-        
+    try:        
         # Get original test data for potential rollback
         original_test = supabase.from_("tests").select("*").eq("id", test_id).single().execute()
         if not original_test.data:
-            print(f"Test not found with ID: {test_id}")
             return jsonify({"success": False, "error": "Test nie istnieje"})
-        print(f"Original test data: {original_test.data}")
 
         # Get original groups
         original_groups = supabase.from_("link_groups_tests").select("*").eq("test_id", test_id).execute()
         original_group_ids = [g["group_id"] for g in original_groups.data]
-        print(f"Original group IDs: {original_group_ids}")
 
         # Get original questions
         original_questions = supabase.from_("questions").select("*").eq("test_id", test_id).execute()
         original_question_ids = [q["id"] for q in original_questions.data]
-        print(f"Original question IDs: {original_question_ids}")
 
         # Prepare test data
         test_data = {
@@ -331,13 +304,10 @@ def edit(test_id):
             if request.form.get("time_limit_minutes")
             else None,
         }
-        print(f"New test data to be updated: {test_data}")
 
         groups = request.form.getlist("groups[]")
-        print(f"New groups to be assigned: {groups}")
         
         if not groups:
-            print("No groups selected - returning error")
             return jsonify(
                 {
                     "success": False,
@@ -347,37 +317,28 @@ def edit(test_id):
 
         try:
             # Update test
-            print(f"Updating test with ID {test_id}")
             test_result = supabase.from_("tests").update(test_data).eq("id", test_id).execute()
             if not test_result.data:
                 raise Exception("Nie udało się zaktualizować testu")
-            print("Test updated successfully")
 
             # Handle group associations
             new_group_ids = [int(gid) for gid in groups if int(gid) not in original_group_ids]
             groups_to_remove = [gid for gid in original_group_ids if str(gid) not in groups]
             
-            print(f"Groups to add: {new_group_ids}")
-            print(f"Groups to remove: {groups_to_remove}")
 
             # Remove old group associations
             if groups_to_remove:
-                print(f"Removing old group associations: {groups_to_remove}")
                 remove_result = supabase.from_("link_groups_tests").delete().eq("test_id", test_id).in_("group_id", groups_to_remove).execute()
-                print(f"Remove groups result: {remove_result.data}")
 
             # Add new group associations
             if new_group_ids:
-                print(f"Adding new group associations: {new_group_ids}")
                 group_links = [{"group_id": gid, "test_id": test_id} for gid in new_group_ids]
                 group_result = supabase.from_("link_groups_tests").insert(group_links).execute()
                 if not group_result.data:
                     raise Exception("Nie udało się dodać nowych powiązań z grupami")
-                print("New group associations added successfully")
 
             # Process questions
             questions = json.loads(request.form.get("questions", "[]"))
-            print(f"Processing {len(questions)} questions")
             
             questions_to_update = []
             questions_to_insert = []
@@ -400,7 +361,6 @@ def edit(test_id):
                             k: v for k, v in question["options"].items()
                             if k in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] and v
                         }
-                    print(f"Processing AH_POINTS options: {clean_question.get('options')}")
                 elif question["answer_type"] == "SALARY":
                     salary_value = question.get("correct_answer_salary")
                     clean_question["correct_answer_salary"] = (
@@ -420,9 +380,6 @@ def edit(test_id):
                 else:
                     questions_to_insert.append(clean_question)
 
-            print(f"Questions to update: {len(questions_to_update)}")
-            print(f"Questions to insert: {len(questions_to_insert)}")
-
             # Process questions in batches
             BATCH_SIZE = 3
             
@@ -430,12 +387,10 @@ def edit(test_id):
             if questions_to_update:
                 for i in range(0, len(questions_to_update), BATCH_SIZE):
                     batch = questions_to_update[i:i + BATCH_SIZE]
-                    print(f"Processing update batch {i//BATCH_SIZE + 1} of {(len(questions_to_update) + BATCH_SIZE - 1)//BATCH_SIZE}")
                     
                     for question in batch:
                         question_id = question["id"]
                         question_data = question["data"]
-                        print(f"Updating question {question_id} with data: {question_data}")
                         
                         def update_operation():
                             result = supabase.from_("questions").update(question_data).eq("id", question_id).execute()
@@ -446,20 +401,16 @@ def edit(test_id):
                         try:
                             retry_on_disconnect(update_operation)
                         except Exception as e:
-                            print(f"Failed to update question {question_id}: {str(e)}")
                             raise
                         
                     # Small delay between batches to prevent overload
                     if i + BATCH_SIZE < len(questions_to_update):
                         time.sleep(0.5)
                 
-                print("Existing questions updated successfully")
-
             # Insert new questions in batches
             if questions_to_insert:
                 for i in range(0, len(questions_to_insert), BATCH_SIZE):
                     batch = questions_to_insert[i:i + BATCH_SIZE]
-                    print(f"Processing insert batch {i//BATCH_SIZE + 1}")
                     
                     def insert_operation():
                         result = supabase.from_("questions").insert(batch).execute()
@@ -472,23 +423,17 @@ def edit(test_id):
                     if i + BATCH_SIZE < len(questions_to_insert):
                         time.sleep(0.5)
                 
-                print("New questions inserted successfully")
-
             # Remove questions that are no longer present
             current_question_ids = [q["id"] for q in questions_to_update]
             questions_to_delete = [qid for qid in original_question_ids if qid not in current_question_ids]
             
             if questions_to_delete:
-                print(f"Deleting removed questions: {questions_to_delete}")
-                
                 def delete_operation():
                     result = supabase.from_("questions").delete().eq("test_id", test_id).in_("id", questions_to_delete).execute()
-                    print(f"Delete questions result: {result.data}")
                     return result
                 
                 retry_on_disconnect(delete_operation)
 
-            print("Test edit completed successfully")
             return jsonify(
                 {
                     "success": True,
