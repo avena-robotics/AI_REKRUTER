@@ -91,7 +91,10 @@
             {% endfor %}
 
             <div class="text-center mb-5">
-                <button type="submit" class="btn btn-primary btn-lg">Zakończ test</button>
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    <span class="button-text">Zakończ test</span>
+                </button>
             </div>
         </form>
     </div>
@@ -218,6 +221,10 @@
 
             // Form validation
             document.getElementById('testForm').addEventListener('submit', function(e) {
+                const submitButton = this.querySelector('button[type="submit"]');
+                const spinner = submitButton.querySelector('.spinner-border');
+                const buttonText = submitButton.querySelector('.button-text');
+                
                 const ahPointsQuestions = document.querySelectorAll('.ah-points-container');
                 let isValid = true;
 
@@ -247,7 +254,13 @@
 
                 if (!isValid) {
                     e.preventDefault();
+                    return;
                 }
+
+                // Show loading state
+                submitButton.disabled = true;
+                spinner.classList.remove('d-none');
+                buttonText.textContent = 'Zapisywanie...';
             });
 
             // Make functions globally available

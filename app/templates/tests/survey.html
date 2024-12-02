@@ -300,7 +300,10 @@
                 </div>
 
                 <div class="d-grid gap-2 col-md-6 mx-auto mb-4">
-                    <button type="submit" class="btn btn-primary btn-lg">Zakończ test</button>
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                        <span class="button-text">Zakończ test</span>
+                    </button>
                 </div>
             </form>
         </div>
@@ -393,6 +396,50 @@
                         this.classList.add('active');
                     }
                 });
+            });
+
+            document.getElementById('testForm').addEventListener('submit', function(e) {
+                const submitButton = this.querySelector('button[type="submit"]');
+                const spinner = submitButton.querySelector('.spinner-border');
+                const buttonText = submitButton.querySelector('.button-text');
+                
+                // Existing validation for AH_POINTS questions
+                const ahPointsQuestions = document.querySelectorAll('.ah-points-container');
+                let isValid = true;
+
+                // First hide all error messages and remove error styling
+                document.querySelectorAll('.points-error').forEach(error => {
+                    error.style.display = 'none';
+                });
+                document.querySelectorAll('.ah-points-container').forEach(container => {
+                    container.classList.remove('error-container');
+                });
+
+                ahPointsQuestions.forEach(container => {
+                    const questionId = container.querySelector('input').dataset.question;
+                    const inputs = container.querySelectorAll('input');
+                    let total = 0;
+                    
+                    inputs.forEach(input => {
+                        total += parseInt(input.value) || 0;
+                    });
+
+                    if (total !== 10) {
+                        isValid = false;
+                        container.querySelector('.points-error').style.display = 'block';
+                        container.classList.add('error-container');
+                    }
+                });
+
+                if (!isValid) {
+                    e.preventDefault();
+                    return;
+                }
+
+                // Show loading state
+                submitButton.disabled = true;
+                spinner.classList.remove('d-none');
+                buttonText.textContent = 'Zapisywanie...';
             });
         });
     </script>
