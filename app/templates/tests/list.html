@@ -65,65 +65,67 @@
     </div>
 </div>
 
-<div class="table-responsive">
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Tytuł</th>
-                <th>Typ testu</th>
-                <th>Limit czasu</th>
-                <th>Liczba pytań</th>
-                <th>Suma punktów do zdobycia</th>
-                <th>Próg zaliczenia</th>
-                <th>Grupy</th>
-                <th>Data utworzenia</th>
-                <th>Akcje</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for test in tests %}
-            <tr data-test-id="{{ test.id }}" 
-                data-groups='{{ test.groups|tojson|safe }}'
-                ondblclick="editTest('{{ test.id }}')" 
-                style="cursor: pointer;">
-                <td>{{ test.title }}</td>
-                <td>
-                    {% if test.test_type == 'SURVEY' %}
-                        Ankieta
-                    {% elif test.test_type == 'EQ' %}
-                        Test EQ
-                    {% elif test.test_type == 'IQ' %}
-                        Test IQ
-                    {% endif %}
-                </td>
-                <td>{{ test.time_limit_minutes }} min</td>
-                <td>{{ test.question_count }}</td>
-                <td>{{ test.total_points }}</td>
-                <td>{{ test.passing_threshold }}</td>
-                <td>
-                    {% if test.groups %}
-                        {% for group in test.groups %}
-                            <span class="badge bg-secondary me-1">{{ group.name }}</span>
-                        {% endfor %}
-                    {% else %}
-                        <small class="text-muted">Brak przypisanych grup</small>
-                    {% endif %}
-                </td>
-                <td>{{ test.created_at|datetime }}</td>
-                <td>
-                    <div class="btn-group">
-                        <button type="button" class="btn btn-sm btn-warning" 
-                                onclick="editTest('{{ test.id }}')">Edytuj</button>
-                        <button type="button" class="btn btn-sm btn-info" 
-                                onclick="duplicateTest('{{ test.id }}')">Duplikuj</button>
-                        <button type="button" class="btn btn-sm btn-danger" 
-                                onclick="confirmDeleteTest('{{ test.id }}')">Usuń</button>
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="table-wrapper">
+    <div class="table-scroll">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Tytuł</th>
+                    <th>Typ testu</th>
+                    <th>Limit czasu</th>
+                    <th>Liczba pytań</th>
+                    <th>Suma punktów</th>
+                    <th>Próg zaliczenia</th>
+                    <th>Grupy</th>
+                    <th>Data utworzenia</th>
+                    <th>Akcje</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for test in tests %}
+                <tr data-test-id="{{ test.id }}" 
+                    data-groups='{{ test.groups|tojson|safe }}'
+                    ondblclick="editTest('{{ test.id }}')" 
+                    style="cursor: pointer;">
+                    <td>{{ test.title }}</td>
+                    <td>
+                        {% if test.test_type == 'SURVEY' %}
+                            Ankieta
+                        {% elif test.test_type == 'EQ' %}
+                            Test EQ
+                        {% elif test.test_type == 'IQ' %}
+                            Test IQ
+                        {% endif %}
+                    </td>
+                    <td>{{ test.time_limit_minutes }} min</td>
+                    <td>{{ test.question_count }}</td>
+                    <td>{{ test.total_points }}</td>
+                    <td>{{ test.passing_threshold }}</td>
+                    <td>
+                        {% if test.groups %}
+                            {% for group in test.groups %}
+                                <span class="badge bg-secondary me-1">{{ group.name }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <small class="text-muted">Brak przypisanych grup</small>
+                        {% endif %}
+                    </td>
+                    <td>{{ test.created_at|datetime }}</td>
+                    <td>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-sm btn-warning" 
+                                    onclick="editTest('{{ test.id }}')">Edytuj</button>
+                            <button type="button" class="btn btn-sm btn-info" 
+                                    onclick="duplicateTest('{{ test.id }}')">Duplikuj</button>
+                            <button type="button" class="btn btn-sm btn-danger" 
+                                    onclick="confirmDeleteTest('{{ test.id }}')">Usuń</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <!-- Add Test Modal -->
@@ -1411,6 +1413,50 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
         background-color: rgba(0,0,0,.075);
     }
     
+    .table-wrapper {
+        height: calc(100vh - 380px); /* Zmniejszona wysokość o wysokość filtrów */
+    }
+    
+    .table-scroll {
+        overflow-x: auto;
+        overflow-y: auto;
+        height: 100%;
+    }
+    
+    /* Upewnij się, że dropdown jest zawsze na wierzchu */
+    .dropdown-menu {
+        z-index: 1021 !important;
+    }
+    
+    /* Zapewnij, że dropdown nie jest obcięty */
+    .table-scroll {
+        overflow: visible !important;
+        overflow-x: auto !important;
+    }
+    
+    /* Popraw pozycjonowanie dropdown */
+    .dropdown {
+        position: relative !important;
+    }
+    
+    /* Upewnij się, że komórka tabeli ma odpowiedni overflow */
+    td {
+        overflow: visible !important;
+    }
+
+    /* Ustaw sticky header */
+    .table thead th {
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 1;
+    }
+
+    /* Dodaj cień pod headerem tabeli */
+    .table thead th {
+        box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+    }
+    
     /* Add this new style */
     .text-muted {
         font-size: 0.85em;
@@ -1433,6 +1479,58 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
         justify-content: center;
         font-weight: bold;
         background-color: #f8f9fa;
+    }
+
+    /* Dodaj stałe szerokości kolumn */
+    .table th,
+    .table td {
+        white-space: nowrap;
+    }
+
+    /* Szerokości kolumn */
+    .table th:nth-child(1),
+    .table td:nth-child(1) { width: 20%; } /* Tytuł */
+    
+    .table th:nth-child(2),
+    .table td:nth-child(2) { width: 10%; } /* Typ testu */
+    
+    .table th:nth-child(3),
+    .table td:nth-child(3) { width: 8%; } /* Limit czasu */
+    
+    .table th:nth-child(4),
+    .table td:nth-child(4) { width: 8%; } /* Liczba pytań */
+    
+    .table th:nth-child(5),
+    .table td:nth-child(5) { width: 8%; } /* Suma punktów */
+    
+    .table th:nth-child(6),
+    .table td:nth-child(6) { width: 8%; } /* Próg zaliczenia */
+    
+    .table th:nth-child(7),
+    .table td:nth-child(7) { width: 15%; } /* Grupy */
+    
+    .table th:nth-child(8),
+    .table td:nth-child(8) { width: 12%; } /* Data utworzenia */
+    
+    .table th:nth-child(9),
+    .table td:nth-child(9) { width: 15%; } /* Akcje */
+
+    /* Obsługa długich tekstów w komórkach */
+    .table td {
+        max-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Specjalne formatowanie dla tytułu */
+    .table td:first-child {
+        font-weight: 500;
+    }
+
+    /* Specjalne formatowanie dla grup */
+    .table td:nth-child(7) {
+        white-space: normal;
+        line-height: 1.2;
     }
 </style>
 {% endblock %} 
