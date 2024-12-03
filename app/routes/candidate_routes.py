@@ -77,6 +77,40 @@ def view(id):
         candidate_data = result.data[0]['candidate_data']
         tests_data = result.data[0]['tests_data'] or {}
 
+        # Process test data to add question count and total points
+        for stage, test_data in tests_data.items():
+            if test_data and 'questions' in test_data:
+                # Calculate question count
+                test_data['question_count'] = len(test_data['questions'])
+                
+                # Calculate total points
+                total_points = sum(q['points'] for q in test_data['questions'])
+                test_data['total_points'] = total_points
+                
+                # Calculate scored points
+                scored_points = sum(
+                    q['answer']['score'] 
+                    for q in test_data['questions'] 
+                    if q.get('answer') and q['answer'].get('score') is not None
+                )
+                test_data['scored_points'] = scored_points
+
+                # Add started_at and completed_at from candidate data
+                started_at_field = f"{stage.lower()}_started_at"
+                completed_at_field = f"{stage.lower()}_completed_at"
+                
+                # Get timestamps and convert to datetime objects if they exist
+                started_at = candidate_data.get(started_at_field)
+                completed_at = candidate_data.get(completed_at_field)
+                
+                if started_at:
+                    started_at = datetime.fromisoformat(started_at.replace('Z', '+00:00'))
+                if completed_at:
+                    completed_at = datetime.fromisoformat(completed_at.replace('Z', '+00:00'))
+                
+                test_data['started_at'] = started_at
+                test_data['completed_at'] = completed_at
+
         return render_template(
             "candidates/view.html",
             candidate=candidate_data,
