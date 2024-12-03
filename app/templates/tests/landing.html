@@ -57,7 +57,9 @@
 
         function setTestStartTime() {
             const totalSeconds = parseInt("{{ test.time_limit_minutes }}") * 60;
+            const startTime = new Date().toISOString();
             localStorage.setItem('remainingSeconds', totalSeconds);
+            localStorage.setItem('testStartTime', startTime);
         }
     </script>
 </body>

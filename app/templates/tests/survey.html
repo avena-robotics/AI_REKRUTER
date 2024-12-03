@@ -173,6 +173,7 @@
 
             <!-- Candidate Form -->
             <form id="testForm" method="POST" action="{{ url_for('test_public.submit_candidate_test', token=token) if candidate else url_for('test_public.submit_test', token=token) }}">
+                <input type="hidden" name="test_start_time" id="testStartTime">
                 <!-- Personal Information Section -->
                 {% if not candidate %}
                 <div class="card mb-4">
@@ -458,6 +459,12 @@
                     alert('Wystąpił błąd podczas zapisywania odpowiedzi. Spróbuj ponownie.');
                 });
             });
+
+            // Dodaj czas startu z localStorage do formularza
+            const startTime = localStorage.getItem('testStartTime');
+            if (startTime) {
+                document.getElementById('testStartTime').value = startTime;
+            }
         });
     </script>
 

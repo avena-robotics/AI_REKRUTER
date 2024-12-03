@@ -337,6 +337,18 @@ def submit_test(token):
         abort(404, description="Invalid token")
     
     try:
+        # Get start time from form data (will be sent from localStorage)
+        start_time_str = request.form.get('test_start_time')
+        if start_time_str:
+            try:
+                start_time = datetime.fromisoformat(start_time_str.replace('Z', '+00:00'))
+            except ValueError:
+                start_time = datetime.now(timezone.utc)
+        else:
+            start_time = datetime.now(timezone.utc)
+            
+        current_time = datetime.now(timezone.utc)
+        
         # Create candidate for universal test (PO1)
         candidate_data = {
             'campaign_id': test_info['campaign']['id'],
@@ -345,9 +357,12 @@ def submit_test(token):
             'email': request.form.get('email'),
             'phone': request.form.get('phone'),
             'recruitment_status': 'PO1',
+            'po1_started_at': start_time.isoformat(),
+            'po1_completed_at': current_time.isoformat(),
             'created_at': datetime.now().isoformat(),
             'updated_at': datetime.now().isoformat()
         }
+        
         result = supabase.table('candidates').insert(candidate_data).execute()
         candidate_id = result.data[0]['id']
 
@@ -357,7 +372,6 @@ def submit_test(token):
         # Update candidate with score
         update_data = {
             'po1_score': total_score,
-            'po1_completed_at': datetime.now().isoformat(),
             'updated_at': datetime.now().isoformat()
         }
         
@@ -618,9 +632,10 @@ def start_candidate_test(token):
             return render_template('tests/used.html')
         
         try:
-            # Mark token as used when starting the test
+            # Mark token as used and record start time
             update_data = {
                 f'access_token_{stage.lower()}_is_used': True,
+                f'{stage.lower()}_started_at': datetime.now(timezone.utc).isoformat(),
                 'updated_at': datetime.now(timezone.utc).isoformat()
             }
             

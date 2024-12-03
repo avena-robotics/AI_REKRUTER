@@ -274,8 +274,15 @@
                     {% if tests[stage].score %}
                         (Wynik: {{ tests[stage].score }})
                     {% endif %}
-                    {% if tests[stage].completed_at %}
-                        <small class="ms-2 text-muted">(Ukończono: {{ tests[stage].completed_at|datetime }})</small>
+                    {% if tests[stage].started_at %}
+                        <small class="ms-2 text-muted">
+                            (Rozpoczęto: {{ tests[stage].started_at|datetime }}
+                            {% if tests[stage].completed_at %}
+                                | Ukończono: {{ tests[stage].completed_at|datetime }}
+                                {% set duration = ((tests[stage].completed_at - tests[stage].started_at).total_seconds() / 60)|round|int %}
+                                | Czas trwania: {{ duration }} min
+                            {% endif %})
+                        </small>
                     {% endif %}
                 </button>
             </h2>
@@ -291,6 +298,15 @@
                             <p class="mb-1"><strong>Opis:</strong> {{ tests[stage].test.description }}</p>
                             <p class="mb-1"><strong>Próg zaliczenia:</strong> {{ tests[stage].test.passing_threshold }}</p>
                             <p class="mb-1"><strong>Limit czasu:</strong> {{ tests[stage].test.time_limit_minutes }} minut</p>
+                            {% if tests[stage].started_at %}
+                            <p class="mb-1">
+                                <strong>Rozpoczęto:</strong> {{ tests[stage].started_at|datetime }}
+                                {% if tests[stage].completed_at %}
+                                    {% set duration = ((tests[stage].completed_at - tests[stage].started_at).total_seconds() / 60)|round|int %}
+                                    <br><strong>Czas wykonania:</strong> {{ duration }} minut
+                                {% endif %}
+                            </p>
+                            {% endif %}
                             <p class="mb-1"><strong>Liczba pytań:</strong> {{ tests[stage].question_count }}</p>
                             <p class="mb-0"><strong>Suma punktów do zdobycia:</strong> {{ tests[stage].total_points }}</p>
                         </div>

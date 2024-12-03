@@ -92,6 +92,9 @@ create table candidates (
     po3_score int,                                  -- 70
     po4_score int,                                  -- 60
     total_score float,                                -- 310  
+    po1_started_at timestamp with time zone,
+    po2_started_at timestamp with time zone,
+    po3_started_at timestamp with time zone,
     po1_completed_at timestamp with time zone,      -- Data zakończenia testu PO1
     po2_completed_at timestamp with time zone,      -- Data zakończenia testu PO2
     po3_completed_at timestamp with time zone,      -- Data zakończenia testu PO3
@@ -449,6 +452,9 @@ BEGIN
                 'po3_score', c.po3_score,
                 'po4_score', c.po4_score,
                 'total_score', c.total_score,
+                'po1_started_at', c.po1_started_at,
+                'po2_started_at', c.po2_started_at,
+                'po3_started_at', c.po3_started_at,
                 'po1_completed_at', c.po1_completed_at,
                 'po2_completed_at', c.po2_completed_at,
                 'po3_completed_at', c.po3_completed_at,
