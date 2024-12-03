@@ -1,7 +1,7 @@
 import json
 from flask import Blueprint, render_template, request, jsonify, session
 from database import supabase
-from datetime import datetime
+from datetime import datetime, timezone
 from routes.auth_routes import login_required
 from services.group_service import get_user_groups, get_test_groups
 import time
@@ -130,12 +130,15 @@ def add():
         test_id = None
         try:
             # Create test
+            current_time = datetime.now(timezone.utc)
             test_data = {
                 "title": request.form.get("title"),
                 "test_type": request.form.get("test_type"),
                 "description": request.form.get("description"),
                 "passing_threshold": passing_threshold,
                 "time_limit_minutes": time_limit,
+                "created_at": current_time.isoformat(),
+                "updated_at": current_time.isoformat()
             }
 
             # Insert test and get ID

@@ -2,11 +2,12 @@ from flask import Blueprint, render_template, request, jsonify, flash, redirect,
 from filters import format_datetime
 from database import supabase
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from routes.auth_routes import login_required
 from services.group_service import get_user_groups, get_campaign_groups
 from functools import lru_cache
 import json
+from zoneinfo import ZoneInfo
 
 campaign_bp = Blueprint('campaign', __name__, url_prefix='/campaigns')
 
@@ -147,7 +148,7 @@ def add():
                 'error': 'Należy wybrać grupę'
             })
         
-        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        current_time = datetime.now(timezone.utc)
         
         # Explicitly define the fields to be inserted
         campaign_data = {
@@ -170,8 +171,8 @@ def add():
             'po1_test_weight': int(request.form['po1_test_weight']) if request.form.get('po1_test_weight') else 0,
             'po2_test_weight': int(request.form['po2_test_weight']) if request.form.get('po2_test_weight') else 0,
             'po3_test_weight': int(request.form['po3_test_weight']) if request.form.get('po3_test_weight') else 0,
-            'created_at': current_time,
-            'updated_at': current_time
+            'created_at': current_time.isoformat(),
+            'updated_at': current_time.isoformat()
         }
         
         # Ensure no ID is included in the insert
@@ -242,7 +243,7 @@ def edit(campaign_id):
                 'error': 'Należy wybrać grupę'
             })
         
-        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        current_time = datetime.now(timezone.utc)
         
         campaign_data = {
             'code': code,
@@ -264,7 +265,7 @@ def edit(campaign_id):
             'po1_test_weight': int(request.form['po1_test_weight']) if request.form.get('po1_test_weight') else 0,
             'po2_test_weight': int(request.form['po2_test_weight']) if request.form.get('po2_test_weight') else 0,
             'po3_test_weight': int(request.form['po3_test_weight']) if request.form.get('po3_test_weight') else 0,
-            'updated_at': current_time
+            'updated_at': current_time.isoformat()
         }
 
         supabase.table('campaigns')\

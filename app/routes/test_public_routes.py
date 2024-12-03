@@ -342,6 +342,8 @@ def submit_test(token):
         if start_time_str:
             try:
                 start_time = datetime.fromisoformat(start_time_str.replace('Z', '+00:00'))
+                if start_time.tzinfo is None:
+                    start_time = start_time.replace(tzinfo=timezone.utc)
             except ValueError:
                 start_time = datetime.now(timezone.utc)
         else:
@@ -359,8 +361,8 @@ def submit_test(token):
             'recruitment_status': 'PO1',
             'po1_started_at': start_time.isoformat(),
             'po1_completed_at': current_time.isoformat(),
-            'created_at': datetime.now().isoformat(),
-            'updated_at': datetime.now().isoformat()
+            'created_at': current_time.isoformat(),
+            'updated_at': current_time.isoformat()
         }
         
         result = supabase.table('candidates').insert(candidate_data).execute()
@@ -372,7 +374,7 @@ def submit_test(token):
         # Update candidate with score
         update_data = {
             'po1_score': total_score,
-            'updated_at': datetime.now().isoformat()
+            'updated_at': current_time.isoformat()
         }
         
         supabase.table('candidates')\
@@ -399,6 +401,7 @@ def submit_candidate_test(token):
     try:
         candidate_id = test_info['candidate']['id']
         stage = test_info['stage']
+        current_time = datetime.now(timezone.utc)
 
         # Process answers and calculate score
         total_score = process_test_answers(candidate_id, test_info['test']['id'], request.form)
@@ -406,9 +409,9 @@ def submit_candidate_test(token):
         # Update candidate with score
         update_data = {
             f'{stage.lower()}_score': total_score,
-            f'{stage.lower()}_completed_at': datetime.now().isoformat(),
+            f'{stage.lower()}_completed_at': current_time.isoformat(),
             f'access_token_{stage.lower()}_is_used': True,
-            'updated_at': datetime.now().isoformat()
+            'updated_at': current_time.isoformat()
         }
         
         supabase.table('candidates')\
@@ -633,10 +636,11 @@ def start_candidate_test(token):
         
         try:
             # Mark token as used and record start time
+            current_time = datetime.now(timezone.utc)
             update_data = {
                 f'access_token_{stage.lower()}_is_used': True,
-                f'{stage.lower()}_started_at': datetime.now(timezone.utc).isoformat(),
-                'updated_at': datetime.now(timezone.utc).isoformat()
+                f'{stage.lower()}_started_at': current_time.isoformat(),
+                'updated_at': current_time.isoformat()
             }
             
             supabase.table('candidates')\

@@ -29,9 +29,16 @@ class CandidateService:
         Returns:
             dict: Zaktualizowane dane kandydata
         """
-        updates = {}
-        
         try:
+            current_time = datetime.now(timezone.utc)
+            updates = {}
+            
+            # When updating scores, also ensure timestamps are in UTC
+            if any(key in updates for key in ['po1_score', 'po2_score', 'po3_score']):
+                stage = candidate.get('recruitment_status', '').lower()
+                if stage in ['po1', 'po2', 'po3']:
+                    updates[f'{stage}_completed_at'] = current_time.isoformat()
+            
             self.logger.info(f"Rozpoczęcie aktualizacji wyników dla kandydata {candidate['id']}")
             
             # Sprawdź czy kandydat potrzebuje aktualizacji wyników EQ

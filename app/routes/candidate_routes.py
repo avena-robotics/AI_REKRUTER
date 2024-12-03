@@ -6,6 +6,7 @@ from routes.auth_routes import login_required
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from zoneinfo import ZoneInfo
 
 candidate_bp = Blueprint("candidate", __name__, url_prefix="/candidates")
 
@@ -274,7 +275,16 @@ def next_stage(id):
             return jsonify({"success": False, "error": "Nieprawidłowy obecny etap"}), 400
 
         # Generate token and send email for PO2 and PO3
-        updates = {"recruitment_status": next_status}
+        current_time = datetime.now(timezone.utc)
+        token_expiry = current_time + timedelta(days=7)
+        formatted_expiry = token_expiry.astimezone(ZoneInfo("Europe/Warsaw")).strftime("%Y-%m-%d %H:%M")
+        
+        updates = {
+            "recruitment_status": next_status,
+            f"access_token_{next_status.lower()}_expires_at": token_expiry.isoformat(),
+            f"access_token_{next_status.lower()}_is_used": False,
+            'updated_at': current_time.isoformat()
+        }
         
         if next_status in ["PO2", "PO3"] and test_id:
             # Generate token and expiry date
@@ -324,7 +334,6 @@ def next_stage(id):
                 }), 500
 
         # Update candidate in database
-        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
         result = (
             supabase.from_("candidates")
             .update(updates)
