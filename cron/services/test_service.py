@@ -126,72 +126,102 @@ class TestService:
         self.logger.info(f"Zakończono obliczanie wyników EQ: {eq_scores}")
         return eq_scores
 
-    def calculate_score(self, answer, question):
-        """Oblicza wynik dla pojedynczej odpowiedzi na podstawie typu pytania i poprawnej odpowiedzi."""
-        answer_type = question['answer_type']
-        max_points = question.get('points', 0)
+    def calculate_score(self, answer: dict, question: dict) -> float:
+        """
+        Oblicza wynik dla pojedynczej odpowiedzi na podstawie typu pytania i poprawnej odpowiedzi.
         
-        if answer_type == 'TEXT':    
-            # if not question.get('correct_answer_text'):
-            #     return 0
+        Returns:
+            float: Obliczony wynik (może być zmiennoprzecinkowy)
+        """
+        try:
+            answer_type = question['answer_type']
+            max_points = float(question.get('points', 0))  # Convert to float for calculations
             
-            # user_answer = answer.get('text_answer', '').lower().strip()
-            # correct_phrases = [
-            #     phrase.lower().strip() 
-            #     for phrase in question['correct_answer_text'].split(',')
-            # ]
+            if answer_type == 'TEXT':    
+                return 0.0
             
-            # # Sprawdzenie, czy któraś z poprawnych fraz znajduje się w odpowiedzi użytkownika
-            # return max_points if any(phrase in user_answer for phrase in correct_phrases) else 0
-            return 0;
-        
-        elif answer_type == 'BOOLEAN':
-            return max_points if answer.get('boolean_answer') == question.get('correct_answer_boolean') else 0
+            elif answer_type == 'BOOLEAN':
+                return float(max_points) if answer.get('boolean_answer') == question.get('correct_answer_boolean') else 0.0
             
-        elif answer_type == 'SCALE':
-            user_answer = answer.get('scale_answer')
-            correct_answer = question.get('correct_answer_scale')
-            if user_answer is None or correct_answer is None:
-                return 0
+            elif answer_type == 'SCALE':
+                try:
+                    user_answer = answer.get('scale_answer')
+                    correct_answer = question.get('correct_answer_scale')
+                    if user_answer is None or correct_answer is None:
+                        return 0.0
+                    
+                    # Convert to float for calculation
+                    user_answer = float(str(user_answer).replace(',', '.'))
+                    correct_answer = float(str(correct_answer).replace(',', '.'))
+                    max_difference = 5.0
+                    difference = abs(user_answer - correct_answer)
+                    return max(0.0, max_points - (difference * max_points / max_difference))
+                except (ValueError, TypeError) as e:
+                    self.logger.error(f"Error converting scale values: {str(e)}")
+                    return 0.0
             
-            max_difference = 5  # Maksymalna możliwa różnica w skali
-            difference = abs(user_answer - correct_answer)
-            return max(0, max_points - (difference * max_points / max_difference))
+            elif answer_type == 'SALARY':
+                try:
+                    user_salary = answer.get('salary_answer')
+                    expected_salary = question.get('correct_answer_salary')
+                    if user_salary is None or expected_salary is None:
+                        return 0.0
+                    
+                    # Convert to float for calculation
+                    user_salary = float(str(user_salary).replace(',', '.'))
+                    expected_salary = float(str(expected_salary).replace(',', '.'))
+                    
+                    if user_salary <= expected_salary:
+                        return float(max_points)
+                    
+                    return min(max_points, (expected_salary / user_salary) * max_points)
+                except (ValueError, TypeError) as e:
+                    self.logger.error(f"Error converting salary values: {str(e)}")
+                    return 0.0
             
-        elif answer_type == 'SALARY':
-            user_salary = answer.get('salary_answer')
-            expected_salary = question.get('correct_answer_salary')
-            if user_salary is None or expected_salary is None:
-                return 0
+            elif answer_type == 'DATE':
+                try:
+                    from datetime import datetime
+                    
+                    user_date = answer.get('date_answer')
+                    correct_date = question.get('correct_answer_date')
+                    
+                    if user_date is None or correct_date is None:
+                        return 0.0
+                    
+                    # Convert string dates to datetime objects if needed
+                    if isinstance(user_date, str):
+                        user_date = datetime.strptime(user_date, '%Y-%m-%d').date()
+                    if isinstance(correct_date, str):
+                        correct_date = datetime.strptime(correct_date, '%Y-%m-%d').date()
+                    
+                    max_days = 60.0
+                    days_difference = abs((user_date - correct_date).days)
+                    
+                    if days_difference > max_days:
+                        return 0.0
+                    return max(1.0, max_points * (1.0 - days_difference / max_days))
+                except Exception as e:
+                    self.logger.error(f"Error calculating date difference: {str(e)}, user_date: {type(user_date)}, correct_date: {type(correct_date)}")
+                    return 0.0
             
-            # Jeśli zarobki kandydata są niższe niż oczekiwane, przyznaj maksymalną liczbę punktów
-            if user_salary <= expected_salary:
-                return max_points
+            elif answer_type == 'ABCDEF':
+                return float(max_points) if answer.get('abcdef_answer') == question.get('correct_answer_abcdef') else 0.0
             
-            # W przeciwnym razie, oblicz proporcjonalny wynik
-            return min(max_points, (expected_salary / user_salary) * max_points)
+            return 0.0
             
-        elif answer_type == 'DATE':
-            user_date = answer.get('date_answer')
-            correct_date = question.get('correct_answer_date')
-            if user_date is None or correct_date is None:
-                return 0
-            
-            max_days = 60  # Maksymalna dopuszczalna różnica w dniach
-            days_difference = abs((user_date - correct_date).days)
-            
-            if days_difference > max_days:
-                return 0
-            return max(1, max_points * (1 - days_difference / max_days))
-            
-        elif answer_type == 'ABCDEF':
-            return max_points if answer.get('abcdef_answer') == question.get('correct_answer_abcdef') else 0
-            
-        return 0
+        except Exception as e:
+            self.logger.error(f"Error in calculate_score: {str(e)}")
+            return 0.0
 
-    def calculate_total_score(self, answers_response, questions):
-        """Oblicza łączny wynik dla wszystkich odpowiedzi."""
-        total_score = 0
+    def calculate_total_score(self, answers_response: dict, questions: dict) -> int:
+        """
+        Oblicza łączny wynik dla wszystkich odpowiedzi.
+        
+        Returns:
+            int: Całkowity wynik zaokrąglony do liczby całkowitej
+        """
+        total_score = 0.0
         
         for answer in answers_response.data:
             question = questions.get(answer['question_id'])
@@ -207,13 +237,20 @@ class TestService:
             total_score += score
             self.update_answer_score(answer['id'], score)
         
-        return total_score
+        return round(total_score)  # Return rounded total score
 
-    def update_answer_score(self, answer_id, score):
-        """Aktualizuje wynik dla konkretnej odpowiedzi."""
+    def update_answer_score(self, answer_id: int, score: float) -> None:
+        """
+        Aktualizuje wynik dla konkretnej odpowiedzi.
+        
+        Args:
+            answer_id: ID odpowiedzi
+            score: Wynik (może być float, zostanie zaokrąglony do int)
+        """
         try:
             self.supabase.table('candidate_answers').update({
-                'score': score
+                'score': round(score)  # Round float to integer
             }).eq('id', answer_id).execute()
         except Exception as e:
-            self.logger.error(f"Błąd podczas aktualizowania wyniku dla odpowiedzi {answer_id}: {str(e)}") 
+            self.logger.error(f"Błąd podczas aktualizowania wyniku dla odpowiedzi {answer_id}: {str(e)}")
+        
