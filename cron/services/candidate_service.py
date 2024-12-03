@@ -52,7 +52,8 @@ class CandidateService:
                 
                 result = self.test_service.calculate_test_score(
                     candidate['id'], 
-                    campaign['po1_test_id']
+                    campaign['po1_test_id'],
+                    'PO1'
                 )
                 
                 if isinstance(result, dict):  # EQ test results
@@ -88,7 +89,8 @@ class CandidateService:
                 
                 result = self.test_service.calculate_test_score(
                     candidate['id'], 
-                    campaign['po2_test_id']
+                    campaign['po2_test_id'],
+                    'PO2'
                 )
                 
                 if isinstance(result, dict):  # EQ test results
@@ -117,7 +119,8 @@ class CandidateService:
                 
                 result = self.test_service.calculate_test_score(
                     candidate['id'], 
-                    campaign['po3_test_id']
+                    campaign['po3_test_id'],
+                    'PO3'
                 )
                 
                 if isinstance(result, dict):  # EQ test results
@@ -193,25 +196,34 @@ class CandidateService:
             Optional[float]: Całkowity ważony wynik lub None jeśli nie można obliczyć
         """
         try:
-            scores_and_weights = [
-                (po1_score, campaign.get('po1_test_weight', 0)),
-                (po2_score, campaign.get('po2_test_weight', 0)),
-                (po3_score, campaign.get('po3_test_weight', 0))
-            ]
-
-            # Filter out None scores
-            valid_scores = [(score, weight) for score, weight in scores_and_weights if score is not None]
+            # Get test weights, default to 1 if not specified
+            po1_weight = float(campaign.get('po1_test_weight', 1))
+            po2_weight = float(campaign.get('po2_test_weight', 1))
+            po3_weight = float(campaign.get('po3_test_weight', 1))
             
-            if not valid_scores:
+            # Calculate weighted scores only for completed tests
+            weighted_scores = []
+            total_weight = 0
+            
+            if po1_score is not None:
+                weighted_scores.append(po1_score * po1_weight)
+                total_weight += po1_weight
+                
+            if po2_score is not None:
+                weighted_scores.append(po2_score * po2_weight)
+                total_weight += po2_weight
+                
+            if po3_score is not None:
+                weighted_scores.append(po3_score * po3_weight)
+                total_weight += po3_weight
+            
+            if not weighted_scores:
                 return None
                 
-            total_weighted_score = sum(score * weight for score, weight in valid_scores)
-            total_weight = sum(weight for _, weight in valid_scores)
-            
             if total_weight == 0:
                 return 0.0
                 
-            return total_weighted_score / total_weight
+            return sum(weighted_scores) / total_weight
             
         except Exception as e:
             self.logger.error(f"Błąd podczas obliczania całkowitego wyniku: {str(e)}")

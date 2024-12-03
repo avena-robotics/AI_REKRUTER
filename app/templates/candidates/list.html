@@ -152,17 +152,19 @@
                                         Podgląd
                                     </button>
                                 </li>
-                                {% if candidate.recruitment_status not in ['ACCEPTED', 'REJECTED'] %}
+                                {% if candidate.recruitment_status != 'ACCEPTED' %}
                                 <li>
                                     <button class="dropdown-item" onclick="moveToNextStage('{{ candidate.id }}')">
                                         Przepchnij do kolejnego etapu
                                     </button>
                                 </li>
+                                {% if candidate.recruitment_status != 'REJECTED' %}
                                 <li>
                                     <button class="dropdown-item text-danger" onclick="rejectCandidate('{{ candidate.id }}')">
                                         Odrzuć
                                     </button>
                                 </li>
+                                {% endif %}
                                 <li>
                                     <button class="dropdown-item text-success" onclick="acceptCandidate('{{ candidate.id }}')">
                                         Zaakceptuj

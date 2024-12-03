@@ -86,79 +86,89 @@ def check_token_status(token):
         current_time = datetime.now(timezone.utc)
         
         # Try PO2 token first
-        candidate = supabase.table('candidates')\
-            .select('*, campaign:campaigns(*)')\
-            .eq('access_token_po2', token)\
-            .single()\
-            .execute()
+        try:
+            candidate = supabase.table('candidates')\
+                .select('*, campaign:campaigns(*)')\
+                .eq('access_token_po2', token)\
+                .single()\
+                .execute()
+            
+            if candidate.data:
+                is_used = candidate.data.get('access_token_po2_is_used', False)
+                expires_at = candidate.data.get('access_token_po2_expires_at')
+                
+                # Convert expires_at to UTC datetime if it exists
+                is_expired = False
+                if expires_at:
+                    try:
+                        # Handle different datetime string formats
+                        if 'Z' in expires_at:
+                            expires_dt = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+                        elif '+' in expires_at:
+                            expires_dt = datetime.fromisoformat(expires_at)
+                        else:
+                            expires_dt = datetime.fromisoformat(expires_at).replace(tzinfo=timezone.utc)
+                        
+                        is_expired = expires_dt < current_time
+                    except ValueError as e:
+                        print(f"Error parsing date: {str(e)}")
+                        is_expired = False
+                
+                stage = 'PO2'
+                completed_at = candidate.data.get('po2_completed_at')
+                return candidate.data, is_used or is_expired, stage, completed_at
+        except Exception:
+            
+            pass  # Silently handle when PO2 token not found
         
-        if candidate.data:
-            is_used = candidate.data.get('access_token_po2_is_used', False)
-            expires_at = candidate.data.get('access_token_po2_expires_at')
-            
-            # Convert expires_at to UTC datetime if it exists
-            is_expired = False
-            if expires_at:
-                try:
-                    # Handle different datetime string formats
-                    if 'Z' in expires_at:
-                        expires_dt = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
-                    elif '+' in expires_at:
-                        expires_dt = datetime.fromisoformat(expires_at)
-                    else:
-                        expires_dt = datetime.fromisoformat(expires_at).replace(tzinfo=timezone.utc)
-                    
-                    is_expired = expires_dt < current_time
-                except ValueError as e:
-                    print(f"Error parsing date: {str(e)}")
-                    is_expired = False
-            
-            stage = 'PO2'
-            completed_at = candidate.data.get('po2_completed_at')
-            return candidate.data, is_used or is_expired, stage, completed_at
-
         # Try PO3 token
-        candidate = supabase.table('candidates')\
-            .select('*, campaign:campaigns(*)')\
-            .eq('access_token_po3', token)\
-            .single()\
-            .execute()
-        
-        if candidate.data:
-            is_used = candidate.data.get('access_token_po3_is_used', False)
-            expires_at = candidate.data.get('access_token_po3_expires_at')
+        try:
+            candidate = supabase.table('candidates')\
+                .select('*, campaign:campaigns(*)')\
+                .eq('access_token_po3', token)\
+                .single()\
+                .execute()
             
-            # Convert expires_at to UTC datetime if it exists
-            is_expired = False
-            if expires_at:
-                try:
-                    # Handle different datetime string formats
-                    if 'Z' in expires_at:
-                        expires_dt = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
-                    elif '+' in expires_at:
-                        expires_dt = datetime.fromisoformat(expires_at)
-                    else:
-                        expires_dt = datetime.fromisoformat(expires_at).replace(tzinfo=timezone.utc)
-                    
-                    is_expired = expires_dt < current_time
-                except ValueError as e:
-                    print(f"Error parsing date: {str(e)}")
-                    is_expired = False
-            
-            stage = 'PO3'
-            completed_at = candidate.data.get('po3_completed_at')
-            return candidate.data, is_used or is_expired, stage, completed_at
+            if candidate.data:
+                is_used = candidate.data.get('access_token_po3_is_used', False)
+                expires_at = candidate.data.get('access_token_po3_expires_at')
+                
+                # Convert expires_at to UTC datetime if it exists
+                is_expired = False
+                if expires_at:
+                    try:
+                        # Handle different datetime string formats
+                        if 'Z' in expires_at:
+                            expires_dt = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+                        elif '+' in expires_at:
+                            expires_dt = datetime.fromisoformat(expires_at)
+                        else:
+                            expires_dt = datetime.fromisoformat(expires_at).replace(tzinfo=timezone.utc)
+                        
+                        is_expired = expires_dt < current_time
+                    except ValueError as e:
+                        print(f"Error parsing date: {str(e)}")
+                        is_expired = False
+                
+                stage = 'PO3'
+                completed_at = candidate.data.get('po3_completed_at')
+                return candidate.data, is_used or is_expired, stage, completed_at
+        except Exception:
+            pass  # Silently handle when PO3 token not found
 
         # Try universal token
-        campaign = supabase.table('campaigns')\
-            .select('*')\
-            .eq('universal_access_token', token)\
-            .single()\
-            .execute()
-        
-        if campaign.data:
-            is_active = campaign.data.get('is_active', False)
-            return campaign.data, not is_active, 'PO1', None
+        try:
+            campaign = supabase.table('campaigns')\
+                .select('*')\
+                .eq('universal_access_token', token)\
+                .single()\
+                .execute()
+            
+            if campaign.data:
+                is_active = campaign.data.get('is_active', False)
+                return campaign.data, not is_active, 'PO1', None
+        except Exception:
+            pass  # Silently handle when universal token not found
 
     except Exception as e:
         print(f"Error checking token status: {str(e)}")
@@ -167,6 +177,14 @@ def check_token_status(token):
 
 def process_test_answers(candidate_id, test_id, form_data):
     """Process test answers"""
+    def get_stage_for_candidate(candidate_id):
+        result = supabase.table('candidates').select('recruitment_status').eq('id', candidate_id).single().execute()
+        return result.data['recruitment_status'] if result.data else None
+
+    stage = get_stage_for_candidate(candidate_id)
+    if not stage:
+        raise Exception("Could not determine stage for candidate")
+
     answers_to_insert = []
     
     # Get all questions for this test in one query
@@ -216,6 +234,7 @@ def process_test_answers(candidate_id, test_id, form_data):
         answer_data = {
             'candidate_id': candidate_id,
             'question_id': int(question_id),
+            'stage': stage,
             'points_per_option': points,
             'created_at': datetime.now().isoformat()
         }
@@ -230,6 +249,7 @@ def process_test_answers(candidate_id, test_id, form_data):
         answer_data = {
             'candidate_id': candidate_id,
             'question_id': int(question_id),
+            'stage': stage,
             'created_at': datetime.now().isoformat()
         }
         

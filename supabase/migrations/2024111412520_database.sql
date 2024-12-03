@@ -118,6 +118,7 @@ create table candidate_answers (
     id bigserial primary key,
     candidate_id bigint references candidates(id) ON DELETE CASCADE,
     question_id integer references questions(id),
+    stage text not null check (stage in ('PO1', 'PO2', 'PO3', 'PO4')),
     text_answer text,                              -- Odpowiedź tekstowa    
     boolean_answer boolean,                        -- Odpowiedź typu boolean
     salary_answer numeric,                        -- Odpowiedź typu numeric
@@ -485,9 +486,9 @@ BEGIN
         WHERE c.id = p_candidate_id
     ),
     questions_with_answers AS (
-        -- Get questions and answers in a separate CTE
         SELECT 
             t.id as test_id,
+            stages.stage,
             jsonb_agg(
                 jsonb_build_object(
                     'id', q.id,
@@ -505,7 +506,7 @@ BEGIN
                     'correct_answer_date', q.correct_answer_date,
                     'correct_answer_abcdef', q.correct_answer_abcdef,
                     'answer', (
-                        SELECT jsonb_build_object(
+                        SELECT COALESCE(jsonb_build_object(
                             'id', ca.id,
                             'text_answer', ca.text_answer,
                             'boolean_answer', ca.boolean_answer,
@@ -516,21 +517,35 @@ BEGIN
                             'points_per_option', ca.points_per_option,
                             'score', ca.score,
                             'score_ai', ca.score_ai
-                        )
+                        ), NULL)
                         FROM candidate_answers ca
                         WHERE ca.question_id = q.id 
                         AND ca.candidate_id = p_candidate_id
+                        AND ca.stage = stages.stage
+                        LIMIT 1
                     )
                 ) ORDER BY q.order_number
             ) as questions
-        FROM tests t
+        FROM (
+            SELECT 'PO1' as stage, po1_test_id as test_id 
+            FROM campaigns 
+            WHERE id = (SELECT campaign_id FROM candidates WHERE id = p_candidate_id)
+            UNION ALL
+            SELECT 'PO2', po2_test_id 
+            FROM campaigns 
+            WHERE id = (SELECT campaign_id FROM candidates WHERE id = p_candidate_id)
+            UNION ALL
+            SELECT 'PO3', po3_test_id 
+            FROM campaigns 
+            WHERE id = (SELECT campaign_id FROM candidates WHERE id = p_candidate_id)
+        ) stages
+        JOIN tests t ON stages.test_id = t.id
         JOIN questions q ON q.test_id = t.id
-        GROUP BY t.id
+        GROUP BY t.id, stages.stage
     ),
     test_data AS (
-        -- Get all tests data with questions and answers
         SELECT 
-            stage,
+            stages.stage,
             jsonb_build_object(
                 'test', jsonb_build_object(
                     'id', t.id,
@@ -543,19 +558,15 @@ BEGIN
                 'questions', qa.questions
             ) as test_data
         FROM (
-            SELECT 'PO1' as stage, po1_test_id as test_id FROM campaigns WHERE id = (SELECT campaign_id FROM candidates WHERE id = p_candidate_id)
-            UNION ALL
-            SELECT 'PO2', po2_test_id FROM campaigns WHERE id = (SELECT campaign_id FROM candidates WHERE id = p_candidate_id)
-            UNION ALL
-            SELECT 'PO3', po3_test_id FROM campaigns WHERE id = (SELECT campaign_id FROM candidates WHERE id = p_candidate_id)
+            SELECT stage, test_id FROM questions_with_answers
         ) stages
         JOIN tests t ON stages.test_id = t.id
-        LEFT JOIN questions_with_answers qa ON qa.test_id = t.id
+        LEFT JOIN questions_with_answers qa ON qa.test_id = t.id AND qa.stage = stages.stage
     )
     SELECT 
         (SELECT cand_data FROM candidate_info) as candidate_data,
-        jsonb_object_agg(stage, test_data) as tests_data
-    FROM test_data
+        jsonb_object_agg(stages.stage, test_data) as tests_data
+    FROM test_data stages
     GROUP BY 1;
 END;
 $$;

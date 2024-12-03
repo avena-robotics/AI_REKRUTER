@@ -9,7 +9,7 @@ class TestService:
         self.supabase = supabase
         self.logger = logging.getLogger('candidate_check')
 
-    def calculate_test_score(self, candidate_id: int, test_id: int) -> Optional[dict]:
+    def calculate_test_score(self, candidate_id: int, test_id: int, stage: str) -> Optional[dict]:
         """
         Oblicza wynik testu dla kandydata
         """
@@ -29,6 +29,7 @@ class TestService:
                     points_per_option
                 ''')\
                 .eq('candidate_id', candidate_id)\
+                .eq('stage', stage)\
                 .execute()
             
             if not answers_response.data:

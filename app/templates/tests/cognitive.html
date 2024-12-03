@@ -40,6 +40,50 @@
                         </label>
                         {% endfor %}
                     </div>
+                    {% elif question.answer_type == 'TEXT' %}
+                    <div class="form-group">
+                        <textarea class="form-control" 
+                                 name="answer_{{ question.id }}" 
+                                 rows="3"
+                                 {% if question.is_required %}required{% endif %}></textarea>
+                    </div>
+                    {% elif question.answer_type == 'BOOLEAN' %}
+                    <div class="form-check">
+                        <input type="radio" 
+                               class="form-check-input" 
+                               name="answer_{{ question.id }}" 
+                               value="true" 
+                               id="answer_{{ question.id }}_true" 
+                               {% if question.is_required %}required{% endif %}>
+                        <label class="form-check-label" for="answer_{{ question.id }}_true">Tak</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="radio" 
+                               class="form-check-input" 
+                               name="answer_{{ question.id }}" 
+                               value="false" 
+                               id="answer_{{ question.id }}_false" 
+                               {% if question.is_required %}required{% endif %}>
+                        <label class="form-check-label" for="answer_{{ question.id }}_false">Nie</label>
+                    </div>
+                    {% elif question.answer_type == 'SCALE' %}
+                    <div class="range-container">
+                        <input type="range" 
+                               class="form-range" 
+                               name="answer_{{ question.id }}" 
+                               min="0" 
+                               max="5" 
+                               step="1" 
+                               {% if question.is_required %}required{% endif %}>
+                        <div class="range-labels">
+                            <span>0</span>
+                            <span>1</span>
+                            <span>2</span>
+                            <span>3</span>
+                            <span>4</span>
+                            <span>5</span>
+                        </div>
+                    </div>
                     {% elif question.answer_type == 'AH_POINTS' %}
                     <div class="ah-points-container">
                         <div class="alert alert-info mb-3">
@@ -350,6 +394,36 @@
         /* Remove any existing error styles for inputs */
         .option-points input.is-invalid {
             border-color: #ced4da;
+        }
+
+        /* Range input styles */
+        .range-container {
+            padding: 0 10px;
+        }
+        
+        .range-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+        }
+        
+        .range-labels span {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+        
+        /* Form check styles */
+        .form-check {
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-check-input {
+            cursor: pointer;
+        }
+        
+        .form-check-label {
+            cursor: pointer;
+            user-select: none;
         }
     </style>
 

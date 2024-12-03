@@ -246,6 +246,20 @@ def next_stage(id):
         current_status = candidate.data["recruitment_status"]
         campaign = candidate.data["campaigns"]
         
+        # If candidate is rejected, determine their last completed stage
+        if current_status == "REJECTED":
+            if candidate.data["po3_score"] is not None:
+                current_status = "PO3"
+            elif candidate.data["po2_score"] is not None:
+                current_status = "PO2"
+            elif candidate.data["po1_score"] is not None:
+                current_status = "PO1"
+            else:
+                return jsonify({
+                    "success": False, 
+                    "error": "Nie można określić ostatniego ukończonego etapu"
+                }), 400
+        
         # Define next stage based on current status
         if current_status == "PO1":
             next_status = "PO2"
