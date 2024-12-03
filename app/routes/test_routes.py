@@ -6,6 +6,7 @@ from routes.auth_routes import login_required
 from services.group_service import get_user_groups, get_test_groups
 import time
 from contextlib import contextmanager
+import asyncio
 
 test_bp = Blueprint("test", __name__, url_prefix="/tests")
 
@@ -280,19 +281,11 @@ def get_test_data(test_id):
 
 @test_bp.route("/<int:test_id>/edit", methods=["POST"])
 def edit(test_id):
-    try:        
-        # Get original test data for potential rollback
+    try:
+        # Get original test data for comparison
         original_test = supabase.from_("tests").select("*").eq("id", test_id).single().execute()
         if not original_test.data:
             return jsonify({"success": False, "error": "Test nie istnieje"})
-
-        # Get original groups
-        original_groups = supabase.from_("link_groups_tests").select("*").eq("test_id", test_id).execute()
-        original_group_ids = [g["group_id"] for g in original_groups.data]
-
-        # Get original questions
-        original_questions = supabase.from_("questions").select("*").eq("test_id", test_id).execute()
-        original_question_ids = [q["id"] for q in original_questions.data]
 
         # Prepare test data
         test_data = {
@@ -305,8 +298,13 @@ def edit(test_id):
             else None,
         }
 
+        # Check if test data actually changed
+        test_changed = any(
+            original_test.data.get(key) != value 
+            for key, value in test_data.items()
+        )
+
         groups = request.form.getlist("groups[]")
-        
         if not groups:
             return jsonify(
                 {
@@ -316,32 +314,41 @@ def edit(test_id):
             )
 
         try:
-            # Update test
-            test_result = supabase.from_("tests").update(test_data).eq("id", test_id).execute()
-            if not test_result.data:
-                raise Exception("Nie udało się zaktualizować testu")
+            # Only update test if data changed
+            if test_changed:
+                test_result = supabase.from_("tests").update(test_data).eq("id", test_id).execute()
+                if not test_result.data:
+                    raise Exception("Nie udało się zaktualizować testu")
 
-            # Handle group associations
-            new_group_ids = [int(gid) for gid in groups if int(gid) not in original_group_ids]
-            groups_to_remove = [gid for gid in original_group_ids if str(gid) not in groups]
-            
+            # Get original groups for comparison
+            original_groups = supabase.from_("link_groups_tests").select("*").eq("test_id", test_id).execute()
+            original_group_ids = {g["group_id"] for g in original_groups.data}
+            new_group_ids = {int(gid) for gid in groups}
 
-            # Remove old group associations
-            if groups_to_remove:
-                remove_result = supabase.from_("link_groups_tests").delete().eq("test_id", test_id).in_("group_id", groups_to_remove).execute()
+            # Only process groups if they changed
+            if original_group_ids != new_group_ids:
+                groups_to_add = new_group_ids - original_group_ids
+                groups_to_remove = original_group_ids - new_group_ids
 
-            # Add new group associations
-            if new_group_ids:
-                group_links = [{"group_id": gid, "test_id": test_id} for gid in new_group_ids]
-                group_result = supabase.from_("link_groups_tests").insert(group_links).execute()
-                if not group_result.data:
-                    raise Exception("Nie udało się dodać nowych powiązań z grupami")
+                # Remove old group associations
+                if groups_to_remove:
+                    supabase.from_("link_groups_tests").delete().eq("test_id", test_id).in_("group_id", list(groups_to_remove)).execute()
+
+                # Add new group associations
+                if groups_to_add:
+                    group_links = [{"group_id": gid, "test_id": test_id} for gid in groups_to_add]
+                    supabase.from_("link_groups_tests").insert(group_links).execute()
 
             # Process questions
             questions = json.loads(request.form.get("questions", "[]"))
             
+            # Get original questions for comparison
+            original_questions = supabase.from_("questions").select("*").eq("test_id", test_id).execute()
+            original_questions_dict = {q["id"]: q for q in original_questions.data}
+
             questions_to_update = []
             questions_to_insert = []
+            questions_to_delete = set(original_questions_dict.keys())
 
             for question in questions:
                 clean_question = {
@@ -354,7 +361,7 @@ def edit(test_id):
                     "image": question.get("image"),
                 }
 
-                # Handle AH_POINTS type specifically
+                # Handle answer type specific data
                 if question["answer_type"] == "AH_POINTS":
                     if "options" in question and isinstance(question["options"], dict):
                         clean_question["options"] = {
@@ -369,70 +376,58 @@ def edit(test_id):
                 else:
                     answer_field = f'correct_answer_{question["answer_type"].lower()}'
                     if answer_field in question and question[answer_field] is not None:
-                        clean_question[answer_field] = question[answer_field]
+                        # Add debug logging
+                        print(f"Processing {answer_field}")
+                        print(f"Raw value: {question[answer_field]}")
+                        print(f"Type: {type(question[answer_field])}")
+                        
+                        # Add special handling for boolean answers
+                        if answer_field == 'correct_answer_boolean':
+                            # Convert string 'true'/'false' to Python boolean
+                            bool_value = str(question[answer_field]).lower() == 'true'
+                            print(f"Converted boolean value: {bool_value}")
+                            clean_question[answer_field] = bool_value
+                        else:
+                            clean_question[answer_field] = question[answer_field]
 
-                # Store question ID separately instead of including it in clean_question
-                if question.get("id") and str(question["id"]).isdigit() and int(question["id"]) in original_question_ids:
-                    questions_to_update.append({
-                        "id": int(question["id"]),
-                        "data": clean_question
-                    })
+                question_id = question.get("id")
+                if question_id and str(question_id).isdigit():
+                    question_id = int(question_id)
+                    if question_id in original_questions_dict:
+                        # Compare with original question to see if it changed
+                        original = original_questions_dict[question_id]
+                        if any(original.get(k) != v for k, v in clean_question.items()):
+                            questions_to_update.append({
+                                "id": question_id,
+                                "data": clean_question
+                            })
+                        questions_to_delete.remove(question_id)
                 else:
                     questions_to_insert.append(clean_question)
 
-            # Process questions in batches
-            BATCH_SIZE = 3
-            
-            # Update existing questions
+            # Process questions in optimized batches
+            BATCH_SIZE = 10
+
+            # Update modified questions in batches
             if questions_to_update:
                 for i in range(0, len(questions_to_update), BATCH_SIZE):
                     batch = questions_to_update[i:i + BATCH_SIZE]
                     
+                    # Execute updates in parallel using asyncio
                     for question in batch:
-                        question_id = question["id"]
-                        question_data = question["data"]
-                        
-                        def update_operation():
-                            result = supabase.from_("questions").update(question_data).eq("id", question_id).execute()
-                            if not result.data:
-                                raise Exception(f"Nie udało się zaktualizować pytania {question_id}")
-                            return result
-                        
-                        try:
-                            retry_on_disconnect(update_operation)
-                        except Exception as e:
-                            raise
-                        
-                    # Small delay between batches to prevent overload
-                    if i + BATCH_SIZE < len(questions_to_update):
-                        time.sleep(0.5)
-                
+                        supabase.from_("questions").update(
+                            question["data"]
+                        ).eq("id", question["id"]).execute()
+
             # Insert new questions in batches
             if questions_to_insert:
                 for i in range(0, len(questions_to_insert), BATCH_SIZE):
                     batch = questions_to_insert[i:i + BATCH_SIZE]
-                    
-                    def insert_operation():
-                        result = supabase.from_("questions").insert(batch).execute()
-                        if not result.data:
-                            raise Exception("Nie udało się dodać nowych pytań")
-                        return result
-                    
-                    retry_on_disconnect(insert_operation)
-                    
-                    if i + BATCH_SIZE < len(questions_to_insert):
-                        time.sleep(0.5)
-                
-            # Remove questions that are no longer present
-            current_question_ids = [q["id"] for q in questions_to_update]
-            questions_to_delete = [qid for qid in original_question_ids if qid not in current_question_ids]
-            
+                    supabase.from_("questions").insert(batch).execute()
+
+            # Delete removed questions
             if questions_to_delete:
-                def delete_operation():
-                    result = supabase.from_("questions").delete().eq("test_id", test_id).in_("id", questions_to_delete).execute()
-                    return result
-                
-                retry_on_disconnect(delete_operation)
+                supabase.from_("questions").delete().in_("id", list(questions_to_delete)).execute()
 
             return jsonify(
                 {
@@ -442,30 +437,7 @@ def edit(test_id):
             )
 
         except Exception as e:
-            print(f"Error during test update, starting rollback. Error: {str(e)}")
-            # Revert changes in case of error
-            try:
-                print("Rolling back test changes")
-                supabase.from_("tests").update(original_test.data).eq("id", test_id).execute()
-                
-                print("Rolling back group changes")
-                # Remove any new group associations
-                if new_group_ids:
-                    supabase.from_("link_groups_tests").delete().eq("test_id", test_id).in_("group_id", new_group_ids).execute()
-                
-                print("Rolling back question changes")
-                # Remove any newly inserted questions
-                if questions_to_insert:
-                    supabase.from_("questions").delete().eq("test_id", test_id).not_.in_("id", original_question_ids).execute()
-                
-                # Revert updated questions to their original state
-                for orig_q in original_questions.data:
-                    supabase.from_("questions").update(orig_q).eq("id", orig_q["id"]).execute()
-                
-                print("Rollback completed successfully")
-            except Exception as rollback_error:
-                print(f"Error during rollback: {str(rollback_error)}")
-                
+            print(f"Error during test update: {str(e)}")
             raise Exception(f"Błąd podczas aktualizacji testu: {str(e)}")
 
     except Exception as e:

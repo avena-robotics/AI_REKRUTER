@@ -1049,7 +1049,7 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
             console.log(pair[0], pair[1]);
         }
         
-        // Add questions data
+        // Get questions data
         const questions = [];
         form.querySelectorAll('.question-card').forEach((card, index) => {
             const questionData = {
@@ -1061,57 +1061,44 @@ document.querySelector('[data-bs-target="#addTestModal"]').addEventListener('cli
                 is_required: card.querySelector('[name$="[is_required]"]').checked,
                 image: card.querySelector('input[name$="[image]"]')?.value || null
             };
-    
-            // Add debug logging
-            console.log('Question card dataset:', card.dataset);
-            console.log('Processing question data:', questionData);
-    
+
             // Handle answer type specific fields
             const answerType = questionData.answer_type;
-            console.log(`Processing question with answer type: ${answerType}`);
-            
             switch (answerType) {
+                case 'BOOLEAN':
+                    // Fix: Get the selected radio button value
+                    const selectedRadio = card.querySelector('input[name$="[correct_answer_boolean]"]:checked');
+                    questionData.correct_answer_boolean = selectedRadio ? selectedRadio.value : null;
+                    break;
                 case 'ABCDEF':
                     const abcdefSelect = card.querySelector('[name$="[correct_answer_abcdef]"]');
                     questionData.correct_answer_abcdef = abcdefSelect ? abcdefSelect.value : null;
-                    console.log('ABCDEF answer value:', questionData.correct_answer_abcdef);
                     break;
                 case 'SALARY':
                     const salaryValue = card.querySelector('[name$="[correct_answer_salary]"]')?.value;
                     questionData.correct_answer_salary = salaryValue ? Number(salaryValue) : null;
-                    console.log('SALARY answer value:', questionData.correct_answer_salary);
                     break;
                 case 'AH_POINTS':
                     const options = {};
-                    const optionInputs = card.querySelectorAll('[name*="[options]"]');
-                    console.log(`Found ${optionInputs.length} option inputs`);
-                    
-                    optionInputs.forEach(input => {
+                    card.querySelectorAll('[name*="[options]"]').forEach(input => {
                         const letterMatch = input.name.match(/\[options\]\[([a-h])\]/);
                         if (letterMatch) {
-                            const letter = letterMatch[1];
-                            const value = input.value.trim();
-                            console.log(`Processing option ${letter}:`, value);
-                            options[letter] = value;  // Always store the value, even if empty
+                            options[letterMatch[1]] = input.value.trim();
                         }
                     });
-                    
-                    questionData.options = options;  // Always include options object
-                    console.log('Final AH_POINTS options:', options);
+                    questionData.options = options;
                     break;
                 default:
                     const answerField = `correct_answer_${answerType.toLowerCase()}`;
                     const answerInput = card.querySelector(`[name$="[${answerField}]"]`);
                     if (answerInput) {
-                        questionData[answerField] = answerInput.type === 'checkbox' ? 
-                            answerInput.checked : answerInput.value;
-                        console.log(`${answerType} answer value:`, questionData[answerField]);
+                        questionData[answerField] = answerInput.value;
                     }
             }
-    
+
             questions.push(questionData);
         });
-    
+
         console.log('Questions data before submit:', questions);
         formData.append('questions', JSON.stringify(questions));
         
