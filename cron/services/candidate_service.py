@@ -139,8 +139,21 @@ class CandidateService:
 
             if updates:
                 self.logger.info(f"Aktualizacja danych kandydata {candidate['id']}: {updates}")
+                
+                # Calculate total score before updating database
+                if any(key in updates for key in ['po1_score', 'po2_score', 'po3_score']):
+                    total_score = self._calculate_total_weighted_score(
+                        po1_score=updates.get('po1_score', candidate.get('po1_score')),
+                        po2_score=updates.get('po2_score', candidate.get('po2_score')),
+                        po3_score=updates.get('po3_score', candidate.get('po3_score')),
+                        campaign=campaign
+                    )
+                    updates['total_score'] = total_score
+                    self.logger.info(f"Zaktualizowano total_score dla kandydata {candidate['id']}: {total_score}")
+                
                 updates['updated_at'] = datetime.now(timezone.utc).isoformat()
                 
+                # Update database with all changes including total_score
                 self.supabase.table('candidates')\
                     .update(updates)\
                     .eq('id', candidate['id'])\
@@ -154,17 +167,6 @@ class CandidateService:
             else:
                 self.logger.info(f"Brak aktualizacji dla kandydata {candidate['id']}")
                 
-            # After any score update, calculate total score
-            if any(key in updates for key in ['po1_score', 'po2_score', 'po3_score']):
-                total_score = self._calculate_total_weighted_score(
-                    po1_score=updates.get('po1_score', candidate.get('po1_score')),
-                    po2_score=updates.get('po2_score', candidate.get('po2_score')),
-                    po3_score=updates.get('po3_score', candidate.get('po3_score')),
-                    campaign=campaign
-                )
-                updates['total_score'] = total_score
-                self.logger.info(f"Zaktualizowano total_score dla kandydata {candidate['id']}: {total_score}")
-                
             return {**candidate, **updates}
             
         except Exception as e:
@@ -177,7 +179,7 @@ class CandidateService:
     def _calculate_total_weighted_score(self, po1_score: Optional[int], 
                                       po2_score: Optional[int], 
                                       po3_score: Optional[int], 
-                                      campaign: dict) -> Optional[int]:
+                                      campaign: dict) -> Optional[float]:
         """
         Oblicza całkowity ważony wynik na podstawie wyników testów i wag z kampanii
         
@@ -188,7 +190,7 @@ class CandidateService:
             campaign: Dane kampanii zawierające wagi testów
             
         Returns:
-            Optional[int]: Całkowity ważony wynik lub None jeśli nie można obliczyć
+            Optional[float]: Całkowity ważony wynik lub None jeśli nie można obliczyć
         """
         try:
             scores_and_weights = [
@@ -207,11 +209,9 @@ class CandidateService:
             total_weight = sum(weight for _, weight in valid_scores)
             
             if total_weight == 0:
-                self.logger.warning("Wszystkie wagi testów są równe 0")
-                return None
+                return 0.0
                 
-            # Calculate weighted average and round to nearest integer
-            return round(total_weighted_score / total_weight)
+            return total_weighted_score / total_weight
             
         except Exception as e:
             self.logger.error(f"Błąd podczas obliczania całkowitego wyniku: {str(e)}")
@@ -250,7 +250,7 @@ class CandidateService:
             for candidate in candidates:
                 try:
                     campaign_response = self.supabase.table('campaigns')\
-                        .select('id, po1_test_id, po2_test_id, po3_test_id')\
+                        .select('id, po1_test_id, po2_test_id, po3_test_id, po1_test_weight, po2_test_weight, po3_test_weight')\
                         .eq('id', candidate['campaign_id'])\
                         .single()\
                         .execute()

@@ -91,7 +91,7 @@ create table candidates (
     po2_score int,                                  -- 80
     po3_score int,                                  -- 70
     po4_score int,                                  -- 60
-    total_score int,                                -- 310  
+    total_score float,                                -- 310  
     po1_completed_at timestamp with time zone,      -- Data zakończenia testu PO1
     po2_completed_at timestamp with time zone,      -- Data zakończenia testu PO2
     po3_completed_at timestamp with time zone,      -- Data zakończenia testu PO3
