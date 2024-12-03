@@ -148,33 +148,43 @@
                                 aria-labelledby="dropdownMenuButton{{ candidate.id }}"
                                 style="z-index: 1021;">
                                 <li>
-                                    <button class="dropdown-item" onclick="viewCandidate('{{ candidate.id }}')">
-                                        Podgląd
+                                    <button class="dropdown-item" onclick="viewCandidate('{{ candidate.id }}')" 
+                                            id="viewBtn_{{ candidate.id }}">
+                                        <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                                        <span class="button-text">Podgląd</span>
                                     </button>
                                 </li>
-                                {% if candidate.recruitment_status != 'ACCEPTED' %}
+                                {% if candidate.recruitment_status not in ['ACCEPTED', 'PO4'] %}
                                 <li>
-                                    <button class="dropdown-item" onclick="moveToNextStage('{{ candidate.id }}')">
-                                        Przepchnij do kolejnego etapu
+                                    <button class="dropdown-item" onclick="moveToNextStage('{{ candidate.id }}')"
+                                            id="nextStageBtn_{{ candidate.id }}">
+                                        <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                                        <span class="button-text">Przepchnij do kolejnego etapu</span>
                                     </button>
                                 </li>
+                                {% endif %}
                                 {% if candidate.recruitment_status != 'REJECTED' %}
                                 <li>
-                                    <button class="dropdown-item text-danger" onclick="rejectCandidate('{{ candidate.id }}')">
-                                        Odrzuć
+                                    <button class="dropdown-item text-danger" onclick="rejectCandidate('{{ candidate.id }}')"
+                                            id="rejectBtn_{{ candidate.id }}">
+                                        <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                                        <span class="button-text">Odrzuć</span>
                                     </button>
                                 </li>
                                 {% endif %}
                                 <li>
-                                    <button class="dropdown-item text-success" onclick="acceptCandidate('{{ candidate.id }}')">
-                                        Zaakceptuj
+                                    <button class="dropdown-item text-success" onclick="acceptCandidate('{{ candidate.id }}')"
+                                            id="acceptBtn_{{ candidate.id }}">
+                                        <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                                        <span class="button-text">Zaakceptuj</span>
                                     </button>
                                 </li>
-                                {% endif %}
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
-                                    <button class="dropdown-item text-danger" onclick="deleteCandidate('{{ candidate.id }}')">
-                                        Usuń aplikację
+                                    <button class="dropdown-item text-danger" onclick="deleteCandidate('{{ candidate.id }}')"
+                                            id="deleteBtn_{{ candidate.id }}">
+                                        <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                                        <span class="button-text">Usuń aplikację</span>
                                     </button>
                                 </li>
                             </ul>
@@ -209,6 +219,105 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"></script>
 
 <script>
+// Define functions in global scope
+window.viewCandidate = async function(candidateId) {
+    setButtonLoading(`viewBtn_${candidateId}`, true);
+    try {
+        const response = await fetch(`/candidates/${candidateId}`);
+        const html = await response.text();
+        document.getElementById('candidateModalBody').innerHTML = html;
+        initializeCopyLinks();
+        initializeExtendTokens();
+        const modal = new bootstrap.Modal(document.getElementById('candidateModal'));
+        modal.show();
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Błąd podczas ładowania danych kandydata', 'error');
+    } finally {
+        setButtonLoading(`viewBtn_${candidateId}`, false);
+    }
+};
+
+window.moveToNextStage = async function(candidateId) {
+    if (!confirm('Czy na pewno chcesz przepchnąć kandydata do kolejnego etapu?')) return;
+    
+    setButtonLoading(`nextStageBtn_${candidateId}`, true);
+    try {
+        const response = await fetch(`/candidates/${candidateId}/next-stage`, {
+            method: 'POST'
+        });
+        if (response.ok) {
+            location.reload();
+        } else {
+            throw new Error('Network response was not ok');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Błąd podczas zmiany etapu', 'error');
+        setButtonLoading(`nextStageBtn_${candidateId}`, false);
+    }
+};
+
+window.rejectCandidate = async function(candidateId) {
+    if (!confirm('Czy na pewno chcesz odrzucić kandydata?')) return;
+    
+    setButtonLoading(`rejectBtn_${candidateId}`, true);
+    try {
+        const response = await fetch(`/candidates/${candidateId}/reject`, {
+            method: 'POST'
+        });
+        if (response.ok) {
+            location.reload();
+        } else {
+            throw new Error('Network response was not ok');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Błąd podczas odrzucania kandydata', 'error');
+        setButtonLoading(`rejectBtn_${candidateId}`, false);
+    }
+};
+
+window.acceptCandidate = async function(candidateId) {
+    if (!confirm('Czy na pewno chcesz zaakceptować kandydata?')) return;
+    
+    setButtonLoading(`acceptBtn_${candidateId}`, true);
+    try {
+        const response = await fetch(`/candidates/${candidateId}/accept`, {
+            method: 'POST'
+        });
+        if (response.ok) {
+            location.reload();
+        } else {
+            throw new Error('Network response was not ok');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Błąd podczas akceptowania kandydata', 'error');
+        setButtonLoading(`acceptBtn_${candidateId}`, false);
+    }
+};
+
+window.deleteCandidate = async function(candidateId) {
+    if (!confirm('Czy na pewno chcesz usunąć tę aplikację? Ta operacja jest nieodwracalna.')) return;
+    
+    setButtonLoading(`deleteBtn_${candidateId}`, true);
+    try {
+        const response = await fetch(`/candidates/${candidateId}/delete`, {
+            method: 'POST'
+        });
+        if (response.ok) {
+            location.reload();
+        } else {
+            throw new Error('Network response was not ok');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Błąd podczas usuwania aplikacji', 'error');
+        setButtonLoading(`deleteBtn_${candidateId}`, false);
+    }
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     // Upewnij się, że Bootstrap jest załadowany
     if (typeof bootstrap === 'undefined') {
@@ -229,66 +338,6 @@ document.addEventListener('DOMContentLoaded', function() {
             e.stopPropagation();
         });
     });
-
-    window.viewCandidate = function(candidateId) {
-        const modal = new bootstrap.Modal(document.getElementById('candidateModal'));
-        fetch(`/candidates/${candidateId}`)
-            .then(response => response.text())
-            .then(html => {
-                document.getElementById('candidateModalBody').innerHTML = html;
-                initializeCopyLinks();
-                initializeExtendTokens();
-                modal.show();
-            });
-    }
-
-    window.moveToNextStage = function(candidateId) {
-        if (confirm('Czy na pewno chcesz przepchnąć kandydata do kolejnego etapu?')) {
-            fetch(`/candidates/${candidateId}/next-stage`, {
-                method: 'POST',
-            }).then(response => {
-                if (response.ok) {
-                    location.reload();
-                }
-            });
-        }
-    }
-
-    window.rejectCandidate = function(candidateId) {
-        if (confirm('Czy na pewno chcesz odrzucić kandydata?')) {
-            fetch(`/candidates/${candidateId}/reject`, {
-                method: 'POST',
-            }).then(response => {
-                if (response.ok) {
-                    location.reload();
-                }
-            });
-        }
-    }
-
-    window.acceptCandidate = function(candidateId) {
-        if (confirm('Czy na pewno chcesz zaakceptować kandydata?')) {
-            fetch(`/candidates/${candidateId}/accept`, {
-                method: 'POST',
-            }).then(response => {
-                if (response.ok) {
-                    location.reload();
-                }
-            });
-        }
-    }
-
-    window.deleteCandidate = function(candidateId) {
-        if (confirm('Czy na pewno chcesz usunąć t aplikację? Ta operacja jest nieodwracalna.')) {
-            fetch(`/candidates/${candidateId}/delete`, {
-                method: 'POST',
-            }).then(response => {
-                if (response.ok) {
-                    location.reload();
-                }
-            });
-        }
-    }
 
     // Add hover effect CSS
     const style = document.createElement('style');
@@ -374,6 +423,23 @@ function initializeExtendTokens() {
         });
     });
 }
+
+function setButtonLoading(buttonId, isLoading) {
+    const button = document.getElementById(buttonId);
+    if (!button) return;
+    
+    const spinner = button.querySelector('.spinner-border');
+    const buttonText = button.querySelector('.button-text');
+    
+    button.disabled = isLoading;
+    if (isLoading) {
+        spinner.classList.remove('d-none');
+        buttonText.style.opacity = '0.5';
+    } else {
+        spinner.classList.add('d-none');
+        buttonText.style.opacity = '1';
+    }
+}
 </script>
 
 <style>
@@ -419,6 +485,32 @@ function initializeExtendTokens() {
     /* Dodaj cień pod headerem tabeli */
     .table thead th {
         box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Add styles for dropdown item spinners */
+    .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .dropdown-item .spinner-border {
+        width: 1rem;
+        height: 1rem;
+        margin-right: 0.25rem;
+    }
+
+    .dropdown-item .button-text {
+        transition: opacity 0.2s;
+    }
+
+    .dropdown-item:disabled .button-text {
+        opacity: 0.5;
+    }
+
+    .dropdown-item:disabled {
+        cursor: not-allowed;
+        opacity: 0.65;
     }
 </style>
 {% endblock %}
