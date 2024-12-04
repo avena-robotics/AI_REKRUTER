@@ -173,21 +173,27 @@ textarea.form-control {
 .table-wrapper {
     height: calc(100vh - 380px);
     position: relative;
-    width: 100%;
+    display: flex;
+    justify-content: center;
     overflow: hidden;
-    padding: 0;
+    padding: 0 15px;
+    width: 100%;
+    max-width: 1450px;
+    margin: 0 auto;
 }
 
 .table-scroll {
     height: 100%;
     overflow-y: auto;
     overflow-x: auto;
-    margin: 0;
+    margin: 0 auto;
+    width: 100%;
 }
 
 .table {
-    width: 100%;
+    width: max-content;
     margin-bottom: 0;
+    min-width: 100%;
 }
 
 .table.table-striped {
@@ -197,8 +203,10 @@ textarea.form-control {
 }
 
 .container {
-    max-width: 100% !important;
+    max-width: 1500px !important;
     overflow-x: hidden;
+    margin: 0 auto;
+    padding: 0 25px;
 }
 
 .dropdown-menu {
@@ -249,6 +257,7 @@ td {
 .table th,
 .table td {
     white-space: nowrap;
+    justify-content: center;
 }
 
 .table th:nth-child(1),
@@ -273,10 +282,10 @@ td {
 .table td:nth-child(7) { width: 200px; }
 
 .table th:nth-child(8),
-.table td:nth-child(8) { width: 150px; }
+.table td:nth-child(8) { width: 180px; }
 
 .table th:nth-child(9),
-.table td:nth-child(9) { width: 180px; }
+.table td:nth-child(9) { width: 200px; }
 
 .table td {
     max-width: 0;
@@ -291,4 +300,18 @@ td {
 .table td:nth-child(7) {
     white-space: normal;
     line-height: 1.2;
+}
+
+@media (max-width: 1500px) {
+    .table-wrapper {
+        max-width: 100%;
+    }
+    
+    .container {
+        padding: 0 15px;
+    }
+    
+    .table {
+        overflow-x: auto;
+    }
 }
