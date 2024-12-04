@@ -46,6 +46,28 @@ document.addEventListener('DOMContentLoaded', function() {
             e.stopPropagation();
         });
     });
+
+    // Add input event listener for weight changes
+    ['addCampaignForm', 'editCampaignForm'].forEach(formId => {
+        const form = document.getElementById(formId);
+        if (form) {
+            form.querySelectorAll('[name$="_test_weight"]').forEach(weightInput => {
+                weightInput.addEventListener('input', () => updateMaxWeights(form));
+            });
+            
+            // Set up change listeners for all test selects
+            form.querySelectorAll('[name$="_test_id"]').forEach(select => {
+                select.addEventListener('change', () => {
+                    updateTestDependencies(form);
+                    // Enable/disable corresponding weight input
+                    const weightInput = form.querySelector(select.name.replace('_test_id', '_test_weight'));
+                    if (weightInput) {
+                        weightInput.disabled = !select.value;
+                    }
+                });
+            });
+        }
+    });
 }); 
 
 function editCampaign(campaignId) {
@@ -327,14 +349,6 @@ function updateTestDependencies(form) {
     const po2Weight = form.querySelector('[name="po2_test_weight"]');
     const po3Weight = form.querySelector('[name="po3_test_weight"]');
     
-    // Add input event listeners for weights
-    [po1Weight, po2Weight, po3Weight].forEach(weight => {
-        weight.addEventListener('input', () => {
-            updateMaxWeights(form);
-            updateWeightValidation();
-        });
-    });
-    
     // Handle PO1 weight - enabled only when test select is enabled
     po1Weight.disabled = po1Select.disabled;
     
@@ -346,7 +360,7 @@ function updateTestDependencies(form) {
         po2Weight.disabled = true;
     } else {
         po2Select.disabled = false;
-        po2Weight.disabled = po2Select.disabled;
+        po2Weight.disabled = !po2Select.value;
     }
     
     // Handle PO3 dependency on PO2
@@ -357,7 +371,7 @@ function updateTestDependencies(form) {
         po3Weight.disabled = true;
     } else {
         po3Select.disabled = false;
-        po3Weight.disabled = po3Select.disabled;
+        po3Weight.disabled = !po3Select.value;
     }
     
     // Update max weights after handling dependencies
@@ -373,6 +387,7 @@ function updateMaxWeights(form) {
     const po2Weight = form.querySelector('[name="po2_test_weight"]');
     const po3Weight = form.querySelector('[name="po3_test_weight"]');
     
+    // Calculate total used weight excluding the current input
     function getUsedWeightExcluding(excludeInput) {
         let total = 0;
         if (po1Select.value && po1Weight !== excludeInput) {
