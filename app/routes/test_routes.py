@@ -430,14 +430,19 @@ def edit(test_id):
 
             # Delete removed questions
             if questions_to_delete:
-                supabase.from_("questions").delete().in_("id", list(questions_to_delete)).execute()
+                try:
+                    delete_ids = [int(id) for id in questions_to_delete]
+                    supabase.from_("questions").delete().in_("id", delete_ids).execute()
+                except Exception as e:
+                    error_data = getattr(e, 'args', [{}])[0]
+                    if isinstance(error_data, dict) and error_data.get('code') == '23503' and 'candidate_answers' in str(error_data):
+                        raise Exception("Nie można usunąć pytania, ponieważ jest ono wykorzystywane w odpowiedziach kandydatów")
+                    raise e
 
-            return jsonify(
-                {
-                    "success": True,
-                    "message": "Test został zaktualizowany pomyślnie",
-                }
-            )
+            return jsonify({
+                "success": True,
+                "message": "Test został zaktualizowany pomyślnie",
+            })
 
         except Exception as e:
             print(f"Error during test update: {str(e)}")

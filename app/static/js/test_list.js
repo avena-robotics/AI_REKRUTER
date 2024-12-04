@@ -1,6 +1,3 @@
-// Global variables and initialization
-let originalRows = [];
-
 document.addEventListener('DOMContentLoaded', function() {
     // Store original table rows
     const tbody = document.querySelector('tbody');
@@ -16,6 +13,25 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.addEventListener('shown.bs.modal', function() {
             initializeSortable();
         });
+    });
+
+    // Add event delegation for dynamically added elements
+    document.addEventListener('click', function(e) {
+        if (e.target.matches('.add-question')) {
+            const container = e.target.closest('.questions-section').querySelector('.questions-container');
+            const questionHtml = createQuestionHtml();
+            container.insertAdjacentHTML('beforeend', questionHtml);
+            
+            // Initialize any new answer type selects
+            const newQuestion = container.lastElementChild;
+            const answerTypeSelect = newQuestion.querySelector('[name$="[answer_type]"]');
+            if (answerTypeSelect) {
+                answerTypeSelect.addEventListener('change', handleAnswerTypeChange);
+            }
+        }
+        if (e.target.matches('.remove-question')) {
+            handleRemoveQuestion(e);
+        }
     });
 });
 
@@ -915,5 +931,28 @@ function createAnswerFieldsHtml(questionCounter, question) {
             
         default:
             return '';
+    }
+}
+
+function handleRemoveQuestion(e) {
+    const questionCard = e.target.closest('.question-card');
+    if (confirm('Czy na pewno chcesz usunąć to pytanie?')) {
+        // Remove the question card
+        questionCard.remove();
+        
+        // Update order numbers for remaining questions
+        const container = document.querySelector('.questions-container');
+        container.querySelectorAll('.question-card').forEach((card, index) => {
+            // Update order number input
+            const orderInput = card.querySelector('input[name$="[order_number]"]');
+            if (orderInput) {
+                orderInput.value = index + 1;
+            }
+            
+            // Update question index in all field names
+            card.querySelectorAll('[name*="questions["]').forEach(field => {
+                field.name = field.name.replace(/questions\[\d+\]/, `questions[${index}]`);
+            });
+        });
     }
 } 
