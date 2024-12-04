@@ -61,7 +61,7 @@ def list():
         # Get all tests for dropdowns (cached) - use tuple for caching
         tests_data = get_cached_tests(user_group_ids_tuple, cache_timestamp)
         
-        return render_template('campaigns/list.html', 
+        return render_template('campaigns/campaign_list.html', 
                              campaigns=campaigns_data, 
                              tests=tests_data,
                              groups=user_groups,
@@ -71,7 +71,7 @@ def list():
     
     except Exception as e:
         print(f"Error in campaign list: {str(e)}")
-        return render_template('campaigns/list.html',
+        return render_template('campaigns/campaign_list.html',
                              campaigns=[],
                              tests=[],
                              groups=[],
