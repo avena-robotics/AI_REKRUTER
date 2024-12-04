@@ -20,13 +20,20 @@ function showToast(message, type = 'success') {
         const container = document.createElement('div');
         container.className = 'toast-container position-fixed top-0 start-50 translate-middle-x p-3';
         container.style.zIndex = '1070';
+        container.style.pointerEvents = 'none';
         
         toast = document.createElement('div');
         toast.id = 'notificationToast';
         toast.className = 'toast border-0';
+        toast.style.pointerEvents = 'auto';
         toast.setAttribute('role', 'alert');
         toast.setAttribute('aria-live', 'assertive');
         toast.setAttribute('aria-atomic', 'true');
+        toast.setAttribute('tabindex', '-1');
+        toast.style.outline = 'none';
+        toast.addEventListener('mousedown', e => e.preventDefault());
+        toast.addEventListener('mouseup', e => e.preventDefault());
+        toast.addEventListener('click', e => e.stopPropagation());
         
         const content = document.createElement('div');
         content.className = 'd-flex align-items-center justify-content-between p-3';
@@ -39,8 +46,15 @@ function showToast(message, type = 'success') {
         closeButton.type = 'button';
         closeButton.className = 'btn-close btn-close-white ms-3';
         closeButton.setAttribute('data-bs-dismiss', 'toast');
+        closeButton.setAttribute('tabindex', '-1');
+        closeButton.style.outline = 'none';
         closeButton.addEventListener('click', function(e) {
             e.stopPropagation();
+            e.preventDefault();
+            const bsToast = bootstrap.Toast.getInstance(toast);
+            if (bsToast) {
+                bsToast.hide();
+            }
         });
         
         content.appendChild(toastMessage);
