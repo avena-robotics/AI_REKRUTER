@@ -1,15 +1,3 @@
--- Clear existing data (w odwrotnej kolejności niż zależności)
-TRUNCATE TABLE candidate_answers CASCADE;
-TRUNCATE TABLE candidates CASCADE;
-TRUNCATE TABLE link_groups_tests CASCADE;
-TRUNCATE TABLE link_groups_campaigns CASCADE;
-TRUNCATE TABLE link_groups_users CASCADE;
-TRUNCATE TABLE questions CASCADE;
-TRUNCATE TABLE campaigns CASCADE;
-TRUNCATE TABLE tests CASCADE;
-TRUNCATE TABLE groups CASCADE;
-TRUNCATE TABLE users CASCADE;
-
 -- 1. User Sebastian
 INSERT INTO users (id, first_name, last_name, email, phone, can_edit_tests) VALUES 
 (2, 'Sebastian', 'Krajna', 'sebastian.krajna@pomagier.info', null, true);
