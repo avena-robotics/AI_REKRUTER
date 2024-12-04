@@ -1,0 +1,53 @@
+body {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa;
+}
+
+.login-form {
+    width: 100%;
+    max-width: 400px;
+    padding: 2rem;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.login-title {
+    color: #212529;
+    margin-bottom: 2rem;
+    text-align: center;
+    font-weight: 500;
+}
+
+.input-group-text {
+    background-color: transparent;
+    cursor: pointer;
+    border-left: none;
+}
+
+.input-group-text.static {
+    cursor: default;
+}
+
+.form-control:focus {
+    border-right: none;
+    box-shadow: none;
+}
+
+.form-control:focus + .input-group-text {
+    border-color: #86b7fe;
+    border-left: none;
+}
+
+.form-control {
+    border-right: none;
+}
+
+.btn-login {
+    height: 46px;
+    font-size: 1rem;
+    font-weight: 500;
+} 
