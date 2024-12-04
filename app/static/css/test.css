@@ -164,3 +164,131 @@ textarea.form-control {
 #groupsContainer.border-danger {
     border-color: #dc3545 !important;
 }
+
+/* Styles moved from list.html */
+.table tbody tr:hover {
+    background-color: rgba(0,0,0,.075);
+}
+
+.table-wrapper {
+    height: calc(100vh - 380px);
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    padding: 0;
+}
+
+.table-scroll {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: auto;
+    margin: 0;
+}
+
+.table {
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.table.table-striped {
+    width: max-content;
+    max-width: none;
+    margin: 0;
+}
+
+.container {
+    max-width: 100% !important;
+    overflow-x: hidden;
+}
+
+.dropdown-menu {
+    z-index: 1021 !important;
+    position: absolute;
+}
+
+.dropdown {
+    position: relative !important;
+}
+
+td {
+    position: relative;
+}
+
+.table thead th {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 1;
+    box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+}
+
+.text-muted {
+    font-size: 0.85em;
+    color: #9ca3af !important;
+}
+
+.options-container {
+    padding: 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+}
+
+.option-row {
+    display: flex;
+    align-items: center;
+}
+
+.option-row .input-group-text {
+    width: 40px;
+    justify-content: center;
+    font-weight: bold;
+    background-color: #f8f9fa;
+}
+
+/* Table column widths */
+.table th,
+.table td {
+    white-space: nowrap;
+}
+
+.table th:nth-child(1),
+.table td:nth-child(1) { width: 200px; }
+
+.table th:nth-child(2),
+.table td:nth-child(2) { width: 100px; }
+
+.table th:nth-child(3),
+.table td:nth-child(3) { width: 100px; }
+
+.table th:nth-child(4),
+.table td:nth-child(4) { width: 120px; }
+
+.table th:nth-child(5),
+.table td:nth-child(5) { width: 120px; }
+
+.table th:nth-child(6),
+.table td:nth-child(6) { width: 130px; }
+
+.table th:nth-child(7),
+.table td:nth-child(7) { width: 200px; }
+
+.table th:nth-child(8),
+.table td:nth-child(8) { width: 150px; }
+
+.table th:nth-child(9),
+.table td:nth-child(9) { width: 180px; }
+
+.table td {
+    max-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.table td:first-child {
+    font-weight: 500;
+}
+
+.table td:nth-child(7) {
+    white-space: normal;
+    line-height: 1.2;
+}
