@@ -165,7 +165,6 @@ textarea.form-control {
     border-color: #dc3545 !important;
 }
 
-/* Styles moved from list.html */
 .table tbody tr:hover {
     background-color: rgba(0,0,0,.075);
 }

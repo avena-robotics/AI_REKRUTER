@@ -84,7 +84,7 @@ def list():
                     filtered_tests.append(test)
 
             return render_template(
-                "tests/list.html", tests=filtered_tests, groups=user_groups
+                "tests/test_list.html", tests=filtered_tests, groups=user_groups
             )
 
         except Exception as e:
