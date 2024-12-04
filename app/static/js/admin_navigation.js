@@ -41,34 +41,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Toast functionality
-function showToast(message, type = 'success') {
-    const toast = document.getElementById('notificationToast');
-    const toastMessage = document.getElementById('toastMessage');
-    
-    // Reset classes
-    toast.className = 'toast border-0';
-    
-    // Add styling based on type
-    if (type === 'success') {
-        toast.style.backgroundColor = '#198754';  // Bootstrap success color
-        toast.style.borderLeft = '4px solid #146c43';  // Darker shade
-    } else {
-        toast.style.backgroundColor = '#dc3545';  // Bootstrap danger color
-        toast.style.borderLeft = '4px solid #b02a37';  // Darker shade
-    }
-    
-    // Add common styles
-    toast.classList.add('text-white');
-    
-    // Set message
-    toastMessage.textContent = message;
-    
-    // Show toast
-    const bsToast = new bootstrap.Toast(toast);
-    bsToast.show();
-}
-
 // Error handling
 function handleFetchError(response) {
     if (!response.ok) {

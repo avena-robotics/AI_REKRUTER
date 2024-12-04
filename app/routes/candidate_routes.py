@@ -112,7 +112,7 @@ def view(id):
                 test_data['completed_at'] = completed_at
 
         return render_template(
-            "candidates/view.html",
+            "candidates/candidate_view.html",
             candidate=candidate_data,
             tests=tests_data,
         )
