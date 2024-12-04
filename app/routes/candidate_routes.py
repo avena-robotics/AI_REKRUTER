@@ -56,7 +56,7 @@ def list():
     candidates = query.execute()
 
     return render_template(
-        "candidates/list.html",
+        "candidates/candidate_list.html",
         candidates=candidates.data,
         campaigns=campaigns.data,
     )
