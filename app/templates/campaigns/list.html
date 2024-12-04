@@ -20,7 +20,7 @@
 
 <div class="table-wrapper">
     <div class="table-scroll">
-        <table class="table table-striped">
+        <table class="table table-striped campaign-table">
             <thead>
                 <tr>
                     <th>Kod kampanii</th>
@@ -467,85 +467,6 @@
 
 {% block head %}
 {{ super() }}
-<style>
-    .table tbody tr:hover {
-        background-color: rgba(0,0,0,.075);
-    }
-    
-    .table-wrapper {
-        height: calc(100vh - 250px);
-    }
-    
-    .table-scroll {
-        overflow-x: auto;
-        overflow-y: auto;
-        height: 100%;
-    }
-    
-    /* Upewnij się, że dropdown jest zawsze na wierzchu */
-    .dropdown-menu {
-        z-index: 1021 !important;
-    }
-    
-    /* Zapewnij, że dropdown nie jest obcięty */
-    .table-scroll {
-        overflow: visible !important;
-        overflow-x: auto !important;
-    }
-    
-    /* Popraw pozycjonowanie dropdown */
-    .dropdown {
-        position: relative !important;
-    }
-    
-    /* Upewnij się, że komórka tabeli ma odpowiedni overflow */
-    td {
-        overflow: visible !important;
-    }
-
-    /* Ustaw sticky header */
-    .table thead th {
-        position: sticky;
-        top: 0;
-        background: white;
-        z-index: 1;
-    }
-
-    /* Dodaj cień pod headerem tabeli */
-    .table thead th {
-        box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
-    }
-
-    /* Szerokości kolumn */
-    .table th:nth-child(1),
-    .table td:nth-child(1) { width: 12%; } /* Kod kampanii */
-    
-    .table th:nth-child(2),
-    .table td:nth-child(2) { width: 20%; } /* Tytuł */
-    
-    .table th:nth-child(3),
-    .table td:nth-child(3) { width: 15%; } /* Lokalizacja */
-    
-    .table th:nth-child(4),
-    .table td:nth-child(4) { width: 8%; } /* Status */
-    
-    .table th:nth-child(5),
-    .table td:nth-child(5) { width: 15%; } /* Link */
-    
-    .table th:nth-child(6),
-    .table td:nth-child(6) { width: 15%; } /* Data utworzenia */
-    
-    .table th:nth-child(7),
-    .table td:nth-child(7) { width: 15%; } /* Akcje */
-
-    /* Obsługa długich tekstów w komórkach */
-    .table td {
-        max-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-</style>
 <script defer>
     document.addEventListener('DOMContentLoaded', function() {
         // Handle form submissions

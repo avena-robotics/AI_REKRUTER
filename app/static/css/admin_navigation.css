@@ -1,0 +1,77 @@
+/* Offcanvas styles */
+.offcanvas {
+    max-width: 300px;
+}
+
+/* Navigation styles */
+.nav-link {
+    padding: 0.8rem 1rem;
+    border-radius: 0.375rem;
+    transition: all 0.2s;
+}
+
+.nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.nav-link.active {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Divider styles */
+.nav-divider {
+    margin: 1rem 0;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Main content spacing */
+.container {
+    margin-top: 5rem;
+}
+
+/* Toast container styles */
+.toast-container {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 1rem;
+    z-index: 1070;
+}
+
+.toast {
+    min-width: 400px;
+}
+
+.toast .btn-close-white {
+    margin-left: 1rem;
+}
+
+#toastMessage {
+    font-size: 1.1rem;
+}
+
+/* Group section styles */
+.nav-link.text-white-50 {
+    opacity: 0.8;
+}
+
+.nav-link.text-white-50 small {
+    font-size: 0.875rem;
+}
+
+/* Logout button spacing */
+.btn-outline-light {
+    margin-top: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .text-light.me-3.d-none {
+        display: none !important;
+    }
+    
+    .toast {
+        min-width: 300px;
+    }
+} 
