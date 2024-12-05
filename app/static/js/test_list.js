@@ -888,12 +888,12 @@ function createAnswerFieldsHtml(questionCounter, question) {
                         <select class="form-select" 
                                 name="questions[${questionCounter}][correct_answer_abcdef]">
                             <option value="" ${!q.correct_answer_abcdef ? 'selected' : ''}>Wybierz odpowiedź</option>
-                            <option value="A" ${q.correct_answer_abcdef === 'A' ? 'selected' : ''}>A</option>
-                            <option value="B" ${q.correct_answer_abcdef === 'B' ? 'selected' : ''}>B</option>
-                            <option value="C" ${q.correct_answer_abcdef === 'C' ? 'selected' : ''}>C</option>
-                            <option value="D" ${q.correct_answer_abcdef === 'D' ? 'selected' : ''}>D</option>
-                            <option value="E" ${q.correct_answer_abcdef === 'E' ? 'selected' : ''}>E</option>
-                            <option value="F" ${q.correct_answer_abcdef === 'F' ? 'selected' : ''}>F</option>
+                            <option value="a" ${q.correct_answer_abcdef === 'A' ? 'selected' : ''}>A</option>
+                            <option value="b" ${q.correct_answer_abcdef === 'B' ? 'selected' : ''}>B</option>
+                            <option value="c" ${q.correct_answer_abcdef === 'C' ? 'selected' : ''}>C</option>
+                            <option value="d" ${q.correct_answer_abcdef === 'D' ? 'selected' : ''}>D</option>
+                            <option value="e" ${q.correct_answer_abcdef === 'E' ? 'selected' : ''}>E</option>
+                            <option value="f" ${q.correct_answer_abcdef === 'F' ? 'selected' : ''}>F</option>
                         </select>
                     </div>
                 </div>
