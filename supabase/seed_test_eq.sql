@@ -10,9 +10,9 @@ WITH inserted_test AS (
         updated_at
     ) 
     VALUES (
-        'Test EQ wspólny', 
+        'Kwestionariusz samooceny', 
         'EQ', 
-        'Test Grupy Sebastian+Maciej - EQ', 
+        'W każdej sekcji (od I do VII) masz do dyspozycji 10 punktów. Rozdziel je pomiędzy zdania, które najlepiej opisują Twoje zachowanie. Jest możliwe rozłożenie punktów na wszystkie zdania, jak również przyznanie wszystkich punktów tylko jednemu zdaniu', 
         75, 
         60, 
         now(), 
@@ -20,6 +20,7 @@ WITH inserted_test AS (
     )
     RETURNING id
 ),
+
 -- Insert EQ questions
 questions_insert AS (
     INSERT INTO questions (
@@ -54,5 +55,22 @@ questions_insert AS (
         
         ('VII. Problemy, jakim podlegam, pracując w grupach:', 'AH_POINTS', '{"a": "Mam skłonność do okazywania niecierpliwości wobec tych, którzy hamują postęp", "b": "Inni mogą mnie krytykować za zbytnią analityczność i niewystarczającą intuicyjność", "c": "Moje dążenie do zapewnienia właściwego wykonania pracy może wstrzymywać postęp", "d": "Mam tendencję do znudzenia i liczenia na jedną lub dwie stymulujące osoby, które rozpalą mój zapał", "e": "Trudno mi zacząć, jeśli cele nie są jasne", "f": "Czasami nie udaje mi się wyjaśnić złożonych spraw, które przychodzą mi do głowy", "g": "Mam świadomość, że wymagam od innych rzeczy, których sam nie potrafię zrobić", "h": "Waham się, gdy powinienem forsować swoje punkty widzenia wobec prawdziwej opozycji"}', 0, 7, true)
     ) AS t(question_text, answer_type, options, points, order_number, is_required)
+),
+
+-- Link test with groups
+groups_link AS (
+    INSERT INTO link_groups_tests (group_id, test_id)
+    SELECT group_id, (SELECT id FROM inserted_test)
+    FROM (VALUES 
+        (1), -- Avena
+        (2), -- Robotics
+        (3), -- Liceum
+        (4), -- SPJ5A
+        (5), -- PJ5A
+        (6), -- SPKG74
+        (7), -- P74
+        (8), -- P27
+        (9)  -- Munchies
+    ) AS t(group_id)
 )
-SELECT 'EQ test and questions inserted successfully' as result;
+SELECT 'EQ test, questions and group links inserted successfully' as result;
