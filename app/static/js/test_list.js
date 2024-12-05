@@ -635,17 +635,15 @@ function handleImageUpload(input) {
                 questionCard.appendChild(hiddenInput);
             }
 
-            // Initialize preview functionality for new image
             initializeImagePreviews();
         };
         reader.readAsDataURL(file);
     }
 }
 
-function handleTestFormSubmit(e) {
+async function handleTestFormSubmit(e) {
     e.preventDefault();
     const form = this;
-    const formData = new FormData(form);
     const isEdit = form.id === 'editTestForm';
     
     // Get button elements
@@ -653,40 +651,49 @@ function handleTestFormSubmit(e) {
     const spinner = submitButton.querySelector('.spinner-border');
     const buttonText = submitButton.querySelector('.button-text');
     
-    // Show loading state
-    submitButton.disabled = true;
-    spinner.classList.remove('d-none');
-    buttonText.textContent = 'Zapisywanie...';
-    
-    // Get questions data
-    const questions = [];
-    form.querySelectorAll('.question-card').forEach((card, index) => {
-        const questionData = {
-            id: card.dataset.questionId || '',
-            question_text: card.querySelector('[name$="[question_text]"]').value,
-            answer_type: card.querySelector('[name$="[answer_type]"]').value,
-            points: parseInt(card.querySelector('[name$="[points]"]').value || '0'),
-            order_number: index + 1,
-            is_required: card.querySelector('[name$="[is_required]"]').checked,
-            image: card.querySelector('input[name$="[image]"]')?.value || null
-        };
+    try {
+        // Show loading state
+        submitButton.disabled = true;
+        spinner.classList.remove('d-none');
+        buttonText.textContent = 'Zapisywanie...';
 
-        // Handle answer type specific fields
-        const answerType = questionData.answer_type;
-        switch (answerType) {
-            case 'BOOLEAN':
-                const selectedRadio = card.querySelector('input[name$="[correct_answer_boolean]"]:checked');
-                questionData.correct_answer_boolean = selectedRadio ? selectedRadio.value === 'true' : null;
-                break;
-            case 'ABCDEF':
-                const abcdefSelect = card.querySelector('[name$="[correct_answer_abcdef]"]');
-                questionData.correct_answer_abcdef = abcdefSelect ? abcdefSelect.value : null;
-                break;
-            case 'SALARY':
-                const salaryValue = card.querySelector('[name$="[correct_answer_salary]"]')?.value;
-                questionData.correct_answer_salary = salaryValue ? Number(salaryValue) : null;
-                break;
-            case 'AH_POINTS':
+        // First, update basic test data
+        const basicFormData = new FormData();
+        ['title', 'test_type', 'description', 'passing_threshold', 'time_limit_minutes'].forEach(field => {
+            basicFormData.append(field, form.querySelector(`[name="${field}"]`).value);
+        });
+        
+        // Add groups
+        form.querySelectorAll('input[name="groups[]"]:checked').forEach(checkbox => {
+            basicFormData.append('groups[]', checkbox.value);
+        });
+
+        // Send basic test data
+        const testResponse = await fetch(form.action, {
+            method: 'POST',
+            body: basicFormData
+        });
+
+        const testResult = await testResponse.json();
+        if (!testResult.success) {
+            throw new Error(testResult.error || 'Wystąpił błąd podczas zapisywania testu');
+        }
+
+        // Get questions data
+        const questions = [];
+        form.querySelectorAll('.question-card').forEach((card, index) => {
+            const questionData = {
+                id: card.dataset.questionId || '',
+                question_text: card.querySelector('[name$="[question_text]"]').value,
+                answer_type: card.querySelector('[name$="[answer_type]"]').value,
+                points: parseInt(card.querySelector('[name$="[points]"]').value || '0'),
+                order_number: index + 1,
+                is_required: card.querySelector('[name$="[is_required]"]').checked
+            };
+
+            // Add answer type specific data
+            const answerType = questionData.answer_type;
+            if (answerType === 'AH_POINTS') {
                 const options = {};
                 card.querySelectorAll('[name*="[options]"]').forEach(input => {
                     const letterMatch = input.name.match(/\[options\]\[([a-h])\]/);
@@ -695,43 +702,69 @@ function handleTestFormSubmit(e) {
                     }
                 });
                 questionData.options = options;
-                break;
-            default:
+            } else {
                 const answerField = `correct_answer_${answerType.toLowerCase()}`;
                 const answerInput = card.querySelector(`[name$="[${answerField}]"]`);
                 if (answerInput) {
-                    questionData[answerField] = answerInput.value;
+                    if (answerType === 'BOOLEAN') {
+                        questionData[answerField] = answerInput.value === 'true';
+                    } else {
+                        questionData[answerField] = answerInput.value;
+                    }
                 }
-        }
+            }
 
-        questions.push(questionData);
-    });
+            // Add image if exists
+            const imageInput = card.querySelector('input[name$="[image]"]');
+            if (imageInput && imageInput.value) {
+                questionData.image = imageInput.value;
+            }
 
-    formData.append('questions', JSON.stringify(questions));
-    
-    fetch(form.action, {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            sessionStorage.setItem('pendingToast', JSON.stringify({
-                message: data.message || (isEdit ? 'Test został zaktualizowany' : 'Test został dodany'),
-                type: 'success'
-            }));
+            questions.push(questionData);
+        });
 
-            const modal = bootstrap.Modal.getInstance(form.closest('.modal'));
-            modal.hide();
+        // Send questions in batches
+        const BATCH_SIZE = 5;
+        const questionsEndpoint = isEdit ? `${form.action}/questions` : '/tests/add/questions';
+        
+        for (let i = 0; i < questions.length; i += BATCH_SIZE) {
+            const batch = questions.slice(i, i + BATCH_SIZE);
+            const questionFormData = new FormData();
+            questionFormData.append('questions', JSON.stringify(batch));
             
-            modal._element.addEventListener('hidden.bs.modal', function () {
-                window.location.reload();
-            }, { once: true });
-        } else {
-            throw new Error(data.error || 'Wystąpił błąd');
+            // Add test_id for new tests
+            if (!isEdit) {
+                questionFormData.append('test_id', testResult.test_id);
+            }
+
+            const questionResponse = await fetch(questionsEndpoint, {
+                method: 'POST',
+                body: questionFormData
+            });
+
+            const questionResult = await questionResponse.json();
+            if (!questionResult.success) {
+                throw new Error(questionResult.error || 'Wystąpił błąd podczas zapisywania pytań');
+            }
+
+            // Update progress
+            buttonText.textContent = `Zapisywanie... ${Math.min(100, Math.round((i + BATCH_SIZE) / questions.length * 100))}%`;
         }
-    })
-    .catch(error => {
+
+        // Show success message and reload
+        sessionStorage.setItem('pendingToast', JSON.stringify({
+            message: isEdit ? 'Test został zaktualizowany' : 'Test został dodany',
+            type: 'success'
+        }));
+
+        const modal = bootstrap.Modal.getInstance(form.closest('.modal'));
+        modal.hide();
+        
+        modal._element.addEventListener('hidden.bs.modal', function () {
+            window.location.reload();
+        }, { once: true });
+
+    } catch (error) {
         console.error('Error submitting form:', error);
         showToast(error.message, 'error');
         
@@ -739,7 +772,7 @@ function handleTestFormSubmit(e) {
         submitButton.disabled = false;
         spinner.classList.add('d-none');
         buttonText.textContent = isEdit ? 'Zapisz zmiany' : 'Zapisz test';
-    });
+    }
 }
 
 function initializeSortable() {
