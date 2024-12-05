@@ -9,12 +9,14 @@ from routes.auth_routes import auth_bp
 from routes.user_routes import user_bp
 from filters import format_datetime
 from services.group_service import get_user_groups
-import secrets
+import os
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
-    app.config['SECRET_KEY'] = secrets.token_hex(32)
+    
+    # Set debug mode from environment variable
+    app.debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
 
     # Register custom filters
     app.jinja_env.filters['datetime'] = format_datetime
@@ -52,6 +54,8 @@ def create_app(config_class=Config):
 
     return app
 
+app = create_app()
+
 if __name__ == '__main__':
-    app = create_app()
-    app.run(host='0.0.0.0', port=5000, debug=True) 
+    # Use debug mode from config when running directly
+    app.run(host='0.0.0.0', port=5000) 
