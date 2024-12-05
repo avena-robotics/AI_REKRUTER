@@ -16,8 +16,14 @@ class Config:
         self.SMTP_USERNAME = os.getenv('SMTP_USERNAME')
         self.SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
         self.SENDER_EMAIL = os.getenv('SENDER_EMAIL')
-        self.BASE_URL = os.getenv('BASE_URL', 'http://localhost:5000')
+        self.BASE_URL = os.getenv('BASE_URL')
         self.DEBUG_MODE = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+        self.LOG_DIR = os.getenv('LOG_DIR')
+        self.LOG_FILE = os.getenv('LOG_FILE')
+        self.LOG_RETENTION_DAYS = int(os.getenv('LOG_RETENTION_DAYS'))
+        
+        # Create log directory if it doesn't exist
+        os.makedirs(self.LOG_DIR, exist_ok=True)
         
         if not all([
             self.SUPABASE_URL, 
@@ -27,7 +33,10 @@ class Config:
             self.SMTP_USERNAME,
             self.SMTP_PASSWORD,
             self.SENDER_EMAIL,
-            self.BASE_URL
+            self.BASE_URL,
+            self.LOG_DIR,
+            self.LOG_FILE,
+            self.LOG_RETENTION_DAYS
         ]):
             logging.error("Brak wymaganych zmiennych środowiskowych")
             sys.exit(1)

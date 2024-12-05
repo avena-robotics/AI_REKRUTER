@@ -20,7 +20,7 @@ def main():
         config = Config()
         
         # Konfiguracja logowania
-        log_manager = LogManager('cron/candidate_check.log', config.DEBUG_MODE)
+        log_manager = LogManager(config)
         log_manager.cleanup_old_logs()
         
         logger = logging.getLogger('candidate_check')

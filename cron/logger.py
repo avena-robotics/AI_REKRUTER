@@ -5,20 +5,20 @@ from datetime import datetime, timedelta
 class LogManager:
     """Zarządza logowaniem i przechowywaniem logów aplikacji"""
     
-    def __init__(self, log_file: str, debug_mode: bool):
-        self.log_file = log_file
-        self.debug_mode = debug_mode
+    def __init__(self, config):
+        self.config = config
+        self.log_path = os.path.join(self.config.LOG_DIR, self.config.LOG_FILE)
         self.setup_logger()
         
-    def cleanup_old_logs(self, max_age_days: int = 7) -> None:
+    def cleanup_old_logs(self) -> None:
         """Usuwa stare logi starsze niż określona liczba dni"""
-        if not os.path.exists(self.log_file):
+        if not os.path.exists(self.log_path):
             return
 
         try:
-            cutoff_date = datetime.now() - timedelta(days=max_age_days)
+            cutoff_date = datetime.now() - timedelta(days=self.config.LOG_RETENTION_DAYS)
             
-            with open(self.log_file, 'r', encoding='utf-8') as file:
+            with open(self.log_path, 'r', encoding='utf-8') as file:
                 logs = file.readlines()
 
             recent_logs = []
@@ -32,11 +32,11 @@ class LogManager:
                 except (ValueError, IndexError):
                     recent_logs.append(log)
 
-            with open(self.log_file, 'w', encoding='utf-8') as file:
+            with open(self.log_path, 'w', encoding='utf-8') as file:
                 file.writelines(recent_logs)
 
-            print(f"Wyczyszczono stare logi z pliku: {self.log_file}")
-            print(f"Usunięto {len(logs) - len(recent_logs)} wpisów starszych niż {max_age_days} dni")
+            print(f"Wyczyszczono stare logi z pliku: {self.log_path}")
+            print(f"Usunięto {len(logs) - len(recent_logs)} wpisów starszych niż {self.config.LOG_RETENTION_DAYS} dni")
             
         except Exception as e:
             print(f"Błąd podczas czyszczenia logów: {str(e)}")
@@ -44,19 +44,19 @@ class LogManager:
     def setup_logger(self) -> None:
         """Konfiguruje system logowania do pliku i konsoli"""
         logger = logging.getLogger('candidate_check')
-        logger.setLevel(logging.DEBUG if self.debug_mode else logging.INFO)
+        logger.setLevel(logging.DEBUG if self.config.DEBUG_MODE else logging.WARNING)
 
         logger.handlers = []
 
         # Logger do pliku
-        file_handler = logging.FileHandler(self.log_file)
+        file_handler = logging.FileHandler(self.log_path)
         file_handler.setLevel(logging.DEBUG)
         file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         file_handler.setFormatter(file_formatter)
 
         # Logger do konsoli
         console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.DEBUG if self.debug_mode else logging.INFO)
+        console_handler.setLevel(logging.DEBUG if self.config.DEBUG_MODE else logging.WARNING)
         console_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         console_handler.setFormatter(console_formatter)
 
