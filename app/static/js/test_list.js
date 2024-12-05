@@ -33,6 +33,16 @@ document.addEventListener('DOMContentLoaded', function() {
             handleRemoveQuestion(e);
         }
     });
+
+    // Initialize image previews for existing images
+    initializeImagePreviews();
+    
+    // Initialize image previews after modals are shown
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('shown.bs.modal', function() {
+            initializeImagePreviews();
+        });
+    });
 });
 
 function initializeFilters() {
@@ -624,6 +634,9 @@ function handleImageUpload(input) {
             if (!questionCard.querySelector(`input[name$="[image]"]`)) {
                 questionCard.appendChild(hiddenInput);
             }
+
+            // Initialize preview functionality for new image
+            initializeImagePreviews();
         };
         reader.readAsDataURL(file);
     }
@@ -955,4 +968,29 @@ function handleRemoveQuestion(e) {
             });
         });
     }
+}
+
+// Add this function after handleImageUpload function
+function initializeImagePreviews() {
+    document.querySelectorAll('.image-preview img').forEach(img => {
+        // Add preview container if not already wrapped
+        if (!img.parentElement.classList.contains('preview-image-container')) {
+            const container = document.createElement('div');
+            container.className = 'preview-image-container';
+            img.parentNode.insertBefore(container, img);
+            container.appendChild(img);
+        }
+
+        // Add click handler
+        img.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const previewModal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
+            const previewImage = document.getElementById('previewImage');
+            
+            previewImage.src = this.src;
+            previewModal.show();
+        };
+    });
 } 

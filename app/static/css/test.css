@@ -314,3 +314,64 @@ td {
         overflow-x: auto;
     }
 }
+
+/* Image preview styles */
+.preview-image-container {
+    position: relative;
+    display: inline-block;
+}
+
+.preview-image-container img {
+    cursor: zoom-in;
+}
+
+#imagePreviewModal .modal-dialog {
+    max-width: 90vw;
+    margin: 1.75rem auto;
+}
+
+#imagePreviewModal .modal-content {
+    background-color: white;
+    border-radius: 8px;
+}
+
+#imagePreviewModal .modal-backdrop {
+    opacity: 0.85;
+}
+
+#imagePreviewModal .modal-body {
+    padding: 2.5rem;
+}
+
+#previewImage {
+    max-height: 85vh;
+    object-fit: contain;
+    border-radius: 4px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+#imagePreviewModal .btn-close-white {
+    position: absolute;
+    right: 1rem;
+    top: 1rem;
+    z-index: 1050;
+    filter: brightness(0) invert(0);
+    opacity: 0.5;
+    background-color: rgba(0, 0, 0, 0.1);
+    padding: 0.75rem;
+    border-radius: 50%;
+}
+
+#imagePreviewModal .btn-close-white:hover {
+    opacity: 0.75;
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+/* Dodaj animację fade dla modala */
+#imagePreviewModal.fade .modal-dialog {
+    transition: transform .2s ease-out;
+}
+
+#imagePreviewModal.show .modal-dialog {
+    transform: none;
+}
