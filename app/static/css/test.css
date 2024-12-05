@@ -260,7 +260,13 @@ td {
 }
 
 .table th:nth-child(1),
-.table td:nth-child(1) { width: 200px; }
+.table td:nth-child(1) { 
+    min-width: 200px; 
+    max-width: none;
+    width: auto;
+    white-space: normal;
+    word-wrap: break-word;
+}
 
 .table th:nth-child(2),
 .table td:nth-child(2) { width: 100px; }

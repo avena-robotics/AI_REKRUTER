@@ -5,9 +5,6 @@ from datetime import datetime, timezone
 from routes.auth_routes import login_required
 from services.group_service import get_user_groups, get_test_groups
 import time
-from contextlib import contextmanager
-import asyncio
-import uuid
 
 test_bp = Blueprint("test", __name__, url_prefix="/tests")
 
