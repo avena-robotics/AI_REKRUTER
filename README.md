@@ -1,4 +1,3 @@
-
 # Uruchomienie aplikacji
 
 Utwórz nową sesję `screen` i uruchom następujące polecenie:
@@ -47,9 +46,42 @@ SECRET_KEY="your_generated_secret_key"  # Wygeneruj używając: python -c "impor
 SESSION_TYPE="filesystem"
 SESSION_PERMANENT=True
 PERMANENT_SESSION_LIFETIME=86400  # 24 hours in seconds
+
+# Logging Configuration
+LOG_DIR="/path/to/logs"
+LOG_FILE="log_cron.log"
+LOG_RETENTION_DAYS=7
 ```
 
+## Uruchamianie crona z użyciem venv
 
+Aby uruchomić skrypt cron z użyciem środowiska wirtualnego (venv), wykonaj następujące kroki:
+
+1. Upewnij się, że masz utworzone środowisko wirtualne w projekcie:
+   ```bash
+   python3 -m venv /home/avena/AI_REKRUTER/venv
+   ```
+
+2. Dodaj wpis do crontab, aby uruchamiać skrypt z użyciem Pythona z venv:
+   ```bash
+   crontab -e
+   ```
+
+3. Dodaj następujący wpis, aby uruchamiać skrypt co minutę:
+   ```cron
+   * * * * * /home/avena/AI_REKRUTER/venv/bin/python /home/avena/AI_REKRUTER/cron/main.py
+   ```
+
+4. Upewnij się, że wszystkie wymagane pakiety są zainstalowane w venv:
+   ```bash
+   source /home/avena/AI_REKRUTER/venv/bin/activate
+   pip install -r /home/avena/AI_REKRUTER/requirements.txt
+   ```
+
+5. Sprawdź logi, aby upewnić się, że cron działa poprawnie:
+   ```bash
+   tail -f /home/avena/AI_REKRUTER/logs/cron/log_cron.log
+   ```
 
 # Komendy `screen`
 
