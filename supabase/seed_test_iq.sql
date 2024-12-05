@@ -75,8 +75,7 @@ questions_insert AS (
         correct_answer_abcdef,
         image
     )
-)
-SELECT 'IQ test and questions inserted successfully' as result; 
+),
 
 -- Link test with groups
 groups_link AS (
