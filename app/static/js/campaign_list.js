@@ -13,11 +13,38 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Handle copy link buttons
     document.querySelectorAll('.copy-link').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', async function() {
             const link = this.dataset.link;
-            navigator.clipboard.writeText(link).then(() => {
-                showToast('Link został skopiowany do schowka', 'success');
-            });
+            try {
+                // Try using the modern Clipboard API
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(link);
+                    showToast('Link został skopiowany do schowka', 'success');
+                } else {
+                    // Fallback for older browsers or non-HTTPS
+                    const textArea = document.createElement('textarea');
+                    textArea.value = link;
+                    textArea.style.position = 'fixed';
+                    textArea.style.left = '-999999px';
+                    textArea.style.top = '-999999px';
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    
+                    try {
+                        document.execCommand('copy');
+                        textArea.remove();
+                        showToast('Link został skopiowany do schowka', 'success');
+                    } catch (err) {
+                        console.error('Failed to copy text: ', err);
+                        showToast('Nie udało się skopiować linku. Spróbuj ponownie.', 'error');
+                        textArea.remove();
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                showToast('Nie udało się skopiować linku. Spróbuj ponownie.', 'error');
+            }
         });
     });
 

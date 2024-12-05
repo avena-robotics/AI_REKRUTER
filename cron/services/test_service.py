@@ -201,13 +201,13 @@ class TestService:
                     
                     if days_difference > max_days:
                         return 0.0
-                    return max(1.0, max_points * (1.0 - days_difference / max_days))
+                    return max(0.0, max_points * (1.0 - days_difference / max_days))
                 except Exception as e:
                     self.logger.error(f"Error calculating date difference: {str(e)}, user_date: {type(user_date)}, correct_date: {type(correct_date)}")
                     return 0.0
             
             elif answer_type == 'ABCDEF':
-                return float(max_points) if answer.get('abcdef_answer') == question.get('correct_answer_abcdef') else 0.0
+                return float(max_points) if answer.get('abcdef_answer').lower() == question.get('correct_answer_abcdef').lower() else 0.0
             
             return 0.0
             

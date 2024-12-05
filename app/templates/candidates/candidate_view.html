@@ -379,7 +379,7 @@
                                         {% elif question.answer_type == 'DATE' %}
                                             <p>{{ question.correct_answer_date|datetime }}</p>
                                         {% elif question.answer_type == 'ABCDEF' %}
-                                            <p>Odpowiedź: {{ question.correct_answer_abcdef }}</p>
+                                            <p>Odpowiedź: {{ question.correct_answer_abcdef|upper }}</p>
                                         {% endif %}
                                     </div>
                                     <div>
@@ -396,7 +396,7 @@
                                             {% elif question.answer_type == 'DATE' %}
                                                 <p>{{ question.answer.date_answer|datetime }}</p>
                                             {% elif question.answer_type == 'ABCDEF' %}
-                                                <p>Odpowiedź: {{ question.answer.abcdef_answer }}</p>
+                                                <p>Odpowiedź: {{ question.answer.abcdef_answer|upper }}</p>
                                             {% endif %}
                                         {% else %}
                                             <p class="text-muted">Brak odpowiedzi</p>
