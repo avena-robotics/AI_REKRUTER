@@ -9,14 +9,17 @@ from routes.auth_routes import auth_bp
 from routes.user_routes import user_bp
 from filters import format_datetime
 from services.group_service import get_user_groups
-import os
+from logger import Logger
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
     
+    # Initialize logger
+    logger = Logger.instance(config_class)
+    
     # Set debug mode from environment variable
-    app.debug = Config.FLASK_DEBUG
+    app.debug = Config.DEBUG_MODE
 
     # Register custom filters
     app.jinja_env.filters['datetime'] = format_datetime
@@ -34,7 +37,7 @@ def create_app(config_class=Config):
     @app.context_processor
     def inject_user_groups():
         if 'user_id' in session:
-            print("Context processor called for user_id:", session.get('user_id'))
+            logger.debug(f"Context processor called for user_id: {session.get('user_id')}")
             user_groups = get_user_groups(session.get('user_id'))
             return {'user_groups': user_groups}
         return {'user_groups': []}
@@ -42,12 +45,14 @@ def create_app(config_class=Config):
     # Register error handlers
     @app.errorhandler(404)
     def page_not_found(error):
+        logger.debug(f"404 error: {str(error)}")
         return render_template('error.html', 
                              error_code=404,
                              error_message="Strona, której szukasz nie istnieje."), 404
 
     @app.errorhandler(500)
     def internal_error(error):
+        logger.error(f"500 error: {str(error)}")
         return render_template('error.html',
                              error_code=500,
                              error_message="Wystąpił wewnętrzny błąd serwera."), 500
@@ -61,5 +66,5 @@ if __name__ == '__main__':
     app.run(
         host='0.0.0.0', 
         port=5000, 
-        debug=Config.FLASK_DEBUG
+        debug=Config.DEBUG_MODE
     ) 

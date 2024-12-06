@@ -4,9 +4,11 @@ from database import supabase
 from datetime import datetime, timezone
 from routes.auth_routes import login_required
 from services.group_service import get_user_groups, get_test_groups
+from logger import Logger
 import time
 
 test_bp = Blueprint("test", __name__, url_prefix="/tests")
+logger = Logger.instance()
 
 # Add helper function for retrying database operations
 def retry_on_disconnect(operation, max_retries=3):
@@ -15,7 +17,7 @@ def retry_on_disconnect(operation, max_retries=3):
             return operation()
         except Exception as e:
             if "Server disconnected" in str(e) and attempt < max_retries - 1:
-                print(f"Connection lost, retrying... (attempt {attempt + 1})")
+                logger.warning(f"Utracono połączenie z serwerem, ponowne próby... (próba {attempt + 1})")
                 time.sleep(1)  # Wait before retry
                 continue
             raise
@@ -30,12 +32,13 @@ def list():
     while retry_count < max_retries:
         try:
             user_id = session.get("user_id")
+            logger.debug(f"Pobieranie testów dla user_id: {user_id}")
             
             # Get user groups
             try:
                 user_groups = get_user_groups(user_id)
             except Exception as e:
-                print(f"Error fetching user groups: {str(e)}")
+                logger.error(f"Błąd podczas pobierania grup użytkownika: {str(e)}")
                 if retry_count == max_retries - 1:
                     raise
                 retry_count += 1
@@ -43,6 +46,7 @@ def list():
                 continue
 
             user_group_ids = [group["id"] for group in user_groups]
+            logger.debug(f"Użytkownik należy do grup: {user_group_ids}")
 
             # Get tests with a single query
             try:
@@ -56,7 +60,7 @@ def list():
                     .execute()
                 )
             except Exception as e:
-                print(f"Error fetching tests: {str(e)}")
+                logger.error(f"Błąd podczas pobierania testów: {str(e)}")
                 if retry_count == max_retries - 1:
                     raise
                 retry_count += 1
@@ -81,12 +85,13 @@ def list():
                 if any(group_id in user_group_ids for group_id in test_group_ids):
                     filtered_tests.append(test)
 
+            logger.debug(f"Znaleziono {len(filtered_tests)} testów dla użytkownika")
             return render_template(
                 "tests/test_list.html", tests=filtered_tests, groups=user_groups
             )
 
         except Exception as e:
-            print(f"Error in test list (attempt {retry_count + 1}): {str(e)}")
+            logger.error(f"Błąd w liście testów (próba {retry_count + 1}): {str(e)}")
             if retry_count == max_retries - 1:
                 return (
                     jsonify(
@@ -104,12 +109,15 @@ def list():
 @test_bp.route("/add", methods=["POST"])
 def add():
     try:
+        logger.debug("Rozpoczęcie tworzenia nowego testu")
         # Validate basic test data
         if not request.form.get("title"):
+            logger.warning("Tytuł testu jest wymagany, ale nie został podany")
             return jsonify({"success": False, "error": "Tytuł testu jest wymagany"})
 
         groups = request.form.getlist("groups[]")
         if not groups:
+            logger.warning("Nie wybrano żadnej grupy dla testu")
             return jsonify({"success": False, "error": "Należy wybrać co najmniej jedną grupę"})
 
         # Create test
@@ -128,13 +136,16 @@ def add():
         # Insert test
         test_result = supabase.from_("tests").insert(test_data).execute()
         if not test_result.data:
+            logger.error("Nie udało się utworzyć testu w bazie danych")
             raise Exception("Nie udało się utworzyć testu")
 
         test_id = test_result.data[0]["id"]
+        logger.info(f"Pomyślnie utworzono test z ID: {test_id}")
 
         # Add group associations
         group_links = [{"group_id": int(gid), "test_id": test_id} for gid in groups]
         supabase.from_("link_groups_tests").insert(group_links).execute()
+        logger.debug(f"Dodano powiązania grup dla testu {test_id}: {groups}")
 
         return jsonify({
             "success": True, 
@@ -143,13 +154,14 @@ def add():
         })
 
     except Exception as e:
-        print(f"Error adding test: {str(e)}")
+        logger.error(f"Błąd podczas dodawania testu: {str(e)}")
         return jsonify({"success": False, "error": str(e)})
 
 
 @test_bp.route("/<int:test_id>/data")
 def get_test_data(test_id):
     try:
+        logger.debug(f"Pobieranie danych testu o ID: {test_id}")
         # Single query to get test with questions and groups
         test = (
             supabase.from_("tests")
@@ -160,6 +172,7 @@ def get_test_data(test_id):
         )
 
         if not test.data:
+            logger.warning(f"Nie znaleziono testu o ID: {test_id}")
             return jsonify({"error": "Test not found"}), 404
 
         # Process questions
@@ -167,14 +180,16 @@ def get_test_data(test_id):
         test.data["questions"] = sorted(
             questions, key=lambda x: x.get("order_number", 0)
         )
+        logger.debug(f"Przetworzono {len(questions)} pytań dla testu {test_id}")
 
         # Process groups
         test.data["groups"] = get_test_groups(test_id)
+        logger.debug(f"Pobrano grupy dla testu {test_id}")
 
         return jsonify(test.data)
 
     except Exception as e:
-        print(f"Debug - Error in get_test_data: {str(e)}")
+        logger.error(f"Błąd podczas pobierania danych testu {test_id}: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -335,6 +350,7 @@ def edit(test_id):
 @test_bp.route("/<int:test_id>/delete", methods=["POST"])
 def delete(test_id):
     try:
+        logger.debug(f"Próba usunięcia testu {test_id}")
         # Single query to check campaign usage
         campaigns = (
             supabase.from_("campaigns")
@@ -354,9 +370,11 @@ def delete(test_id):
             )
 
         supabase.from_("tests").delete().eq("id", test_id).execute()
+        logger.info(f"Pomyślnie usunięto test {test_id}")
         return jsonify({"success": True})
 
     except Exception as e:
+        logger.error(f"Błąd podczas usuwania testu {test_id}: {str(e)}")
         return jsonify({"success": False, "error": str(e)})
 
 
@@ -364,12 +382,13 @@ def delete(test_id):
 def edit_questions(test_id):
     try:
         questions = json.loads(request.form.get("questions", "[]"))
-        print(f"Processing batch of {len(questions)} questions")
+        logger.debug(f"Rozpoczęto przetwarzanie {len(questions)} pytań dla testu {test_id}")
         
         original_questions = {q["id"]: q for q in supabase.from_("questions")
                             .select("*")
                             .eq("test_id", test_id)
                             .execute().data}
+        logger.debug(f"Pobrano {len(original_questions)} istniejących pytań")
 
         questions_to_update = []
         questions_to_insert = []
@@ -389,7 +408,7 @@ def edit_questions(test_id):
                     for key, value in question.items():
                         if key != 'id' and original.get(key) != value:
                             changed_fields[key] = value
-                            print(f"Question {question_id} field '{key}' changed")
+                            logger.debug(f"Wykryto zmianę w pytaniu {question_id}, pole '{key}'")
                     
                     if changed_fields:
                         questions_to_update.append({
@@ -403,22 +422,23 @@ def edit_questions(test_id):
 
         # Process updates and inserts
         for question in questions_to_update:
-            print(f"Updating question {question['id']}")
+            logger.info(f"Aktualizacja pytania {question['id']}")
             supabase.from_("questions").update(
                 question["data"]
             ).eq("id", question["id"]).execute()
 
         if questions_to_insert:
-            print(f"Inserting {len(questions_to_insert)} new questions")
+            logger.info(f"Dodawanie {len(questions_to_insert)} nowych pytań")
             supabase.from_("questions").insert(questions_to_insert).execute()
 
+        logger.info(f"Pomyślnie zaktualizowano pytania dla testu {test_id}")
         return jsonify({
             "success": True,
             "message": "Pytania zostały zaktualizowane"
         })
 
     except Exception as e:
-        print(f"Error processing questions: {str(e)}")
+        logger.error(f"Błąd podczas przetwarzania pytań dla testu {test_id}: {str(e)}")
         return jsonify({"success": False, "error": str(e)})
 
 
@@ -426,11 +446,11 @@ def edit_questions(test_id):
 def add_questions():
     try:
         questions = json.loads(request.form.get("questions", "[]"))
-        print(f"Processing batch of {len(questions)} questions for new test")
-        
-        # Get test_id from the request
         test_id = request.form.get("test_id")
+        logger.debug(f"Rozpoczęto dodawanie pytań do testu {test_id}")
+
         if not test_id:
+            logger.error("Brak parametru test_id")
             raise Exception("Missing test_id parameter")
 
         questions_to_insert = []
@@ -459,8 +479,9 @@ def add_questions():
             questions_to_insert.append(clean_question)
 
         if questions_to_insert:
-            print(f"Inserting {len(questions_to_insert)} questions")
+            logger.info(f"Dodawanie {len(questions_to_insert)} pytań do testu {test_id}")
             supabase.from_("questions").insert(questions_to_insert).execute()
+            logger.info(f"Pomyślnie dodano pytania do testu {test_id}")
 
         return jsonify({
             "success": True,
@@ -468,5 +489,5 @@ def add_questions():
         })
 
     except Exception as e:
-        print(f"Error processing questions: {str(e)}")
+        logger.error(f"Błąd podczas dodawania pytań: {str(e)}")
         return jsonify({"success": False, "error": str(e)})

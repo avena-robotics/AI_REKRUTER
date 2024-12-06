@@ -53,7 +53,6 @@ PERMANENT_SESSION_LIFETIME=86400  # 24 hours in seconds
 
 # Logging Configuration
 LOG_DIR="/path/to/logs"
-LOG_FILE="log_cron.log"
 LOG_RETENTION_DAYS=7
 ```
 
