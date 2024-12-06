@@ -32,6 +32,7 @@
                     <option value="SURVEY">Ankieta</option>
                     <option value="EQ">Test EQ</option>
                     <option value="IQ">Test IQ</option>
+                    <option value="EQ_EVALUATION">Ocena EQ</option>
                 </select>
             </div>
             
@@ -103,6 +104,8 @@
                             Test EQ
                         {% elif test.test_type == 'IQ' %}
                             Test IQ
+                        {% elif test.test_type == 'EQ_EVALUATION' %}
+                            Ewaluacja EQ
                         {% endif %}
                     </td>
                     <td>{{ test.time_limit_minutes }} min</td>
@@ -157,6 +160,7 @@
                                 <option value="SURVEY">Ankieta</option>
                                 <option value="EQ">Test EQ</option>
                                 <option value="IQ">Test IQ</option>
+                                <option value="EQ_EVALUATION">Ocena EQ</option>
                             </select>
                         </div>
                     </div>
@@ -251,6 +255,7 @@
                                 <option value="SURVEY">Ankieta</option>
                                 <option value="EQ">Test EQ</option>
                                 <option value="IQ">Test IQ</option>
+                                <option value="EQ_EVALUATION">Ocena EQ</option>
                             </select>
                         </div>
                     </div>
