@@ -3,12 +3,13 @@ import os
 import logging
 from supabase import create_client
 
+from logger import Logger
+
 # Add the cron directory to Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from config import Config
-from logger import LogManager
 from services.email_service import EmailService
 from services.test_service import TestService
 from services.candidate_service import CandidateService
@@ -20,7 +21,7 @@ def main():
         config = Config()
         
         # Konfiguracja logowania
-        log_manager = LogManager(config)
+        log_manager = Logger.instance(config)
         log_manager.cleanup_old_logs()
         
         logger = logging.getLogger('candidate_check')
