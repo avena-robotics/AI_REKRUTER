@@ -138,7 +138,11 @@ class TestService:
             algorithm_params = question.get('algorithm_params', {})
 
             if answer_type == 'TEXT':
-                return 0.0  # Text answers are always 0 points
+                if algorithm_type == 'EXACT_MATCH':
+                    user_answer = answer.get('text_answer', '').strip().lower()
+                    correct_answer = str(question.get('correct_answer_text', '')).strip().lower()
+                    return float(max_points) if user_answer == correct_answer else 0.0
+                return 0.0  # Text answers without EXACT_MATCH are always 0 points
             
             elif answer_type == 'BOOLEAN':
                 return float(max_points) if answer.get('boolean_answer') == question.get('correct_answer_boolean') else 0.0
@@ -232,19 +236,13 @@ class TestService:
     ) -> float:
         """
         Applies the scoring algorithm to a value.
-        
-        Args:
-            user_value: The value provided by the user
-            expected_value: The expected/correct value
-            algorithm_type: The type of algorithm to apply
-            algorithm_params: Parameters for the algorithm
-            max_points: Maximum points possible
-            value_range: Optional tuple of (min, max) allowed values
-            inverse: If True, lower values are better (e.g., for date differences)
         """
         try:
             if algorithm_type == 'NO_ALGORITHM':
                 return 0.0
+            
+            if algorithm_type == 'EXACT_MATCH':
+                return float(max_points) if user_value == expected_value else 0.0
             
             # Apply value range if provided
             if value_range:
@@ -253,7 +251,6 @@ class TestService:
                 expected_value = max(min_val, min(max_val, expected_value))
             
             if inverse:
-                # For inverse scoring (e.g., date differences), swap the logic
                 user_value = -user_value
                 expected_value = -expected_value
             

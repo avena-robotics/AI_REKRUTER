@@ -900,6 +900,7 @@ function createAnswerFieldsHtml(questionCounter, question) {
                 <option value="LEFT_SIDED" ${q.algorithm_type === 'LEFT_SIDED' ? 'selected' : ''}>Lewostronny</option>
                 <option value="CENTER" ${q.algorithm_type === 'CENTER' ? 'selected' : ''}>Środkowy</option>
                 <option value="RANGE" ${q.algorithm_type === 'RANGE' ? 'selected' : ''}>Przedział</option>
+                <option value="EXACT_MATCH" ${q.algorithm_type === 'EXACT_MATCH' ? 'selected' : ''}>Dokładne dopasowanie</option>
             </select>
         </div>
         <div class="col-12 mt-2 algorithm-params" style="display: none;">
@@ -1131,6 +1132,9 @@ function handleAlgorithmTypeChange(select) {
             algorithmParams.style.display = 'block';
             minValueContainer.style.display = 'block';
             maxValueContainer.style.display = 'block';
+            break;
+        case 'EXACT_MATCH':
+            // No parameters needed for exact match
             break;
     }
 } 

@@ -25,7 +25,8 @@ create type algorithm_type AS ENUM (
     'RIGHT_SIDED',
     'LEFT_SIDED',
     'CENTER',
-    'RANGE'
+    'RANGE',
+    'EXACT_MATCH'    -- New algorithm type for exact matching
 );
 
 -- Create tests table before campaigns (since campaigns references tests)
