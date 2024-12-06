@@ -130,6 +130,7 @@ function editCampaign(campaignId) {
                 const weights = {
                     po1: campaign.po1_test_weight || 0,
                     po2: campaign.po2_test_weight || 0,
+                    po2_5: campaign.po2_5_test_weight || 0,
                     po3: campaign.po3_test_weight || 0
                 };
                 
@@ -137,6 +138,7 @@ function editCampaign(campaignId) {
                 setTimeout(() => {
                     const po1Select = form.querySelector('[name="po1_test_id"]');
                     const po2Select = form.querySelector('[name="po2_test_id"]');
+                    const po2_5Select = form.querySelector('[name="po2_5_test_id"]');
                     const po3Select = form.querySelector('[name="po3_test_id"]');
                     
                     if (campaign.po1_test_id) {
@@ -146,6 +148,11 @@ function editCampaign(campaignId) {
                     
                     if (campaign.po2_test_id) {
                         po2Select.value = campaign.po2_test_id;
+                        po2_5Select.disabled = false;
+                    }
+                    
+                    if (campaign.po2_5_test_id) {
+                        po2_5Select.value = campaign.po2_5_test_id;
                         po3Select.disabled = false;
                     }
                     
@@ -159,6 +166,7 @@ function editCampaign(campaignId) {
                     // Set weights after dependencies are updated
                     form.querySelector('[name="po1_test_weight"]').value = weights.po1;
                     form.querySelector('[name="po2_test_weight"]').value = weights.po2;
+                    form.querySelector('[name="po2_5_test_weight"]').value = weights.po2_5;
                     form.querySelector('[name="po3_test_weight"]').value = weights.po3;
                     
                     // Update max weights after setting values
@@ -226,10 +234,12 @@ function handleCampaignFormSubmit(e) {
     // Get test selects and weights
     const po1Select = form.querySelector('[name="po1_test_id"]');
     const po2Select = form.querySelector('[name="po2_test_id"]');
+    const po2_5Select = form.querySelector('[name="po2_5_test_id"]');
     const po3Select = form.querySelector('[name="po3_test_id"]');
     
     const po1Weight = form.querySelector('[name="po1_test_weight"]');
     const po2Weight = form.querySelector('[name="po2_test_weight"]');
+    const po2_5Weight = form.querySelector('[name="po2_5_test_weight"]');
     const po3Weight = form.querySelector('[name="po3_test_weight"]');
     
     // Calculate sum of weights for active tests
@@ -244,6 +254,10 @@ function handleCampaignFormSubmit(e) {
         sum += parseInt(po2Weight.value) || 0;
         activeTests++;
     }
+    if (po2_5Select.value) {
+        sum += parseInt(po2_5Weight.value) || 0;
+        activeTests++;
+    }
     if (po3Select.value) {
         sum += parseInt(po3Weight.value) || 0;
         activeTests++;
@@ -251,7 +265,7 @@ function handleCampaignFormSubmit(e) {
     
     // Validate only if there are active tests
     if (activeTests > 0 && sum !== 100) {
-        [po1Weight, po2Weight, po3Weight].forEach(input => {
+        [po1Weight, po2Weight, po2_5Weight, po3Weight].forEach(input => {
             if (input.closest('.d-flex').querySelector('select').value) {
                 input.classList.add('is-invalid');
             }
@@ -370,10 +384,12 @@ function updateTestOptions(groupSelect) {
 function updateTestDependencies(form) {
     const po1Select = form.querySelector('[name="po1_test_id"]');
     const po2Select = form.querySelector('[name="po2_test_id"]');
+    const po2_5Select = form.querySelector('[name="po2_5_test_id"]');
     const po3Select = form.querySelector('[name="po3_test_id"]');
     
     const po1Weight = form.querySelector('[name="po1_test_weight"]');
     const po2Weight = form.querySelector('[name="po2_test_weight"]');
+    const po2_5Weight = form.querySelector('[name="po2_5_test_weight"]');
     const po3Weight = form.querySelector('[name="po3_test_weight"]');
     
     // Handle PO1 weight - enabled only when test select is enabled
@@ -390,8 +406,19 @@ function updateTestDependencies(form) {
         po2Weight.disabled = !po2Select.value;
     }
     
-    // Handle PO3 dependency on PO2
+    // Handle PO2.5 dependency on PO2
     if (!po2Select.value) {
+        po2_5Select.value = '';
+        po2_5Select.disabled = true;
+        po2_5Weight.value = '0';
+        po2_5Weight.disabled = true;
+    } else {
+        po2_5Select.disabled = false;
+        po2_5Weight.disabled = !po2_5Select.value;
+    }
+    
+    // Handle PO3 dependency on PO2.5
+    if (!po2_5Select.value) {
         po3Select.value = '';
         po3Select.disabled = true;
         po3Weight.value = '0';
@@ -408,10 +435,12 @@ function updateTestDependencies(form) {
 function updateMaxWeights(form) {
     const po1Select = form.querySelector('[name="po1_test_id"]');
     const po2Select = form.querySelector('[name="po2_test_id"]');
+    const po2_5Select = form.querySelector('[name="po2_5_test_id"]');
     const po3Select = form.querySelector('[name="po3_test_id"]');
     
     const po1Weight = form.querySelector('[name="po1_test_weight"]');
     const po2Weight = form.querySelector('[name="po2_test_weight"]');
+    const po2_5Weight = form.querySelector('[name="po2_5_test_weight"]');
     const po3Weight = form.querySelector('[name="po3_test_weight"]');
     
     // Calculate total used weight excluding the current input
@@ -422,6 +451,9 @@ function updateMaxWeights(form) {
         }
         if (po2Select.value && po2Weight !== excludeInput) {
             total += parseInt(po2Weight.value) || 0;
+        }
+        if (po2_5Select.value && po2_5Weight !== excludeInput) {
+            total += parseInt(po2_5Weight.value) || 0;
         }
         if (po3Select.value && po3Weight !== excludeInput) {
             total += parseInt(po3Weight.value) || 0;
@@ -440,13 +472,18 @@ function updateMaxWeights(form) {
         po2Weight.max = 100 - usedWeight;
     }
     
+    if (!po2_5Select.disabled && po2_5Select.value) {
+        const usedWeight = getUsedWeightExcluding(po2_5Weight);
+        po2_5Weight.max = 100 - usedWeight;
+    }
+    
     if (!po3Select.disabled && po3Select.value) {
         const usedWeight = getUsedWeightExcluding(po3Weight);
         po3Weight.max = 100 - usedWeight;
     }
     
     // Ensure current values don't exceed new max
-    [po1Weight, po2Weight, po3Weight].forEach(weight => {
+    [po1Weight, po2Weight, po2_5Weight, po3Weight].forEach(weight => {
         if (parseInt(weight.value) > parseInt(weight.max)) {
             weight.value = weight.max;
         }
@@ -539,10 +576,12 @@ function updateWeightValidation() {
         if (form) {
             const po1Select = form.querySelector('[name="po1_test_id"]');
             const po2Select = form.querySelector('[name="po2_test_id"]');
+            const po2_5Select = form.querySelector('[name="po2_5_test_id"]');
             const po3Select = form.querySelector('[name="po3_test_id"]');
             
             const po1Weight = form.querySelector('[name="po1_test_weight"]');
             const po2Weight = form.querySelector('[name="po2_test_weight"]');
+            const po2_5Weight = form.querySelector('[name="po2_5_test_weight"]');
             const po3Weight = form.querySelector('[name="po3_test_weight"]');
             
             // Calculate sum of weights for active tests
@@ -555,6 +594,10 @@ function updateWeightValidation() {
             }
             if (po2Select.value) {
                 sum += parseInt(po2Weight.value) || 0;
+                activeTests++;
+            }
+            if (po2_5Select.value) {
+                sum += parseInt(po2_5Weight.value) || 0;
                 activeTests++;
             }
             if (po3Select.value) {

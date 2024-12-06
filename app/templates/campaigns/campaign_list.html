@@ -228,6 +228,30 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="col-12 mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="flex-grow-1">
+                                    <label class="form-label">Test PO2.5 (Ocena EQ)</label>
+                                    <select class="form-select" name="po2_5_test_id" onchange="updateWeightValidation()">
+                                        <option value="">Brak</option>
+                                        {% for test in tests %}
+                                            {% if test.test_type == 'EQ_EVALUATION' %}
+                                                <option value="{{ test.id }}">
+                                                    {{ test.title }} - {{ test.test_type }}
+                                                </option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div style="width: 120px;">
+                                    <label class="form-label">Waga (%)</label>
+                                    <input type="number" class="form-control" name="po2_5_test_weight" min="0" max="100" value="0">
+                                    <div class="invalid-feedback">
+                                        Nieprawidłowa waga
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         <div class="col-12">
                             <div class="d-flex align-items-center gap-2">
                                 <div class="flex-grow-1">
@@ -416,6 +440,30 @@
                                 <div style="width: 120px;">
                                     <label class="form-label">Waga (%)</label>
                                     <input type="number" class="form-control" name="po2_test_weight" min="0" max="100" value="0">
+                                    <div class="invalid-feedback">
+                                        Nieprawidłowa waga
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="flex-grow-1">
+                                    <label class="form-label">Test PO2.5 (Ocena EQ)</label>
+                                    <select class="form-select" name="po2_5_test_id" onchange="updateWeightValidation()">
+                                        <option value="">Brak</option>
+                                        {% for test in tests %}
+                                            {% if test.test_type == 'EQ_EVALUATION' %}
+                                                <option value="{{ test.id }}">
+                                                    {{ test.title }} - {{ test.test_type }}
+                                                </option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div style="width: 120px;">
+                                    <label class="form-label">Waga (%)</label>
+                                    <input type="number" class="form-control" name="po2_5_test_weight" min="0" max="100" value="0">
                                     <div class="invalid-feedback">
                                         Nieprawidłowa waga
                                     </div>

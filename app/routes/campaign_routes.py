@@ -167,9 +167,11 @@ def add():
             'is_active': bool(request.form.get('is_active')),
             'po1_test_id': request.form.get('po1_test_id') or None,
             'po2_test_id': request.form.get('po2_test_id') or None,
+            'po2_5_test_id': request.form.get('po2_5_test_id') or None,
             'po3_test_id': request.form.get('po3_test_id') or None,
             'po1_test_weight': int(request.form['po1_test_weight']) if request.form.get('po1_test_weight') else 0,
             'po2_test_weight': int(request.form['po2_test_weight']) if request.form.get('po2_test_weight') else 0,
+            'po2_5_test_weight': int(request.form['po2_5_test_weight']) if request.form.get('po2_5_test_weight') else 0,
             'po3_test_weight': int(request.form['po3_test_weight']) if request.form.get('po3_test_weight') else 0,
             'created_at': current_time.isoformat(),
             'updated_at': current_time.isoformat()
@@ -201,6 +203,8 @@ def get_campaign_data(campaign_id):
         campaign_response = supabase.rpc('get_single_campaign_data', {
             'p_campaign_id': campaign_id
         }).execute()
+        
+        print(campaign_response.data)
         
         if not campaign_response.data:
             return jsonify({'error': 'Campaign not found'}), 404
@@ -261,9 +265,11 @@ def edit(campaign_id):
             'is_active': bool(request.form.get('is_active')),
             'po1_test_id': request.form.get('po1_test_id') or None,
             'po2_test_id': request.form.get('po2_test_id') or None,
+            'po2_5_test_id': request.form.get('po2_5_test_id') or None,
             'po3_test_id': request.form.get('po3_test_id') or None,
             'po1_test_weight': int(request.form['po1_test_weight']) if request.form.get('po1_test_weight') else 0,
             'po2_test_weight': int(request.form['po2_test_weight']) if request.form.get('po2_test_weight') else 0,
+            'po2_5_test_weight': int(request.form['po2_5_test_weight']) if request.form.get('po2_5_test_weight') else 0,
             'po3_test_weight': int(request.form['po3_test_weight']) if request.form.get('po3_test_weight') else 0,
             'updated_at': current_time.isoformat()
         }

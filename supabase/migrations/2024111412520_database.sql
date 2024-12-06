@@ -19,7 +19,7 @@ DROP TYPE IF EXISTS algorithm_type CASCADE;
 -- Create types first
 create type test_type as enum ('SURVEY', 'EQ', 'IQ', 'EQ_EVALUATION');
 create type answer_type as enum ('TEXT', 'BOOLEAN', 'SCALE', 'SALARY', 'DATE', 'ABCDEF', 'AH_POINTS');
-create type recruitment_status as enum ('PO1', 'PO2', 'PO3', 'PO4', 'REJECTED', 'ACCEPTED');
+create type recruitment_status as enum ('PO1', 'PO2', 'PO2_5', 'PO3', 'PO4', 'REJECTED', 'ACCEPTED');
 create type algorithm_type AS ENUM (
     'NO_ALGORITHM',
     'RIGHT_SIDED',
@@ -60,9 +60,11 @@ create table campaigns (
     universal_access_token text,
     po1_test_id integer references tests(id),    -- References to tests are kept
     po2_test_id integer references tests(id),
+    po2_5_test_id integer references tests(id),    -- New column for EQ_EVALUATION test
     po3_test_id integer references tests(id),
     po1_test_weight integer,
     po2_test_weight integer,
+    po2_5_test_weight integer,                     -- New column for EQ_EVALUATION weight
     po3_test_weight integer,
     created_at timestamp default now(),
     updated_at timestamp default now()
@@ -132,7 +134,7 @@ create table candidate_answers (
     id bigserial primary key,
     candidate_id bigint references candidates(id) ON DELETE CASCADE,
     question_id integer references questions(id),
-    stage text not null check (stage in ('PO1', 'PO2', 'PO3', 'PO4')),
+    stage text not null check (stage in ('PO1', 'PO2', 'PO2_5', 'PO3', 'PO4')),
     text_answer text,                              -- Odpowiedź tekstowa    
     boolean_answer boolean,                        -- Odpowiedź typu boolean
     salary_answer numeric,                        -- Odpowiedź typu numeric
@@ -190,7 +192,6 @@ create table link_groups_tests (
 CREATE INDEX idx_campaigns_is_active ON campaigns(is_active);
 CREATE INDEX idx_link_groups_campaigns_campaign_id ON link_groups_campaigns(campaign_id);
 CREATE INDEX idx_link_groups_users_user_id ON link_groups_users(user_id);
-
 -- Function to get campaigns with groups in a single query
 CREATE OR REPLACE FUNCTION get_campaigns_with_groups(
     p_user_group_ids bigint[],
@@ -201,13 +202,31 @@ CREATE OR REPLACE FUNCTION get_campaigns_with_groups(
     code text,
     title text,
     workplace_location text,
+    contract_type text,
+    employment_type text,
+    work_start_date date,
+    duties text,
+    requirements text,
+    employer_offerings text,
+    job_description text,
+    salary_range_min integer,
+    salary_range_max integer,
     is_active boolean,
     universal_access_token text,
+    po1_test_id integer,
+    po2_test_id integer,
+    po2_5_test_id integer,
+    po3_test_id integer,
+    po1_test_weight integer,
+    po2_test_weight integer,
+    po2_5_test_weight integer,
+    po3_test_weight integer,
     created_at timestamp,
     updated_at timestamp,
     groups jsonb,
     po1_test jsonb,
     po2_test jsonb,
+    po2_5_test jsonb,
     po3_test jsonb
 ) LANGUAGE plpgsql AS $$
 BEGIN
@@ -227,15 +246,7 @@ BEGIN
         GROUP BY c.id
     )
     SELECT 
-        cg.id,
-        cg.code,
-        cg.title,
-        cg.workplace_location,
-        cg.is_active,
-        cg.universal_access_token,
-        cg.created_at,
-        cg.updated_at,
-        cg.groups,
+        cg.*,
         jsonb_build_object(
             'test_type', t1.test_type,
             'title', t1.title,
@@ -247,6 +258,11 @@ BEGIN
             'description', t2.description
         ) AS po2_test,
         jsonb_build_object(
+            'test_type', t2_5.test_type,
+            'title', t2_5.title,
+            'description', t2_5.description
+        ) AS po2_5_test,
+        jsonb_build_object(
             'test_type', t3.test_type,
             'title', t3.title,
             'description', t3.description
@@ -254,6 +270,7 @@ BEGIN
     FROM campaign_groups cg
     LEFT JOIN tests t1 ON cg.po1_test_id = t1.id
     LEFT JOIN tests t2 ON cg.po2_test_id = t2.id
+    LEFT JOIN tests t2_5 ON cg.po2_5_test_id = t2_5.id
     LEFT JOIN tests t3 ON cg.po3_test_id = t3.id
     ORDER BY cg.created_at DESC
     LIMIT p_limit
@@ -293,7 +310,7 @@ BEGIN
 END;
 $$;
 
--- Function to get single campaign data with all related information
+-- Function to get single campaign data
 CREATE OR REPLACE FUNCTION get_single_campaign_data(
     p_campaign_id bigint
 ) RETURNS TABLE (
@@ -314,15 +331,18 @@ CREATE OR REPLACE FUNCTION get_single_campaign_data(
     universal_access_token text,
     po1_test_id integer,
     po2_test_id integer,
+    po2_5_test_id integer,
     po3_test_id integer,
     po1_test_weight integer,
     po2_test_weight integer,
+    po2_5_test_weight integer,
     po3_test_weight integer,
     created_at timestamp,
     updated_at timestamp,
     groups jsonb,
     po1_test jsonb,
     po2_test jsonb,
+    po2_5_test jsonb,
     po3_test jsonb
 ) LANGUAGE plpgsql AS $$
 BEGIN
@@ -355,6 +375,11 @@ BEGIN
             'description', t2.description
         ) AS po2_test,
         jsonb_build_object(
+            'test_type', t2_5.test_type,
+            'title', t2_5.title,
+            'description', t2_5.description
+        ) AS po2_5_test,
+        jsonb_build_object(
             'test_type', t3.test_type,
             'title', t3.title,
             'description', t3.description
@@ -362,6 +387,7 @@ BEGIN
     FROM campaign_groups cg
     LEFT JOIN tests t1 ON cg.po1_test_id = t1.id
     LEFT JOIN tests t2 ON cg.po2_test_id = t2.id
+    LEFT JOIN tests t2_5 ON cg.po2_5_test_id = t2_5.id
     LEFT JOIN tests t3 ON cg.po3_test_id = t3.id
     WHERE cg.id = p_campaign_id;
 END;
@@ -395,9 +421,11 @@ BEGIN
         is_active,
         po1_test_id,
         po2_test_id,
+        po2_5_test_id,
         po3_test_id,
         po1_test_weight,
         po2_test_weight,
+        po2_5_test_weight,
         po3_test_weight,
         created_at,
         updated_at
@@ -416,11 +444,13 @@ BEGIN
         salary_range_min,
         salary_range_max,
         is_active,
-        po1_test_id,
+        po1_test_id,    
         po2_test_id,
+        po2_5_test_id,
         po3_test_id,
         po1_test_weight,
         po2_test_weight,
+        po2_5_test_weight,
         po3_test_weight,
         now(),
         now()
@@ -460,14 +490,17 @@ BEGIN
                 'updated_at', c.updated_at,
                 'po1_score', c.po1_score,
                 'po2_score', c.po2_score,
+                'po2_5_score', c.po2_5_score,
                 'po3_score', c.po3_score,
                 'po4_score', c.po4_score,
                 'total_score', c.total_score,
                 'po1_started_at', c.po1_started_at,
                 'po2_started_at', c.po2_started_at,
+                'po2_5_started_at', c.po2_5_started_at,
                 'po3_started_at', c.po3_started_at,
                 'po1_completed_at', c.po1_completed_at,
                 'po2_completed_at', c.po2_completed_at,
+                'po2_5_completed_at', c.po2_5_completed_at,
                 'po3_completed_at', c.po3_completed_at,
                 'score_ko', c.score_ko,
                 'score_re', c.score_re,
@@ -495,6 +528,7 @@ BEGIN
                     'salary_range_max', camp.salary_range_max,
                     'po1_test_id', camp.po1_test_id,
                     'po2_test_id', camp.po2_test_id,
+                    'po2_5_test_id', camp.po2_5_test_id,
                     'po3_test_id', camp.po3_test_id
                 )
             ) as cand_data
@@ -549,6 +583,10 @@ BEGIN
             WHERE id = (SELECT campaign_id FROM candidates WHERE id = p_candidate_id)
             UNION ALL
             SELECT 'PO2', po2_test_id 
+            FROM campaigns 
+            WHERE id = (SELECT campaign_id FROM candidates WHERE id = p_candidate_id)
+            UNION ALL
+            SELECT 'PO2_5', po2_5_test_id 
             FROM campaigns 
             WHERE id = (SELECT campaign_id FROM candidates WHERE id = p_candidate_id)
             UNION ALL
