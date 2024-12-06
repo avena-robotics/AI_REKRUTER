@@ -39,6 +39,7 @@
                     <option value="">Wszystkie statusy</option>
                     <option value="PO1" {% if request.args.get('status') == 'PO1' %}selected{% endif %}>PO1</option>
                     <option value="PO2" {% if request.args.get('status') == 'PO2' %}selected{% endif %}>PO2</option>
+                    <option value="PO2_5" {% if request.args.get('status') == 'PO2_5' %}selected{% endif %}>PO2.5</option>
                     <option value="PO3" {% if request.args.get('status') == 'PO3' %}selected{% endif %}>PO3</option>
                     <option value="PO4" {% if request.args.get('status') == 'PO4' %}selected{% endif %}>PO4</option>
                     <option value="REJECTED" {% if request.args.get('status') == 'REJECTED' %}selected{% endif %}>Odrzucony</option>
@@ -54,6 +55,7 @@
                     <option value="recruitment_status" {% if request.args.get('sort_by') == 'recruitment_status' %}selected{% endif %}>Status rekrutacji</option>
                     <option value="po1_score" {% if request.args.get('sort_by') == 'po1_score' %}selected{% endif %}>PO1</option>
                     <option value="po2_score" {% if request.args.get('sort_by') == 'po2_score' %}selected{% endif %}>PO2</option>
+                    <option value="po2_5_score" {% if request.args.get('sort_by') == 'po2_5_score' %}selected{% endif %}>PO2.5</option>
                     <option value="po3_score" {% if request.args.get('sort_by') == 'po3_score' %}selected{% endif %}>PO3</option>
                     <option value="po4_score" {% if request.args.get('sort_by') == 'po4_score' %}selected{% endif %}>PO4</option>
                     <option value="total_score" {% if request.args.get('sort_by') == 'total_score' %}selected{% endif %}>Wynik ogólny</option>
@@ -98,6 +100,7 @@
                     <th>Status</th>
                     <th>PO1</th>
                     <th>PO2</th>
+                    <th>PO2.5</th>
                     <th>PO3</th>
                     <th>PO4</th>
                     <th>Wynik ogólny</th>
@@ -130,6 +133,7 @@
                     </td>
                     <td>{{ candidate.po1_score if candidate.po1_score is not none else '-' }}</td>
                     <td>{{ candidate.po2_score if candidate.po2_score is not none else '-' }}</td>
+                    <td>{{ candidate.po2_5_score if candidate.po2_5_score is not none else '-' }}</td>
                     <td>{{ candidate.po3_score if candidate.po3_score is not none else '-' }}</td>
                     <td>{{ candidate.po4_score if candidate.po4_score is not none else '-' }}</td>
                     <td>{{ candidate.total_score if candidate.total_score is not none else '-' }}</td>

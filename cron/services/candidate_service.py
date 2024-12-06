@@ -34,9 +34,9 @@ class CandidateService:
             updates = {}
             
             # When updating scores, also ensure timestamps are in UTC
-            if any(key in updates for key in ['po1_score', 'po2_score', 'po3_score']):
+            if any(key in updates for key in ['po1_score', 'po2_score', 'po2_5_score', 'po3_score']):
                 stage = candidate.get('recruitment_status', '').lower()
-                if stage in ['po1', 'po2', 'po3']:
+                if stage in ['po1', 'po2', 'po2_5', 'po3']:
                     updates[f'{stage}_completed_at'] = current_time.isoformat()
             
             self.logger.info(f"Rozpoczęcie aktualizacji wyników dla kandydata {candidate['id']}")
@@ -66,6 +66,14 @@ class CandidateService:
                 if isinstance(result, dict):  # EQ test results
                     self.logger.info(f"Otrzymano wyniki EQ dla kandydata {candidate['id']}: {result}")
                     updates.update(result)
+                    
+                    # Simulate EQ_EVALUATION answers if PO2_5 test exists
+                    if campaign.get('po2_5_test_id'):
+                        self.test_service.simulate_eq_evaluation(
+                            candidate_id=candidate['id'],
+                            campaign_id=campaign['id'],
+                            eq_scores=result
+                        )
                 elif result is not None:  # Regular test score
                     self.logger.info(f"Otrzymano standardowy wynik dla kandydata {candidate['id']}: {result}")
                     updates['po1_score'] = result
@@ -102,6 +110,14 @@ class CandidateService:
                 
                 if isinstance(result, dict):  # EQ test results
                     updates.update(result)
+                    
+                    # Simulate EQ_EVALUATION answers if PO2_5 test exists
+                    if campaign.get('po2_5_test_id'):
+                        self.test_service.simulate_eq_evaluation(
+                            candidate_id=candidate['id'],
+                            campaign_id=campaign['id'],
+                            eq_scores=result
+                        )
                 elif result is not None:  # Regular test score
                     updates['po2_score'] = result
                     
@@ -116,6 +132,34 @@ class CandidateService:
                         if result < passing_threshold:
                             updates['recruitment_status'] = 'REJECTED'
                             self.logger.info(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO2")
+
+            # Sprawdzenie i obliczenie wyniku PO2_5
+            elif (candidate.get('recruitment_status') == 'PO2_5' and 
+                  candidate.get('po2_5_score') is None and 
+                  campaign.get('po2_5_test_id')):
+                
+                self.logger.info(f"Obliczanie wyniku PO2_5 dla kandydata {candidate['id']}, test {campaign['po2_5_test_id']}")
+                
+                result = self.test_service.calculate_test_score(
+                    candidate['id'], 
+                    campaign['po2_5_test_id'],
+                    'PO2_5'
+                )
+                
+                if result is not None:  # Regular test score
+                    updates['po2_5_score'] = result
+                    
+                    test_response = self.supabase.table('tests')\
+                        .select('passing_threshold')\
+                        .eq('id', campaign['po2_5_test_id'])\
+                        .single()\
+                        .execute()
+                        
+                    if test_response.data:
+                        passing_threshold = test_response.data['passing_threshold']
+                        if result < passing_threshold:
+                            updates['recruitment_status'] = 'REJECTED'
+                            self.logger.info(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO2_5")
 
             # Sprawdzenie i obliczenie wyniku PO3
             elif (candidate.get('recruitment_status') == 'PO3' and 
@@ -132,6 +176,14 @@ class CandidateService:
                 
                 if isinstance(result, dict):  # EQ test results
                     updates.update(result)
+                    
+                    # Simulate EQ_EVALUATION answers if PO2_5 test exists
+                    if campaign.get('po2_5_test_id'):
+                        self.test_service.simulate_eq_evaluation(
+                            candidate_id=candidate['id'],
+                            campaign_id=campaign['id'],
+                            eq_scores=result
+                        )
                 elif result is not None:  # Regular test score
                     updates['po3_score'] = result
                     
@@ -151,10 +203,11 @@ class CandidateService:
                 self.logger.info(f"Aktualizacja danych kandydata {candidate['id']}: {updates}")
                 
                 # Calculate total score before updating database
-                if any(key in updates for key in ['po1_score', 'po2_score', 'po3_score']):
+                if any(key in updates for key in ['po1_score', 'po2_score', 'po2_5_score', 'po3_score']):
                     total_score = self._calculate_total_weighted_score(
                         po1_score=updates.get('po1_score', candidate.get('po1_score')),
                         po2_score=updates.get('po2_score', candidate.get('po2_score')),
+                        po2_5_score=updates.get('po2_5_score', candidate.get('po2_5_score')),
                         po3_score=updates.get('po3_score', candidate.get('po3_score')),
                         campaign=campaign
                     )
@@ -188,6 +241,7 @@ class CandidateService:
 
     def _calculate_total_weighted_score(self, po1_score: Optional[int], 
                                       po2_score: Optional[int], 
+                                      po2_5_score: Optional[int], 
                                       po3_score: Optional[int], 
                                       campaign: dict) -> Optional[float]:
         """
@@ -196,6 +250,7 @@ class CandidateService:
         Args:
             po1_score: Wynik testu PO1
             po2_score: Wynik testu PO2
+            po2_5_score: Wynik testu PO2_5
             po3_score: Wynik testu PO3
             campaign: Dane kampanii zawierające wagi testów
             
@@ -206,6 +261,7 @@ class CandidateService:
             # Get test weights, default to 1 if not specified
             po1_weight = float(campaign.get('po1_test_weight', 1))
             po2_weight = float(campaign.get('po2_test_weight', 1))
+            po2_5_weight = float(campaign.get('po2_5_test_weight', 1))
             po3_weight = float(campaign.get('po3_test_weight', 1))
             
             # Calculate weighted scores only for completed tests
@@ -219,6 +275,10 @@ class CandidateService:
             if po2_score is not None:
                 weighted_scores.append(po2_score * po2_weight)
                 total_weight += po2_weight
+                
+            if po2_5_score is not None:
+                weighted_scores.append(po2_5_score * po2_5_weight)
+                total_weight += po2_5_weight
                 
             if po3_score is not None:
                 weighted_scores.append(po3_score * po3_weight)
@@ -247,6 +307,7 @@ class CandidateService:
                     recruitment_status,
                     po1_score,
                     po2_score,
+                    po2_5_score,
                     po3_score,
                     access_token_po2,
                     access_token_po3
@@ -294,11 +355,12 @@ class CandidateService:
                             formatted_expiry
                         )
                     
-                    # Generowanie tokenu PO3
-                    if candidate.get('recruitment_status') == 'PO2' and \
-                       campaign.get('po3_test_id') and \
-                       candidate.get('po2_score') is not None and \
-                       not candidate.get('access_token_po3'):
+                    # Generowanie tokenu PO3 po zaliczeniu PO2_5
+                    elif candidate.get('recruitment_status') == 'PO2_5' and \
+                         campaign.get('po3_test_id') and \
+                         candidate.get('po2_5_score') is not None and \
+                         not candidate.get('access_token_po3') and \
+                         candidate.get('po2_5_score') >= self._get_test_threshold(campaign['po2_5_test_id']):
                         
                         self._handle_token_generation(
                             candidate, 
@@ -354,3 +416,28 @@ class CandidateService:
             f"Link jest ważny do: {formatted_expiry}"
         ):
             self.logger.info(f"Wysłano token {stage} do kandydata {candidate['id']}") 
+
+    def _get_test_threshold(self, test_id: int) -> int:
+        """
+        Pobiera próg zaliczenia dla testu
+        
+        Args:
+            test_id: ID testu
+            
+        Returns:
+            int: Próg zaliczenia lub 0 jeśli nie znaleziono
+        """
+        try:
+            test_response = self.supabase.table('tests')\
+                .select('passing_threshold')\
+                .eq('id', test_id)\
+                .single()\
+                .execute()
+                
+            if test_response.data:
+                return test_response.data['passing_threshold']
+            return 0
+                
+        except Exception as e:
+            self.logger.error(f"Błąd podczas pobierania progu zaliczenia dla testu {test_id}: {str(e)}")
+            return 0

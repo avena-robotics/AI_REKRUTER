@@ -2,6 +2,7 @@ import logging
 from typing import Optional
 from supabase import Client
 from datetime import datetime, timedelta
+from datetime import timezone
 
 class TestService:
     """Serwis do obliczania wyników testów kandydatów"""
@@ -427,4 +428,100 @@ class TestService:
             }).eq('id', answer_id).execute()
         except Exception as e:
             self.logger.error(f"Błąd podczas aktualizowania wyniku dla odpowiedzi {answer_id}: {str(e)}")
+        
+    def simulate_eq_evaluation(self, candidate_id: int, campaign_id: int, eq_scores: dict) -> None:
+        """
+        Symuluje odpowiedzi na test EQ_EVALUATION na podstawie wyników testu EQ.
+        
+        Args:
+            candidate_id: ID kandydata
+            campaign_id: ID kampanii
+            eq_scores: Słownik z wynikami EQ (score_ko, score_re, etc.)
+        """
+        try:
+            # Get campaign PO2_5 test ID
+            campaign_response = self.supabase.table('campaigns')\
+                .select('po2_5_test_id')\
+                .eq('id', campaign_id)\
+                .single()\
+                .execute()
+            
+            if not campaign_response.data or not campaign_response.data.get('po2_5_test_id'):
+                self.logger.warning(f"Nie znaleziono testu PO2_5 dla kampanii {campaign_id}")
+                return
+            
+            po2_5_test_id = campaign_response.data['po2_5_test_id']
+            
+            # Get PO2_5 test questions
+            questions_response = self.supabase.table('questions')\
+                .select('id, question_text')\
+                .eq('test_id', po2_5_test_id)\
+                .execute()
+            
+            if not questions_response.data:
+                self.logger.warning(f"Nie znaleziono pytań dla testu PO2_5 (ID: {po2_5_test_id})")
+                return
+            
+            # Mapping of EQ scores to question_text
+            eq_mapping = {
+                'score_ko': 'KO',
+                'score_re': 'RE',
+                'score_w': 'W',
+                'score_in': 'IN',
+                'score_pz': 'PZ',
+                'score_kz': 'KZ',
+                'score_dz': 'DZ',
+                'score_sw': 'SW'
+            }
+            
+            # Create answers for each matching question
+            answers_to_insert = []
+            current_time = datetime.now(timezone.utc)
+            
+            for question in questions_response.data:
+                # Find matching EQ score
+                matching_score = None
+                question_text_upper = question['question_text'].upper()
+                
+                for score_key, eq_code in eq_mapping.items():
+                    if eq_code == question_text_upper:
+                        matching_score = eq_scores.get(score_key)
+                        break
+                
+                if matching_score is not None:
+                    # Create answer entry
+                    answer = {
+                        'candidate_id': candidate_id,
+                        'question_id': question['id'],
+                        'stage': 'PO2_5',
+                        'salary_answer': matching_score,  # Using salary type as per schema
+                        'score': matching_score,  # Original EQ score
+                        'created_at': current_time.isoformat()
+                    }
+                    answers_to_insert.append(answer)
+                    self.logger.debug(f"Przygotowano odpowiedź dla pytania {question_text_upper}: {matching_score}")
+                else:
+                    self.logger.warning(f"Nie znaleziono odpowiadającego wyniku EQ dla pytania: {question['question_text']}")
+            
+            if answers_to_insert:
+                # Insert all answers
+                self.supabase.table('candidate_answers')\
+                    .insert(answers_to_insert)\
+                    .execute()
+                
+                # Update candidate status to PO2_5
+                self.supabase.table('candidates')\
+                    .update({
+                        'recruitment_status': 'PO2_5',
+                        'updated_at': datetime.now(timezone.utc).isoformat()
+                    })\
+                    .eq('id', candidate_id)\
+                    .execute()
+                
+                self.logger.info(f"Zapisano {len(answers_to_insert)} symulowanych odpowiedzi dla kandydata {candidate_id} i zaktualizowano status na PO2_5")
+            else:
+                self.logger.warning("Nie utworzono żadnych odpowiedzi do zapisania")
+            
+        except Exception as e:
+            self.logger.error(f"Błąd podczas symulacji odpowiedzi EQ_EVALUATION: {str(e)}")
         
