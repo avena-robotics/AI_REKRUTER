@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize filters and buttons
     initializeFilters();
     initializeEventListeners();
-    initializeTestTypeHandlers();
     checkPendingToast();
     
     // Initialize Sortable after modals are shown
@@ -105,58 +104,6 @@ function initializeEventListeners() {
         const row = e.target.closest('tr');
         if (row) {
             editTest(row.dataset.testId);
-        }
-    });
-}
-
-function initializeTestTypeHandlers() {
-    ['addTestForm', 'editTestForm'].forEach(formId => {
-        const form = document.getElementById(formId);
-        if (form) {
-            const testTypeSelect = form.querySelector('[name="test_type"]');
-            testTypeSelect.addEventListener('change', handleTestTypeChange);
-            // Initialize state on load
-            handleTestTypeChange.call(testTypeSelect);
-        }
-    });
-}
-
-function handleTestTypeChange() {
-    const form = this.closest('form');
-    const testType = this.value;
-    
-    // Find all answer type selects in the form
-    form.querySelectorAll('.answer-type-select').forEach(select => {
-        const options = Array.from(select.options);
-        
-        if (testType === 'EQ') {
-            // Show only AH_POINTS option for EQ tests
-            options.forEach(option => {
-                if (option.value === 'AH_POINTS') {
-                    option.style.display = '';
-                    select.value = 'AH_POINTS'; // Set AH_POINTS as selected
-                } else {
-                    option.style.display = 'none';
-                }
-            });
-            
-            // Trigger change event to update answer fields
-            select.dispatchEvent(new Event('change'));
-        } else {
-            // Show all options except AH_POINTS for non-EQ tests
-            options.forEach(option => {
-                if (option.value === 'AH_POINTS') {
-                    option.style.display = 'none';
-                    // If current value is AH_POINTS, reset to TEXT
-                    if (select.value === 'AH_POINTS') {
-                        select.value = 'TEXT';
-                        // Trigger change event to update answer fields
-                        select.dispatchEvent(new Event('change'));
-                    }
-                } else {
-                    option.style.display = '';
-                }
-            });
         }
     });
 }
@@ -545,27 +492,6 @@ function createQuestionHtml(question = null) {
     const q = question || {};
     const questionCounter = document.querySelectorAll('.question-card').length;
     
-    // Get the current test type
-    const testType = document.querySelector('form:not(.d-none) [name="test_type"]')?.value || 'SURVEY';
-    
-    // Set default answer type based on test type
-    if (!q.answer_type) {
-        q.answer_type = testType === 'EQ' ? 'AH_POINTS' : 'TEXT';
-    }
-    
-    // Create the answer type options, conditionally including options based on test type
-    const answerTypeOptions = testType === 'EQ' 
-        ? `<option value="AH_POINTS" selected>Test EQ (A-H)</option>`
-        : `
-            <option value="TEXT" ${q.answer_type === 'TEXT' ? 'selected' : ''}>Tekst</option>
-            <option value="BOOLEAN" ${q.answer_type === 'BOOLEAN' ? 'selected' : ''}>Tak/Nie</option>
-            <option value="SCALE" ${q.answer_type === 'SCALE' ? 'selected' : ''}>Skala (0-5)</option>
-            <option value="SALARY" ${q.answer_type === 'SALARY' ? 'selected' : ''}>Wynagrodzenie (Netto PLN)</option>
-            <option value="DATE" ${q.answer_type === 'DATE' ? 'selected' : ''}>Data</option>
-            <option value="ABCDEF" ${q.answer_type === 'ABCDEF' ? 'selected' : ''}>ABCDEF</option>
-            <option value="AH_POINTS" style="display: none;">Test EQ (A-H)</option>
-        `;
-
     return `
         <div class="card mb-2 question-card" 
              data-question-id="${q.id || ''}" 
@@ -624,7 +550,13 @@ function createQuestionHtml(question = null) {
                                 <label class="form-label">Typ odpowiedzi*</label>
                                 <select class="form-select answer-type-select" 
                                         name="questions[${questionCounter}][answer_type]" required>
-                                    ${answerTypeOptions}
+                                    <option value="TEXT" ${q.answer_type === 'TEXT' ? 'selected' : ''}>Tekst</option>
+                                    <option value="BOOLEAN" ${q.answer_type === 'BOOLEAN' ? 'selected' : ''}>Tak/Nie</option>
+                                    <option value="SCALE" ${q.answer_type === 'SCALE' ? 'selected' : ''}>Skala (0-5)</option>
+                                    <option value="SALARY" ${q.answer_type === 'SALARY' ? 'selected' : ''}>Wynagrodzenie (Netto PLN)</option>
+                                    <option value="DATE" ${q.answer_type === 'DATE' ? 'selected' : ''}>Data</option>
+                                    <option value="ABCDEF" ${q.answer_type === 'ABCDEF' ? 'selected' : ''}>ABCDEF</option>
+                                    <option value="AH_POINTS" ${q.answer_type === 'AH_POINTS' ? 'selected' : ''}>Test EQ (A-H)</option>
                                 </select>
                             </div>
                             <div class="col-md-8">

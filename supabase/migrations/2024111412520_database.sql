@@ -16,7 +16,7 @@ DROP TYPE IF EXISTS answer_type CASCADE;
 DROP TYPE IF EXISTS test_type CASCADE;
 
 -- Create types first
-create type test_type as enum ('SURVEY', 'EQ', 'IQ');
+create type test_type as enum ('SURVEY', 'EQ', 'IQ', 'EQ_EVALUATION');
 create type answer_type as enum ('TEXT', 'BOOLEAN', 'SCALE', 'SALARY', 'DATE', 'ABCDEF', 'AH_POINTS');
 create type recruitment_status as enum ('PO1', 'PO2', 'PO3', 'PO4', 'REJECTED', 'ACCEPTED');
 
