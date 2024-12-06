@@ -35,3 +35,14 @@ raw_env = [
 
 # Preload application code before worker processes are forked
 preload_app = True 
+
+# Włącz auto-reload
+reload = True
+
+# Opcjonalnie: określ, które pliki mają być monitorowane
+reload_extra_files = [
+    'templates/',
+    'static/',
+    'routes/',
+    'services/',
+]

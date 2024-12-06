@@ -27,3 +27,5 @@ class Config:
     SESSION_TYPE = os.getenv('SESSION_TYPE', 'filesystem')
     SESSION_PERMANENT = os.getenv('SESSION_PERMANENT', 'True').lower() == 'true'
     PERMANENT_SESSION_LIFETIME = timedelta(seconds=int(os.getenv('PERMANENT_SESSION_LIFETIME', 86400)))
+    
+    FLASK_DEBUG = os.getenv('FLASK_DEBUG', 'True').lower() == 'true'

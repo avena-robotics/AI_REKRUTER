@@ -16,7 +16,7 @@ def create_app(config_class=Config):
     app.config.from_object(config_class)
     
     # Set debug mode from environment variable
-    app.debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+    app.debug = Config.FLASK_DEBUG
 
     # Register custom filters
     app.jinja_env.filters['datetime'] = format_datetime
@@ -58,4 +58,8 @@ app = create_app()
 
 if __name__ == '__main__':
     # Use debug mode from config when running directly
-    app.run(host='0.0.0.0', port=5000) 
+    app.run(
+        host='0.0.0.0', 
+        port=5000, 
+        debug=Config.FLASK_DEBUG
+    ) 

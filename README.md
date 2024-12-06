@@ -8,7 +8,11 @@ screen -S flask_app
 W sesji `flask_app` przejdź do katalogu głównego projektu i uruchom następujące polecenie:
 ```bash
 cd ~/AI_REKRUTER/app
+
+# w środowisku produkcyjnym
 gunicorn -c gunicorn.conf.py app:app
+# w środowisku developerskim
+gunicorn --reload -c gunicorn.conf.py app:app
 ```
 
 # Konfiguracja środowiska
@@ -122,4 +126,16 @@ Aby uruchomić skrypt cron z użyciem środowiska wirtualnego (venv), wykonaj na
 8. **Zakończenie sesji:**
    ```bash
    exit
+   ```
+
+9. **Usuwanie sesji screen:**
+   ```bash
+   # Najpierw wyświetl listę sesji
+   screen -ls
+   
+   # Usuń konkretną sesję (zastąp [numer_sesji] numerem z listy)
+   screen -X -S [numer_sesji] quit
+   
+   # Lub usuń wszystkie martwe sesje
+   screen -wipe
    ```
