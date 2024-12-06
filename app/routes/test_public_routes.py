@@ -1,8 +1,10 @@
-from flask import Blueprint, render_template, request, jsonify, redirect, url_for, abort
+from flask import Blueprint, render_template, request, redirect, url_for, abort
+from logger import Logger
 from database import supabase
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 test_public_bp = Blueprint('test_public', __name__)
+logger = Logger.instance()
 
 def get_universal_test_info(token):
     """Get test information for universal access token"""
@@ -337,7 +339,26 @@ def submit_test(token):
         abort(404, description="Invalid token")
     
     try:
-        # Get start time from form data (will be sent from localStorage)
+        # Check for existing submissions
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+        campaign_id = test_info['campaign']['id']
+        
+        logger.debug(f"Sprawdzanie istniejących wypełnień dla kampanii {campaign_id} email: {email}, phone: {phone}")
+        
+        # # Query for existing submissions with email
+        existing_submissions = supabase.table('candidates')\
+            .select('id')\
+            .eq('campaign_id', campaign_id)\
+            .or_(f'email.eq.{email},phone.eq.{phone}')\
+            .execute()
+            
+        logger.debug(f"Istniejące wypełnienia: {existing_submissions.data}")
+        
+        if existing_submissions.data:
+            return redirect(url_for('test_public.duplicate'))
+
+        # Get start time from form data
         start_time_str = request.form.get('test_start_time')
         if start_time_str:
             try:
@@ -693,4 +714,10 @@ def start_candidate_test(token):
         return render_template('tests/error.html',
                              title="Wystąpił błąd",
                              message="Nie udało się rozpocząć testu.",
-                             error_type="unexpected_error") 
+                             error_type="unexpected_error")
+
+@test_public_bp.route('/test/duplicate')
+def duplicate():
+    """Show test duplicate page"""
+    return render_template('tests/duplicate.html')
+ 
