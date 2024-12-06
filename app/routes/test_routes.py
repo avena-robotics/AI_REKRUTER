@@ -32,7 +32,7 @@ def list():
     while retry_count < max_retries:
         try:
             user_id = session.get("user_id")
-            logger.debug(f"Pobieranie testów dla user_id: {user_id}")
+            logger.debug(f"Pobieranie test��w dla user_id: {user_id}")
             
             # Get user groups
             try:
@@ -165,7 +165,7 @@ def get_test_data(test_id):
         # Single query to get test with questions and groups
         test = (
             supabase.from_("tests")
-            .select("*, questions(*), link_groups_tests(group_id)")
+            .select("*, questions(id, question_text, answer_type, points, order_number, is_required, image, options, algorithm_type, algorithm_params, correct_answer_text, correct_answer_boolean, correct_answer_salary, correct_answer_scale, correct_answer_date, correct_answer_abcdef), link_groups_tests(group_id)")
             .eq("id", test_id)
             .single()
             .execute()
@@ -181,6 +181,12 @@ def get_test_data(test_id):
             questions, key=lambda x: x.get("order_number", 0)
         )
         logger.debug(f"Przetworzono {len(questions)} pytań dla testu {test_id}")
+        # Log first question details for debugging
+        if questions:
+            logger.debug(f"Przykładowe pytanie:")
+            logger.debug(f"- ID: {questions[0].get('id')}")
+            logger.debug(f"- Typ algorytmu: {questions[0].get('algorithm_type')}")
+            logger.debug(f"- Parametry algorytmu: {questions[0].get('algorithm_params')}")
 
         # Process groups
         test.data["groups"] = get_test_groups(test_id)
@@ -198,6 +204,11 @@ def edit(test_id):
     try:
         print(f"Starting edit process for test ID: {test_id}")
         
+        # Log the entire request form data
+        logger.debug("Request form data:")
+        for key, value in request.form.items():
+            logger.debug(f"- {key}: {value[:100] if isinstance(value, str) else value}")  # Limit long strings
+
         # Get original test data for comparison
         original_test = supabase.from_("tests").select("*").eq("id", test_id).single().execute()
         if not original_test.data:
@@ -234,13 +245,15 @@ def edit(test_id):
         questions_json = request.form.get("questions")
         if questions_json:
             questions = json.loads(questions_json)
-            print(f"Processing {len(questions)} questions")
+            logger.debug(f"Received questions data (raw):")
+            logger.debug(json.dumps(questions, indent=2))
             
             original_questions = {q["id"]: q for q in supabase.from_("questions")
                                 .select("*")
                                 .eq("test_id", test_id)
                                 .execute().data}
-            print(f"Found {len(original_questions)} existing questions")
+            logger.debug(f"Original questions data:")
+            logger.debug(json.dumps(original_questions, indent=2))
 
             questions_to_update = []
             questions_to_insert = []
@@ -248,12 +261,30 @@ def edit(test_id):
 
             for question in questions:
                 question_id = question.get("id")
+                logger.debug(f"\nProcessing question {question_id}:")
+                logger.debug(f"Received question data:")
+                logger.debug(json.dumps(question, indent=2))
+
+                # Clean algorithm params - convert empty strings to None and strings to integers
+                if "algorithm_params" in question and isinstance(question["algorithm_params"], dict):
+                    cleaned_params = {}
+                    for key, value in question["algorithm_params"].items():
+                        if value is None or value == "":
+                            cleaned_params[key] = None
+                        else:
+                            try:
+                                cleaned_params[key] = int(value)
+                            except (TypeError, ValueError):
+                                cleaned_params[key] = None
+                    question["algorithm_params"] = cleaned_params
                 
                 if question_id and str(question_id).isdigit():
                     question_id = int(question_id)
                     if question_id in original_questions:
-                        # Compare with original question
                         original = original_questions[question_id]
+                        logger.debug(f"Original question data:")
+                        logger.debug(json.dumps(original, indent=2))
+
                         changed_fields = {}
                         
                         # Prepare base question data with only fields that exist in original
@@ -262,24 +293,33 @@ def edit(test_id):
                             "answer_type": question["answer_type"],
                             "points": int(question.get("points", 0)),
                             "order_number": question.get("order_number", 1),
-                            "is_required": question.get("is_required", True)
+                            "is_required": question.get("is_required", True),
+                            "algorithm_type": question.get("algorithm_type", "NO_ALGORITHM"),
+                            "algorithm_params": question.get("algorithm_params", {})
                         }
 
                         # Compare and collect only changed fields
                         for key, value in clean_question.items():
-                            if original.get(key) != value:
+                            # Special handling for algorithm_params as it's a JSON field
+                            if key == 'algorithm_params':
+                                orig_params = original.get(key) or {}
+                                if orig_params != value:
+                                    logger.debug(f"Zmiana w parametrach algorytmu:")
+                                    logger.debug(f"- Oryginalne: {orig_params}")
+                                    logger.debug(f"- Nowe: {value}")
+                                    changed_fields[key] = value
+                            elif original.get(key) != value:
                                 changed_fields[key] = value
-                                print(f"Question {question_id} field '{key}' changed from '{original.get(key)}' to '{value}'")
+                                logger.debug(f"Zmiana w polu '{key}': '{original.get(key)}' -> '{value}'")
 
-                        # Handle image separately to avoid unnecessary updates
+                        # Handle image separately
                         if "image" in question and question["image"]:
-                            # Only update image if it's new or changed
                             if question_id not in original_questions or \
                                original_questions[question_id].get("image") != question["image"]:
                                 changed_fields["image"] = question["image"]
                                 print(f"Question {question_id} image changed")
 
-                        # Handle answer type specific data only if changed
+                        # Handle answer type specific data
                         if question["answer_type"] == "AH_POINTS":
                             if "options" in question and isinstance(question["options"], dict):
                                 new_options = {
@@ -301,35 +341,59 @@ def edit(test_id):
                                 "id": question_id,
                                 "data": changed_fields
                             })
-                            print(f"Question {question_id} will be updated with: {changed_fields}")
+                            logger.debug(f"Pytanie {question_id} będzie zaktualizowane z danymi: {changed_fields}")
                         questions_to_delete.remove(question_id)
                 else:
                     # This is a new question
-                    questions_to_insert.append(question)
-                    print(f"New question will be inserted")
+                    new_question = {
+                        "test_id": test_id,
+                        "question_text": question["question_text"],
+                        "answer_type": question["answer_type"],
+                        "points": int(question.get("points", 0)),
+                        "order_number": question.get("order_number", 1),
+                        "is_required": question.get("is_required", True),
+                        "image": question.get("image"),
+                        "algorithm_type": question.get("algorithm_type", "NO_ALGORITHM"),
+                        "algorithm_params": question.get("algorithm_params", {})
+                    }
 
-            print(f"Questions to update: {len(questions_to_update)}")
-            print(f"Questions to insert: {len(questions_to_insert)}")
-            print(f"Questions to delete: {len(questions_to_delete)}")
+                    # Handle answer type specific data
+                    if question["answer_type"] == "AH_POINTS":
+                        if "options" in question and isinstance(question["options"], dict):
+                            new_question["options"] = {
+                                k: v for k, v in question["options"].items()
+                                if k in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] and v
+                            }
+                    else:
+                        answer_field = f'correct_answer_{question["answer_type"].lower()}'
+                        if answer_field in question and question[answer_field] is not None:
+                            new_question[answer_field] = question[answer_field]
 
-            # Process questions in smaller batches
-            BATCH_SIZE = 3
+                    questions_to_insert.append(new_question)
+                    logger.debug(f"New question prepared for insertion: {json.dumps(new_question, indent=2)}")
 
-            # Update modified questions one at a time to minimize payload size
+            # Process updates and inserts with additional logging
             for question in questions_to_update:
-                print(f"Updating question {question['id']} with data: {question['data']}")
-                supabase.from_("questions").update(
-                    question["data"]
-                ).eq("id", question["id"]).execute()
+                logger.debug(f"Updating question {question['id']}:")
+                logger.debug(f"Update data: {json.dumps(question['data'], indent=2)}")
+                try:
+                    result = supabase.from_("questions").update(
+                        question["data"]
+                    ).eq("id", question["id"]).execute()
+                    logger.debug(f"Update result: {json.dumps(result.data, indent=2)}")
+                except Exception as e:
+                    logger.error(f"Error updating question {question['id']}: {str(e)}")
+                    raise
 
-            # Insert new questions in small batches
-            for i in range(0, len(questions_to_insert), BATCH_SIZE):
-                batch = questions_to_insert[i:i + BATCH_SIZE]
-                print(f"Inserting batch of {len(batch)} questions")
-                supabase.from_("questions").insert(batch).execute()
-                # Add small delay between batches
-                if i + BATCH_SIZE < len(questions_to_insert):
-                    time.sleep(0.5)
+            if questions_to_insert:
+                logger.debug("Inserting new questions:")
+                logger.debug(json.dumps(questions_to_insert, indent=2))
+                try:
+                    result = supabase.from_("questions").insert(questions_to_insert).execute()
+                    logger.debug(f"Insert result: {json.dumps(result.data, indent=2)}")
+                except Exception as e:
+                    logger.error(f"Error inserting questions: {str(e)}")
+                    raise
 
             # Delete removed questions only if explicitly requested
             if questions_to_delete and len(questions) > 0:  # Only delete if questions were actually sent
@@ -342,8 +406,7 @@ def edit(test_id):
         })
 
     except Exception as e:
-        print(f"Error editing test: {str(e)}")
-        print(f"Request form data size: {len(str(request.form))} bytes")
+        logger.error(f"Błąd podczas edycji testu: {str(e)}")
         return jsonify({"success": False, "error": str(e)})
 
 
@@ -448,13 +511,18 @@ def add_questions():
         questions = json.loads(request.form.get("questions", "[]"))
         test_id = request.form.get("test_id")
         logger.debug(f"Rozpoczęto dodawanie pytań do testu {test_id}")
+        logger.debug(f"Otrzymane pytania: {json.dumps(questions, indent=2)}")
 
         if not test_id:
             logger.error("Brak parametru test_id")
             raise Exception("Missing test_id parameter")
 
         questions_to_insert = []
-        for question in questions:
+        for i, question in enumerate(questions):
+            logger.debug(f"Przetwarzanie pytania {i + 1}:")
+            logger.debug(f"- Typ algorytmu: {question.get('algorithm_type', 'NO_ALGORITHM')}")
+            logger.debug(f"- Parametry algorytmu: {question.get('algorithm_params', {})}")
+
             clean_question = {
                 "test_id": int(test_id),
                 "question_text": question["question_text"],
@@ -462,8 +530,14 @@ def add_questions():
                 "points": int(question.get("points", 0)),
                 "order_number": question.get("order_number", 1),
                 "is_required": question.get("is_required", True),
-                "image": question.get("image")
+                "image": question.get("image"),
+                "algorithm_type": question.get("algorithm_type", "NO_ALGORITHM"),
+                "algorithm_params": question.get("algorithm_params", {})
             }
+            
+            logger.debug(f"Oczyszczone pytanie {i + 1}:")
+            logger.debug(f"- Typ algorytmu (po czyszczeniu): {clean_question['algorithm_type']}")
+            logger.debug(f"- Parametry algorytmu (po czyszczeniu): {clean_question['algorithm_params']}")
 
             if question["answer_type"] == "AH_POINTS":
                 if "options" in question and isinstance(question["options"], dict):
@@ -480,7 +554,15 @@ def add_questions():
 
         if questions_to_insert:
             logger.info(f"Dodawanie {len(questions_to_insert)} pytań do testu {test_id}")
-            supabase.from_("questions").insert(questions_to_insert).execute()
+            logger.debug("Pytania do wstawienia:")
+            for i, q in enumerate(questions_to_insert):
+                logger.debug(f"Pytanie {i + 1}:")
+                logger.debug(f"- Tekst: {q['question_text'][:50]}...")
+                logger.debug(f"- Typ algorytmu: {q['algorithm_type']}")
+                logger.debug(f"- Parametry algorytmu: {q['algorithm_params']}")
+
+            result = supabase.from_("questions").insert(questions_to_insert).execute()
+            logger.debug(f"Wynik zapytania do bazy: {result.data}")
             logger.info(f"Pomyślnie dodano pytania do testu {test_id}")
 
         return jsonify({

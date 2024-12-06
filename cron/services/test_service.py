@@ -130,52 +130,51 @@ class TestService:
     def calculate_score(self, answer: dict, question: dict) -> float:
         """
         Oblicza wynik dla pojedynczej odpowiedzi na podstawie typu pytania i poprawnej odpowiedzi.
-        
-        Returns:
-            float: Obliczony wynik (może być zmiennoprzecinkowy)
         """
         try:
             answer_type = question['answer_type']
-            max_points = float(question.get('points', 0))  # Convert to float for calculations
-            
-            if answer_type == 'TEXT':    
-                return 0.0
+            max_points = float(question.get('points', 0))
+            algorithm_type = question.get('algorithm_type', 'NO_ALGORITHM')
+            algorithm_params = question.get('algorithm_params', {})
+
+            if answer_type == 'TEXT':
+                return 0.0  # Text answers are always 0 points
             
             elif answer_type == 'BOOLEAN':
                 return float(max_points) if answer.get('boolean_answer') == question.get('correct_answer_boolean') else 0.0
             
             elif answer_type == 'SCALE':
                 try:
-                    user_answer = answer.get('scale_answer')
-                    correct_answer = question.get('correct_answer_scale')
-                    if user_answer is None or correct_answer is None:
-                        return 0.0
+                    user_answer = float(str(answer.get('scale_answer')).replace(',', '.'))
+                    correct_answer = float(str(question.get('correct_answer_scale')).replace(',', '.'))
                     
-                    # Convert to float for calculation
-                    user_answer = float(str(user_answer).replace(',', '.'))
-                    correct_answer = float(str(correct_answer).replace(',', '.'))
-                    max_difference = 5.0
-                    difference = abs(user_answer - correct_answer)
-                    return max(0.0, max_points - (difference * max_points / max_difference))
+                    if algorithm_type == 'NO_ALGORITHM':
+                        return float(max_points) if user_answer == correct_answer else 0.0
+                    
+                    return self._apply_algorithm(
+                        user_value=user_answer,
+                        expected_value=correct_answer,
+                        algorithm_type=algorithm_type,
+                        algorithm_params=algorithm_params,
+                        max_points=max_points,
+                        value_range=(0, 5)  # Scale is always 0-5
+                    )
                 except (ValueError, TypeError) as e:
                     self.logger.error(f"Error converting scale values: {str(e)}")
                     return 0.0
             
             elif answer_type == 'SALARY':
                 try:
-                    user_salary = answer.get('salary_answer')
-                    expected_salary = question.get('correct_answer_salary')
-                    if user_salary is None or expected_salary is None:
-                        return 0.0
+                    user_salary = float(str(answer.get('salary_answer')).replace(',', '.'))
+                    expected_salary = float(str(question.get('correct_answer_salary')).replace(',', '.'))
                     
-                    # Convert to float for calculation
-                    user_salary = float(str(user_salary).replace(',', '.'))
-                    expected_salary = float(str(expected_salary).replace(',', '.'))
-                    
-                    if user_salary <= expected_salary:
-                        return float(max_points)
-                    
-                    return min(max_points, (expected_salary / user_salary) * max_points)
+                    return self._apply_algorithm(
+                        user_value=user_salary,
+                        expected_value=expected_salary,
+                        algorithm_type=algorithm_type,
+                        algorithm_params=algorithm_params,
+                        max_points=max_points
+                    )
                 except (ValueError, TypeError) as e:
                     self.logger.error(f"Error converting salary values: {str(e)}")
                     return 0.0
@@ -187,32 +186,118 @@ class TestService:
                     user_date = answer.get('date_answer')
                     correct_date = question.get('correct_answer_date')
                     
-                    if user_date is None or correct_date is None:
-                        return 0.0
-                    
-                    # Convert string dates to datetime objects if needed
                     if isinstance(user_date, str):
                         user_date = datetime.strptime(user_date, '%Y-%m-%d').date()
                     if isinstance(correct_date, str):
                         correct_date = datetime.strptime(correct_date, '%Y-%m-%d').date()
                     
-                    max_days = 60.0
                     days_difference = abs((user_date - correct_date).days)
                     
-                    if days_difference > max_days:
-                        return 0.0
-                    return max(0.0, max_points * (1.0 - days_difference / max_days))
+                    if algorithm_type == 'NO_ALGORITHM':
+                        return float(max_points) if days_difference == 0 else 0.0
+                    
+                    return self._apply_algorithm(
+                        user_value=days_difference,
+                        expected_value=0,  # We expect 0 days difference
+                        algorithm_type=algorithm_type,
+                        algorithm_params=algorithm_params,
+                        max_points=max_points,
+                        inverse=True  # Lower difference is better
+                    )
                 except Exception as e:
-                    self.logger.error(f"Error calculating date difference: {str(e)}, user_date: {type(user_date)}, correct_date: {type(correct_date)}")
+                    self.logger.error(f"Error calculating date difference: {str(e)}")
                     return 0.0
             
             elif answer_type == 'ABCDEF':
-                return float(max_points) if answer.get('abcdef_answer').lower() == question.get('correct_answer_abcdef').lower() else 0.0
+                return float(max_points) if answer.get('abcdef_answer', '').lower() == question.get('correct_answer_abcdef', '').lower() else 0.0
+            
+            elif answer_type == 'AH_POINTS':
+                return 0.0  # AH_POINTS are handled separately
             
             return 0.0
             
         except Exception as e:
             self.logger.error(f"Error in calculate_score: {str(e)}")
+            return 0.0
+
+    def _apply_algorithm(
+        self,
+        user_value: float,
+        expected_value: float,
+        algorithm_type: str,
+        algorithm_params: dict,
+        max_points: float,
+        value_range: tuple = None,
+        inverse: bool = False
+    ) -> float:
+        """
+        Applies the scoring algorithm to a value.
+        
+        Args:
+            user_value: The value provided by the user
+            expected_value: The expected/correct value
+            algorithm_type: The type of algorithm to apply
+            algorithm_params: Parameters for the algorithm
+            max_points: Maximum points possible
+            value_range: Optional tuple of (min, max) allowed values
+            inverse: If True, lower values are better (e.g., for date differences)
+        """
+        try:
+            if algorithm_type == 'NO_ALGORITHM':
+                return 0.0
+            
+            # Apply value range if provided
+            if value_range:
+                min_val, max_val = value_range
+                user_value = max(min_val, min(max_val, user_value))
+                expected_value = max(min_val, min(max_val, expected_value))
+            
+            if inverse:
+                # For inverse scoring (e.g., date differences), swap the logic
+                user_value = -user_value
+                expected_value = -expected_value
+            
+            if algorithm_type == 'RIGHT_SIDED':
+                max_value = float(algorithm_params.get('max_value', expected_value))
+                if user_value <= expected_value:
+                    return float(max_points)
+                elif user_value >= max_value:
+                    return 0.0
+                return max_points * (max_value - user_value) / (max_value - expected_value)
+            
+            elif algorithm_type == 'LEFT_SIDED':
+                min_value = float(algorithm_params.get('min_value', expected_value))
+                if user_value >= expected_value:
+                    return float(max_points)
+                elif user_value <= min_value:
+                    return 0.0
+                return max_points * (user_value - min_value) / (expected_value - min_value)
+            
+            elif algorithm_type == 'CENTER':
+                min_value = float(algorithm_params.get('min_value', expected_value * 0.5))
+                max_value = float(algorithm_params.get('max_value', expected_value * 1.5))
+                
+                if user_value == expected_value:
+                    return float(max_points)
+                elif user_value < min_value or user_value > max_value:
+                    return 0.0
+                elif user_value < expected_value:
+                    return max_points * (user_value - min_value) / (expected_value - min_value)
+                else:
+                    return max_points * (max_value - user_value) / (max_value - expected_value)
+                
+            elif algorithm_type == 'RANGE':
+                min_value = float(algorithm_params.get('min_value', expected_value))
+                max_value = float(algorithm_params.get('max_value', expected_value))
+                
+                if min_value <= user_value <= max_value:
+                    return float(max_points)
+                return 0.0
+            
+            return 0.0
+            
+        except Exception as e:
+            self.logger.error(f"Error applying algorithm: {str(e)}")
             return 0.0
 
     def calculate_total_score(self, answers_response: dict, questions: dict) -> int:

@@ -740,6 +740,18 @@ async function handleTestFormSubmit(e) {
                 questionData.image = imageInput.value;
             }
 
+            // Add algorithm type and params
+            const algorithmSelect = card.querySelector('[name$="[algorithm_type]"]');
+            if (algorithmSelect) {
+                questionData.algorithm_type = algorithmSelect.value;
+                if (questionData.algorithm_type !== 'NO_ALGORITHM') {
+                    questionData.algorithm_params = {
+                        min_value: card.querySelector('[name$="[algorithm_params][min_value]"]')?.value || null,
+                        max_value: card.querySelector('[name$="[algorithm_params][max_value]"]')?.value || null
+                    };
+                }
+            }
+
             questions.push(questionData);
         });
 
@@ -910,6 +922,7 @@ function createAnswerFieldsHtml(questionCounter, question) {
         </div>
     `;
 
+    // Add algorithmSelectionHtml to each answer type's return statement
     switch (answerType) {
         case 'TEXT':
             return `
@@ -1034,6 +1047,7 @@ function createAnswerFieldsHtml(questionCounter, question) {
                             }).join('')}
                         </div>
                     </div>
+                    ${algorithmSelectionHtml}
                 </div>
             `;
             
