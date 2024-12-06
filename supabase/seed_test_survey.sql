@@ -30,7 +30,9 @@ questions_insert AS (
         options,
         points,
         order_number,
-        is_required
+        is_required,
+        algorithm_type,
+        algorithm_params
     )
     SELECT 
         (SELECT id FROM inserted_test),
@@ -39,7 +41,9 @@ questions_insert AS (
         options::jsonb,
         points,
         order_number,
-        is_required
+        is_required,
+        'NO_ALGORITHM'::algorithm_type,
+        NULL
     FROM (VALUES
         ('Jakie jest Twoje oczekiwane wynagrodzenie miesięczne netto (PLN)?', 'SALARY', NULL, 0, 1, true),
         

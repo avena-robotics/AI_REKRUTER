@@ -410,6 +410,26 @@ function setAnswerFields(questionCard, question) {
             `;
         }
     }
+
+    // Set algorithm type and params for all answer types
+    const algorithmSelect = questionCard.querySelector('[name$="[algorithm_type]"]');
+    if (algorithmSelect && question.algorithm_type) {
+        algorithmSelect.value = question.algorithm_type;
+        handleAlgorithmTypeChange(algorithmSelect);
+        
+        // Set algorithm params if they exist
+        if (question.algorithm_params) {
+            const minInput = questionCard.querySelector('[name$="[algorithm_params][min_value]"]');
+            const maxInput = questionCard.querySelector('[name$="[algorithm_params][max_value]"]');
+            
+            if (minInput && question.algorithm_params.min_value !== undefined) {
+                minInput.value = question.algorithm_params.min_value;
+            }
+            if (maxInput && question.algorithm_params.max_value !== undefined) {
+                maxInput.value = question.algorithm_params.max_value;
+            }
+        }
+    }
 }
 
 function confirmDeleteTest(testId) {
@@ -856,35 +876,73 @@ function createAnswerFieldsHtml(questionCounter, question) {
     const q = question || {};
     const answerType = q.answer_type || 'TEXT';
     
+    // Common algorithm selection HTML for all types
+    const algorithmSelectionHtml = `
+        <div class="col-md-6">
+            <label class="form-label">Algorytm punktacji</label>
+            <select class="form-select algorithm-type-select" 
+                    name="questions[${questionCounter}][algorithm_type]"
+                    onchange="handleAlgorithmTypeChange(this)">
+                <option value="NO_ALGORITHM" ${q.algorithm_type === 'NO_ALGORITHM' ? 'selected' : ''}>Brak algorytmu</option>
+                <option value="RIGHT_SIDED" ${q.algorithm_type === 'RIGHT_SIDED' ? 'selected' : ''}>Prawostronny</option>
+                <option value="LEFT_SIDED" ${q.algorithm_type === 'LEFT_SIDED' ? 'selected' : ''}>Lewostronny</option>
+                <option value="CENTER" ${q.algorithm_type === 'CENTER' ? 'selected' : ''}>Środkowy</option>
+                <option value="RANGE" ${q.algorithm_type === 'RANGE' ? 'selected' : ''}>Przedział</option>
+            </select>
+        </div>
+        <div class="col-12 mt-2 algorithm-params" style="display: none;">
+            <div class="row">
+                <div class="col-md-6 min-value-container" style="display: none;">
+                    <label class="form-label">Wartość minimalna</label>
+                    <input type="number" class="form-control" 
+                           name="questions[${questionCounter}][algorithm_params][min_value]"
+                           min="0" step="1"
+                           value="${q.algorithm_params?.min_value || ''}">
+                </div>
+                <div class="col-md-6 max-value-container" style="display: none;">
+                    <label class="form-label">Wartość maksymalna</label>
+                    <input type="number" class="form-control" 
+                           name="questions[${questionCounter}][algorithm_params][max_value]"
+                           min="0" step="1"
+                           value="${q.algorithm_params?.max_value || ''}">
+                </div>
+            </div>
+        </div>
+    `;
+
     switch (answerType) {
         case 'TEXT':
             return `
                 <div class="row">
-                    <div class="col-md-12">
+                    <div class="col-md-6">
                         <label class="form-label">Poprawna odpowiedź tekstowa</label>
                         <input type="text" class="form-control" 
                                name="questions[${questionCounter}][correct_answer_text]"
                                value="${q.correct_answer_text || ''}">
                     </div>
+                    ${algorithmSelectionHtml}
                 </div>
             `;
             
         case 'BOOLEAN':
             return `
-                <div>
-                    <label class="form-label">Poprawna odpowiedź</label>
-                    <div class="form-check">
-                        <input type="radio" class="form-check-input" 
-                               name="questions[${questionCounter}][correct_answer_boolean]" 
-                               value="true" ${q.correct_answer_boolean === true ? 'checked' : ''}>
-                        <label class="form-check-label">Prawda</label>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Poprawna odpowiedź</label>
+                        <div class="form-check">
+                            <input type="radio" class="form-check-input" 
+                                   name="questions[${questionCounter}][correct_answer_boolean]" 
+                                   value="true" ${q.correct_answer_boolean === true ? 'checked' : ''}>
+                            <label class="form-check-label">Prawda</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="radio" class="form-check-input" 
+                                   name="questions[${questionCounter}][correct_answer_boolean]" 
+                                   value="false" ${q.correct_answer_boolean === false ? 'checked' : ''}>
+                            <label class="form-check-label">Fałsz</label>
+                        </div>
                     </div>
-                    <div class="form-check">
-                        <input type="radio" class="form-check-input" 
-                               name="questions[${questionCounter}][correct_answer_boolean]" 
-                               value="false" ${q.correct_answer_boolean === false ? 'checked' : ''}>
-                        <label class="form-check-label">Fałsz</label>
-                    </div>
+                    ${algorithmSelectionHtml}
                 </div>
             `;
             
@@ -898,6 +956,7 @@ function createAnswerFieldsHtml(questionCounter, question) {
                                min="0" max="5" 
                                value="${q.correct_answer_scale || ''}">
                     </div>
+                    ${algorithmSelectionHtml}
                 </div>
             `;
             
@@ -911,6 +970,7 @@ function createAnswerFieldsHtml(questionCounter, question) {
                                min="0" step="1" 
                                value="${q.correct_answer_salary !== null ? q.correct_answer_salary : ''}">
                     </div>
+                    ${algorithmSelectionHtml}
                 </div>
             `;
             
@@ -923,6 +983,7 @@ function createAnswerFieldsHtml(questionCounter, question) {
                                name="questions[${questionCounter}][correct_answer_date]"
                                value="${q.correct_answer_date || ''}">
                     </div>
+                    ${algorithmSelectionHtml}
                 </div>
             `;
             
@@ -942,6 +1003,7 @@ function createAnswerFieldsHtml(questionCounter, question) {
                             <option value="f" ${q.correct_answer_abcdef === 'F' ? 'selected' : ''}>F</option>
                         </select>
                     </div>
+                    ${algorithmSelectionHtml}
                 </div>
             `;
             
@@ -1026,4 +1088,35 @@ function initializeImagePreviews() {
             previewModal.show();
         };
     });
+}
+
+// Add this function after handleAnswerTypeChange
+function handleAlgorithmTypeChange(select) {
+    const questionCard = select.closest('.question-card');
+    const algorithmParams = questionCard.querySelector('.algorithm-params');
+    const minValueContainer = questionCard.querySelector('.min-value-container');
+    const maxValueContainer = questionCard.querySelector('.max-value-container');
+    
+    // Hide all params initially
+    algorithmParams.style.display = 'none';
+    minValueContainer.style.display = 'none';
+    maxValueContainer.style.display = 'none';
+    
+    // Show relevant params based on algorithm type
+    switch (select.value) {
+        case 'RIGHT_SIDED':
+            algorithmParams.style.display = 'block';
+            maxValueContainer.style.display = 'block';
+            break;
+        case 'LEFT_SIDED':
+            algorithmParams.style.display = 'block';
+            minValueContainer.style.display = 'block';
+            break;
+        case 'CENTER':
+        case 'RANGE':
+            algorithmParams.style.display = 'block';
+            minValueContainer.style.display = 'block';
+            maxValueContainer.style.display = 'block';
+            break;
+    }
 } 

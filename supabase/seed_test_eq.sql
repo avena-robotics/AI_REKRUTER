@@ -30,7 +30,9 @@ questions_insert AS (
         options,
         points,
         order_number,
-        is_required
+        is_required,
+        algorithm_type,
+        algorithm_params
     )
     SELECT 
         (SELECT id FROM inserted_test),
@@ -39,7 +41,9 @@ questions_insert AS (
         options::jsonb,
         points,
         order_number,
-        is_required
+        is_required,
+        'NO_ALGORITHM'::algorithm_type,
+        NULL
     FROM (VALUES
         ('I. Oto co mogę wnieść w pracę zespołu:', 'AH_POINTS', '{"a": "Potrafię szybko dostrzegać i wykorzystywać nowe możliwości", "b": "Potrafię dobrze współpracować z bardzo różnymi ludźmi", "c": "Generowanie pomysłów to mój naturalny talent", "d": "Potrafię wydobyć z ludzi wszystko, co mogą wnieść do realizacji celów grupowych", "e": "Moja zdolność doprowadzania spraw do końca w dużej mierze wynika z mojej efektywności osobistej", "f": "Jestem gotów stawić czoła czasowej niepopularności, jeśli prowadzi to do wartościowych wyników", "g": "Zwykle potrafię wyczuć, co jest realistyczne i może zadziałać", "h": "Potrafię przedstawić różne alternatywne działania i możliwości"}', 0, 1, true),
         

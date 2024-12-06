@@ -32,7 +32,9 @@ questions_insert AS (
         order_number,
         is_required,
         correct_answer_abcdef,
-        image
+        image,
+        algorithm_type,
+        algorithm_params
     )
     SELECT 
         (SELECT id FROM inserted_test),
@@ -43,7 +45,9 @@ questions_insert AS (
         order_number,
         is_required,
         correct_answer_abcdef,
-        image
+        image,
+        'NO_ALGORITHM'::algorithm_type,
+        NULL
     FROM (VALUES
         ('Pytanie 1', 'ABCDEF', null, 10, 1, false, 'f', null),
         ('Pytanie 2', 'ABCDEF', null, 10, 2, false, 'c', null),

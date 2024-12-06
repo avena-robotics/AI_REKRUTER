@@ -40,7 +40,9 @@ FROM series;
 -- 5. 50 Questions for the first test
 INSERT INTO questions (
     id, test_id, question_text, answer_type, options,
-    points, order_number, is_required, correct_answer_text
+    points, order_number, is_required, correct_answer_text,
+    algorithm_type,
+    algorithm_params
 )
 SELECT 
     generate_series(1, 50),
@@ -51,7 +53,10 @@ SELECT
     10,
     generate_series(1, 50),
     true,
-    'Odpowiedź na pytanie ' || generate_series(1, 50);
+    'Odpowiedź na pytanie ' || generate_series(1, 50),
+    'NO_ALGORITHM'::algorithm_type,
+    NULL
+FROM series;
 
 -- 6. Link all tests to Sebastian's groups
 INSERT INTO link_groups_tests (group_id, test_id)

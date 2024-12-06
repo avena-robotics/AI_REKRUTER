@@ -14,11 +14,19 @@ DROP TABLE IF EXISTS campaigns CASCADE;
 DROP TYPE IF EXISTS recruitment_status CASCADE;
 DROP TYPE IF EXISTS answer_type CASCADE;
 DROP TYPE IF EXISTS test_type CASCADE;
+DROP TYPE IF EXISTS algorithm_type CASCADE;
 
 -- Create types first
 create type test_type as enum ('SURVEY', 'EQ', 'IQ', 'EQ_EVALUATION');
 create type answer_type as enum ('TEXT', 'BOOLEAN', 'SCALE', 'SALARY', 'DATE', 'ABCDEF', 'AH_POINTS');
 create type recruitment_status as enum ('PO1', 'PO2', 'PO3', 'PO4', 'REJECTED', 'ACCEPTED');
+create type algorithm_type AS ENUM (
+    'NO_ALGORITHM',
+    'RIGHT_SIDED',
+    'LEFT_SIDED',
+    'CENTER',
+    'RANGE'
+);
 
 -- Create tests table before campaigns (since campaigns references tests)
 create table tests (
@@ -75,7 +83,9 @@ create table questions (
     correct_answer_salary numeric,
     correct_answer_scale int,
     correct_answer_date date,
-    correct_answer_abcdef text
+    correct_answer_abcdef text,
+    algorithm_type algorithm_type DEFAULT 'NO_ALGORITHM',
+    algorithm_params jsonb
 );
 
 -- Tabela kandydatów
