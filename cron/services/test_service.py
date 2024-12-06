@@ -1,6 +1,7 @@
 import logging
 from typing import Optional
 from supabase import Client
+from datetime import datetime, timedelta
 
 class TestService:
     """Serwis do obliczania wyników testów kandydatów"""
@@ -44,7 +45,7 @@ class TestService:
                 .eq('test_id', test_id)\
                 .in_('id', question_ids)\
                 .execute()
-            
+                            
             if not questions_response.data:
                 self.logger.warning(f"Nie znaleziono pytań dla testu {test_id}")
                 return None
@@ -137,83 +138,224 @@ class TestService:
             algorithm_type = question.get('algorithm_type', 'NO_ALGORITHM')
             algorithm_params = question.get('algorithm_params', {})
 
+            # Handle empty/None answers
+            if not answer:
+                return 0.0
+
             if answer_type == 'TEXT':
-                if algorithm_type == 'EXACT_MATCH':
+                if algorithm_type == 'NO_ALGORITHM':
+                    return 0.0
+                elif algorithm_type == 'EXACT_MATCH':
                     user_answer = answer.get('text_answer', '').strip().lower()
                     correct_answer = str(question.get('correct_answer_text', '')).strip().lower()
                     return float(max_points) if user_answer == correct_answer else 0.0
-                return 0.0  # Text answers without EXACT_MATCH are always 0 points
+                else:
+                    return 0.0
             
             elif answer_type == 'BOOLEAN':
-                return float(max_points) if answer.get('boolean_answer') == question.get('correct_answer_boolean') else 0.0
+                if algorithm_type == 'NO_ALGORITHM':
+                    return 0.0
+                elif algorithm_type == 'EXACT_MATCH':
+                    user_answer = answer.get('boolean_answer')
+                    correct_answer = question.get('correct_answer_boolean')
+                    if user_answer is None:
+                        return 0.0
+                    return float(max_points) if user_answer == correct_answer else 0.0
+                else:
+                    return 0.0
             
             elif answer_type == 'SCALE':
-                try:
-                    user_answer = float(str(answer.get('scale_answer')).replace(',', '.'))
-                    correct_answer = float(str(question.get('correct_answer_scale')).replace(',', '.'))
+                user_answer = float(str(answer.get('scale_answer')))
+                correct_answer = float(str(question.get('correct_answer_scale', 0)))
+                
+                if user_answer is None:
+                    return 0.0
+                
+                elif algorithm_type == 'NO_ALGORITHM':
+                    return 0.0
+                
+                elif algorithm_type == 'EXACT_MATCH':
+                    return float(max_points) if user_answer == correct_answer else 0.0
+                
+                elif algorithm_params == 'RANGE':
+                    min_value = float(algorithm_params.get('min_value', 0))
+                    max_value = float(algorithm_params.get('max_value', 5))
+                                      
+                    if user_answer < min_value or user_answer > max_value:
+                        return 0.0
+                    else:
+                        return max_points
                     
-                    if algorithm_type == 'NO_ALGORITHM':
-                        return float(max_points) if user_answer == correct_answer else 0.0
+                elif algorithm_type == 'LEFT_SIDED':
+                    min_value = float(algorithm_params.get('min_value'))
+                    if user_answer <= min_value:
+                        return float(max_points)
+                    elif user_answer > max_value:
+                        return 0.0
+                    return max_points * (user_answer - min_value) / (correct_answer - min_value)
                     
-                    return self._apply_algorithm(
-                        user_value=user_answer,
-                        expected_value=correct_answer,
-                        algorithm_type=algorithm_type,
-                        algorithm_params=algorithm_params,
-                        max_points=max_points,
-                        value_range=(0, 5)  # Scale is always 0-5
-                    )
-                except (ValueError, TypeError) as e:
-                    self.logger.error(f"Error converting scale values: {str(e)}")
+                elif algorithm_type == 'RIGHT_SIDED':
+                    max_value = float(algorithm_params.get('max_value'))
+                    if user_answer >= max_value:
+                        return float(max_points)
+                    elif user_answer < min_value:
+                        return 0.0
+                    return max_points * (max_value - user_answer) / (max_value - correct_answer)
+                
+                elif algorithm_type == 'CENTER':
+                    min_value = float(algorithm_params.get('min_value'))
+                    max_value = float(algorithm_params.get('max_value'))
+                    
+                    if user_answer == correct_answer:
+                        return float(max_points)
+                    elif user_answer < min_value or user_answer > max_value:
+                        return 0.0
+                    elif user_answer < correct_answer:
+                        return max_points * (user_answer - min_value) / (correct_answer - min_value)
+                    else:
+                        return max_points * (max_value - user_answer) / (max_value - correct_answer)
+                    
+                else:
                     return 0.0
             
             elif answer_type == 'SALARY':
-                try:
-                    user_salary = float(str(answer.get('salary_answer')).replace(',', '.'))
-                    expected_salary = float(str(question.get('correct_answer_salary')).replace(',', '.'))
+                user_salary = float(str(user_salary).replace(',', '.'))
+                expected_salary = float(str(question.get('correct_answer_salary', 0)).replace(',', '.'))
+                
+                if user_salary is None:
+                    return 0.0
+               
+                if algorithm_type == 'NO_ALGORITHM':
+                    return 0.0
+                
+                elif algorithm_type == 'EXACT_MATCH':
+                    return float(max_points) if user_salary == expected_salary else 0.0
+                
+                elif algorithm_type == 'RANGE':
+                    min_value = float(algorithm_params.get('min_value'))
+                    max_value = float(algorithm_params.get('max_value'))
                     
-                    return self._apply_algorithm(
-                        user_value=user_salary,
-                        expected_value=expected_salary,
-                        algorithm_type=algorithm_type,
-                        algorithm_params=algorithm_params,
-                        max_points=max_points
-                    )
-                except (ValueError, TypeError) as e:
-                    self.logger.error(f"Error converting salary values: {str(e)}")
+                    if user_salary < min_value or user_salary > max_value:
+                        return 0.0
+                    else:
+                        return max_points
+
+                elif algorithm_type == 'LEFT_SIDED':
+                    min_value = float(algorithm_params.get('min_value'))
+                    if user_salary <= min_value:
+                        return float(max_points)
+                    elif user_salary > max_value:
+                        return 0.0
+                    return max_points * (user_salary - min_value) / (expected_salary - min_value)
+
+                elif algorithm_type == 'RIGHT_SIDED':
+                    max_value = float(algorithm_params.get('max_value'))
+                    if user_salary >= max_value:
+                        return float(max_points)
+                    elif user_salary < min_value:
+                        return 0.0
+                    return max_points * (max_value - user_salary) / (max_value - expected_salary)
+                
+                elif algorithm_type == 'CENTER':
+                    min_value = float(algorithm_params.get('min_value'))
+                    max_value = float(algorithm_params.get('max_value'))
+                    
+                    if user_salary == expected_salary:
+                        return float(max_points)
+                    elif user_salary < min_value or user_salary > max_value:
+                        return 0.0
+                    elif user_salary < expected_salary:
+                        return max_points * (user_salary - min_value) / (expected_salary - min_value)
+                    else:
+                        return max_points * (max_value - user_salary) / (max_value - expected_salary)
+
+                else:
+                    return 0.0
+                
+            elif answer_type == 'DATE':
+                
+                user_date = answer.get('date_answer')
+                correct_date = question.get('correct_answer_date')
+                
+                if user_date is None or correct_date is None:
                     return 0.0
             
-            elif answer_type == 'DATE':
-                try:
-                    from datetime import datetime
+                if isinstance(user_date, str):
+                    user_date = datetime.strptime(user_date, '%Y-%m-%d').date()
+                if isinstance(correct_date, str):
+                    correct_date = datetime.strptime(correct_date, '%Y-%m-%d').date()
+                
+                days_difference = abs((user_date - correct_date).days)
                     
-                    user_date = answer.get('date_answer')
-                    correct_date = question.get('correct_answer_date')
-                    
-                    if isinstance(user_date, str):
-                        user_date = datetime.strptime(user_date, '%Y-%m-%d').date()
-                    if isinstance(correct_date, str):
-                        correct_date = datetime.strptime(correct_date, '%Y-%m-%d').date()
-                    
-                    days_difference = abs((user_date - correct_date).days)
-                    
-                    if algorithm_type == 'NO_ALGORITHM':
-                        return float(max_points) if days_difference == 0 else 0.0
-                    
-                    return self._apply_algorithm(
-                        user_value=days_difference,
-                        expected_value=0,  # We expect 0 days difference
-                        algorithm_type=algorithm_type,
-                        algorithm_params=algorithm_params,
-                        max_points=max_points,
-                        inverse=True  # Lower difference is better
-                    )
-                except Exception as e:
-                    self.logger.error(f"Error calculating date difference: {str(e)}")
+                if algorithm_type == 'NO_ALGORITHM':
                     return 0.0
+                
+                elif algorithm_type == 'EXACT_MATCH':
+                    return float(max_points) if days_difference == 0 else 0.0
+                
+                elif algorithm_type == 'RANGE':
+                    min_value = float(algorithm_params.get('min_value'))
+                    max_value = float(algorithm_params.get('max_value'))
+                    
+                    min_date = correct_date - timedelta(days=min_value)
+                    max_date = correct_date + timedelta(days=max_value)
+                                        
+                    if user_date < min_date or user_date > max_date:
+                        return 0.0
+                    else:
+                        return max_points
+                    
+                elif algorithm_type == 'LEFT_SIDED': 
+                    min_value = float(algorithm_params.get('min_value'))
+                    min_date = correct_date - timedelta(days=min_value)
+                    
+                    if days_difference <= min_value:
+                        return float(max_points)
+                    elif days_difference > min_value:
+                        return 0.0
+                    return max_points * (days_difference - min_value) / min_value
+                    
+                elif algorithm_type == 'RIGHT_SIDED': 
+                    max_value = float(algorithm_params.get('max_value'))
+                    max_date = correct_date + timedelta(days=max_value)
+                    
+                    if days_difference >= max_value:
+                        return float(max_points)
+                    elif days_difference < min_value:
+                        return 0.0
+                    return max_points * (max_value - days_difference) / (max_value)
+                
+                elif algorithm_type == 'CENTER': 
+                    min_value = float(algorithm_params.get('min_value'))
+                    max_value = float(algorithm_params.get('max_value'))
+                    
+                    min_date = correct_date - timedelta(days=min_value)
+                    max_date = correct_date + timedelta(days=max_value)
+                    
+                    if user_date == correct_date:
+                        return float(max_points)
+                    elif user_date < min_date or user_date > max_date:
+                        return 0.0
+                    elif user_date < correct_date:
+                        return max_points * (user_date - min_date).days / (correct_date - min_date).days
+                    else:
+                        return max_points * (max_date - user_date).days / (max_date - correct_date).days
+                       
+                else:
+                    return 0.0
+
             
             elif answer_type == 'ABCDEF':
-                return float(max_points) if answer.get('abcdef_answer', '').lower() == question.get('correct_answer_abcdef', '').lower() else 0.0
+                if algorithm_type == 'NO_ALGORITHM':
+                    return 0.0
+                
+                elif algorithm_type == 'EXACT_MATCH':
+                    user_answer = answer.get('abcdef_answer', '').lower()
+                    correct_answer = question.get('correct_answer_abcdef', '').lower()
+                    return float(max_points) if user_answer == correct_answer else 0.0
+                
+                else:
+                    return 0.0
             
             elif answer_type == 'AH_POINTS':
                 return 0.0  # AH_POINTS are handled separately
@@ -222,79 +364,6 @@ class TestService:
             
         except Exception as e:
             self.logger.error(f"Error in calculate_score: {str(e)}")
-            return 0.0
-
-    def _apply_algorithm(
-        self,
-        user_value: float,
-        expected_value: float,
-        algorithm_type: str,
-        algorithm_params: dict,
-        max_points: float,
-        value_range: tuple = None,
-        inverse: bool = False
-    ) -> float:
-        """
-        Applies the scoring algorithm to a value.
-        """
-        try:
-            if algorithm_type == 'NO_ALGORITHM':
-                return 0.0
-            
-            if algorithm_type == 'EXACT_MATCH':
-                return float(max_points) if user_value == expected_value else 0.0
-            
-            # Apply value range if provided
-            if value_range:
-                min_val, max_val = value_range
-                user_value = max(min_val, min(max_val, user_value))
-                expected_value = max(min_val, min(max_val, expected_value))
-            
-            if inverse:
-                user_value = -user_value
-                expected_value = -expected_value
-            
-            if algorithm_type == 'RIGHT_SIDED':
-                max_value = float(algorithm_params.get('max_value', expected_value))
-                if user_value <= expected_value:
-                    return float(max_points)
-                elif user_value >= max_value:
-                    return 0.0
-                return max_points * (max_value - user_value) / (max_value - expected_value)
-            
-            elif algorithm_type == 'LEFT_SIDED':
-                min_value = float(algorithm_params.get('min_value', expected_value))
-                if user_value >= expected_value:
-                    return float(max_points)
-                elif user_value <= min_value:
-                    return 0.0
-                return max_points * (user_value - min_value) / (expected_value - min_value)
-            
-            elif algorithm_type == 'CENTER':
-                min_value = float(algorithm_params.get('min_value', expected_value * 0.5))
-                max_value = float(algorithm_params.get('max_value', expected_value * 1.5))
-                
-                if user_value == expected_value:
-                    return float(max_points)
-                elif user_value < min_value or user_value > max_value:
-                    return 0.0
-                elif user_value < expected_value:
-                    return max_points * (user_value - min_value) / (expected_value - min_value)
-                else:
-                    return max_points * (max_value - user_value) / (max_value - expected_value)
-                
-            elif algorithm_type == 'RANGE':
-                min_value = float(algorithm_params.get('min_value', expected_value))
-                max_value = float(algorithm_params.get('max_value', expected_value))
-                
-                if min_value <= user_value <= max_value:
-                    return float(max_points)
-                return 0.0
-            
-            return 0.0
-            
-        except Exception as e:
-            self.logger.error(f"Error applying algorithm: {str(e)}")
             return 0.0
 
     def calculate_total_score(self, answers_response: dict, questions: dict) -> int:

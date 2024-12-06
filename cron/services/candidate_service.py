@@ -269,7 +269,7 @@ class CandidateService:
             for candidate in candidates:
                 try:
                     campaign_response = self.supabase.table('campaigns')\
-                        .select('id, po1_test_id, po2_test_id, po3_test_id, po1_test_weight, po2_test_weight, po3_test_weight')\
+                        .select('id, po1_test_id, po2_test_id, po2_5_test_id, po3_test_id, po1_test_weight, po2_test_weight, po2_5_test_weight, po3_test_weight')\
                         .eq('id', candidate['campaign_id'])\
                         .single()\
                         .execute()
