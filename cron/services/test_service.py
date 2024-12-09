@@ -184,6 +184,7 @@ class TestService:
                         return 0.0
                     
                     elif algorithm_type == 'EXACT_MATCH':
+                        correct_answer = float(algorithm_params.get('correct_answer', 0))
                         return float(max_points) if user_answer == correct_answer else 0.0
                     
                     elif algorithm_type == 'RANGE':
@@ -270,9 +271,9 @@ class TestService:
                     elif algorithm_type == 'RIGHT_SIDED':
                         max_value = float(algorithm_params.get('max_value'))
                         correct_answer = float(algorithm_params.get('correct_answer'))
-                        if user_salary >= max_value:
+                        if user_answer >= max_value:
                             return 0.0
-                        elif user_salary <= correct_answer:
+                        elif user_answer <= correct_answer:
                             return float(max_points)
                         return max_points * (max_value - user_answer) / (max_value - correct_answer)
                     
@@ -281,7 +282,7 @@ class TestService:
                         correct_answer = float(algorithm_params.get('correct_answer'))
                         max_value = float(algorithm_params.get('max_value'))
                         
-                        if user_answer == expected_salary:
+                        if user_answer == correct_answer:
                             return float(max_points)
                         elif user_answer <= min_value or user_answer >= max_value:
                             return 0.0
@@ -296,82 +297,108 @@ class TestService:
                 except Exception as e:
                     self.logger.error(f"Error in SALARY calculation: {str(e)}")
                     return 0.0
-                
+            
             elif answer_type == 'DATE':
                 try:
                     user_date = answer.get('date_answer')
-                    correct_date = algorithm_params.get('correct_answer')
                     
-                    if user_date is None or correct_date is None:
-                        return 0.0
-                
-                    if isinstance(user_date, str):
-                        user_date = datetime.strptime(user_date, '%Y-%m-%d').date()
-                    if isinstance(correct_date, str):
-                        correct_date = datetime.strptime(correct_date, '%Y-%m-%d').date()
-                    
-                    days_difference = abs((user_date - correct_date).days)
-                        
                     if algorithm_type == 'NO_ALGORITHM':
                         return 0.0
                     
-                    elif algorithm_type == 'EXACT_MATCH':
-                        return float(max_points) if days_difference == 0 else 0.0
+                    # Get algorithm parameters
+                    correct_date = algorithm_params.get('correct_answer')
+                    min_date = algorithm_params.get('min_value')
+                    max_date = algorithm_params.get('max_value')
+                    
+                    # Return 0 if no user answer
+                    if not user_date:
+                        return 0.0
+                        
+                    # Convert string dates to datetime.date objects
+                    if isinstance(user_date, str):
+                        user_date = datetime.strptime(user_date, '%Y-%m-%d').date()
+                    
+                    if algorithm_type == 'EXACT_MATCH':
+                        if not correct_date:
+                            return 0.0
+                        if isinstance(correct_date, str):
+                            correct_date = datetime.strptime(correct_date, '%Y-%m-%d').date()
+                        return float(max_points) if user_date == correct_date else 0.0
                     
                     elif algorithm_type == 'RANGE':
-                        min_value = float(algorithm_params.get('min_value'))
-                        max_value = float(algorithm_params.get('max_value'))
-                        
-                        min_date = correct_date - timedelta(days=min_value)
-                        max_date = correct_date + timedelta(days=max_value)
-                                            
-                        if user_date <= min_date or user_date >= max_date:
+                        if not min_date or not max_date:
                             return 0.0
-                        else:
-                            return max_points
+                        if isinstance(min_date, str):
+                            min_date = datetime.strptime(min_date, '%Y-%m-%d').date()
+                        if isinstance(max_date, str):
+                            max_date = datetime.strptime(max_date, '%Y-%m-%d').date()
                         
-                    elif algorithm_type == 'LEFT_SIDED': 
-                        min_value = float(algorithm_params.get('min_value'))
-                        min_date = correct_date - timedelta(days=min_value)
+                        return float(max_points) if min_date <= user_date <= max_date else 0.0
+                    
+                    elif algorithm_type == 'LEFT_SIDED':
+                        if not min_date or not correct_date:
+                            return 0.0
+                        if isinstance(min_date, str):
+                            min_date = datetime.strptime(min_date, '%Y-%m-%d').date()
+                        if isinstance(correct_date, str):
+                            correct_date = datetime.strptime(correct_date, '%Y-%m-%d').date()
                         
                         if user_date <= min_date:
                             return 0.0
                         elif user_date >= correct_date:
                             return float(max_points)
-                        return max_points * (user_date - min_date).days / (correct_date - min_date).days
                         
-                    elif algorithm_type == 'RIGHT_SIDED': 
-                        max_value = float(algorithm_params.get('max_value'))
-                        max_date = correct_date + timedelta(days=max_value)
+                        total_days = (correct_date - min_date).days
+                        user_days = (user_date - min_date).days
+                        return max_points * (user_days / total_days) if total_days > 0 else 0.0
+                    
+                    elif algorithm_type == 'RIGHT_SIDED':
+                        if not max_date or not correct_date:
+                            return 0.0
+                        if isinstance(max_date, str):
+                            max_date = datetime.strptime(max_date, '%Y-%m-%d').date()
+                        if isinstance(correct_date, str):
+                            correct_date = datetime.strptime(correct_date, '%Y-%m-%d').date()
                         
                         if user_date >= max_date:
                             return 0.0
                         elif user_date <= correct_date:
                             return float(max_points)
-                        return max_points * (max_date - user_date).days / (max_date - correct_date).days
-                    
-                    elif algorithm_type == 'CENTER': 
-                        min_value = float(algorithm_params.get('min_value'))
-                        max_value = float(algorithm_params.get('max_value'))
                         
-                        min_date = correct_date - timedelta(days=min_value)
-                        max_date = correct_date + timedelta(days=max_value)
+                        total_days = (max_date - correct_date).days
+                        user_days = (max_date - user_date).days
+                        return max_points * (user_days / total_days) if total_days > 0 else 0.0
+                    
+                    elif algorithm_type == 'CENTER':
+                        if not min_date or not max_date or not correct_date:
+                            return 0.0
+                        if isinstance(min_date, str):
+                            min_date = datetime.strptime(min_date, '%Y-%m-%d').date()
+                        if isinstance(max_date, str):
+                            max_date = datetime.strptime(max_date, '%Y-%m-%d').date()
+                        if isinstance(correct_date, str):
+                            correct_date = datetime.strptime(correct_date, '%Y-%m-%d').date()
                         
                         if user_date == correct_date:
                             return float(max_points)
                         elif user_date <= min_date or user_date >= max_date:
                             return 0.0
-                        elif user_date <= correct_date:
-                            return max_points * (user_date - min_date).days / (correct_date - min_date).days
-                        else:
-                            return max_points * (max_date - user_date).days / (max_date - correct_date).days
                         
-                    else:
-                        return 0.0
+                        if user_date < correct_date:
+                            total_days = (correct_date - min_date).days
+                            user_days = (user_date - min_date).days
+                            return max_points * (user_days / total_days) if total_days > 0 else 0.0
+                        else:
+                            total_days = (max_date - correct_date).days
+                            user_days = (max_date - user_date).days
+                            return max_points * (user_days / total_days) if total_days > 0 else 0.0
+                    
+                    return 0.0
+                    
                 except Exception as e:
                     self.logger.error(f"Error in DATE calculation: {str(e)}")
                     return 0.0
-                
+                    
             elif answer_type == 'ABCDEF':
                 try:
                     if algorithm_type == 'NO_ALGORITHM':

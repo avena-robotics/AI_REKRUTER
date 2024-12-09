@@ -13,7 +13,7 @@ WITH inserted_test AS (
         'Kwestionariusz oceny kompetencji EQ', 
         'EQ_EVALUATION', 
         'Oceń poziom kompetencji kandydata w skali od 10 do 20, gdzie 10 oznacza bardzo niski poziom, a 20 bardzo wysoki poziom.', 
-        75, 
+        0, 
         30, 
         now(), 
         now()
