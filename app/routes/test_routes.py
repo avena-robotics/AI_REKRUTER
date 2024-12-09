@@ -513,18 +513,24 @@ def clean_algorithm_params(answer_type, params):
         
     clean_params = {}
     
-    # Handle min_value and max_value
+    # Handle min_value and max_value based on answer_type
     if 'min_value' in params:
-        try:
-            clean_params['min_value'] = float(params['min_value'])
-        except (ValueError, TypeError):
-            clean_params['min_value'] = None
+        if answer_type == 'DATE':
+            clean_params['min_value'] = params['min_value'] if params['min_value'] else None
+        else:
+            try:
+                clean_params['min_value'] = float(params['min_value'])
+            except (ValueError, TypeError):
+                clean_params['min_value'] = None
             
     if 'max_value' in params:
-        try:
-            clean_params['max_value'] = float(params['max_value'])
-        except (ValueError, TypeError):
-            clean_params['max_value'] = None
+        if answer_type == 'DATE':
+            clean_params['max_value'] = params['max_value'] if params['max_value'] else None
+        else:
+            try:
+                clean_params['max_value'] = float(params['max_value'])
+            except (ValueError, TypeError):
+                clean_params['max_value'] = None
     
     # Handle correct_answer based on answer_type
     if 'correct_answer' in params:

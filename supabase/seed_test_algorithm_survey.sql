@@ -71,7 +71,7 @@ questions_insert AS (
         
         -- DATE type tests
         ('DATE - No Algorithm', 'DATE', NULL, 0, 17, false, 'NO_ALGORITHM', NULL),
-        ('DATE - Right Sided', 'DATE', NULL, 10, 18, false, 'RIGHT_SIDED', '{"correct_answer": "2024-06-01", "max_value": "30"}'::jsonb),
+        ('DATE - Right Sided', 'DATE', NULL, 10, 18, false, 'RIGHT_SIDED', '{"correct_answer": "2024-06-01", "max_value": "2024-12-31"}'::jsonb),
         ('DATE - Left Sided', 'DATE', NULL, 10, 19, false, 'LEFT_SIDED', '{"min_value": "2024-01-01", "correct_answer": "2024-03-01"}'::jsonb),
         ('DATE - Center', 'DATE', NULL, 10, 20, false, 'CENTER', '{"min_value": "2024-01-01", "correct_answer": "2024-06-01", "max_value": "2024-12-31"}'::jsonb),
         ('DATE - Range', 'DATE', NULL, 10, 21, false, 'RANGE', '{"min_value": "2024-03-01", "max_value": "2024-09-01"}'::jsonb),

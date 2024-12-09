@@ -938,10 +938,7 @@ function createAnswerFieldsHtml(questionCounter, question) {
             <div class="row">
                 <div class="col-md-4 min-value-container" style="display: ${['RANGE', 'LEFT_SIDED', 'CENTER'].includes(algorithmType) ? 'block' : 'none'}">
                     <label class="form-label">Wartość minimalna</label>
-                    <input type="number" class="form-control" 
-                           name="questions[${questionCounter}][algorithm_params][min_value]"
-                           value="${algorithmParams?.min_value || ''}"
-                           step="any">
+                    ${getMinMaxValueInput(answerType, questionCounter, 'min_value', algorithmParams?.min_value)}
                 </div>
                 <div class="col-md-4 correct-answer-container" style="display: ${algorithmType !== 'NO_ALGORITHM' ? 'block' : 'none'}">
                     <label class="form-label">Poprawna odpowiedź</label>
@@ -949,10 +946,7 @@ function createAnswerFieldsHtml(questionCounter, question) {
                 </div>
                 <div class="col-md-4 max-value-container" style="display: ${['RANGE', 'RIGHT_SIDED', 'CENTER'].includes(algorithmType) ? 'block' : 'none'}">
                     <label class="form-label">Wartość maksymalna</label>
-                    <input type="number" class="form-control" 
-                           name="questions[${questionCounter}][algorithm_params][max_value]"
-                           value="${algorithmParams?.max_value || ''}"
-                           step="any">
+                    ${getMinMaxValueInput(answerType, questionCounter, 'max_value', algorithmParams?.max_value)}
                 </div>
             </div>
         </div>
@@ -1035,9 +1029,10 @@ function getCorrectAnswerInput(answerType, questionCounter, value) {
                            value="${value !== null ? value : ''}">`;
         
         case 'DATE':
-            return `<input type="date" class="form-control" 
+            return `<input type="date" class="form-control date-picker-input" 
                            name="questions[${questionCounter}][algorithm_params][correct_answer]"
-                           value="${value || ''}">`;
+                           value="${value || ''}"
+                           onclick="showDatePicker(this)">`;
         
         case 'ABCDEF':
             return `<select class="form-select" 
@@ -1168,5 +1163,41 @@ function getAlgorithmParamsValue(input, answerType) {
             return parseFloat(value) || null;
         default:
             return value;
+    }
+}
+
+// Add new function for min/max value inputs
+function getMinMaxValueInput(answerType, questionCounter, fieldName, value) {
+    switch (answerType) {
+        case 'DATE':
+            return `<input type="date" class="form-control date-picker-input" 
+                           name="questions[${questionCounter}][algorithm_params][${fieldName}]"
+                           value="${value || ''}"
+                           onclick="showDatePicker(this)">`;
+        
+        case 'SCALE':
+            return `<input type="number" class="form-control" 
+                           name="questions[${questionCounter}][algorithm_params][${fieldName}]"
+                           min="0" max="5" 
+                           value="${value || ''}">`;
+        
+        case 'SALARY':
+            return `<input type="number" class="form-control" 
+                           name="questions[${questionCounter}][algorithm_params][${fieldName}]"
+                           min="0" step="1" 
+                           value="${value !== null ? value : ''}">`;
+        
+        default:
+            return '';
+    }
+}
+
+// Add new function to handle date picker clicks
+function showDatePicker(input) {
+    try {
+        input.showPicker();
+    } catch (e) {
+        // Fallback for browsers that don't support showPicker()
+        console.log('showPicker not supported in this browser');
     }
 } 
