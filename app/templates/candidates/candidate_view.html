@@ -66,6 +66,11 @@
                         <td>{{ candidate.po2_completed_at|datetime if candidate.po2_completed_at else '-' }}</td>
                     </tr>
                     <tr>
+                        <td>PO2.5</td>
+                        <td>{{ candidate.po2_5_score if candidate.po2_5_score is not none else '-' }}</td>
+                        <td>{{ '-' }}</td>
+                    </tr>
+                    <tr>
                         <td>PO3</td>
                         <td>{{ candidate.po3_score if candidate.po3_score is not none else '-' }}</td>
                         <td>{{ candidate.po3_completed_at|datetime if candidate.po3_completed_at else '-' }}</td>
@@ -260,7 +265,7 @@
 
     <!-- Test Answers -->
     <div class="accordion" id="candidateAccordion">
-        {% for stage in ['PO1', 'PO2', 'PO3', 'PO4'] %}
+        {% for stage in ['PO1', 'PO2', 'PO2_5', 'PO3', 'PO4'] %}
         {% if tests[stage] %}
         <div class="accordion-item">
             <h2 class="accordion-header" id="heading{{ stage }}">
@@ -270,7 +275,7 @@
                         data-bs-target="#collapse{{ stage }}"
                         aria-expanded="false"
                         aria-controls="collapse{{ stage }}">
-                    Etap {{ stage }} - {{ tests[stage].test.test_type }}
+                    Etap {{ stage|replace('_', '.') }} - {{ tests[stage].test.test_type }}
                 </button>
             </h2>
             <div id="collapse{{ stage }}" 
@@ -369,17 +374,45 @@
                                     <div class="mb-3">
                                         <strong>Poprawna odpowiedź:</strong><br>
                                         {% if question.answer_type == 'TEXT' %}
-                                            <p>{{ question.correct_answer_text }}</p>
+                                            <p>{{ question.algorithm_params.correct_answer }}</p>
                                         {% elif question.answer_type == 'BOOLEAN' %}
-                                            <p>{{ 'Tak' if question.correct_answer_boolean else 'Nie' }}</p>
+                                            <p>{{ 'Tak' if question.algorithm_params.correct_answer else 'Nie' }}</p>
                                         {% elif question.answer_type == 'SCALE' %}
-                                            <p>{{ question.correct_answer_scale }}/5</p>
+                                            <p>{{ question.algorithm_params.correct_answer }}/5</p>
                                         {% elif question.answer_type == 'SALARY' %}
-                                            <p>{{ question.correct_answer_salary }} Netto PLN</p>
+                                            <p>{{ question.algorithm_params.correct_answer }} Netto PLN</p>
                                         {% elif question.answer_type == 'DATE' %}
-                                            <p>{{ question.correct_answer_date|datetime }}</p>
+                                            <p>{{ question.algorithm_params.correct_answer|datetime }}</p>
                                         {% elif question.answer_type == 'ABCDEF' %}
-                                            <p>Odpowiedź: {{ question.correct_answer_abcdef|upper }}</p>
+                                            <p>Odpowiedź: {{ question.algorithm_params.correct_answer|upper }}</p>
+                                        {% endif %}
+
+                                        {% if question.algorithm_type and question.algorithm_type != 'NO_ALGORITHM' %}
+                                        <strong>Algorytm oceny:</strong><br>
+                                        <p>
+                                            Typ: 
+                                            {% if question.algorithm_type == 'RIGHT_SIDED' %}
+                                                Prawostronny
+                                            {% elif question.algorithm_type == 'LEFT_SIDED' %}
+                                                Lewostronny
+                                            {% elif question.algorithm_type == 'CENTER' %}
+                                                Centralny
+                                            {% elif question.algorithm_type == 'RANGE' %}
+                                                Zakresowy
+                                            {% elif question.algorithm_type == 'EXACT_MATCH' %}
+                                                Dokładne dopasowanie
+                                            {% else %}
+                                                {{ question.algorithm_type }}
+                                            {% endif %}
+                                            {% if question.algorithm_params %}
+                                                {% if question.algorithm_params.max_value is defined %}
+                                                    <br>Maksymalna wartość: {{ question.algorithm_params.max_value }}
+                                                {% endif %}
+                                                {% if question.algorithm_params.min_value is defined %}
+                                                    <br>Minimalna wartość: {{ question.algorithm_params.min_value }}
+                                                {% endif %}
+                                            {% endif %}
+                                        </p>
                                         {% endif %}
                                     </div>
                                     <div>

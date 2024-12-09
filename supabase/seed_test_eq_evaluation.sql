@@ -31,8 +31,7 @@ questions_insert AS (
         order_number,
         is_required,
         algorithm_type,
-        algorithm_params,
-        correct_answer_salary
+        algorithm_params
     )
     SELECT 
         (SELECT id FROM inserted_test),
@@ -42,8 +41,7 @@ questions_insert AS (
         order_number,
         is_required,
         algorithm_type::algorithm_type,
-        algorithm_params::jsonb,
-        correct_answer_salary
+        algorithm_params::jsonb
     FROM (VALUES
         (
             'KO',
@@ -52,8 +50,7 @@ questions_insert AS (
             1,
             true,
             'RANGE',
-            '{"min_value": 10, "max_value": 20}',
-            15
+            '{"min_value": 10, "max_value": 20}'::jsonb
         ),
         (
             'RE',
@@ -62,8 +59,7 @@ questions_insert AS (
             2,
             true,
             'RANGE',
-            '{"min_value": 10, "max_value": 20}',
-            15
+            '{"min_value": 10, "max_value": 20}'::jsonb
         ),
         (
             'W',
@@ -72,8 +68,7 @@ questions_insert AS (
             3,
             true,
             'RANGE',
-            '{"min_value": 10, "max_value": 20}',
-            15
+            '{"min_value": 10, "max_value": 20}'::jsonb
         ),
         (
             'IN',
@@ -82,8 +77,7 @@ questions_insert AS (
             4,
             true,
             'RANGE',
-            '{"min_value": 10, "max_value": 20}',
-            15
+            '{"min_value": 10, "max_value": 20}'::jsonb
         ),
         (
             'PZ',
@@ -92,8 +86,7 @@ questions_insert AS (
             5,
             true,
             'RANGE',
-            '{"min_value": 10, "max_value": 20}',
-            15
+            '{"min_value": 10, "max_value": 20}'::jsonb
         ),
         (
             'KZ',
@@ -102,8 +95,7 @@ questions_insert AS (
             6,
             true,
             'RANGE',
-            '{"min_value": 10, "max_value": 20}',
-            15
+            '{"min_value": 10, "max_value": 20}'::jsonb
         ),
         (
             'DZ',
@@ -112,8 +104,7 @@ questions_insert AS (
             7,
             true,
             'RANGE',
-            '{"min_value": 10, "max_value": 20}',
-            15
+            '{"min_value": 10, "max_value": 20}'::jsonb
         ),
         (
             'SW',
@@ -122,8 +113,7 @@ questions_insert AS (
             8,
             true,
             'RANGE',
-            '{"min_value": 10, "max_value": 20}',
-            15
+            '{"min_value": 10, "max_value": 20}'::jsonb
         )
     ) AS t(
         question_text,
@@ -132,8 +122,7 @@ questions_insert AS (
         order_number,
         is_required,
         algorithm_type,
-        algorithm_params,
-        correct_answer_salary
+        algorithm_params
     )
 ),
 

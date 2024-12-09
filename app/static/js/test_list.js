@@ -513,113 +513,77 @@ function createQuestionHtml(question = null) {
     const questionCounter = document.querySelectorAll('.question-card').length;
     
     return `
-        <div class="card mb-2 question-card" 
-             data-question-id="${q.id || ''}" 
-             data-question-index="${questionCounter}">
-            <input type="hidden" name="questions[${questionCounter}][id]" value="${q.id || ''}">
-            <input type="hidden" name="questions[${questionCounter}][order_number]" 
-                   value="${q.order_number || questionCounter + 1}">
-            
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div class="form-check form-switch">
-                    <input type="checkbox" class="form-check-input" 
-                           name="questions[${questionCounter}][is_required]"
-                           ${q.is_required !== false ? 'checked' : ''}>
-                    <label class="form-check-label">Pytanie obowiązkowe</label>
-                </div>
-                <button type="button" class="btn btn-danger btn-sm remove-question">
-                    Usuń pytanie
-                </button>
-            </div>
-            
+        <div class="question-card card mb-3">
             <div class="card-body">
-                <div class="d-flex">
-                    <div class="drag-handle me-3 d-flex align-items-center" 
-                         title="Przeciągnij aby zmienić kolejność"
-                         style="cursor: move;">☰</div>
-                    
-                    <div class="border-start ps-3 flex-grow-1">
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <label class="form-label">Treść pytania*</label>
-                                <input type="text" class="form-control" 
-                                       name="questions[${questionCounter}][question_text]"
-                                       value="${q.question_text || ''}" required>
-                            </div>
-                        </div>
-                        
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <label class="form-label">Obrazek</label>
-                                <input type="file" class="form-control" 
-                                       name="questions[${questionCounter}][image_file]"
-                                       accept="image/*"
-                                       onchange="handleImageUpload(this)">
-                                ${q.image ? `
-                                    <div class="mt-2 image-preview">
-                                        <img src="${q.image}" class="img-thumbnail" style="max-height: 100px">
-                                        <input type="hidden" 
-                                               name="questions[${questionCounter}][image]"
-                                               value="${q.image}">
-                                    </div>` : ''}
-                            </div>
-                        </div>
-                        
-                        <div class="row mb-3">
-                            <div class="col-md-4">
-                                <label class="form-label">Typ odpowiedzi*</label>
-                                <select class="form-select answer-type-select" 
-                                        name="questions[${questionCounter}][answer_type]" required>
-                                    <option value="TEXT" ${q.answer_type === 'TEXT' ? 'selected' : ''}>Tekst</option>
-                                    <option value="BOOLEAN" ${q.answer_type === 'BOOLEAN' ? 'selected' : ''}>Tak/Nie</option>
-                                    <option value="SCALE" ${q.answer_type === 'SCALE' ? 'selected' : ''}>Skala (0-5)</option>
-                                    <option value="SALARY" ${q.answer_type === 'SALARY' ? 'selected' : ''}>Wynagrodzenie (Netto PLN)</option>
-                                    <option value="DATE" ${q.answer_type === 'DATE' ? 'selected' : ''}>Data</option>
-                                    <option value="ABCDEF" ${q.answer_type === 'ABCDEF' ? 'selected' : ''}>ABCDEF</option>
-                                    <option value="AH_POINTS" ${q.answer_type === 'AH_POINTS' ? 'selected' : ''}>Test EQ (A-H)</option>
-                                </select>
-                            </div>
-                            <div class="col-md-8">
-                                <div class="answer-fields">
-                                    ${createAnswerFieldsHtml(questionCounter, q)}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-4">
-                                <label class="form-label">Punkty za pytanie*</label>
-                                <input type="number" class="form-control" 
-                                       name="questions[${questionCounter}][points]"
-                                       value="${q.points || '0'}" 
-                                       min="0"
-                                       required>
-                            </div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="card-title mb-0">Pytanie ${questionCounter + 1}</h6>
+                    <button type="button" class="btn btn-danger btn-sm remove-question">
+                        Usuń pytanie
+                    </button>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <label class="form-label">Treść pytania*</label>
+                        <textarea class="form-control" 
+                                name="questions[${questionCounter}][question_text]" 
+                                required>${q.question_text || ''}</textarea>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Punkty</label>
+                        <input type="number" class="form-control" 
+                               name="questions[${questionCounter}][points]" 
+                               value="${q.points || 0}" min="0">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Wymagane?</label>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" 
+                                   name="questions[${questionCounter}][is_required]" 
+                                   ${q.is_required !== false ? 'checked' : ''}>
+                            <label class="form-check-label">Tak</label>
                         </div>
                     </div>
                 </div>
+
+                <div class="answer-fields">
+                    ${createAnswerFieldsHtml(questionCounter, q)}
+                </div>
+
+                <input type="hidden" name="questions[${questionCounter}][order_number]" 
+                       value="${questionCounter + 1}">
+                ${q.id ? `<input type="hidden" name="questions[${questionCounter}][id]" value="${q.id}">` : ''}
             </div>
         </div>
     `;
 }
 
-function handleAnswerTypeChange(e) {
-    const questionCard = e.target.closest('.question-card');
+function handleAnswerTypeChange(select) {
+    const questionCard = select.closest('.question-card');
     const answerFieldsContainer = questionCard.querySelector('.answer-fields');
-    const questionCounter = questionCard.dataset.questionIndex;
     
-    // Remove all existing answer-related hidden inputs
-    const hiddenInputs = questionCard.querySelectorAll('input[type="hidden"]');
-    hiddenInputs.forEach(input => {
-        if (input.name.includes('correct_answer')) {
-            input.remove();
-        }
+    // Get current algorithm type
+    const algorithmTypeSelect = questionCard.querySelector('.algorithm-type-select');
+    const currentAlgorithmType = algorithmTypeSelect ? algorithmTypeSelect.value : 'NO_ALGORITHM';
+    
+    // Create new answer fields HTML
+    const questionCounter = parseInt(select.name.match(/\[(\d+)\]/)[1]);
+    const answerFieldsHtml = createAnswerFieldsHtml(questionCounter, {
+        answer_type: select.value,
+        algorithm_type: currentAlgorithmType
     });
     
-    // Clear the answer fields container and create new fields
-    answerFieldsContainer.innerHTML = createAnswerFieldsHtml(questionCounter, {
-        answer_type: e.target.value
-    });
+    // Update the container
+    answerFieldsContainer.innerHTML = answerFieldsHtml;
+    
+    // Re-initialize algorithm type handler
+    const newAlgorithmSelect = answerFieldsContainer.querySelector('.algorithm-type-select');
+    if (newAlgorithmSelect) {
+        handleAlgorithmTypeChange(newAlgorithmSelect);
+    }
 }
 
 function handleImageUpload(input) {
@@ -887,6 +851,8 @@ function duplicateTest(testId) {
 function createAnswerFieldsHtml(questionCounter, question) {
     const q = question || {};
     const answerType = q.answer_type || 'TEXT';
+    const algorithmType = q.algorithm_type || 'NO_ALGORITHM';
+    const algorithmParams = q.algorithm_params || {};
     
     // Common algorithm selection HTML for all types
     const algorithmSelectionHtml = `
@@ -895,165 +861,204 @@ function createAnswerFieldsHtml(questionCounter, question) {
             <select class="form-select algorithm-type-select" 
                     name="questions[${questionCounter}][algorithm_type]"
                     onchange="handleAlgorithmTypeChange(this)">
-                <option value="NO_ALGORITHM" ${q.algorithm_type === 'NO_ALGORITHM' ? 'selected' : ''}>Brak algorytmu</option>
-                <option value="RIGHT_SIDED" ${q.algorithm_type === 'RIGHT_SIDED' ? 'selected' : ''}>Prawostronny</option>
-                <option value="LEFT_SIDED" ${q.algorithm_type === 'LEFT_SIDED' ? 'selected' : ''}>Lewostronny</option>
-                <option value="CENTER" ${q.algorithm_type === 'CENTER' ? 'selected' : ''}>Środkowy</option>
-                <option value="RANGE" ${q.algorithm_type === 'RANGE' ? 'selected' : ''}>Przedział</option>
-                <option value="EXACT_MATCH" ${q.algorithm_type === 'EXACT_MATCH' ? 'selected' : ''}>Dokładne dopasowanie</option>
+                <option value="NO_ALGORITHM" ${algorithmType === 'NO_ALGORITHM' ? 'selected' : ''}>Brak algorytmu</option>
+                <option value="EXACT_MATCH" ${algorithmType === 'EXACT_MATCH' ? 'selected' : ''}>Dokładne dopasowanie</option>
+                <option value="RANGE" ${algorithmType === 'RANGE' ? 'selected' : ''}>Przedział</option>
+                <option value="LEFT_SIDED" ${algorithmType === 'LEFT_SIDED' ? 'selected' : ''}>Lewostronny</option>
+                <option value="RIGHT_SIDED" ${algorithmType === 'RIGHT_SIDED' ? 'selected' : ''}>Prawostronny</option>
+                <option value="CENTER" ${algorithmType === 'CENTER' ? 'selected' : ''}>Środkowy</option>
             </select>
         </div>
-        <div class="col-12 mt-2 algorithm-params" style="display: none;">
+    `;
+
+    // Algorithm parameters HTML
+    const algorithmParamsHtml = `
+        <div class="col-12 mt-2 algorithm-params" style="display: ${algorithmType === 'NO_ALGORITHM' ? 'none' : 'block'}">
             <div class="row">
-                <div class="col-md-6 min-value-container" style="display: none;">
+                <div class="col-md-4 min-value-container" style="display: ${['RANGE', 'LEFT_SIDED', 'CENTER'].includes(algorithmType) ? 'block' : 'none'}">
                     <label class="form-label">Wartość minimalna</label>
                     <input type="number" class="form-control" 
                            name="questions[${questionCounter}][algorithm_params][min_value]"
-                           min="0" step="1"
-                           value="${q.algorithm_params?.min_value || ''}">
+                           value="${algorithmParams?.min_value || ''}"
+                           step="any">
                 </div>
-                <div class="col-md-6 max-value-container" style="display: none;">
+                <div class="col-md-4 correct-answer-container" style="display: ${algorithmType !== 'NO_ALGORITHM' ? 'block' : 'none'}">
+                    <label class="form-label">Poprawna odpowiedź</label>
+                    ${getCorrectAnswerInput(answerType, questionCounter, algorithmParams.correct_answer)}
+                </div>
+                <div class="col-md-4 max-value-container" style="display: ${['RANGE', 'RIGHT_SIDED', 'CENTER'].includes(algorithmType) ? 'block' : 'none'}">
                     <label class="form-label">Wartość maksymalna</label>
                     <input type="number" class="form-control" 
                            name="questions[${questionCounter}][algorithm_params][max_value]"
-                           min="0" step="1"
-                           value="${q.algorithm_params?.max_value || ''}">
+                           value="${algorithmParams?.max_value || ''}"
+                           step="any">
                 </div>
             </div>
         </div>
     `;
 
-    // Add algorithmSelectionHtml to each answer type's return statement
+    // Add answer type specific HTML
+    let answerTypeHtml = '';
     switch (answerType) {
         case 'TEXT':
-            return `
-                <div class="row">
-                    <div class="col-md-6">
-                        <label class="form-label">Poprawna odpowiedź tekstowa</label>
-                        <input type="text" class="form-control" 
-                               name="questions[${questionCounter}][correct_answer_text]"
-                               value="${q.correct_answer_text || ''}">
-                    </div>
-                    ${algorithmSelectionHtml}
+            answerTypeHtml = `
+                <div class="col-md-6">
+                    <label class="form-label">Typ odpowiedzi</label>
+                    <select class="form-select" name="questions[${questionCounter}][answer_type]" onchange="handleAnswerTypeChange(this)">
+                        <option value="TEXT" selected>Tekst</option>
+                        <option value="BOOLEAN">Tak/Nie</option>
+                        <option value="SCALE">Skala (0-5)</option>
+                        <option value="SALARY">Wynagrodzenie</option>
+                        <option value="DATE">Data</option>
+                        <option value="ABCDEF">ABCDEF</option>
+                        <option value="AH_POINTS">Punkty A-H</option>
+                    </select>
                 </div>
             `;
-            
-        case 'BOOLEAN':
-            return `
-                <div class="row">
-                    <div class="col-md-6">
-                        <label class="form-label">Poprawna odpowiedź</label>
-                        <div class="form-check">
-                            <input type="radio" class="form-check-input" 
-                                   name="questions[${questionCounter}][correct_answer_boolean]" 
-                                   value="true" ${q.correct_answer_boolean === true ? 'checked' : ''}>
-                            <label class="form-check-label">Prawda</label>
-                        </div>
-                        <div class="form-check">
-                            <input type="radio" class="form-check-input" 
-                                   name="questions[${questionCounter}][correct_answer_boolean]" 
-                                   value="false" ${q.correct_answer_boolean === false ? 'checked' : ''}>
-                            <label class="form-check-label">Fałsz</label>
-                        </div>
-                    </div>
-                    ${algorithmSelectionHtml}
-                </div>
-            `;
-            
-        case 'SCALE':
-            return `
-                <div class="row">
-                    <div class="col-md-6">
-                        <label class="form-label">Poprawna odpowiedź (0-5)</label>
-                        <input type="number" class="form-control" 
-                               name="questions[${questionCounter}][correct_answer_scale]"
-                               min="0" max="5" 
-                               value="${q.correct_answer_scale || ''}">
-                    </div>
-                    ${algorithmSelectionHtml}
-                </div>
-            `;
-            
-        case 'SALARY':
-            return `
-                <div class="row">
-                    <div class="col-md-6">
-                        <label class="form-label">Poprawna odpowiedź (Netto PLN)</label>
-                        <input type="number" class="form-control" 
-                               name="questions[${questionCounter}][correct_answer_salary]"
-                               min="0" step="1" 
-                               value="${q.correct_answer_salary !== null ? q.correct_answer_salary : ''}">
-                    </div>
-                    ${algorithmSelectionHtml}
-                </div>
-            `;
-            
-        case 'DATE':
-            return `
-                <div class="row">
-                    <div class="col-md-6">
-                        <label class="form-label">Poprawna data</label>
-                        <input type="date" class="form-control" 
-                               name="questions[${questionCounter}][correct_answer_date]"
-                               value="${q.correct_answer_date || ''}">
-                    </div>
-                    ${algorithmSelectionHtml}
-                </div>
-            `;
-            
-        case 'ABCDEF':
-            return `
-                <div class="row">
-                    <div class="col-md-6">
-                        <label class="form-label">Poprawna odpowiedź</label>
-                        <select class="form-select" 
-                                name="questions[${questionCounter}][correct_answer_abcdef]">
-                            <option value="" ${!q.correct_answer_abcdef ? 'selected' : ''}>Wybierz odpowiedź</option>
-                            <option value="a" ${q.correct_answer_abcdef === 'A' ? 'selected' : ''}>A</option>
-                            <option value="b" ${q.correct_answer_abcdef === 'B' ? 'selected' : ''}>B</option>
-                            <option value="c" ${q.correct_answer_abcdef === 'C' ? 'selected' : ''}>C</option>
-                            <option value="d" ${q.correct_answer_abcdef === 'D' ? 'selected' : ''}>D</option>
-                            <option value="e" ${q.correct_answer_abcdef === 'E' ? 'selected' : ''}>E</option>
-                            <option value="f" ${q.correct_answer_abcdef === 'F' ? 'selected' : ''}>F</option>
-                        </select>
-                    </div>
-                    ${algorithmSelectionHtml}
-                </div>
-            `;
+            break;
             
         case 'AH_POINTS':
             const options = q.options || {};
-            return `
-                <div class="row">
-                    <div class="col-12">
-                        <label class="form-label">Opcje odpowiedzi (A-H)*</label>
-                        <div class="options-container">
-                            ${['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(letter => {
-                                const letterLower = letter.toLowerCase();
-                                const value = options[letterLower] || '';
-                                return `
-                                    <div class="option-row mb-2">
-                                        <div class="input-group">
-                                            <span class="input-group-text">${letter}.</span>
-                                            <input type="text" 
-                                                   class="form-control"
-                                                   name="questions[${questionCounter}][options][${letterLower}]"
-                                                   value="${value}"
-                                                   placeholder="Treść opcji ${letter}"
-                                                   data-letter="${letterLower}"
-                                                   required>
-                                        </div>
+            answerTypeHtml = `
+                <div class="col-12">
+                    <label class="form-label">Opcje odpowiedzi (A-H)*</label>
+                    <div class="options-container">
+                        ${['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(letter => {
+                            const letterLower = letter.toLowerCase();
+                            const value = options[letterLower] || '';
+                            return `
+                                <div class="option-row mb-2">
+                                    <div class="input-group">
+                                        <span class="input-group-text">${letter}.</span>
+                                        <input type="text" 
+                                               class="form-control"
+                                               name="questions[${questionCounter}][options][${letterLower}]"
+                                               value="${value}"
+                                               placeholder="Treść opcji ${letter}"
+                                               data-letter="${letterLower}"
+                                               required>
                                     </div>
-                                `;
-                            }).join('')}
-                        </div>
+                                </div>
+                            `;
+                        }).join('')}
                     </div>
-                    ${algorithmSelectionHtml}
                 </div>
             `;
-            
+            break;
+    }
+
+    return `
+        <div class="row">
+            ${answerTypeHtml}
+            ${algorithmSelectionHtml}
+            ${algorithmParamsHtml}
+        </div>
+    `;
+}
+
+function getCorrectAnswerInput(answerType, questionCounter, value) {
+    switch (answerType) {
+        case 'TEXT':
+            return `<input type="text" class="form-control" 
+                           name="questions[${questionCounter}][algorithm_params][correct_answer]"
+                           value="${value || ''}">`;
+        
+        case 'BOOLEAN':
+            return `
+                <div class="form-check">
+                    <input type="radio" class="form-check-input" 
+                           name="questions[${questionCounter}][algorithm_params][correct_answer]" 
+                           value="true" ${value === true ? 'checked' : ''}>
+                    <label class="form-check-label">Prawda</label>
+                </div>
+                <div class="form-check">
+                    <input type="radio" class="form-check-input" 
+                           name="questions[${questionCounter}][algorithm_params][correct_answer]" 
+                           value="false" ${value === false ? 'checked' : ''}>
+                    <label class="form-check-label">Fałsz</label>
+                </div>`;
+        
+        case 'SCALE':
+            return `<input type="number" class="form-control" 
+                           name="questions[${questionCounter}][algorithm_params][correct_answer]"
+                           min="0" max="5" 
+                           value="${value || ''}">`;
+        
+        case 'SALARY':
+            return `<input type="number" class="form-control" 
+                           name="questions[${questionCounter}][algorithm_params][correct_answer]"
+                           min="0" step="1" 
+                           value="${value !== null ? value : ''}">`;
+        
+        case 'DATE':
+            return `<input type="date" class="form-control" 
+                           name="questions[${questionCounter}][algorithm_params][correct_answer]"
+                           value="${value || ''}">`;
+        
+        case 'ABCDEF':
+            return `<select class="form-select" 
+                            name="questions[${questionCounter}][algorithm_params][correct_answer]">
+                        <option value="" ${!value ? 'selected' : ''}>Wybierz odpowiedź</option>
+                        <option value="a" ${value === 'a' ? 'selected' : ''}>A</option>
+                        <option value="b" ${value === 'b' ? 'selected' : ''}>B</option>
+                        <option value="c" ${value === 'c' ? 'selected' : ''}>C</option>
+                        <option value="d" ${value === 'd' ? 'selected' : ''}>D</option>
+                        <option value="e" ${value === 'e' ? 'selected' : ''}>E</option>
+                        <option value="f" ${value === 'f' ? 'selected' : ''}>F</option>
+                    </select>`;
+        
         default:
             return '';
+    }
+}
+
+function handleAlgorithmTypeChange(select) {
+    const questionCard = select.closest('.question-card');
+    const algorithmParams = questionCard.querySelector('.algorithm-params');
+    const minValueContainer = questionCard.querySelector('.min-value-container');
+    const correctAnswerContainer = questionCard.querySelector('.correct-answer-container');
+    const maxValueContainer = questionCard.querySelector('.max-value-container');
+    
+    // Hide all params initially
+    algorithmParams.style.display = 'none';
+    minValueContainer.style.display = 'none';
+    correctAnswerContainer.style.display = 'none';
+    maxValueContainer.style.display = 'none';
+    
+    // Show relevant params based on algorithm type
+    switch (select.value) {
+        case 'NO_ALGORITHM':
+            break;
+            
+        case 'EXACT_MATCH':
+            algorithmParams.style.display = 'block';
+            correctAnswerContainer.style.display = 'block';
+            break;
+            
+        case 'RANGE':
+            algorithmParams.style.display = 'block';
+            minValueContainer.style.display = 'block';
+            maxValueContainer.style.display = 'block';
+            break;
+            
+        case 'LEFT_SIDED':
+            algorithmParams.style.display = 'block';
+            minValueContainer.style.display = 'block';
+            correctAnswerContainer.style.display = 'block';
+            break;
+            
+        case 'RIGHT_SIDED':
+            algorithmParams.style.display = 'block';
+            correctAnswerContainer.style.display = 'block';
+            maxValueContainer.style.display = 'block';
+            break;
+            
+        case 'CENTER':
+            algorithmParams.style.display = 'block';
+            minValueContainer.style.display = 'block';
+            correctAnswerContainer.style.display = 'block';
+            maxValueContainer.style.display = 'block';
+            break;
     }
 }
 
@@ -1103,38 +1108,4 @@ function initializeImagePreviews() {
             previewModal.show();
         };
     });
-}
-
-// Add this function after handleAnswerTypeChange
-function handleAlgorithmTypeChange(select) {
-    const questionCard = select.closest('.question-card');
-    const algorithmParams = questionCard.querySelector('.algorithm-params');
-    const minValueContainer = questionCard.querySelector('.min-value-container');
-    const maxValueContainer = questionCard.querySelector('.max-value-container');
-    
-    // Hide all params initially
-    algorithmParams.style.display = 'none';
-    minValueContainer.style.display = 'none';
-    maxValueContainer.style.display = 'none';
-    
-    // Show relevant params based on algorithm type
-    switch (select.value) {
-        case 'RIGHT_SIDED':
-            algorithmParams.style.display = 'block';
-            maxValueContainer.style.display = 'block';
-            break;
-        case 'LEFT_SIDED':
-            algorithmParams.style.display = 'block';
-            minValueContainer.style.display = 'block';
-            break;
-        case 'CENTER':
-        case 'RANGE':
-            algorithmParams.style.display = 'block';
-            minValueContainer.style.display = 'block';
-            maxValueContainer.style.display = 'block';
-            break;
-        case 'EXACT_MATCH':
-            // No parameters needed for exact match
-            break;
-    }
 } 

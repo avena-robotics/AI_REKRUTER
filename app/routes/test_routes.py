@@ -165,7 +165,7 @@ def get_test_data(test_id):
         # Single query to get test with questions and groups
         test = (
             supabase.from_("tests")
-            .select("*, questions(id, question_text, answer_type, points, order_number, is_required, image, options, algorithm_type, algorithm_params, correct_answer_text, correct_answer_boolean, correct_answer_salary, correct_answer_scale, correct_answer_date, correct_answer_abcdef), link_groups_tests(group_id)")
+            .select("*, questions(id, question_text, answer_type, points, order_number, is_required, image, options, algorithm_type, algorithm_params), link_groups_tests(group_id)")
             .eq("id", test_id)
             .single()
             .execute()
@@ -330,11 +330,12 @@ def edit(test_id):
                                     changed_fields["options"] = new_options
                                     print(f"Question {question_id} options changed")
                         else:
-                            answer_field = f'correct_answer_{question["answer_type"].lower()}'
-                            if answer_field in question and question[answer_field] is not None:
-                                if original.get(answer_field) != question[answer_field]:
-                                    changed_fields[answer_field] = question[answer_field]
-                                    print(f"Question {question_id} answer changed")
+                            # Get correct answer from the question data
+                            correct_answer = question.get("correct_answer")
+                            if correct_answer is not None:
+                                if original.get("correct_answer") != correct_answer:
+                                    changed_fields["correct_answer"] = correct_answer
+                                    print(f"Question {question_id} correct answer changed")
                         
                         if changed_fields:
                             questions_to_update.append({
@@ -365,9 +366,12 @@ def edit(test_id):
                                 if k in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] and v
                             }
                     else:
-                        answer_field = f'correct_answer_{question["answer_type"].lower()}'
-                        if answer_field in question and question[answer_field] is not None:
-                            new_question[answer_field] = question[answer_field]
+                        # Get correct answer from the question data
+                        correct_answer = question.get("correct_answer")
+                        if correct_answer is not None:
+                            if "algorithm_params" not in new_question:
+                                new_question["algorithm_params"] = {}
+                            new_question["algorithm_params"]["correct_answer"] = correct_answer
 
                     questions_to_insert.append(new_question)
                     logger.debug(f"New question prepared for insertion: {json.dumps(new_question, indent=2)}")
@@ -534,10 +538,6 @@ def add_questions():
                 "algorithm_type": question.get("algorithm_type", "NO_ALGORITHM"),
                 "algorithm_params": question.get("algorithm_params", {})
             }
-            
-            logger.debug(f"Oczyszczone pytanie {i + 1}:")
-            logger.debug(f"- Typ algorytmu (po czyszczeniu): {clean_question['algorithm_type']}")
-            logger.debug(f"- Parametry algorytmu (po czyszczeniu): {clean_question['algorithm_params']}")
 
             if question["answer_type"] == "AH_POINTS":
                 if "options" in question and isinstance(question["options"], dict):
@@ -546,23 +546,18 @@ def add_questions():
                         if k in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] and v
                     }
             else:
-                answer_field = f'correct_answer_{question["answer_type"].lower()}'
-                if answer_field in question and question[answer_field] is not None:
-                    clean_question[answer_field] = question[answer_field]
+                # Get correct answer from the question data
+                correct_answer = question.get("correct_answer")
+                if correct_answer is not None:
+                    if "algorithm_params" not in clean_question:
+                        clean_question["algorithm_params"] = {}
+                    clean_question["algorithm_params"]["correct_answer"] = correct_answer
 
             questions_to_insert.append(clean_question)
 
         if questions_to_insert:
             logger.info(f"Dodawanie {len(questions_to_insert)} pytań do testu {test_id}")
-            logger.debug("Pytania do wstawienia:")
-            for i, q in enumerate(questions_to_insert):
-                logger.debug(f"Pytanie {i + 1}:")
-                logger.debug(f"- Tekst: {q['question_text'][:50]}...")
-                logger.debug(f"- Typ algorytmu: {q['algorithm_type']}")
-                logger.debug(f"- Parametry algorytmu: {q['algorithm_params']}")
-
             result = supabase.from_("questions").insert(questions_to_insert).execute()
-            logger.debug(f"Wynik zapytania do bazy: {result.data}")
             logger.info(f"Pomyślnie dodano pytania do testu {test_id}")
 
         return jsonify({

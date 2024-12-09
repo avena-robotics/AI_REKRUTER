@@ -26,7 +26,7 @@ create type algorithm_type AS ENUM (
     'LEFT_SIDED',
     'CENTER',
     'RANGE',
-    'EXACT_MATCH'    -- New algorithm type for exact matching
+    'EXACT_MATCH'
 );
 
 -- Create tests table before campaigns (since campaigns references tests)
@@ -81,12 +81,6 @@ create table questions (
     order_number integer not null,                                  -- Numer pytania w testach
     is_required boolean default true,                               -- Czy pytanie jest obowiązkowe
     image text,                                                     -- Add image URL field
-    correct_answer_text text,
-    correct_answer_boolean boolean,
-    correct_answer_salary numeric,
-    correct_answer_scale int,
-    correct_answer_date date,
-    correct_answer_abcdef text,
     algorithm_type algorithm_type DEFAULT 'NO_ALGORITHM',
     algorithm_params jsonb
 );
@@ -102,6 +96,7 @@ create table candidates (
     recruitment_status recruitment_status not null, -- PO1, PO2, PO3, PO4, REJECTED, ACCEPTED
     po1_score int,                                  -- 100
     po2_score int,                                  -- 80
+    po2_5_score int,                                -- 80
     po3_score int,                                  -- 70
     po4_score int,                                  -- 60
     total_score float,                                -- 310  
@@ -137,7 +132,7 @@ create table candidate_answers (
     stage text not null check (stage in ('PO1', 'PO2', 'PO2_5', 'PO3', 'PO4')),
     text_answer text,                              -- Odpowiedź tekstowa    
     boolean_answer boolean,                        -- Odpowiedź typu boolean
-    salary_answer numeric,                        -- Odpowiedź typu numeric
+    salary_answer numeric,                         -- Odpowiedź typu numeric
     scale_answer int,                              -- Odpowiedź typu scale
     date_answer date,                              -- Odpowiedź typu date
     abcdef_answer text,                            -- Odpowiedź typu ABCDEF
@@ -496,11 +491,9 @@ BEGIN
                 'total_score', c.total_score,
                 'po1_started_at', c.po1_started_at,
                 'po2_started_at', c.po2_started_at,
-                'po2_5_started_at', c.po2_5_started_at,
                 'po3_started_at', c.po3_started_at,
                 'po1_completed_at', c.po1_completed_at,
                 'po2_completed_at', c.po2_completed_at,
-                'po2_5_completed_at', c.po2_5_completed_at,
                 'po3_completed_at', c.po3_completed_at,
                 'score_ko', c.score_ko,
                 'score_re', c.score_re,
@@ -550,12 +543,8 @@ BEGIN
                     'order_number', q.order_number,
                     'is_required', q.is_required,
                     'image', q.image,
-                    'correct_answer_text', q.correct_answer_text,
-                    'correct_answer_boolean', q.correct_answer_boolean,
-                    'correct_answer_salary', q.correct_answer_salary,
-                    'correct_answer_scale', q.correct_answer_scale,
-                    'correct_answer_date', q.correct_answer_date,
-                    'correct_answer_abcdef', q.correct_answer_abcdef,
+                    'algorithm_type', q.algorithm_type,
+                    'algorithm_params', q.algorithm_params,
                     'answer', (
                         SELECT COALESCE(jsonb_build_object(
                             'id', ca.id,

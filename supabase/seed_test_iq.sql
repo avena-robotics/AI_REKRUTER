@@ -31,7 +31,6 @@ questions_insert AS (
         points,
         order_number,
         is_required,
-        correct_answer_abcdef,
         image,
         algorithm_type,
         algorithm_params
@@ -44,31 +43,30 @@ questions_insert AS (
         points,
         order_number,
         is_required,
-        correct_answer_abcdef,
         image,
-        'NO_ALGORITHM'::algorithm_type,
-        NULL
+        algorithm_type::algorithm_type,
+        algorithm_params::jsonb
     FROM (VALUES
-        ('Pytanie 1', 'ABCDEF', null, 10, 1, false, 'f', null),
-        ('Pytanie 2', 'ABCDEF', null, 10, 2, false, 'c', null),
-        ('Pytanie 3', 'ABCDEF', null, 10, 3, false, 'b', null),
-        ('Pytanie 4', 'ABCDEF', null, 10, 4, false, 'c', null),
-        ('Pytanie 5', 'ABCDEF', null, 10, 5, false, 'a', null),
-        ('Pytanie 6', 'ABCDEF', null, 10, 6, false, 'd', null),
-        ('Pytanie 7', 'ABCDEF', null, 10, 7, false, 'a', null),
-        ('Pytanie 8', 'ABCDEF', null, 10, 8, false, 'd', null),
-        ('Pytanie 9', 'ABCDEF', null, 10, 9, false, 'd', null),
-        ('Pytanie 10', 'ABCDEF', null, 10, 10, false, 'e', null),
-        ('Pytanie 11', 'ABCDEF', null, 10, 11, false, 'f', null),
-        ('Pytanie 12', 'ABCDEF', null, 10, 12, false, 'f', null),
-        ('Pytanie 13', 'ABCDEF', null, 10, 13, false, 'c', null),
-        ('Pytanie 14', 'ABCDEF', null, 10, 14, false, 'b', null),
-        ('Pytanie 15', 'ABCDEF', null, 10, 15, false, 'c', null),
-        ('Pytanie 16', 'ABCDEF', null, 10, 16, false, 'd', null),
-        ('Pytanie 17', 'ABCDEF', null, 10, 17, false, 'a', null),
-        ('Pytanie 18', 'ABCDEF', null, 10, 18, false, 'c', null),
-        ('Pytanie 19', 'ABCDEF', null, 10, 19, false, 'c', null),
-        ('Pytanie 20', 'ABCDEF', null, 10, 20, false, 'a', null)
+        ('Pytanie 1', 'ABCDEF', null, 10, 1, false, null, 'EXACT_MATCH', '{"correct_answer": "f"}'::jsonb),
+        ('Pytanie 2', 'ABCDEF', null, 10, 2, false, null, 'EXACT_MATCH', '{"correct_answer": "c"}'::jsonb),
+        ('Pytanie 3', 'ABCDEF', null, 10, 3, false, null, 'EXACT_MATCH', {'correct_answer': 'b'}),
+        ('Pytanie 4', 'ABCDEF', null, 10, 4, false, null, 'EXACT_MATCH', {'correct_answer': 'c'}),
+        ('Pytanie 5', 'ABCDEF', null, 10, 5, false, null, 'EXACT_MATCH', {'correct_answer': 'a'}),
+        ('Pytanie 6', 'ABCDEF', null, 10, 6, false, null, 'EXACT_MATCH', {'correct_answer': 'd'}),
+        ('Pytanie 7', 'ABCDEF', null, 10, 7, false, null, 'EXACT_MATCH', {'correct_answer': 'a'}),
+        ('Pytanie 8', 'ABCDEF', null, 10, 8, false, null, 'EXACT_MATCH', {'correct_answer': 'd'}),
+        ('Pytanie 9', 'ABCDEF', null, 10, 9, false, null, 'EXACT_MATCH', {'correct_answer': 'd'}),
+        ('Pytanie 10', 'ABCDEF', null, 10, 10, false, null, 'EXACT_MATCH', {'correct_answer': 'e'}),
+        ('Pytanie 11', 'ABCDEF', null, 10, 11, false, null, 'EXACT_MATCH', {'correct_answer': 'f'}),
+        ('Pytanie 12', 'ABCDEF', null, 10, 12, false, null, 'EXACT_MATCH', {'correct_answer': 'f'}),
+        ('Pytanie 13', 'ABCDEF', null, 10, 13, false, null, 'EXACT_MATCH', {'correct_answer': 'c'}),
+        ('Pytanie 14', 'ABCDEF', null, 10, 14, false, null, 'EXACT_MATCH', {'correct_answer': 'b'}),
+        ('Pytanie 15', 'ABCDEF', null, 10, 15, false, null, 'EXACT_MATCH', {'correct_answer': 'c'}),
+        ('Pytanie 16', 'ABCDEF', null, 10, 16, false, null, 'EXACT_MATCH', {'correct_answer': 'd'}),
+        ('Pytanie 17', 'ABCDEF', null, 10, 17, false, null, 'EXACT_MATCH', {'correct_answer': 'a'}),
+        ('Pytanie 18', 'ABCDEF', null, 10, 18, false, null, 'EXACT_MATCH', {'correct_answer': 'c'}),
+        ('Pytanie 19', 'ABCDEF', null, 10, 19, false, null, 'EXACT_MATCH', {'correct_answer': 'c'}),
+        ('Pytanie 20', 'ABCDEF', null, 10, 20, false, null, 'EXACT_MATCH', {'correct_answer': 'a'})
     ) AS t(
         question_text, 
         answer_type, 
@@ -76,8 +74,9 @@ questions_insert AS (
         points, 
         order_number, 
         is_required, 
-        correct_answer_abcdef,
-        image
+        image,
+        algorithm_type,
+        algorithm_params
     )
 ),
 

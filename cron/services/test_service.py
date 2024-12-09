@@ -149,10 +149,10 @@ class TestService:
                         return 0.0
                     elif algorithm_type == 'EXACT_MATCH':
                         user_answer = answer.get('text_answer', '').strip().lower()
-                        correct_answer = str(question.get('correct_answer_text', '')).strip().lower()
+                        correct_answer = str(algorithm_params.get('correct_answer', '')).strip().lower()
                         return float(max_points) if user_answer == correct_answer else 0.0
                     else:
-                            return 0.0
+                        return 0.0
                 except Exception as e:
                     self.logger.error(f"Error in TEXT calculation: {str(e)}")
                     return 0.0
@@ -163,7 +163,7 @@ class TestService:
                         return 0.0
                     elif algorithm_type == 'EXACT_MATCH':
                         user_answer = answer.get('boolean_answer')
-                        correct_answer = question.get('correct_answer_boolean')
+                        correct_answer = algorithm_params.get('correct_answer')
                         if user_answer is None:
                             return 0.0
                         return float(max_points) if user_answer == correct_answer else 0.0
@@ -176,7 +176,6 @@ class TestService:
             elif answer_type == 'SCALE':
                 try:
                     user_answer = float(str(answer.get('scale_answer')).replace(',', '.'))
-                    correct_answer = float(str(question.get('correct_answer_scale', 0)).replace(',', '.'))
                     
                     if user_answer is None:
                         return 0.0
@@ -187,10 +186,10 @@ class TestService:
                     elif algorithm_type == 'EXACT_MATCH':
                         return float(max_points) if user_answer == correct_answer else 0.0
                     
-                    elif algorithm_params == 'RANGE':
-                        min_value = float(algorithm_params.get('min_value', 0))
-                        max_value = float(algorithm_params.get('max_value', 5))
-                                        
+                    elif algorithm_type == 'RANGE':
+                        min_value = float(algorithm_params.get('min_value'))
+                        max_value = float(algorithm_params.get('max_value'))
+                        
                         if user_answer < min_value or user_answer > max_value:
                             return 0.0
                         else:
@@ -198,27 +197,30 @@ class TestService:
                         
                     elif algorithm_type == 'LEFT_SIDED':
                         min_value = float(algorithm_params.get('min_value'))
+                        correct_answer = float(algorithm_params.get('correct_answer'))
                         if user_answer <= min_value:
-                            return float(max_points)
-                        elif user_answer > max_value:
                             return 0.0
+                        elif user_answer >= correct_answer:
+                            return float(max_points)
                         return max_points * (user_answer - min_value) / (correct_answer - min_value)
                         
                     elif algorithm_type == 'RIGHT_SIDED':
                         max_value = float(algorithm_params.get('max_value'))
+                        correct_answer = float(algorithm_params.get('correct_answer'))
                         if user_answer >= max_value:
-                            return float(max_points)
-                        elif user_answer < min_value:
                             return 0.0
+                        elif user_answer <= correct_answer:
+                            return float(max_points)
                         return max_points * (max_value - user_answer) / (max_value - correct_answer)
                     
                     elif algorithm_type == 'CENTER':
                         min_value = float(algorithm_params.get('min_value'))
+                        correct_answer = float(algorithm_params.get('correct_answer'))
                         max_value = float(algorithm_params.get('max_value'))
                         
                         if user_answer == correct_answer:
                             return float(max_points)
-                        elif user_answer < min_value or user_answer > max_value:
+                        elif user_answer <= min_value or user_answer >= max_value:
                             return 0.0
                         elif user_answer < correct_answer:
                             return max_points * (user_answer - min_value) / (correct_answer - min_value)
@@ -227,72 +229,78 @@ class TestService:
                         
                     else:
                         return 0.0
+                    
                 except Exception as e:
                     self.logger.error(f"Error in SCALE calculation: {str(e)}")
                     return 0.0
-            
+                
             elif answer_type == 'SALARY':
                 try:
-                    user_salary = float(str(answer.get('salary_answer', 0)).replace(',', '.'))
-                    expected_salary = float(str(question.get('correct_answer_salary', 0)).replace(',', '.'))
+                    user_answer = float(str(answer.get('salary_answer')).replace(',', '.'))
                     
-                    if user_salary is None:
-                        return 0.0
-                
-                    if algorithm_type == 'NO_ALGORITHM':
+                    if user_answer is None:
                         return 0.0
                     
-                    elif algorithm_type == 'EXACT_MATCH':
-                        return float(max_points) if user_salary == expected_salary else 0.0
+                    elif algorithm_type == 'NO_ALGORITHM':
+                        return 0.0
+                    
+                    elif algorithm_type == 'EXACT_MATCH':                        
+                        correct_answer = float(str(algorithm_params.get('correct_answer', 0)).replace(',', '.'))
+                        return float(max_points) if user_answer == correct_answer else 0.0
                     
                     elif algorithm_type == 'RANGE':
                         min_value = float(algorithm_params.get('min_value'))
                         max_value = float(algorithm_params.get('max_value'))
                         
-                        if user_salary < min_value or user_salary > max_value:
+                        if user_answer <= min_value or user_answer >= max_value:
                             return 0.0
                         else:
                             return max_points
-
+                        
                     elif algorithm_type == 'LEFT_SIDED':
                         min_value = float(algorithm_params.get('min_value'))
-                        if user_salary <= min_value:
-                            return float(max_points)
-                        elif user_salary > max_value:
+                        correct_answer = float(str(algorithm_params.get('correct_answer', 0)).replace(',', '.'))
+                        
+                        if user_answer <= min_value:
                             return 0.0
-                        return max_points * (user_salary - min_value) / (expected_salary - min_value)
-
+                        elif user_answer >= correct_answer:
+                            return float(max_points)
+                        return max_points * (user_answer - min_value) / (correct_answer - min_value)
+                        
                     elif algorithm_type == 'RIGHT_SIDED':
                         max_value = float(algorithm_params.get('max_value'))
+                        correct_answer = float(algorithm_params.get('correct_answer'))
                         if user_salary >= max_value:
-                            return float(max_points)
-                        elif user_salary < min_value:
                             return 0.0
-                        return max_points * (max_value - user_salary) / (max_value - expected_salary)
+                        elif user_salary <= correct_answer:
+                            return float(max_points)
+                        return max_points * (max_value - user_answer) / (max_value - correct_answer)
                     
                     elif algorithm_type == 'CENTER':
                         min_value = float(algorithm_params.get('min_value'))
+                        correct_answer = float(algorithm_params.get('correct_answer'))
                         max_value = float(algorithm_params.get('max_value'))
                         
-                        if user_salary == expected_salary:
+                        if user_answer == expected_salary:
                             return float(max_points)
-                        elif user_salary < min_value or user_salary > max_value:
+                        elif user_answer <= min_value or user_answer >= max_value:
                             return 0.0
-                        elif user_salary < expected_salary:
-                            return max_points * (user_salary - min_value) / (expected_salary - min_value)
+                        elif user_answer < correct_answer:
+                            return max_points * (user_answer - min_value) / (correct_answer - min_value)
                         else:
-                            return max_points * (max_value - user_salary) / (max_value - expected_salary)
+                            return max_points * (max_value - user_answer) / (max_value - correct_answer)
 
                     else:
                         return 0.0
+                    
                 except Exception as e:
                     self.logger.error(f"Error in SALARY calculation: {str(e)}")
                     return 0.0
-
+                
             elif answer_type == 'DATE':
                 try:
                     user_date = answer.get('date_answer')
-                    correct_date = question.get('correct_answer_date')
+                    correct_date = algorithm_params.get('correct_answer')
                     
                     if user_date is None or correct_date is None:
                         return 0.0
@@ -317,7 +325,7 @@ class TestService:
                         min_date = correct_date - timedelta(days=min_value)
                         max_date = correct_date + timedelta(days=max_value)
                                             
-                        if user_date < min_date or user_date > max_date:
+                        if user_date <= min_date or user_date >= max_date:
                             return 0.0
                         else:
                             return max_points
@@ -326,21 +334,21 @@ class TestService:
                         min_value = float(algorithm_params.get('min_value'))
                         min_date = correct_date - timedelta(days=min_value)
                         
-                        if days_difference <= min_value:
-                            return float(max_points)
-                        elif days_difference > min_value:
+                        if user_date <= min_date:
                             return 0.0
-                        return max_points * (days_difference - min_value) / min_value
+                        elif user_date >= correct_date:
+                            return float(max_points)
+                        return max_points * (user_date - min_date).days / (correct_date - min_date).days
                         
                     elif algorithm_type == 'RIGHT_SIDED': 
                         max_value = float(algorithm_params.get('max_value'))
                         max_date = correct_date + timedelta(days=max_value)
                         
-                        if days_difference >= max_value:
-                            return float(max_points)
-                        elif days_difference < max_value:
+                        if user_date >= max_date:
                             return 0.0
-                        return max_points * (max_value - days_difference) / (max_value)
+                        elif user_date <= correct_date:
+                            return float(max_points)
+                        return max_points * (max_date - user_date).days / (max_date - correct_date).days
                     
                     elif algorithm_type == 'CENTER': 
                         min_value = float(algorithm_params.get('min_value'))
@@ -351,9 +359,9 @@ class TestService:
                         
                         if user_date == correct_date:
                             return float(max_points)
-                        elif user_date < min_date or user_date > max_date:
+                        elif user_date <= min_date or user_date >= max_date:
                             return 0.0
-                        elif user_date < correct_date:
+                        elif user_date <= correct_date:
                             return max_points * (user_date - min_date).days / (correct_date - min_date).days
                         else:
                             return max_points * (max_date - user_date).days / (max_date - correct_date).days
@@ -363,26 +371,21 @@ class TestService:
                 except Exception as e:
                     self.logger.error(f"Error in DATE calculation: {str(e)}")
                     return 0.0
-            
+                
             elif answer_type == 'ABCDEF':
                 try:
                     if algorithm_type == 'NO_ALGORITHM':
                         return 0.0
-                    
                     elif algorithm_type == 'EXACT_MATCH':
-                        user_answer = answer.get('abcdef_answer', '').lower()
-                        correct_answer = question.get('correct_answer_abcdef', '').lower()
+                        user_answer = answer.get('abcdef_answer', '').strip().lower()
+                        correct_answer = str(algorithm_params.get('correct_answer', '')).strip().lower()
                         return float(max_points) if user_answer == correct_answer else 0.0
-                    
                     else:
                         return 0.0
                 except Exception as e:
                     self.logger.error(f"Error in ABCDEF calculation: {str(e)}")
                     return 0.0
-            
-            elif answer_type == 'AH_POINTS':
-                return 0.0  # AH_POINTS are handled separately
-            
+                
             return 0.0
             
         except Exception as e:

@@ -42,39 +42,39 @@ questions_insert AS (
         points,
         order_number,
         is_required,
-        'NO_ALGORITHM'::algorithm_type,
-        NULL
+        algorithm_type::algorithm_type,
+        algorithm_params::jsonb
     FROM (VALUES
-        ('Jakie jest Twoje oczekiwane wynagrodzenie miesięczne netto (PLN)?', 'SALARY', NULL, 0, 1, true),
+        ('Jakie jest Twoje oczekiwane wynagrodzenie miesięczne netto (PLN)?', 'SALARY', NULL, 10, 1, true, 'RANGE', '{"min_value": 1000, "max_value": 10000}'::jsonb),
         
-        ('Od kiedy możesz rozpocząć pracę?', 'DATE', NULL, 0, 2, true),
+        ('Od kiedy możesz rozpocząć pracę?', 'DATE', NULL, 10, 2, true, 'RIGHT_SIDED', '{"correct_answer": "2025-01-01", "max_value": "60"}'::jsonb),
         
-        ('Preferowany model pracy:', 'TEXT', NULL, 0, 3, true),
+        ('Preferowany model pracy:', 'TEXT', NULL, 0, 3, true, 'NO_ALGORITHM', NULL),
         
-        ('Czy jesteś gotów/gotowa do relokacji w przypadku takiej potrzeby?', 'BOOLEAN', NULL, 0, 4, true),
+        ('Czy jesteś gotów/gotowa do relokacji w przypadku takiej potrzeby?', 'BOOLEAN', NULL, 10, 4, true, 'EXACT_MATCH', '{"correct_answer": true}'::jsonb),
         
-        ('Czy wyrażasz zgodę na odbywanie podróży służbowych?', 'BOOLEAN', NULL, 0, 5, true),
+        ('Czy wyrażasz zgodę na odbywanie podróży służbowych?', 'BOOLEAN', NULL, 10, 5, true, 'EXACT_MATCH', '{"correct_answer": true}'::jsonb),
         
-        ('Opisz swoje dotychczasowe doświadczenie zawodowe:', 'TEXT', NULL, 0, 6, true),
+        ('Opisz swoje dotychczasowe doświadczenie zawodowe:', 'TEXT', NULL, 0, 6, false, 'NO_ALGORITHM', NULL),
         
-        ('Jakie jest Twoje wykształcenie i kierunek studiów?', 'TEXT', NULL, 0, 7, true),
+        ('Jakie jest Twoje wykształcenie i kierunek studiów?', 'TEXT', NULL, 0, 7, false, 'NO_ALGORITHM', NULL),
         
-        ('Wymień swoje umiejętności i kompetencje związane ze stanowiskiem:', 'TEXT', NULL, 0, 8, true),
+        ('Wymień swoje umiejętności i kompetencje związane ze stanowiskiem:', 'TEXT', NULL, 0, 8, false, 'NO_ALGORITHM', NULL),
         
-        ('Oceń swoją znajomość języka angielskiego (0 - brak, 5 - biegły):', 'SCALE', NULL, 0, 9, true),
+        ('Oceń swoją znajomość języka angielskiego (0 - brak, 5 - biegły):', 'SCALE', NULL, 10, 9, true, 'LEFT_SIDED', '{"min_value": 0, "correct_answer": 4}'::jsonb),
         
-        ('Jakie są Twoje główne oczekiwania wobec nowego miejsca pracy?', 'TEXT', NULL, 0, 10, true),
+        ('Jakie są Twoje główne oczekiwania wobec nowego miejsca pracy?', 'TEXT', NULL, 0, 10, false, 'NO_ALGORITHM', NULL),
         
-        ('Wymień swoje największe osiągnięcia zawodowe:', 'TEXT', NULL, 0, 11, false),
+        ('Wymień swoje największe osiągnięcia zawodowe:', 'TEXT', NULL, 0, 11, false, 'NO_ALGORITHM', NULL),
         
-        ('Jakie certyfikaty i szkolenia zawodowe posiadasz?', 'TEXT', NULL, 0, 12, false),
+        ('Jakie certyfikaty i szkolenia zawodowe posiadasz?', 'TEXT', NULL, 0, 12, false, 'NO_ALGORITHM', NULL),
         
-        ('Ile godzin tygodniowo możesz pracować?', 'TEXT', NULL, 0, 13, true),
+        ('Ile godzin tygodniowo możesz pracować?', 'TEXT', NULL, 0, 13, true, 'NO_ALGORITHM', NULL),
         
-        ('Czy posiadasz prawo jazdy?', 'BOOLEAN', NULL, 0, 14, true),
-        
-        ('Jakie są Twoje zainteresowania zawodowe?', 'TEXT', NULL, 0, 15, false)
-    ) AS t(question_text, answer_type, options, points, order_number, is_required)
+        ('Czy posiadasz prawo jazdy?', 'BOOLEAN', NULL, 10, 14, true, 'EXACT_MATCH', '{"correct_answer": true}'::jsonb),
+
+        ('Jakie są Twoje zainteresowania zawodowe?', 'TEXT', NULL, 0, 15, false, 'NO_ALGORITHM', NULL)
+    ) AS t(question_text, answer_type, options, points, order_number, is_required, algorithm_type, algorithm_params)
 ),
 
 -- Link test with groups
