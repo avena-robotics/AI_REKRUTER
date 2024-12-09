@@ -420,10 +420,14 @@ function setAnswerFields(questionCard, question) {
         // Set algorithm params if they exist
         if (question.algorithm_params) {
             const minInput = questionCard.querySelector('[name$="[algorithm_params][min_value]"]');
+            const correct_answer = questionCard.querySelector('[name$="[algorithm_params][correct_answer]"]');
             const maxInput = questionCard.querySelector('[name$="[algorithm_params][max_value]"]');
             
             if (minInput && question.algorithm_params.min_value !== undefined) {
                 minInput.value = question.algorithm_params.min_value;
+            }
+            if (correct_answer && question.algorithm_params.correct_answer !== undefined) {
+                correct_answer.value = question.algorithm_params.correct_answer;
             }
             if (maxInput && question.algorithm_params.max_value !== undefined) {
                 maxInput.value = question.algorithm_params.max_value;
@@ -516,7 +520,7 @@ function createQuestionHtml(question = null) {
         <div class="question-card card mb-3">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="card-title mb-0">Pytanie ${questionCounter + 1}</h6>
+                    <h6 class="card-title mb-0">Pytanie</h6>
                     <button type="button" class="btn btn-danger btn-sm remove-question">
                         Usuń pytanie
                     </button>
@@ -565,25 +569,43 @@ function handleAnswerTypeChange(select) {
     const questionCard = select.closest('.question-card');
     const answerFieldsContainer = questionCard.querySelector('.answer-fields');
     
-    // Get current algorithm type
+    // Get current algorithm type and params
     const algorithmTypeSelect = questionCard.querySelector('.algorithm-type-select');
     const currentAlgorithmType = algorithmTypeSelect ? algorithmTypeSelect.value : 'NO_ALGORITHM';
     
+    // Get current algorithm params
+    const minValueInput = questionCard.querySelector('input[name$="[algorithm_params][min_value]"]');
+    const maxValueInput = questionCard.querySelector('input[name$="[algorithm_params][max_value]"]');
+    const correctAnswerInput = questionCard.querySelector('[name$="[algorithm_params][correct_answer]"]');
+    
+    // Get current image
+    const imageInput = questionCard.querySelector('input[name$="[image]"]');
+    const currentImage = imageInput ? imageInput.value : null;
+    
+    const currentParams = {
+        min_value: minValueInput ? minValueInput.value : '',
+        max_value: maxValueInput ? maxValueInput.value : '',
+        correct_answer: correctAnswerInput ? correctAnswerInput.value : ''
+    };
+
     // Create new answer fields HTML
     const questionCounter = parseInt(select.name.match(/\[(\d+)\]/)[1]);
     const answerFieldsHtml = createAnswerFieldsHtml(questionCounter, {
         answer_type: select.value,
-        algorithm_type: currentAlgorithmType
+        algorithm_type: currentAlgorithmType,
+        algorithm_params: currentParams,
+        image: currentImage
     });
     
     // Update the container
     answerFieldsContainer.innerHTML = answerFieldsHtml;
     
-    // Re-initialize algorithm type handler
+    // Re-initialize algorithm type handler and image previews
     const newAlgorithmSelect = answerFieldsContainer.querySelector('.algorithm-type-select');
     if (newAlgorithmSelect) {
         handleAlgorithmTypeChange(newAlgorithmSelect);
     }
+    initializeImagePreviews();
 }
 
 function handleImageUpload(input) {
@@ -709,9 +731,14 @@ async function handleTestFormSubmit(e) {
             if (algorithmSelect) {
                 questionData.algorithm_type = algorithmSelect.value;
                 if (questionData.algorithm_type !== 'NO_ALGORITHM') {
+                    const answerType = card.querySelector('[name$="[answer_type]"]').value;
                     questionData.algorithm_params = {
-                        min_value: card.querySelector('[name$="[algorithm_params][min_value]"]')?.value || null,
-                        max_value: card.querySelector('[name$="[algorithm_params][max_value]"]')?.value || null
+                        min_value: parseFloat(card.querySelector('[name$="[algorithm_params][min_value]"]')?.value) || null,
+                        max_value: parseFloat(card.querySelector('[name$="[algorithm_params][max_value]"]')?.value) || null,
+                        correct_answer: getAlgorithmParamsValue(
+                            card.querySelector('[name$="[algorithm_params][correct_answer]"]'),
+                            answerType
+                        )
                     };
                 }
             }
@@ -854,7 +881,41 @@ function createAnswerFieldsHtml(questionCounter, question) {
     const algorithmType = q.algorithm_type || 'NO_ALGORITHM';
     const algorithmParams = q.algorithm_params || {};
     
-    // Common algorithm selection HTML for all types
+    // Image upload HTML
+    const imageUploadHtml = `
+        <div class="col-12 mb-3">
+            <label class="form-label">Obrazek</label>
+            <input type="file" class="form-control" 
+                   name="questions[${questionCounter}][image_file]"
+                   accept="image/*"
+                   onchange="handleImageUpload(this)">
+            ${q.image ? `
+                <div class="mt-2 image-preview">
+                    <img src="${q.image}" class="img-thumbnail" style="max-height: 100px">
+                    <input type="hidden" 
+                           name="questions[${questionCounter}][image]"
+                           value="${q.image}">
+                </div>` : ''}
+        </div>
+    `;
+
+    // Common answer type selection HTML
+    const answerTypeHtml = `
+        <div class="col-md-6">
+            <label class="form-label">Typ odpowiedzi</label>
+            <select class="form-select" name="questions[${questionCounter}][answer_type]" onchange="handleAnswerTypeChange(this)">
+                <option value="TEXT" ${answerType === 'TEXT' ? 'selected' : ''}>Tekst</option>
+                <option value="BOOLEAN" ${answerType === 'BOOLEAN' ? 'selected' : ''}>Tak/Nie</option>
+                <option value="SCALE" ${answerType === 'SCALE' ? 'selected' : ''}>Skala (0-5)</option>
+                <option value="SALARY" ${answerType === 'SALARY' ? 'selected' : ''}>Wynagrodzenie</option>
+                <option value="DATE" ${answerType === 'DATE' ? 'selected' : ''}>Data</option>
+                <option value="ABCDEF" ${answerType === 'ABCDEF' ? 'selected' : ''}>ABCDEF</option>
+                <option value="AH_POINTS" ${answerType === 'AH_POINTS' ? 'selected' : ''}>Punkty A-H</option>
+            </select>
+        </div>
+    `;
+
+    // Common algorithm selection HTML
     const algorithmSelectionHtml = `
         <div class="col-md-6">
             <label class="form-label">Algorytm punktacji</label>
@@ -884,7 +945,7 @@ function createAnswerFieldsHtml(questionCounter, question) {
                 </div>
                 <div class="col-md-4 correct-answer-container" style="display: ${algorithmType !== 'NO_ALGORITHM' ? 'block' : 'none'}">
                     <label class="form-label">Poprawna odpowiedź</label>
-                    ${getCorrectAnswerInput(answerType, questionCounter, algorithmParams.correct_answer)}
+                    ${getCorrectAnswerInput(answerType, questionCounter, algorithmParams?.correct_answer)}
                 </div>
                 <div class="col-md-4 max-value-container" style="display: ${['RANGE', 'RIGHT_SIDED', 'CENTER'].includes(algorithmType) ? 'block' : 'none'}">
                     <label class="form-label">Wartość maksymalna</label>
@@ -898,60 +959,43 @@ function createAnswerFieldsHtml(questionCounter, question) {
     `;
 
     // Add answer type specific HTML
-    let answerTypeHtml = '';
-    switch (answerType) {
-        case 'TEXT':
-            answerTypeHtml = `
-                <div class="col-md-6">
-                    <label class="form-label">Typ odpowiedzi</label>
-                    <select class="form-select" name="questions[${questionCounter}][answer_type]" onchange="handleAnswerTypeChange(this)">
-                        <option value="TEXT" selected>Tekst</option>
-                        <option value="BOOLEAN">Tak/Nie</option>
-                        <option value="SCALE">Skala (0-5)</option>
-                        <option value="SALARY">Wynagrodzenie</option>
-                        <option value="DATE">Data</option>
-                        <option value="ABCDEF">ABCDEF</option>
-                        <option value="AH_POINTS">Punkty A-H</option>
-                    </select>
-                </div>
-            `;
-            break;
-            
-        case 'AH_POINTS':
-            const options = q.options || {};
-            answerTypeHtml = `
-                <div class="col-12">
-                    <label class="form-label">Opcje odpowiedzi (A-H)*</label>
-                    <div class="options-container">
-                        ${['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(letter => {
-                            const letterLower = letter.toLowerCase();
-                            const value = options[letterLower] || '';
-                            return `
-                                <div class="option-row mb-2">
-                                    <div class="input-group">
-                                        <span class="input-group-text">${letter}.</span>
-                                        <input type="text" 
-                                               class="form-control"
-                                               name="questions[${questionCounter}][options][${letterLower}]"
-                                               value="${value}"
-                                               placeholder="Treść opcji ${letter}"
-                                               data-letter="${letterLower}"
-                                               required>
-                                    </div>
+    let answerTypeSpecificHtml = '';
+    if (answerType === 'AH_POINTS') {
+        const options = q.options || {};
+        answerTypeSpecificHtml = `
+            <div class="col-12">
+                <label class="form-label">Opcje odpowiedzi (A-H)*</label>
+                <div class="options-container">
+                    ${['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(letter => {
+                        const letterLower = letter.toLowerCase();
+                        const value = options[letterLower] || '';
+                        return `
+                            <div class="option-row mb-2">
+                                <div class="input-group">
+                                    <span class="input-group-text">${letter}.</span>
+                                    <input type="text" 
+                                           class="form-control"
+                                           name="questions[${questionCounter}][options][${letterLower}]"
+                                           value="${value}"
+                                           placeholder="Treść opcji ${letter}"
+                                           data-letter="${letterLower}"
+                                           required>
                                 </div>
-                            `;
-                        }).join('')}
-                    </div>
+                            </div>
+                        `;
+                    }).join('')}
                 </div>
-            `;
-            break;
+            </div>
+        `;
     }
 
     return `
         <div class="row">
+            ${imageUploadHtml}
             ${answerTypeHtml}
             ${algorithmSelectionHtml}
             ${algorithmParamsHtml}
+            ${answerTypeSpecificHtml}
         </div>
     `;
 }
@@ -1108,4 +1152,21 @@ function initializeImagePreviews() {
             previewModal.show();
         };
     });
+}
+
+function getAlgorithmParamsValue(input, answerType) {
+    if (!input) return null;
+    
+    const value = input.value;
+    if (!value) return null;
+    
+    switch (answerType) {
+        case 'BOOLEAN':
+            return value === 'true';
+        case 'SCALE':
+        case 'SALARY':
+            return parseFloat(value) || null;
+        default:
+            return value;
+    }
 } 
