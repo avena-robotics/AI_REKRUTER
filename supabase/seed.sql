@@ -1,7 +1,8 @@
 INSERT INTO users (id, first_name, last_name, email, phone, can_edit_tests) VALUES 
 (1, 'Maciej', 'Szulc', 'maciej.szulc@pomagier.info', null, true),
 (2, 'Agnieszka', 'Chomicka', 'agnieszka.chomicka@avenatech.pl', null, true),
-(3, 'Sebastian', 'Krajna', 'sebastian.krajna@pomagier.info', null, true);
+(3, 'Sebastian', 'Krajna', 'sebastian.krajna@pomagier.info', null, true),
+(4, 'Agnieszka', 'Lubińska', 'agnieszka.lubinska@montessori.gda.pl', null, true);
 
 INSERT INTO groups (id, name) VALUES             
 (1, 'Avena'),              
@@ -15,7 +16,7 @@ INSERT INTO groups (id, name) VALUES
 (9, 'Munchies');
 
 INSERT INTO link_groups_users (group_id, user_id) VALUES
--- Maciej
+-- Maciej Szulc
 (1, 1),
 (2, 1),
 (3, 1),
@@ -25,7 +26,7 @@ INSERT INTO link_groups_users (group_id, user_id) VALUES
 (7, 1),
 (8, 1),
 (9, 1),
--- Agnieszka
+-- Agnieszka Chomicka
 (1, 2),
 (2, 2),
 (3, 2),
@@ -35,7 +36,7 @@ INSERT INTO link_groups_users (group_id, user_id) VALUES
 (7, 2),
 (8, 2),
 (9, 2),
--- Sebastian
+-- Sebastian Krajna
 (1, 3),
 (2, 3),
 (3, 3),
@@ -44,4 +45,14 @@ INSERT INTO link_groups_users (group_id, user_id) VALUES
 (6, 3),
 (7, 3),
 (8, 3),
-(9, 3);                
+(9, 3), 
+-- Agnieszka Lubińska
+(1, 4),
+(2, 4),
+(3, 4),
+(4, 4),
+(5, 4),
+(6, 4),
+(7, 4),
+(8, 4),
+(9, 4);                
