@@ -278,6 +278,16 @@ function resetAddTestForm() {
 
 function editTest(testId) {
     console.log(`Starting edit process for test ID: ${testId}`);
+    
+    // Reset button state before fetching data
+    const submitButton = document.querySelector('#editTestSubmit');
+    const spinner = submitButton.querySelector('.spinner-border');
+    const buttonText = submitButton.querySelector('.button-text');
+    
+    submitButton.disabled = false;
+    spinner.classList.add('d-none');
+    buttonText.textContent = 'Zapisz zmiany';
+    
     fetch(`/tests/${testId}/data`)
         .then(response => response.json())
         .then(test => {
@@ -663,115 +673,91 @@ async function handleTestFormSubmit(e) {
         spinner.classList.remove('d-none');
         buttonText.textContent = 'Zapisywanie...';
 
-        // First, update basic test data
-        const basicFormData = new FormData();
-        ['title', 'test_type', 'description', 'passing_threshold', 'time_limit_minutes'].forEach(field => {
-            basicFormData.append(field, form.querySelector(`[name="${field}"]`).value);
-        });
+        // Collect form data
+        const formData = new FormData();
+        const basicFields = ['title', 'test_type', 'description', 'passing_threshold', 'time_limit_minutes'];
         
-        // Add groups
-        form.querySelectorAll('input[name="groups[]"]:checked').forEach(checkbox => {
-            basicFormData.append('groups[]', checkbox.value);
-        });
-
-        // Send basic test data
-        const testResponse = await fetch(form.action, {
-            method: 'POST',
-            body: basicFormData
-        });
-
-        const testResult = await testResponse.json();
-        if (!testResult.success) {
-            throw new Error(testResult.error || 'Wystąpił błąd podczas zapisywania testu');
+        // Get original data once for both basic fields and questions comparison
+        let originalData = null;
+        if (isEdit) {
+            originalData = await fetch(form.action.replace('/edit', '/data')).then(r => r.json());
+        }
+        
+        // Check if any basic fields changed
+        let hasBasicChanges = false;
+        if (isEdit) {
+            for (const field of basicFields) {
+                const newValue = form.querySelector(`[name="${field}"]`).value;
+                const oldValue = originalData[field]?.toString() || '';
+                if (newValue !== oldValue) {
+                    hasBasicChanges = true;
+                    formData.append(field, newValue);
+                }
+            }
+            
+            // Check groups changes
+            const originalGroups = new Set(originalData.groups.map(g => g.id.toString()));
+            const newGroups = new Set(Array.from(form.querySelectorAll('input[name="groups[]"]:checked')).map(cb => cb.value));
+            const groupsChanged = originalGroups.size !== newGroups.size || 
+                                [...newGroups].some(g => !originalGroups.has(g));
+            
+            if (groupsChanged) {
+                hasBasicChanges = true;
+                form.querySelectorAll('input[name="groups[]"]:checked').forEach(checkbox => {
+                    formData.append('groups[]', checkbox.value);
+                });
+            }
+        } else {
+            // For new test, add all fields
+            basicFields.forEach(field => {
+                formData.append(field, form.querySelector(`[name="${field}"]`).value);
+            });
+            form.querySelectorAll('input[name="groups[]"]:checked').forEach(checkbox => {
+                formData.append('groups[]', checkbox.value);
+            });
         }
 
-        // Get questions data
+        // Collect questions data
         const questions = [];
         form.querySelectorAll('.question-card').forEach((card, index) => {
-            const questionData = {
-                id: card.dataset.questionId || '',
-                question_text: card.querySelector('[name$="[question_text]"]').value,
-                answer_type: card.querySelector('[name$="[answer_type]"]').value,
-                points: parseInt(card.querySelector('[name$="[points]"]').value || '0'),
-                order_number: index + 1,
-                is_required: card.querySelector('[name$="[is_required]"]').checked
-            };
-
-            // Add answer type specific data
-            const answerType = questionData.answer_type;
-            if (answerType === 'AH_POINTS') {
-                const options = {};
-                card.querySelectorAll('[name*="[options]"]').forEach(input => {
-                    const letterMatch = input.name.match(/\[options\]\[([a-h])\]/);
-                    if (letterMatch) {
-                        options[letterMatch[1]] = input.value.trim();
-                    }
-                });
-                questionData.options = options;
-            } else {
-                const answerField = `correct_answer_${answerType.toLowerCase()}`;
-                const answerInput = card.querySelector(`[name$="[${answerField}]"]`);
-                if (answerInput) {
-                    if (answerType === 'BOOLEAN') {
-                        questionData[answerField] = answerInput.value === 'true';
-                    } else {
-                        questionData[answerField] = answerInput.value;
-                    }
-                }
-            }
-
-            // Add image if exists
-            const imageInput = card.querySelector('input[name$="[image]"]');
-            if (imageInput && imageInput.value) {
-                questionData.image = imageInput.value;
-            }
-
-            // Add algorithm type and params
-            const algorithmSelect = card.querySelector('[name$="[algorithm_type]"]');
-            if (algorithmSelect) {
-                questionData.algorithm_type = algorithmSelect.value;
-                if (questionData.algorithm_type !== 'NO_ALGORITHM') {
-                    const answerType = card.querySelector('[name$="[answer_type]"]').value;
-                    questionData.algorithm_params = {
-                        min_value: parseFloat(card.querySelector('[name$="[algorithm_params][min_value]"]')?.value) || null,
-                        max_value: parseFloat(card.querySelector('[name$="[algorithm_params][max_value]"]')?.value) || null,
-                        correct_answer: getAlgorithmParamsValue(
-                            card.querySelector('[name$="[algorithm_params][correct_answer]"]'),
-                            answerType
-                        )
-                    };
-                }
-            }
-
+            const questionData = collectQuestionData(card, index);
             questions.push(questionData);
         });
 
-        // Send questions in batches
-        const BATCH_SIZE = 5;
-        const questionsEndpoint = isEdit ? `${form.action}/questions` : '/tests/add/questions';
-        
-        for (let i = 0; i < questions.length; i += BATCH_SIZE) {
-            const batch = questions.slice(i, i + BATCH_SIZE);
-            const questionFormData = new FormData();
-            questionFormData.append('questions', JSON.stringify(batch));
+        // For edit mode, compare questions with original
+        let hasQuestionChanges = false;
+        if (isEdit && originalData) {
+            const {added, modified, deleted} = compareQuestions(originalData.questions || [], questions);
+            hasQuestionChanges = added.length > 0 || modified.length > 0 || deleted.length > 0;
             
-            // Add test_id for new tests
-            if (!isEdit) {
-                questionFormData.append('test_id', testResult.test_id);
+            if (hasQuestionChanges) {
+                formData.append('questions', JSON.stringify({
+                    added: added,
+                    modified: modified,
+                    deleted: deleted
+                }));
             }
+        } else if (!isEdit) {
+            formData.append('questions', JSON.stringify(questions));
+        }
 
-            const questionResponse = await fetch(questionsEndpoint, {
-                method: 'POST',
-                body: questionFormData
-            });
+        // If nothing changed in edit mode, just close the modal
+        if (isEdit && !hasBasicChanges && !hasQuestionChanges) {
+            const modal = bootstrap.Modal.getInstance(form.closest('.modal'));
+            modal.hide();
+            showToast('Nie wprowadzono żadnych zmian', 'success');
+            return;
+        }
 
-            const questionResult = await questionResponse.json();
-            if (!questionResult.success) {
-                throw new Error(questionResult.error || 'Wystąpił błąd podczas zapisywania pytań');
-            }
+        // Send the data
+        const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData
+        });
 
-            // Update progress
-            buttonText.textContent = `Zapisywanie... ${Math.min(100, Math.round((i + BATCH_SIZE) / questions.length * 100))}%`;
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.error || 'Wystąpił błąd podczas zapisywania testu');
         }
 
         // Show success message and reload
@@ -796,6 +782,119 @@ async function handleTestFormSubmit(e) {
         spinner.classList.add('d-none');
         buttonText.textContent = isEdit ? 'Zapisz zmiany' : 'Zapisz test';
     }
+}
+
+// Helper function to collect question data
+function collectQuestionData(card, index) {
+    const questionData = {
+        id: card.querySelector('input[name$="[id]"]')?.value,
+        question_text: card.querySelector('[name$="[question_text]"]').value,
+        answer_type: card.querySelector('[name$="[answer_type]"]').value,
+        points: parseInt(card.querySelector('[name$="[points]"]').value || '0'),
+        order_number: index + 1,
+        is_required: card.querySelector('[name$="[is_required]"]').checked,
+        algorithm_type: card.querySelector('[name$="[algorithm_type]"]')?.value || 'NO_ALGORITHM',
+        image: card.querySelector('input[name$="[image]"]')?.value
+    };
+
+    // Collect algorithm params
+    const algorithmParams = {};
+    ['min_value', 'max_value', 'correct_answer'].forEach(param => {
+        const input = card.querySelector(`[name$="[algorithm_params][${param}]"]`);
+        if (input) {
+            algorithmParams[param] = input.value;
+        }
+    });
+    questionData.algorithm_params = algorithmParams;
+
+    // Collect options for AH_POINTS type
+    if (questionData.answer_type === 'AH_POINTS') {
+        const options = {};
+        card.querySelectorAll('[name*="[options]"]').forEach(input => {
+            const letterMatch = input.name.match(/\[options\]\[([a-h])\]/);
+            if (letterMatch) {
+                options[letterMatch[1]] = input.value.trim();
+            }
+        });
+        questionData.options = options;
+    }
+
+    return questionData;
+}
+
+// Helper function to compare questions
+function compareQuestions(originalQuestions, newQuestions) {
+    const added = [];
+    const modified = [];
+    const deleted = [];
+    
+    // Create maps for easier comparison
+    const originalMap = new Map(originalQuestions.map(q => [q.id.toString(), q]));
+    const newMap = new Map(newQuestions.filter(q => q.id).map(q => [q.id.toString(), q]));
+    
+    // Find added questions (those without ID)
+    added.push(...newQuestions.filter(q => !q.id));
+    
+    // Find modified questions
+    for (const [id, newQuestion] of newMap) {
+        const originalQuestion = originalMap.get(id);
+        if (originalQuestion) {
+            const changes = getQuestionChanges(originalQuestion, newQuestion);
+            if (Object.keys(changes).length > 0) {
+                modified.push({
+                    id: parseInt(id),
+                    changes: changes
+                });
+            }
+        }
+    }
+    
+    // Find deleted questions
+    for (const id of originalMap.keys()) {
+        if (!newMap.has(id)) {
+            deleted.push(parseInt(id));
+        }
+    }
+    
+    return { added, modified, deleted };
+}
+
+// Helper function to get changes between questions
+function getQuestionChanges(original, updated) {
+    const changes = {};
+    const fieldsToCompare = [
+        'question_text',
+        'answer_type',
+        'points',
+        'order_number',
+        'is_required',
+        'algorithm_type',
+        'image'
+    ];
+
+    for (const field of fieldsToCompare) {
+        if (original[field]?.toString() !== updated[field]?.toString()) {
+            changes[field] = updated[field];
+        }
+    }
+
+    // Compare algorithm params
+    const originalParams = original.algorithm_params || {};
+    const updatedParams = updated.algorithm_params || {};
+    if (JSON.stringify(originalParams) !== JSON.stringify(updatedParams)) {
+        changes.algorithm_params = updatedParams;
+    }
+
+    // Compare options for AH_POINTS
+    if (original.answer_type === 'AH_POINTS' && updated.answer_type === 'AH_POINTS') {
+        const originalOptions = original.options || {};
+        const updatedOptions = updated.options || {};
+        if (JSON.stringify(originalOptions) !== JSON.stringify(updatedOptions)) {
+            changes.options = updatedOptions;
+        }
+    }
+
+    return changes;
 }
 
 function initializeSortable() {

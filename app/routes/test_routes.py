@@ -187,176 +187,88 @@ def get_test_data(test_id):
 
 @test_bp.route("/<int:test_id>/edit", methods=["POST"])
 def edit(test_id):
-    try: 
-
+    try:
         # Get original test data for comparison
         original_test = supabase.from_("tests").select("*").eq("id", test_id).single().execute()
         if not original_test.data:
             return jsonify({"success": False, "error": "Test nie istnieje"})
- 
-        # Prepare only changed test data
+
+        # Process basic test data changes
         test_data = {}
-        form_data = {
-            "title": request.form.get("title"),
-            "test_type": request.form.get("test_type"),
-            "description": request.form.get("description"),
-            "passing_threshold": int(request.form.get("passing_threshold", 0)),
-            "time_limit_minutes": int(request.form.get("time_limit_minutes", 0))
-            if request.form.get("time_limit_minutes")
-            else None,
-        }
+        for field in ['title', 'test_type', 'description', 'passing_threshold', 'time_limit_minutes']:
+            if field in request.form:
+                new_value = request.form.get(field)
+                if field == 'passing_threshold':
+                    new_value = int(new_value or 0)
+                elif field == 'time_limit_minutes':
+                    new_value = int(new_value) if new_value else None
+                
+                if original_test.data.get(field) != new_value:
+                    test_data[field] = new_value
 
-        # Only include changed fields
-        for key, value in form_data.items():
-            if original_test.data.get(key) != value:
-                test_data[key] = value 
-
-        # Only update test if there are changes
-        if test_data: 
+        # Update test if there are changes
+        if test_data:
+            test_data['updated_at'] = datetime.now(timezone.utc).isoformat()
             test_result = supabase.from_("tests").update(test_data).eq("id", test_id).execute()
             if not test_result.data:
                 raise Exception("Nie udało się zaktualizować testu")
 
-        # Process questions only if they are present in the request
-        questions_json = request.form.get("questions")
-        if questions_json:
-            questions = json.loads(questions_json) 
+        # Process groups if present in request
+        if 'groups[]' in request.form:
+            new_groups = request.form.getlist('groups[]')
+            current_groups = supabase.from_("link_groups_tests")\
+                .select("group_id")\
+                .eq("test_id", test_id)\
+                .execute()
             
-            original_questions = {q["id"]: q for q in supabase.from_("questions")
-                                .select("*")
-                                .eq("test_id", test_id)
-                                .execute().data} 
+            current_group_ids = {str(g['group_id']) for g in current_groups.data}
+            new_group_ids = set(new_groups)
+            
+            # Remove groups that are no longer associated
+            groups_to_remove = current_group_ids - new_group_ids
+            if groups_to_remove:
+                supabase.from_("link_groups_tests")\
+                    .delete()\
+                    .eq("test_id", test_id)\
+                    .in_("group_id", list(groups_to_remove))\
+                    .execute()
+            
+            # Add new group associations
+            groups_to_add = new_group_ids - current_group_ids
+            if groups_to_add:
+                group_links = [{"group_id": int(gid), "test_id": test_id} 
+                             for gid in groups_to_add]
+                supabase.from_("link_groups_tests").insert(group_links).execute()
 
-            questions_to_update = []
-            questions_to_insert = []
-            questions_to_delete = set(original_questions.keys())
-
-            for question in questions:
-                question_id = question.get("id") 
-
-                # Clean algorithm params - convert empty strings to None and strings to integers
-                if "algorithm_params" in question and isinstance(question["algorithm_params"], dict):
-                    cleaned_params = {}
-                    for key, value in question["algorithm_params"].items():
-                        if value is None or value == "":
-                            cleaned_params[key] = None
-                        else:
-                            try:
-                                cleaned_params[key] = int(value)
-                            except (TypeError, ValueError):
-                                cleaned_params[key] = None
-                    question["algorithm_params"] = cleaned_params
-                
-                if question_id and str(question_id).isdigit():
-                    question_id = int(question_id)
-                    if question_id in original_questions:
-                        original = original_questions[question_id] 
-
-                        changed_fields = {}
-                        
-                        # Prepare base question data with only fields that exist in original
-                        clean_question = {
-                            "question_text": question["question_text"],
-                            "answer_type": question["answer_type"],
-                            "points": int(question.get("points", 0)),
-                            "order_number": question.get("order_number", 1),
-                            "is_required": question.get("is_required", True),
-                            "algorithm_type": question.get("algorithm_type", "NO_ALGORITHM"),
-                            "algorithm_params": question.get("algorithm_params", {})
-                        }
-
-                        # Compare and collect only changed fields
-                        for key, value in clean_question.items():
-                            # Special handling for algorithm_params as it's a JSON field
-                            if key == 'algorithm_params':
-                                orig_params = original.get(key) or {}
-                                if orig_params != value: 
-                                    changed_fields[key] = value
-                            elif original.get(key) != value:
-                                changed_fields[key] = value 
-
-                        # Handle image separately
-                        if "image" in question and question["image"]:
-                            if question_id not in original_questions or \
-                               original_questions[question_id].get("image") != question["image"]:
-                                changed_fields["image"] = question["image"] 
-
-                        # Handle answer type specific data
-                        if question["answer_type"] == "AH_POINTS":
-                            if "options" in question and isinstance(question["options"], dict):
-                                new_options = {
-                                    k: v for k, v in question["options"].items()
-                                    if k in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] and v
-                                }
-                                if original.get("options") != new_options:
-                                    changed_fields["options"] = new_options 
-                        else:
-                            # Get correct answer from the question data
-                            correct_answer = question.get("correct_answer")
-                            if correct_answer is not None:
-                                if original.get("correct_answer") != correct_answer:
-                                    changed_fields["correct_answer"] = correct_answer 
-                        
-                        if changed_fields:
-                            questions_to_update.append({
-                                "id": question_id,
-                                "data": changed_fields
-                            })
-                        questions_to_delete.remove(question_id)
-                else:
-                    # This is a new question
-                    new_question = {
-                        "test_id": test_id,
-                        "question_text": question["question_text"],
-                        "answer_type": question["answer_type"],
-                        "points": int(question.get("points", 0)),
-                        "order_number": int(question.get("order_number", 1)),
-                        "is_required": question.get("is_required", True),
-                        "image": question.get("image"),
-                        "algorithm_type": question.get("algorithm_type", "NO_ALGORITHM"),
-                        "algorithm_params": clean_algorithm_params(
-                            question["answer_type"],
-                            question.get("algorithm_params", {})
-                        )
-                    }
-
-                    # Handle answer type specific data
-                    if question["answer_type"] == "AH_POINTS":
-                        if "options" in question and isinstance(question["options"], dict):
-                            new_question["options"] = {
-                                k: v for k, v in question["options"].items()
-                                if k in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] and v
-                            }
-                    else:
-                        # Get correct answer from the question data
-                        correct_answer = question.get("correct_answer")
-                        if correct_answer is not None:
-                            if "algorithm_params" not in new_question:
-                                new_question["algorithm_params"] = {}
-                            new_question["algorithm_params"]["correct_answer"] = correct_answer
-
-                    questions_to_insert.append(new_question) 
-
-            # Process updates and inserts with additional logging
-            for question in questions_to_update: 
-                try:
-                    result = supabase.from_("questions").update(
-                        question["data"]
-                    ).eq("id", question["id"]).execute() 
-                except Exception as e:
-                    logger.error(f"Error updating question {question['id']}: {str(e)}")
-                    raise
-
-            if questions_to_insert: 
-                try:
-                    result = supabase.from_("questions").insert(questions_to_insert).execute() 
-                except Exception as e:
-                    logger.error(f"Error inserting questions: {str(e)}")
-                    raise
-
-            # Delete removed questions only if explicitly requested
-            if questions_to_delete and len(questions) > 0:  # Only delete if questions were actually sent
-                supabase.from_("questions").delete().in_("id", list(questions_to_delete)).execute()
+        # Process questions if present
+        questions_data = request.form.get('questions')
+        if questions_data:
+            questions = json.loads(questions_data)
+            
+            # Process added questions
+            if questions.get('added'):
+                new_questions = [{
+                    'test_id': test_id,
+                    **question
+                } for question in questions['added']]
+                if new_questions:
+                    supabase.from_("questions").insert(new_questions).execute()
+            
+            # Process modified questions
+            if questions.get('modified'):
+                for mod in questions['modified']:
+                    if mod['changes']:  # Only update if there are actual changes
+                        supabase.from_("questions")\
+                            .update(mod['changes'])\
+                            .eq("id", mod['id'])\
+                            .execute()
+            
+            # Process deleted questions
+            if questions.get('deleted'):
+                supabase.from_("questions")\
+                    .delete()\
+                    .in_("id", questions['deleted'])\
+                    .execute()
 
         return jsonify({
             "success": True,
