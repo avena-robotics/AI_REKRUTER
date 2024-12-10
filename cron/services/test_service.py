@@ -3,6 +3,7 @@ from typing import Optional
 from supabase import Client
 from datetime import datetime, timedelta
 from datetime import timezone
+from services.openai_service import OpenAIService
 
 class TestService:
     """Serwis do obliczania wyników testów kandydatów"""
@@ -151,6 +152,19 @@ class TestService:
                         user_answer = answer.get('text_answer', '').strip().lower()
                         correct_answer = str(algorithm_params.get('correct_answer', '')).strip().lower()
                         return float(max_points) if user_answer == correct_answer else 0.0
+                    elif algorithm_type == 'EVALUATION_BY_AI':
+                        try:
+                            openai_service = OpenAIService()
+                            score = openai_service.evaluate_answer(
+                                question_text=question['question_text'],
+                                answer_text=answer.get('text_answer', ''),
+                                max_points=float(max_points),
+                                algorithm_params=algorithm_params
+                            )
+                            return score if score is not None else 0.0
+                        except Exception as e:
+                            self.logger.error(f"Error in AI evaluation: {str(e)}")
+                            return 0.0
                     else:
                         return 0.0
                 except Exception as e:

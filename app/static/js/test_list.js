@@ -349,6 +349,34 @@ function editTest(testId) {
 
 function setAnswerFields(questionCard, question) {
     const answerType = question.answer_type;
+    const algorithmType = question.algorithm_type;
+    
+    // Add handling for EVALUATION_BY_AI
+    if (algorithmType === 'EVALUATION_BY_AI') {
+        const aiParamsContainer = questionCard.querySelector('.ai-params-container');
+        if (!aiParamsContainer) {
+            const container = document.createElement('div');
+            container.className = 'ai-params-container col-12 mt-3';
+            container.innerHTML = createAIParamsHtml(questionCard);
+            const algorithmParams = questionCard.querySelector('.algorithm-params');
+            if (algorithmParams) {
+                algorithmParams.appendChild(container);
+            }
+        }
+        
+        // Set values if they exist
+        if (question.algorithm_params) {
+            const evaluationFocus = questionCard.querySelector('[name$="[algorithm_params][evaluation_focus]"]');
+            const scoringCriteria = questionCard.querySelector('[name$="[algorithm_params][scoring_criteria]"]');
+            
+            if (evaluationFocus) {
+                evaluationFocus.value = question.algorithm_params.evaluation_focus || '';
+            }
+            if (scoringCriteria) {
+                scoringCriteria.value = question.algorithm_params.scoring_criteria || '';
+            }
+        }
+    }
     
     switch (answerType) {
         case 'TEXT':
@@ -794,15 +822,23 @@ function collectQuestionData(card, index) {
         image: card.querySelector('input[name$="[image]"]')?.value
     };
 
-    // Collect algorithm params
-    const algorithmParams = {};
-    ['min_value', 'max_value', 'correct_answer'].forEach(param => {
-        const input = card.querySelector(`[name$="[algorithm_params][${param}]"]`);
-        if (input) {
-            algorithmParams[param] = input.value;
-        }
-    });
-    questionData.algorithm_params = algorithmParams;
+    // Collect algorithm params based on type
+    if (questionData.algorithm_type === 'EVALUATION_BY_AI') {
+        questionData.algorithm_params = {
+            evaluation_focus: card.querySelector('[name$="[algorithm_params][evaluation_focus]"]')?.value || '',
+            scoring_criteria: card.querySelector('[name$="[algorithm_params][scoring_criteria]"]')?.value || ''
+        };
+    } else {
+        // Existing algorithm params collection
+        const algorithmParams = {};
+        ['min_value', 'max_value', 'correct_answer'].forEach(param => {
+            const input = card.querySelector(`[name$="[algorithm_params][${param}]"]`);
+            if (input) {
+                algorithmParams[param] = input.value;
+            }
+        });
+        questionData.algorithm_params = algorithmParams;
+    }
 
     // Collect options for AH_POINTS type
     if (questionData.answer_type === 'AH_POINTS') {
@@ -1024,6 +1060,7 @@ function createAnswerFieldsHtml(questionCounter, question) {
                 <option value="LEFT_SIDED" ${algorithmType === 'LEFT_SIDED' ? 'selected' : ''}>Lewostronny</option>
                 <option value="RIGHT_SIDED" ${algorithmType === 'RIGHT_SIDED' ? 'selected' : ''}>Prawostronny</option>
                 <option value="CENTER" ${algorithmType === 'CENTER' ? 'selected' : ''}>Środkowy</option>
+                <option value="EVALUATION_BY_AI" ${algorithmType === 'EVALUATION_BY_AI' ? 'selected' : ''}>Ocena przez AI</option>
             </select>
         </div>
     `;
@@ -1153,15 +1190,29 @@ function handleAlgorithmTypeChange(select) {
     const minValueContainer = questionCard.querySelector('.min-value-container');
     const correctAnswerContainer = questionCard.querySelector('.correct-answer-container');
     const maxValueContainer = questionCard.querySelector('.max-value-container');
+    const aiParamsContainer = questionCard.querySelector('.ai-params-container');
     
     // Hide all params initially
     algorithmParams.style.display = 'none';
     minValueContainer.style.display = 'none';
     correctAnswerContainer.style.display = 'none';
     maxValueContainer.style.display = 'none';
+    if (aiParamsContainer) aiParamsContainer.style.display = 'none';
     
     // Show relevant params based on algorithm type
     switch (select.value) {
+        case 'EVALUATION_BY_AI':
+            algorithmParams.style.display = 'block';
+            if (aiParamsContainer) {
+                aiParamsContainer.style.display = 'block';
+            } else {
+                // Create AI params container if it doesn't exist
+                const container = document.createElement('div');
+                container.className = 'ai-params-container col-12 mt-3';
+                container.innerHTML = createAIParamsHtml(questionCard);
+                algorithmParams.appendChild(container);
+            }
+            break;
         case 'NO_ALGORITHM':
             break;
             
@@ -1296,4 +1347,43 @@ function showDatePicker(input) {
         // Fallback for browsers that don't support showPicker()
         console.log('showPicker not supported in this browser');
     }
+}
+
+function createAIParamsHtml(questionCard) {
+    const questionIndex = questionCard.querySelector('[name$="[order_number]"]').value - 1;
+    
+    // Get algorithm_params from the question data
+    let params = {};
+    try {
+        const algorithmType = questionCard.querySelector('[name$="[algorithm_type]"]').value;
+        if (algorithmType === 'EVALUATION_BY_AI') {
+            const evaluationFocus = questionCard.querySelector('[name$="[algorithm_params][evaluation_focus]"]')?.value;
+            const scoringCriteria = questionCard.querySelector('[name$="[algorithm_params][scoring_criteria]"]')?.value;
+            params = {
+                evaluation_focus: evaluationFocus || '',
+                scoring_criteria: scoringCriteria || ''
+            };
+        }
+    } catch (error) {
+        console.error('Error getting AI params:', error);
+    }
+    
+    return `
+        <div class="row">
+            <div class="col-12 mb-3">
+                <label class="form-label">Na co zwrócić uwagę w odpowiedzi</label>
+                <textarea class="form-control" 
+                         name="questions[${questionIndex}][algorithm_params][evaluation_focus]"
+                         rows="3">${params.evaluation_focus || ''}</textarea>
+                <small class="text-muted">Opisz kluczowe elementy, które powinny znaleźć się w odpowiedzi</small>
+            </div>
+            <div class="col-12 mb-3">
+                <label class="form-label">Kryteria przyznawania punktów</label>
+                <textarea class="form-control" 
+                         name="questions[${questionIndex}][algorithm_params][scoring_criteria]"
+                         rows="3">${params.scoring_criteria || ''}</textarea>
+                <small class="text-muted">Opisz, jak powinny być przyznawane punkty za poszczególne elementy odpowiedzi</small>
+            </div>
+        </div>
+    `;
 } 

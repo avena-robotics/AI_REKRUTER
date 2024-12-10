@@ -42,6 +42,9 @@ class Config:
     # Create log directory if it doesn't exist
     os.makedirs(LOG_DIR, exist_ok=True)
     
+    # OpenAI Configuration
+    OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+    
     if not all([
         SUPABASE_URL, 
         SUPABASE_KEY, 
@@ -62,7 +65,8 @@ class Config:
         LOG_DIR, 
         LOG_RETENTION_DAYS, 
         LOG_FILE, 
-        DEBUG_MODE
+        DEBUG_MODE, 
+        OPENAI_API_KEY
     ]):
         logging.error("Brak wymaganych zmiennych środowiskowych")
         sys.exit(1)
