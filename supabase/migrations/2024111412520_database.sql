@@ -26,7 +26,8 @@ create type algorithm_type AS ENUM (
     'LEFT_SIDED',
     'CENTER',
     'RANGE',
-    'EXACT_MATCH'
+    'EXACT_MATCH',
+    'EVALUATION_BY_AI'
 );
 
 -- Create tests table before campaigns (since campaigns references tests)
@@ -138,7 +139,7 @@ create table candidate_answers (
     abcdef_answer text,                            -- Odpowiedź typu ABCDEF
     points_per_option jsonb,                       -- Format JSON, np. {"a": 3, "b": 5, "c": 0}
     score int,                                     -- Punkty za odpowiedź
-    score_ai int,                                  -- Punkty za odpowiedź AI,
+    ai_explanation text,                           -- Wyjaśnienie odpowiedzi AI
     created_at timestamp default now()
 );
 
@@ -555,8 +556,7 @@ BEGIN
                             'date_answer', ca.date_answer,
                             'abcdef_answer', ca.abcdef_answer,
                             'points_per_option', ca.points_per_option,
-                            'score', ca.score,
-                            'score_ai', ca.score_ai
+                            'score', ca.score
                         ), NULL)
                         FROM candidate_answers ca
                         WHERE ca.question_id = q.id 

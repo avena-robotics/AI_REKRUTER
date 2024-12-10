@@ -222,7 +222,6 @@ INSERT INTO candidate_answers (
     question_id,
     text_answer,
     score,
-    score_ai,
     created_at
 )
 SELECT 
@@ -230,7 +229,6 @@ SELECT
     q.id as question_id,
     'Odpowiedź kandydata ' || c.id || ' na pytanie ' || q.id as text_answer,
     floor(random() * 10)::int as score,
-    floor(random() * 10)::int as score_ai,
     c.po1_completed_at
 FROM candidates c
 CROSS JOIN questions q

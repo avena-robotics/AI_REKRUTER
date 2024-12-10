@@ -327,9 +327,6 @@
                                     {% if question.answer %}
                                     <span class="badge bg-info">
                                         Punkty: {{ question.answer.score }}/{{ question.points }}
-                                        {% if question.answer.score_ai %}
-                                        (AI: {{ question.answer.score_ai }})
-                                        {% endif %}
                                     </span>
                                     {% endif %}
                                 {% endif %}

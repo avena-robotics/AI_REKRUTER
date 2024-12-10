@@ -349,7 +349,7 @@ function editTest(testId) {
 
 function setAnswerFields(questionCard, question) {
     const answerType = question.answer_type;
-    const algorithmType = question.algorithm_type;
+    const algorithmType = question.algorithm_type || 'NO_ALGORITHM';
     
     // Add handling for EVALUATION_BY_AI
     if (algorithmType === 'EVALUATION_BY_AI') {
@@ -376,13 +376,25 @@ function setAnswerFields(questionCard, question) {
                 scoringCriteria.value = question.algorithm_params.scoring_criteria || '';
             }
         }
+        return; // Skip other algorithm type handling for AI evaluation
+    }
+    
+    // Skip setting answer fields for NO_ALGORITHM
+    if (algorithmType === 'NO_ALGORITHM') {
+        // Set algorithm type only
+        const algorithmSelect = questionCard.querySelector('[name$="[algorithm_type]"]');
+        if (algorithmSelect) {
+            algorithmSelect.value = algorithmType;
+            handleAlgorithmTypeChange(algorithmSelect);
+        }
+        return;
     }
     
     switch (answerType) {
         case 'TEXT':
             const textInput = questionCard.querySelector(`[name$="[algorithm_params][correct_answer]"]`);
-            if (textInput) {
-                textInput.value = question.algorithm_params?.correct_answer || '';
+            if (textInput && question.algorithm_params?.correct_answer) {
+                textInput.value = question.algorithm_params.correct_answer;
             }
             break;
             
@@ -412,16 +424,15 @@ function setAnswerFields(questionCard, question) {
             
         case 'DATE':
             const dateInput = questionCard.querySelector(`[name$="[algorithm_params][correct_answer]"]`);
-            if (dateInput) {
-                dateInput.value = question.algorithm_params?.correct_answer || '';
+            if (dateInput && question.algorithm_params?.correct_answer) {
+                dateInput.value = question.algorithm_params.correct_answer;
             }
             break;
             
         case 'ABCDEF':
             const abcdefSelect = questionCard.querySelector(`[name$="[algorithm_params][correct_answer]"]`);
-            if (abcdefSelect) {
-                const correctAnswer = question.algorithm_params?.correct_answer;
-                abcdefSelect.value = correctAnswer ? correctAnswer.toUpperCase() : '';
+            if (abcdefSelect && question.algorithm_params?.correct_answer) {
+                abcdefSelect.value = question.algorithm_params.correct_answer.toUpperCase();
             }
             break;
             
@@ -452,11 +463,11 @@ function setAnswerFields(questionCard, question) {
 
     // Set algorithm type and params for all answer types
     const algorithmSelect = questionCard.querySelector('[name$="[algorithm_type]"]');
-    if (algorithmSelect && question.algorithm_type) {
-        algorithmSelect.value = question.algorithm_type;
+    if (algorithmSelect) {
+        algorithmSelect.value = algorithmType;
         handleAlgorithmTypeChange(algorithmSelect);
         
-        // Set algorithm params if they exist
+        // Set algorithm params if they exist and it's not NO_ALGORITHM
         if (question.algorithm_params) {
             const minInput = questionCard.querySelector('[name$="[algorithm_params][min_value]"]');
             const maxInput = questionCard.querySelector('[name$="[algorithm_params][max_value]"]');
@@ -1062,6 +1073,7 @@ function createAnswerFieldsHtml(questionCounter, question) {
                 <option value="CENTER" ${algorithmType === 'CENTER' ? 'selected' : ''}>Środkowy</option>
                 <option value="EVALUATION_BY_AI" ${algorithmType === 'EVALUATION_BY_AI' ? 'selected' : ''}>Ocena przez AI</option>
             </select>
+            <small class="text-muted">${getAlgorithmDescription(algorithmType)}</small>
         </div>
     `;
 
@@ -1073,7 +1085,7 @@ function createAnswerFieldsHtml(questionCounter, question) {
                     <label class="form-label">Wartość minimalna</label>
                     ${getMinMaxValueInput(answerType, questionCounter, 'min_value', algorithmParams?.min_value)}
                 </div>
-                <div class="col-md-4 correct-answer-container" style="display: ${algorithmType !== 'NO_ALGORITHM' ? 'block' : 'none'}">
+                <div class="col-md-4 correct-answer-container" style="display: ${algorithmType !== 'NO_ALGORITHM' && algorithmType !== 'EVALUATION_BY_AI' ? 'block' : 'none'}">
                     <label class="form-label">Poprawna odpowiedź</label>
                     ${getCorrectAnswerInput(answerType, questionCounter, algorithmParams?.correct_answer)}
                 </div>
@@ -1192,6 +1204,12 @@ function handleAlgorithmTypeChange(select) {
     const maxValueContainer = questionCard.querySelector('.max-value-container');
     const aiParamsContainer = questionCard.querySelector('.ai-params-container');
     
+    // Update algorithm description
+    const algorithmDescription = questionCard.querySelector('.algorithm-type-select').closest('div').querySelector('.text-muted');
+    if (algorithmDescription) {
+        algorithmDescription.textContent = getAlgorithmDescription(select.value);
+    }
+    
     // Hide all params initially
     algorithmParams.style.display = 'none';
     minValueContainer.style.display = 'none';
@@ -1203,6 +1221,11 @@ function handleAlgorithmTypeChange(select) {
     switch (select.value) {
         case 'EVALUATION_BY_AI':
             algorithmParams.style.display = 'block';
+            // Przenieśmy wszystkie kontenery poza AI na display: none
+            minValueContainer.style.display = 'none';
+            correctAnswerContainer.style.display = 'none';
+            maxValueContainer.style.display = 'none';
+            
             if (aiParamsContainer) {
                 aiParamsContainer.style.display = 'block';
             } else {
@@ -1213,6 +1236,7 @@ function handleAlgorithmTypeChange(select) {
                 algorithmParams.appendChild(container);
             }
             break;
+            
         case 'NO_ALGORITHM':
             break;
             
@@ -1375,7 +1399,7 @@ function createAIParamsHtml(questionCard) {
                 <textarea class="form-control" 
                          name="questions[${questionIndex}][algorithm_params][evaluation_focus]"
                          rows="3">${params.evaluation_focus || ''}</textarea>
-                <small class="text-muted">Opisz kluczowe elementy, które powinny znaleźć się w odpowiedzi</small>
+                <small class="text-muted">Opisz algorytm oceny odpowiedzi</small>
             </div>
             <div class="col-12 mb-3">
                 <label class="form-label">Kryteria przyznawania punktów</label>
@@ -1386,4 +1410,17 @@ function createAIParamsHtml(questionCard) {
             </div>
         </div>
     `;
+}
+
+function getAlgorithmDescription(algorithmType) {
+    const descriptions = {
+        'NO_ALGORITHM': 'Odpowiedź nie jest oceniana.',
+        'EXACT_MATCH': 'Punkty przyznawane tylko za dokładnie poprawną odpowiedź.',
+        'RANGE': 'Punkty przyznawane, jeśli odpowiedź mieści się w określonym przedziale.',
+        'LEFT_SIDED': 'Im bliżej minimalnej wartości, tym mniej punktów. Wartości większe lub równe poprawnej odpowiedzi to maksymalna liczba punktów.',
+        'RIGHT_SIDED': 'Im bliżej maksymalnej wartości, tym mniej punktów. Wartości mniejsze lub równe poprawnej odpowiedzi to maksymalna liczba punktów.',
+        'CENTER': 'Maksymalna liczba punktów za dokładne dopasowanie odpowiedzi, punkty maleją proporcjonalnie wraz oddaleniem od poprawnej odpowiedzi.',
+        'EVALUATION_BY_AI': 'Ocena przez sztuczną inteligencję na podstawie zdefiniowanych kryteriów.'
+    };
+    return descriptions[algorithmType] || '';
 } 

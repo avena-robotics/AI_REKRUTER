@@ -1,95 +1,126 @@
 import logging
 from openai import OpenAI
-from typing import Optional
+from typing import Optional 
 from config import Config
 
 class OpenAIService:
-    """Service for handling OpenAI API interactions"""
+    """Serwis do obsługi interakcji z API OpenAI"""
     
-    def __init__(self):
-        self.client = OpenAI(api_key=Config.OPENAI_API_KEY)
+    def __init__(self, config: Config):
+        self.config = config
+        self.client = OpenAI(api_key=self.config.OPENAI_API_KEY)
         self.logger = logging.getLogger('openai_service')
         
-def evaluate_answer(
-    self,
-    question_text: str,
-    answer_text: str,
-    max_points: int,
-    algorithm_params: dict = None,
-    custom_prompt: Optional[str] = None
-) -> Optional[float]:
-    """
-    Evaluates an answer using OpenAI API and returns a score between 0 and max_points.
-    
-    Args:
-        question_text: The question that was asked
-        answer_text: The answer provided by the candidate
-        max_points: Maximum points possible for this question
-        algorithm_params: Dictionary containing evaluation_focus and scoring_criteria
-        custom_prompt: Optional custom prompt to override default
-    """
-    try:
-        
-        default_evaluation_focus = 'Evaluate the completeness and accuracy of the answer.'
-        default_scoring_criteria = f'''
-        - {max_points} points: Perfect answer that fully addresses the question
-        - {max_points * 0.75} points: Very good answer with minor omissions
-        - {max_points * 0.5} points: Adequate answer that partially addresses the question
-        - {max_points * 0.25} points: Poor answer with major gaps
-        - 0 points: Completely incorrect or irrelevant answer
-        '''
-        
-        # Default evaluation prompt if no custom prompt provided
-        default_prompt = f"""
-        You are an expert evaluator. Evaluate the following answer to a question.
-        
-        Question: {question_text}
-        
-        Answer: {answer_text}
-        
-        Maximum points: {max_points}
-        
-        Evaluation focus: {algorithm_params.get('evaluation_focus', default_evaluation_focus)}
-        
-        Scoring criteria: {algorithm_params.get('scoring_criteria', default_scoring_criteria)}
-        
-        Provide your evaluation in the following JSON format:
-        {{
-            "score": <numeric_score>,
-            "explanation": "<brief explanation of score based on the criteria>"
-        }}
-        
-        Be strict and objective in your evaluation. The score must be a number between 0 and {max_points}.
+    def evaluate_answer(
+        self,
+        question_text: str,
+        answer_text: str,
+        max_points: int,
+        algorithm_params: dict = None,
+        custom_prompt: Optional[str] = None
+    ) -> Optional[float]:
         """
+        Ocenia odpowiedź używając API OpenAI i zwraca wynik między 0 a max_points.
         
-        prompt = custom_prompt if custom_prompt else default_prompt
-        
-        # Make API call
-        completion = self.client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3,  # Lower temperature for more consistent scoring
-            response_format={"type": "json_object"}
-        )
-        
-        # Parse response
-        response = completion.choices[0].message.content
-        result = eval(response)  # Safe since we specified json_object format
-        
-        score = float(result['score'])
-        
-        # Validate score is within bounds
-        if not 0 <= score <= max_points:
-            raise ValueError(f"Score {score} is outside valid range [0, {max_points}]")
+        Args:
+            question_text: Treść pytania
+            answer_text: Odpowiedź kandydata
+            max_points: Maksymalna liczba punktów możliwa do zdobycia
+            algorithm_params: Słownik zawierający evaluation_focus i scoring_criteria
+            custom_prompt: Opcjonalny własny prompt zastępujący domyślny
+        """
+        try:
+            self.logger.info(f"Rozpoczęcie oceny odpowiedzi przez AI")
+            self.logger.debug(f"Długość odpowiedzi do oceny: {len(answer_text)} znaków")
             
-        self.logger.info(
-            f"Evaluated answer for question. Score: {score}/{max_points}. "
-            f"Explanation: {result['explanation']}"
-        )
-        
-        return score
-        
-        # Rest of the function remains the same
-    except Exception as e:
-        self.logger.error(f"Error evaluating answer: {e}")
-        return None 
+            if custom_prompt:
+                self.logger.debug("Użyto niestandardowego promptu")
+            else:
+                self.logger.debug("Użyto domyślnego promptu")
+                
+            self.logger.debug(f"Parametry algorytmu oceny: {algorithm_params}")
+            
+            # Before API call
+            self.logger.info("Wysyłanie zapytania do API OpenAI...")
+            
+            # Domyślne kryteria oceny jeśli nie podano własnych
+            default_evaluation_focus = 'Oceń kompletność i dokładność odpowiedzi.'
+            default_scoring_criteria = f'''
+            - {max_points} punktów: Doskonała odpowiedź, która w pełni odpowiada na pytanie
+            - {max_points * 0.75} punktów: Bardzo dobra odpowiedź z drobnymi pominięciami
+            - {max_points * 0.5} punktów: Odpowiedź zadowalająca, która częściowo odpowiada na pytanie
+            - {max_points * 0.25} punktów: Słaba odpowiedź z istotnymi brakami
+            - 0 punktów: Całkowicie niepoprawna lub nieadekwatna odpowiedź
+            '''
+            
+            # Domyślny prompt jeśli nie podano własnego
+            default_prompt = f"""
+            Jesteś ekspertem oceniającym. Oceń następującą odpowiedź na pytanie.
+            
+            Pytanie: {question_text}
+            
+            Odpowiedź: {answer_text}
+            
+            Maksymalna liczba punktów: {max_points}
+            
+            Na co zwrócić uwagę: {algorithm_params.get('evaluation_focus', default_evaluation_focus)}
+            
+            Kryteria przyznawania punktów: {algorithm_params.get('scoring_criteria', default_scoring_criteria)}
+            
+            WAŻNE: Odpowiedz w formacie JSON:
+            {{
+                "score": <liczba_punktów>,
+                "explanation": "<krótkie uzasadnienie oceny w oparciu o kryteria>"
+            }}
+            
+            Bądź surowy, ale sprawiedliwy i obiektywny w swojej ocenie. Liczba punktów musi być między 0 a {max_points}.
+            """
+            
+            prompt = custom_prompt if custom_prompt else default_prompt
+            
+            # Wywołanie API
+            self.logger.debug("Wysyłanie zapytania do modelu GPT-4")
+            completion = self.client.chat.completions.create(
+                model="gpt-4",
+                messages=[{"role": "user", "content": prompt}],
+                # response_format={"type": "json_object"},
+            )
+            
+            # Parsowanie odpowiedzi
+            self.logger.debug("Otrzymano odpowiedź od API, rozpoczęcie parsowania")
+            response = completion.choices[0].message.content
+            try:
+                import json
+                result = json.loads(response)
+                self.logger.debug(f"Pomyślnie sparsowano JSON: {result}")
+            except json.JSONDecodeError as e:
+                self.logger.error(f"Błąd parsowania JSON: {str(e)}")
+                self.logger.debug(f"Otrzymana odpowiedź: {response}")
+                return None
+            
+            score = float(result['score'])
+            
+            # Walidacja czy wynik mieści się w zakresie
+            if not 0 <= score <= max_points:
+                self.logger.warning(f"Wynik {score} jest poza dozwolonym zakresem [0, {max_points}]")
+                raise ValueError(f"Wynik {score} jest poza dozwolonym zakresem [0, {max_points}]")
+                
+            # After API call
+            self.logger.debug(f"Otrzymano odpowiedź od API")
+            
+            # Before parsing
+            self.logger.debug("Rozpoczęcie parsowania odpowiedzi JSON")
+            
+            # After validation
+            self.logger.info(
+                f"Zakończono ocenę odpowiedzi. "
+                f"Przyznano {score}/{max_points} punktów. "
+                f"Uzasadnienie: {result['explanation']}"
+            )
+            
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Wystąpił błąd podczas oceny odpowiedzi: {str(e)}")
+            self.logger.debug(f"Szczegóły błędu: {e.__class__.__name__}")
+            return None

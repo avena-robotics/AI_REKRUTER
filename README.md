@@ -54,6 +54,9 @@ PERMANENT_SESSION_LIFETIME=86400  # 24 hours in seconds
 # Logging Configuration
 LOG_DIR="/path/to/logs"
 LOG_RETENTION_DAYS=7
+
+# OpenAI Configuration
+OPENAI_API_KEY="your_openai_api_key"
 ```
 
 ## Uruchamianie crona z użyciem venv

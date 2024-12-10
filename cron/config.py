@@ -29,6 +29,9 @@ class Config:
         # Debug Mode
         self.DEBUG_MODE = os.getenv('FLASK_DEBUG', 'True').lower() == 'true'
         
+        # OpenAI Configuration
+        self.OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+        
         # Create log directory if it doesn't exist
         os.makedirs(self.LOG_DIR, exist_ok=True)
         

@@ -7,18 +7,22 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from zoneinfo import ZoneInfo
+import logging
 
 candidate_bp = Blueprint("candidate", __name__, url_prefix="/candidates")
+logger = logging.getLogger('candidate_routes')
 
 
 @candidate_bp.route("/")
 @login_required
 def list():
+    logger.info("Rozpoczęcie pobierania listy kandydatów")
     campaign_code = request.args.get("campaign_code")
     status = request.args.get("status")
     sort_by = request.args.get("sort_by", "created_at")
     sort_order = request.args.get("sort_order", "desc")
     search = request.args.get("search", "").strip()
+    logger.debug(f"Parametry filtrowania: campaign={campaign_code}, status={status}, sort={sort_by} {sort_order}")
 
     # Single query to get campaigns for dropdown
     campaigns = (
@@ -33,6 +37,7 @@ def list():
 
     # Apply search if provided
     if search:
+        logger.debug(f"Zastosowano wyszukiwanie: '{search}'")
         search_pattern = f"%{search.lower()}%"
         # Build the OR conditions string following PostgREST syntax
         query = query.or_(
@@ -54,6 +59,7 @@ def list():
 
     # Execute query
     candidates = query.execute()
+    logger.info(f"Pobrano {len(candidates.data)} kandydatów")
 
     return render_template(
         "candidates/candidate_list.html",
@@ -64,6 +70,7 @@ def list():
 
 @candidate_bp.route("/<int:id>")
 def view(id):
+    logger.info(f"Rozpoczęcie pobierania szczegółów kandydata {id}")
     try:
         # Get all data in a single query using the new function
         result = supabase.rpc(
@@ -72,13 +79,17 @@ def view(id):
         ).execute()
 
         if not result.data or not result.data[0]['candidate_data']:
+            logger.warning(f"Nie znaleziono kandydata o ID {id}")
             return jsonify({"error": "Candidate not found"}), 404
 
+        logger.debug(f"Pobrano dane kandydata {id} wraz z testami")
         candidate_data = result.data[0]['candidate_data']
         tests_data = result.data[0]['tests_data'] or {}
 
         # Process test data to add question count and total points
+        logger.debug(f"Rozpoczęcie przetwarzania danych testów dla kandydata {id}")
         for stage, test_data in tests_data.items():
+            logger.debug(f"Przetwarzanie testu dla etapu {stage}")
             if test_data and 'questions' in test_data:
                 # Calculate question count
                 test_data['question_count'] = len(test_data['questions'])
@@ -118,12 +129,13 @@ def view(id):
         )
 
     except Exception as e:
-        print(f"Error viewing candidate: {str(e)}")
+        logger.error(f"Błąd podczas pobierania danych kandydata {id}: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
 
 
 @candidate_bp.route("/<int:id>/reject", methods=["POST"])
 def reject(id):
+    logger.info(f"Rozpoczęcie procesu odrzucenia kandydata {id}")
     try:
         result = (
             supabase.from_("candidates")
@@ -131,10 +143,11 @@ def reject(id):
             .eq("id", id)
             .execute()
         )
+        logger.info(f"Kandydat {id} został odrzucony")
         return jsonify({"success": True})
 
     except Exception as e:
-        print(f"Error rejecting candidate: {str(e)}")
+        logger.error(f"Błąd podczas odrzucania kandydata {id}: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -156,13 +169,17 @@ def accept(id):
 
 @candidate_bp.route("/<int:id>/delete", methods=["POST"])
 def delete(id):
+    logger.info(f"Rozpoczęcie procesu usuwania kandydata {id}")
     try:
         # First delete all candidate answers
+        logger.debug(f"Usuwanie odpowiedzi kandydata {id}")
         supabase.from_("candidate_answers").delete().eq("candidate_id", id).execute()
         
         # Then delete the candidate
+        logger.debug(f"Usuwanie danych kandydata {id}")
         supabase.from_("candidates").delete().eq("id", id).execute()
         
+        logger.info(f"Kandydat {id} został pomyślnie usunięty")
         return jsonify({"success": True})
 
     except Exception as e:
@@ -265,6 +282,7 @@ def extend_token(id, stage):
 
 @candidate_bp.route("/<int:id>/next-stage", methods=["POST"])
 def next_stage(id):
+    logger.info(f"Rozpoczęcie procesu przenoszenia kandydata {id} do następnego etapu")
     try:
         # Get current candidate data
         candidate = (
@@ -276,9 +294,11 @@ def next_stage(id):
         )
         
         if not candidate.data:
+            logger.warning(f"Nie znaleziono kandydata {id}")
             return jsonify({"success": False, "error": "Nie znaleziono kandydata"}), 404
 
         current_status = candidate.data["recruitment_status"]
+        logger.debug(f"Obecny status kandydata {id}: {current_status}")
         campaign = candidate.data["campaigns"]
         
         # If candidate is rejected, determine their last completed stage
@@ -309,6 +329,7 @@ def next_stage(id):
             return jsonify({"success": False, "error": "Nieprawidłowy obecny etap"}), 400
 
         # Generate token and send email for PO2 and PO3
+        logger.debug(f"Generowanie tokenu dla kandydata {id}")
         current_time = datetime.now(timezone.utc)
         token_expiry = current_time + timedelta(days=7)
         formatted_expiry = token_expiry.astimezone(ZoneInfo("Europe/Warsaw")).strftime("%Y-%m-%d %H:%M")
@@ -321,6 +342,7 @@ def next_stage(id):
         }
         
         if next_status in ["PO2", "PO3"] and test_id:
+            logger.info(f"Przygotowanie emaila z dostępem do testu dla kandydata {id}")
             # Generate token and expiry date
             token = secrets.token_urlsafe(32) 
             token_expiry = datetime.now(timezone.utc) + timedelta(days=7)
@@ -344,6 +366,7 @@ def next_stage(id):
             
             # Send email using SMTP
             try:
+                logger.debug(f"Wysyłanie emaila do kandydata {id}")
                 msg = MIMEMultipart()
                 msg["From"] = current_app.config["SENDER_EMAIL"]
                 msg["To"] = candidate.data["email"]
@@ -360,8 +383,9 @@ def next_stage(id):
                         current_app.config["SMTP_PASSWORD"]
                     )
                     server.send_message(msg)
+                logger.info(f"Email został wysłany do kandydata {id}")
             except Exception as e:
-                print(f"Error sending email: {str(e)}")
+                logger.error(f"Błąd podczas wysyłania emaila do kandydata {id}: {str(e)}")
                 return jsonify({
                     "success": False,
                     "error": "Nie udało się wysłać emaila"
@@ -375,8 +399,9 @@ def next_stage(id):
             .execute()
         )
 
+        logger.info(f"Kandydat {id} został przeniesiony do etapu {next_status}")
         return jsonify({"success": True})
 
     except Exception as e:
-        print(f"Error moving candidate to next stage: {str(e)}")
+        logger.error(f"Błąd podczas przenoszenia kandydata {id} do następnego etapu: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500 
