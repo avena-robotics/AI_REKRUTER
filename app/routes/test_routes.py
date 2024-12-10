@@ -140,7 +140,24 @@ def add():
 
         # Add group associations
         group_links = [{"group_id": int(gid), "test_id": test_id} for gid in groups]
-        supabase.from_("link_groups_tests").insert(group_links).execute() 
+        supabase.from_("link_groups_tests").insert(group_links).execute()
+
+        # Process questions if present
+        questions_data = request.form.get('questions')
+        if questions_data:
+            questions = json.loads(questions_data)
+            if questions:
+                # Add test_id to each question
+                for question in questions:
+                    question['test_id'] = test_id
+                
+                # Insert questions
+                questions_result = supabase.from_("questions").insert(questions).execute()
+                if not questions_result.data:
+                    logger.error("Nie udało się dodać pytań do testu")
+                    raise Exception("Nie udało się dodać pytań do testu")
+                
+                logger.info(f"Pomyślnie dodano {len(questions)} pytań do testu {test_id}")
 
         return jsonify({
             "success": True, 
