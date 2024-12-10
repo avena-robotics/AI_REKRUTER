@@ -352,16 +352,16 @@ function setAnswerFields(questionCard, question) {
     
     switch (answerType) {
         case 'TEXT':
-            const textInput = questionCard.querySelector(`[name$="[correct_answer_text]"]`);
+            const textInput = questionCard.querySelector(`[name$="[algorithm_params][correct_answer]"]`);
             if (textInput) {
-                textInput.value = question.correct_answer_text || '';
+                textInput.value = question.algorithm_params?.correct_answer || '';
             }
             break;
             
         case 'BOOLEAN':
-            const boolValue = question.correct_answer_boolean;
-            if (boolValue !== null) {
-                const radio = questionCard.querySelector(`[name$="[correct_answer_boolean]"][value="${boolValue}"]`);
+            const boolValue = question.algorithm_params?.correct_answer;
+            if (boolValue !== null && boolValue !== undefined) {
+                const radio = questionCard.querySelector(`[name$="[algorithm_params][correct_answer]"][value="${boolValue}"]`);
                 if (radio) {
                     radio.checked = true;
                 }
@@ -369,30 +369,31 @@ function setAnswerFields(questionCard, question) {
             break;
             
         case 'SCALE':
-            const scaleInput = questionCard.querySelector(`[name$="[correct_answer_scale]"]`);
-            if (scaleInput && question.correct_answer_scale !== null) {
-                scaleInput.value = question.correct_answer_scale;
+            const scaleInput = questionCard.querySelector(`[name$="[algorithm_params][correct_answer]"]`);
+            if (scaleInput && question.algorithm_params?.correct_answer !== null) {
+                scaleInput.value = question.algorithm_params.correct_answer;
             }
             break;
             
         case 'SALARY':
-            const salaryInput = questionCard.querySelector(`[name$="[correct_answer_salary]"]`);
-            if (salaryInput && question.correct_answer_salary !== null) {
-                salaryInput.value = question.correct_answer_salary;
+            const salaryInput = questionCard.querySelector(`[name$="[algorithm_params][correct_answer]"]`);
+            if (salaryInput && question.algorithm_params?.correct_answer !== null) {
+                salaryInput.value = question.algorithm_params.correct_answer;
             }
             break;
             
         case 'DATE':
-            const dateInput = questionCard.querySelector(`[name$="[correct_answer_date]"]`);
+            const dateInput = questionCard.querySelector(`[name$="[algorithm_params][correct_answer]"]`);
             if (dateInput) {
-                dateInput.value = question.correct_answer_date || '';
+                dateInput.value = question.algorithm_params?.correct_answer || '';
             }
             break;
             
         case 'ABCDEF':
-            const abcdefSelect = questionCard.querySelector(`[name$="[correct_answer_abcdef]"]`);
+            const abcdefSelect = questionCard.querySelector(`[name$="[algorithm_params][correct_answer]"]`);
             if (abcdefSelect) {
-                abcdefSelect.value = question.correct_answer_abcdef || '';
+                const correctAnswer = question.algorithm_params?.correct_answer;
+                abcdefSelect.value = correctAnswer ? correctAnswer.toUpperCase() : '';
             }
             break;
             
@@ -430,14 +431,10 @@ function setAnswerFields(questionCard, question) {
         // Set algorithm params if they exist
         if (question.algorithm_params) {
             const minInput = questionCard.querySelector('[name$="[algorithm_params][min_value]"]');
-            const correct_answer = questionCard.querySelector('[name$="[algorithm_params][correct_answer]"]');
             const maxInput = questionCard.querySelector('[name$="[algorithm_params][max_value]"]');
             
             if (minInput && question.algorithm_params.min_value !== undefined) {
                 minInput.value = question.algorithm_params.min_value;
-            }
-            if (correct_answer && question.algorithm_params.correct_answer !== undefined) {
-                correct_answer.value = question.algorithm_params.correct_answer;
             }
             if (maxInput && question.algorithm_params.max_value !== undefined) {
                 maxInput.value = question.algorithm_params.max_value;
@@ -1137,12 +1134,12 @@ function getCorrectAnswerInput(answerType, questionCounter, value) {
             return `<select class="form-select" 
                             name="questions[${questionCounter}][algorithm_params][correct_answer]">
                         <option value="" ${!value ? 'selected' : ''}>Wybierz odpowiedź</option>
-                        <option value="a" ${value === 'a' ? 'selected' : ''}>A</option>
-                        <option value="b" ${value === 'b' ? 'selected' : ''}>B</option>
-                        <option value="c" ${value === 'c' ? 'selected' : ''}>C</option>
-                        <option value="d" ${value === 'd' ? 'selected' : ''}>D</option>
-                        <option value="e" ${value === 'e' ? 'selected' : ''}>E</option>
-                        <option value="f" ${value === 'f' ? 'selected' : ''}>F</option>
+                        <option value="A" ${value && value.toUpperCase() === 'A' ? 'selected' : ''}>A</option>
+                        <option value="B" ${value && value.toUpperCase() === 'B' ? 'selected' : ''}>B</option>
+                        <option value="C" ${value && value.toUpperCase() === 'C' ? 'selected' : ''}>C</option>
+                        <option value="D" ${value && value.toUpperCase() === 'D' ? 'selected' : ''}>D</option>
+                        <option value="E" ${value && value.toUpperCase() === 'E' ? 'selected' : ''}>E</option>
+                        <option value="F" ${value && value.toUpperCase() === 'F' ? 'selected' : ''}>F</option>
                     </select>`;
         
         default:
