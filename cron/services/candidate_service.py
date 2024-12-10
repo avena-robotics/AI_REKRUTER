@@ -252,45 +252,45 @@ class CandidateService:
             po2_score: Wynik testu PO2
             po2_5_score: Wynik testu PO2_5
             po3_score: Wynik testu PO3
-            campaign: Dane kampanii zawierające wagi testów
+            campaign: Dane kampanii rekrutacyjnej
             
         Returns:
             Optional[float]: Całkowity ważony wynik lub None jeśli nie można obliczyć
         """
         try:
-            # Get test weights, default to 1 if not specified
-            po1_weight = float(campaign.get('po1_test_weight', 1))
-            po2_weight = float(campaign.get('po2_test_weight', 1))
-            po2_5_weight = float(campaign.get('po2_5_test_weight', 1))
-            po3_weight = float(campaign.get('po3_test_weight', 1))
+            # Get weights from campaign
+            po1_weight = float(campaign.get('po1_weight', 0))
+            po2_weight = float(campaign.get('po2_weight', 0))
+            po2_5_weight = float(campaign.get('po2_5_weight', 0))
+            po3_weight = float(campaign.get('po3_weight', 0))
             
-            # Calculate weighted scores only for completed tests
+            # Initialize weighted scores
             weighted_scores = []
-            total_weight = 0
+            total_weights = 0
             
-            if po1_score is not None:
-                weighted_scores.append(po1_score * po1_weight)
-                total_weight += po1_weight
+            # Add weighted scores only for non-None values
+            if po1_score is not None and po1_weight > 0:
+                weighted_scores.append(float(po1_score) * po1_weight)
+                total_weights += po1_weight
                 
-            if po2_score is not None:
-                weighted_scores.append(po2_score * po2_weight)
-                total_weight += po2_weight
+            if po2_score is not None and po2_weight > 0:
+                weighted_scores.append(float(po2_score) * po2_weight)
+                total_weights += po2_weight
                 
-            if po2_5_score is not None:
-                weighted_scores.append(po2_5_score * po2_5_weight)
-                total_weight += po2_5_weight
+            if po2_5_score is not None and po2_5_weight > 0:
+                weighted_scores.append(float(po2_5_score) * po2_5_weight)
+                total_weights += po2_5_weight
                 
-            if po3_score is not None:
-                weighted_scores.append(po3_score * po3_weight)
-                total_weight += po3_weight
+            if po3_score is not None and po3_weight > 0:
+                weighted_scores.append(float(po3_score) * po3_weight)
+                total_weights += po3_weight
             
-            if not weighted_scores:
-                return None
-                
-            if total_weight == 0:
-                return 0.0
-                
-            return sum(weighted_scores) / total_weight
+            # Calculate total score only if we have any valid weighted scores
+            if weighted_scores and total_weights > 0:
+                total_score = sum(weighted_scores) / total_weights
+                return round(total_score, 2)
+            
+            return None
             
         except Exception as e:
             self.logger.error(f"Błąd podczas obliczania całkowitego wyniku: {str(e)}")
