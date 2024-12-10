@@ -47,7 +47,7 @@ questions_insert AS (
     FROM (VALUES
         ('Jakie jest Twoje oczekiwane wynagrodzenie miesięczne netto (PLN)?', 'SALARY', NULL, 10, 1, true, 'RANGE', '{"min_value": 1000, "max_value": 10000}'::jsonb),
         
-        ('Od kiedy możesz rozpocząć pracę?', 'DATE', NULL, 10, 2, true, 'RIGHT_SIDED', '{"correct_answer": "2025-01-01", "max_value": "60"}'::jsonb),
+        ('Od kiedy możesz rozpocząć pracę?', 'DATE', NULL, 10, 2, true, 'RIGHT_SIDED', '{"correct_answer": "2025-01-01", "max_value": "2025-02-01"}'::jsonb),
         
         ('Preferowany model pracy:', 'TEXT', NULL, 0, 3, true, 'NO_ALGORITHM', NULL),
         
