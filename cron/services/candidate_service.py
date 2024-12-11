@@ -243,7 +243,7 @@ class CandidateService:
                                       po2_score: Optional[float], 
                                       po2_5_score: Optional[float], 
                                       po3_score: Optional[float], 
-                                      campaign: dict) -> Optional[float]:
+                                      campaign: dict) -> float:
         """
         Oblicza całkowity ważony wynik na podstawie wyników testów i wag z kampanii
         
@@ -255,14 +255,18 @@ class CandidateService:
             campaign: Dane kampanii rekrutacyjnej
             
         Returns:
-            Optional[float]: Całkowity ważony wynik lub None jeśli nie można obliczyć
+            float: Całkowity ważony wynik (0.0 jeśli nie można obliczyć, ale istnieje jakikolwiek wynik)
         """
         try:
             self.logger.debug(f"Obliczanie total_score dla wyników: PO1={po1_score}, PO2={po2_score}, PO2.5={po2_5_score}, PO3={po3_score}")
             
+            # Check if any score exists
+            has_any_score = any(score is not None for score in [po1_score, po2_score, po2_5_score, po3_score])
+            if not has_any_score:
+                self.logger.warning("Brak jakichkolwiek wyników testów")
+                return 0.0
+            
             # Get weights from campaign
-            
-            
             po1_weight = campaign.get('po1_test_weight', 0)
             po2_weight = campaign.get('po2_test_weight', 0)
             po2_5_weight = campaign.get('po2_5_test_weight', 0)
@@ -276,7 +280,7 @@ class CandidateService:
             self.logger.debug(f"Wagi testów: PO1={po1_weight}, PO2={po2_weight}, PO2.5={po2_5_weight}, PO3={po3_weight}")
             
             # Initialize weighted scores
-            weighted_scores = []
+            weighted_scores = [0]
             total_weights = po1_weight + po2_weight + po2_5_weight + po3_weight
             
             # Add weighted scores only for non-None values
@@ -296,19 +300,14 @@ class CandidateService:
                 weighted_scores.append(float(po3_score) * po3_weight) 
                 self.logger.debug(f"Dodano wynik PO3: {po3_score} * {po3_weight} = {float(po3_score) * po3_weight}")
             
-            # Calculate total score only if we have any valid weighted scores
-            if weighted_scores and total_weights > 0:
-                total_score = sum(weighted_scores) / total_weights
-                final_score = round(total_score, 2)
-                self.logger.info(f"Obliczono total_score: {final_score} (suma ważona: {sum(weighted_scores)}, suma wag: {total_weights})")
-                return final_score
-            
-            self.logger.warning("Nie można obliczyć total_score - brak wyników lub wag")
-            return None
+            total_score = sum(weighted_scores) / total_weights
+            final_score = round(total_score, 2)
+            self.logger.info(f"Obliczono total_score: {final_score} (suma ważona: {sum(weighted_scores)}, suma wag: {total_weights})")
+            return final_score
             
         except Exception as e:
             self.logger.error(f"Błąd podczas obliczania całkowitego wyniku: {str(e)}", exc_info=True)
-            return None
+            return 0.0
 
     def update_candidates(self):
         """Aktualizuje statusy i wyniki wszystkich aktywnych kandydatów"""
