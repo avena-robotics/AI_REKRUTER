@@ -365,7 +365,6 @@ function handleCampaignFormSubmit(e) {
 function updateTestOptions(groupSelect) {
     const form = groupSelect.closest('form');
     const testSelects = form.querySelectorAll('[name$="_test_id"]');
-    const weightInputs = form.querySelectorAll('[name$="_test_weight"]');
     
     // Disable all test selects and weight inputs initially
     testSelects.forEach(select => {
@@ -387,25 +386,32 @@ function updateTestOptions(groupSelect) {
             testSelects.forEach(select => {
                 select.disabled = false;
                 
-                // Filter tests based on test type for PO2.5
-                if (select.name === 'po2_5_test_id') {
-                    const eqTests = tests.filter(test => test.test_type === 'EQ_EVALUATION');
-                    eqTests.forEach(test => {
-                        const option = new Option(
-                            `${test.title} - ${test.test_type}`,
-                            test.id
-                        );
-                        select.add(option);
-                    });
-                } else {
-                    tests.forEach(test => {
-                        const option = new Option(
-                            `${test.title} - ${test.test_type}`,
-                            test.id
-                        );
-                        select.add(option);
-                    });
+                // Filter tests based on stage
+                let filteredTests;
+                switch(select.name) {
+                    case 'po1_test_id':
+                        filteredTests = tests.filter(test => test.test_type === 'SURVEY');
+                        break;
+                    case 'po2_test_id':
+                        filteredTests = tests.filter(test => test.test_type === 'EQ');
+                        break;
+                    case 'po2_5_test_id':
+                        filteredTests = tests.filter(test => test.test_type === 'EQ_EVALUATION');
+                        break;
+                    case 'po3_test_id':
+                        filteredTests = tests.filter(test => test.test_type === 'IQ');
+                        break;
+                    default:
+                        filteredTests = [];
                 }
+                
+                filteredTests.forEach(test => {
+                    const option = new Option(
+                        `${test.title} - ${test.test_type}`,
+                        test.id
+                    );
+                    select.add(option);
+                });
             });
             
             // Enable weight inputs except for PO2

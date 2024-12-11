@@ -209,9 +209,11 @@
                                     <select class="form-select" name="po1_test_id">
                                         <option value="">Brak</option>
                                         {% for test in tests %}
-                                            <option value="{{ test.id }}">
-                                                {{ test.title }} - {{ test.test_type }}
-                                            </option>
+                                            {% if test.test_type == 'SURVEY' %}
+                                                <option value="{{ test.id }}">
+                                                    {{ test.title }} - {{ test.test_type }}
+                                                </option>
+                                            {% endif %}
                                         {% endfor %}
                                     </select>
                                 </div>
@@ -237,9 +239,11 @@
                                     <select class="form-select" name="po2_test_id" onchange="updateWeightValidation()">
                                         <option value="">Brak</option>
                                         {% for test in tests %}
-                                            <option value="{{ test.id }}">
-                                                {{ test.title }} - {{ test.test_type }}
-                                            </option>
+                                            {% if test.test_type == 'EQ' %}
+                                                <option value="{{ test.id }}">
+                                                    {{ test.title }} - {{ test.test_type }}
+                                                </option>
+                                            {% endif %}
                                         {% endfor %}
                                     </select>
                                 </div>
@@ -290,9 +294,11 @@
                                     <select class="form-select" name="po3_test_id" onchange="updateWeightValidation()">
                                         <option value="">Brak</option>
                                         {% for test in tests %}
-                                            <option value="{{ test.id }}">
-                                                {{ test.title }} - {{ test.test_type }}
-                                            </option>
+                                            {% if test.test_type == 'IQ' %}
+                                                <option value="{{ test.id }}">
+                                                    {{ test.title }} - {{ test.test_type }}
+                                                </option>
+                                            {% endif %}
                                         {% endfor %}
                                     </select>
                                 </div>
@@ -465,9 +471,11 @@
                                     <select class="form-select" name="po1_test_id">
                                         <option value="">Brak</option>
                                         {% for test in tests %}
-                                            <option value="{{ test.id }}">
-                                                {{ test.title }} - {{ test.test_type }}
-                                            </option>
+                                            {% if test.test_type == 'SURVEY' %}
+                                                <option value="{{ test.id }}">
+                                                    {{ test.title }} - {{ test.test_type }}
+                                                </option>
+                                            {% endif %}
                                         {% endfor %}
                                     </select>
                                 </div>
@@ -493,9 +501,11 @@
                                     <select class="form-select" name="po2_test_id" onchange="updateWeightValidation()">
                                         <option value="">Brak</option>
                                         {% for test in tests %}
-                                            <option value="{{ test.id }}">
-                                                {{ test.title }} - {{ test.test_type }}
-                                            </option>
+                                            {% if test.test_type == 'EQ' %}
+                                                <option value="{{ test.id }}">
+                                                    {{ test.title }} - {{ test.test_type }}
+                                                </option>
+                                            {% endif %}
                                         {% endfor %}
                                     </select>
                                 </div>
@@ -546,9 +556,11 @@
                                     <select class="form-select" name="po3_test_id" onchange="updateWeightValidation()">
                                         <option value="">Brak</option>
                                         {% for test in tests %}
-                                            <option value="{{ test.id }}">
-                                                {{ test.title }} - {{ test.test_type }}
-                                            </option>
+                                            {% if test.test_type == 'IQ' %}
+                                                <option value="{{ test.id }}">
+                                                    {{ test.title }} - {{ test.test_type }}
+                                                </option>
+                                            {% endif %}
                                         {% endfor %}
                                     </select>
                                 </div>
