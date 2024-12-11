@@ -1,4 +1,16 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Add this near the beginning of your DOMContentLoaded handler
+    const addCampaignModal = document.getElementById('addCampaignModal');
+    if (addCampaignModal) {
+        addCampaignModal.addEventListener('hidden.bs.modal', resetAddCampaignForm);
+    }
+    
+    // Add this new event listener for the Add Campaign button
+    const addCampaignButton = document.querySelector('[data-bs-target="#addCampaignModal"]');
+    if (addCampaignButton) {
+        addCampaignButton.addEventListener('click', resetAddCampaignForm);
+    }
+    
     // Handle form submissions
     ['addCampaignForm', 'editCampaignForm'].forEach(formId => {
         const form = document.getElementById(formId);
@@ -614,4 +626,40 @@ function updateWeightValidation() {
             }
         }
     });
+} 
+
+// Add this new function at the top level
+function resetAddCampaignForm() {
+    const form = document.getElementById('addCampaignForm');
+    
+    // Reset the form
+    form.reset();
+    
+    // Clear all validation states
+    form.querySelectorAll('.is-invalid').forEach(el => {
+        el.classList.remove('is-invalid');
+    });
+    
+    // Reset all select elements to default state
+    form.querySelectorAll('select').forEach(select => {
+        select.value = '';
+        if (select.name !== 'group_id') {
+            select.disabled = true;
+        }
+    });
+    
+    // Reset all weight inputs
+    form.querySelectorAll('[name$="_test_weight"]').forEach((input, index) => {
+        input.disabled = true;
+        input.value = index === 0 ? '100' : '0'; // PO1 weight defaults to 100, others to 0
+    });
+    
+    // Hide validation messages
+    form.querySelector('#weightValidationAlert').classList.add('d-none');
+    
+    // Reset the modal title
+    document.querySelector('#addCampaignModal .modal-title').textContent = 'Dodaj nową kampanię';
+    
+    // Reset the form action to the add endpoint
+    form.action = '/campaigns/add';
 } 
