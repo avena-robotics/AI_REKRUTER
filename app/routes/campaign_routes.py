@@ -173,6 +173,9 @@ def add():
             'po2_test_weight': int(request.form['po2_test_weight']) if request.form.get('po2_test_weight') else 0,
             'po2_5_test_weight': int(request.form['po2_5_test_weight']) if request.form.get('po2_5_test_weight') else 0,
             'po3_test_weight': int(request.form['po3_test_weight']) if request.form.get('po3_test_weight') else 0,
+            'po1_token_expiry_days': int(request.form.get('po1_token_expiry_days', 7)),
+            'po2_token_expiry_days': int(request.form.get('po2_token_expiry_days', 7)),
+            'po3_token_expiry_days': int(request.form.get('po3_token_expiry_days', 7)),
             'created_at': current_time.isoformat(),
             'updated_at': current_time.isoformat()
         }
@@ -271,6 +274,9 @@ def edit(campaign_id):
             'po2_test_weight': int(request.form['po2_test_weight']) if request.form.get('po2_test_weight') else 0,
             'po2_5_test_weight': int(request.form['po2_5_test_weight']) if request.form.get('po2_5_test_weight') else 0,
             'po3_test_weight': int(request.form['po3_test_weight']) if request.form.get('po3_test_weight') else 0,
+            'po1_token_expiry_days': int(request.form.get('po1_token_expiry_days', 7)),
+            'po2_token_expiry_days': int(request.form.get('po2_token_expiry_days', 7)),
+            'po3_token_expiry_days': int(request.form.get('po3_token_expiry_days', 7)),
             'updated_at': current_time.isoformat()
         }
 

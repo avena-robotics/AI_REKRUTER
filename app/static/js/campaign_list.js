@@ -132,6 +132,11 @@ function editCampaign(campaignId) {
             form.querySelector('[name="job_description"]').value = campaign.job_description || '';
             form.querySelector('[name="is_active"]').checked = campaign.is_active;
             
+            // Add these lines to populate token expiry days
+            form.querySelector('[name="po1_token_expiry_days"]').value = campaign.po1_token_expiry_days || 7;
+            form.querySelector('[name="po2_token_expiry_days"]').value = campaign.po2_token_expiry_days || 7;
+            form.querySelector('[name="po3_token_expiry_days"]').value = campaign.po3_token_expiry_days || 7;
+            
             // Set group and trigger test updates
             const groupSelect = form.querySelector('[name="group_id"]');
             if (campaign.groups && campaign.groups.length > 0) {
@@ -522,6 +527,11 @@ function cloneCampaign(campaignId) {
             form.querySelector('[name="employer_offerings"]').value = campaign.employer_offerings || '';
             form.querySelector('[name="job_description"]').value = campaign.job_description || '';
             form.querySelector('[name="is_active"]').checked = campaign.is_active;
+            
+            // Add these lines to populate token expiry days
+            form.querySelector('[name="po1_token_expiry_days"]').value = campaign.po1_token_expiry_days || 7;
+            form.querySelector('[name="po2_token_expiry_days"]').value = campaign.po2_token_expiry_days || 7;
+            form.querySelector('[name="po3_token_expiry_days"]').value = campaign.po3_token_expiry_days || 7;
             
             // Set group and trigger test updates
             const groupSelect = form.querySelector('[name="group_id"]');

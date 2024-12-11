@@ -78,15 +78,7 @@ class CandidateService:
                             updates['recruitment_status'] = 'REJECTED'
                             self.logger.warning(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO1 (wynik: {result})")
                         else:
-                            current_time = datetime.now(timezone.utc)
-                            token_expiry = current_time + timedelta(days=7)
-                            formatted_expiry = token_expiry.strftime("%Y-%m-%d %H:%M")
-                            self._handle_token_generation(
-                                candidate, 
-                                'PO2', 
-                                token_expiry, 
-                                formatted_expiry
-                            )
+                            self._handle_token_generation(candidate,'PO2')
                 
                 else:
                     self.logger.warning(f"Nie otrzymano wyniku dla kandydata {candidate['id']} w teście PO1")
@@ -129,16 +121,7 @@ class CandidateService:
                             updates['recruitment_status'] = 'REJECTED'
                             self.logger.info(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO2")
                         else:
-                            current_time = datetime.now(timezone.utc)
-                            token_expiry = current_time + timedelta(days=7)
-                            formatted_expiry = token_expiry.strftime("%Y-%m-%d %H:%M")
-                            self._handle_token_generation(
-                                candidate, 
-                                'PO3', 
-                                token_expiry, 
-                                formatted_expiry
-                            )
-                                
+                            self._handle_token_generation(candidate, 'PO3')
    
             # Sprawdzenie i obliczenie wyniku PO2_5
             elif (candidate.get('recruitment_status') == 'PO2_5' and 
@@ -168,18 +151,8 @@ class CandidateService:
                             updates['recruitment_status'] = 'REJECTED'
                             self.logger.info(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO2_5")
                         else:
-                            current_time = datetime.now(timezone.utc)
-                            token_expiry = current_time + timedelta(days=7)
-                            formatted_expiry = token_expiry.strftime("%Y-%m-%d %H:%M")
-                            self._handle_token_generation(
-                                candidate, 
-                                'PO3', 
-                                token_expiry, 
-                                formatted_expiry
-                            )
-
-
-
+                            self._handle_token_generation(candidate, 'PO3')
+                                
             # Sprawdzenie i obliczenie wyniku PO3
             elif (candidate.get('recruitment_status') == 'PO3' and 
                   candidate.get('po3_score') is None and 
@@ -404,27 +377,45 @@ class CandidateService:
             self.logger.info(f"Status nie może być zaktualizowany dla kandydata {candidate['id']}")
 
 
-    def _handle_token_generation(self, candidate: Dict[str, Any], 
-                               stage: str, token_expiry: datetime, 
-                               formatted_expiry: str) -> None:
+    def _handle_token_generation(self, candidate: Dict[str, Any], stage: str) -> None:
         """
         Generuje token dostępu i wysyła email do kandydata
         
         Args:
             candidate: Dane kandydata
             stage: Etap rekrutacji (PO2/PO3)
-            token_expiry: Data wygaśnięcia tokenu
-            formatted_expiry: Sformatowana data wygaśnięcia
         """
+        # Get campaign data first
+        campaign_response = self.supabase.table('campaigns')\
+            .select('po1_token_expiry_days, po2_token_expiry_days, po3_token_expiry_days')\
+            .eq('id', candidate['campaign_id'])\
+            .single()\
+            .execute()
+        
+        if not campaign_response.data:
+            self.logger.error(f"Nie znaleziono kampanii dla kandydata {candidate['id']}")
+            return
+        
+        # Get expiry days based on stage
+        expiry_days = {
+            'PO1': campaign_response.data['po1_token_expiry_days'],
+            'PO2': campaign_response.data['po2_token_expiry_days'],
+            'PO3': campaign_response.data['po3_token_expiry_days']
+        }.get(candidate.get('recruitment_status'), 7)  # Default to 7 if stage not found
+        
         token = generate_access_token()
         test_url = f"{self.config.BASE_URL}/test/candidate/{token}"
+        
+        current_time = datetime.now(timezone.utc)
+        token_expiry = (current_time + timedelta(days=expiry_days)).replace(hour=23, minute=59, second=59)
+        formatted_expiry = token_expiry.strftime("%Y-%m-%d %H:%M")
         
         updates = {
             f'access_token_{stage.lower()}': token,
             f'access_token_{stage.lower()}_expires_at': token_expiry.isoformat(),
             f'access_token_{stage.lower()}_is_used': False,
             'recruitment_status': stage,
-            'updated_at': datetime.now(timezone.utc).isoformat()
+            'updated_at': current_time.isoformat()
         }
         
         self.supabase.table('candidates')\
