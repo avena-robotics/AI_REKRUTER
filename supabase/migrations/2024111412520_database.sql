@@ -465,7 +465,7 @@ BEGIN
 END;
 $$;
 
--- Function to get candidate with tests
+-- Update get_candidate_with_tests function to handle float scores
 CREATE OR REPLACE FUNCTION get_candidate_with_tests(p_candidate_id bigint)
 RETURNS TABLE (
     candidate_data jsonb,
@@ -523,7 +523,11 @@ BEGIN
                     'po1_test_id', camp.po1_test_id,
                     'po2_test_id', camp.po2_test_id,
                     'po2_5_test_id', camp.po2_5_test_id,
-                    'po3_test_id', camp.po3_test_id
+                    'po3_test_id', camp.po3_test_id,
+                    'po1_test_weight', camp.po1_test_weight,
+                    'po2_test_weight', camp.po2_test_weight,
+                    'po2_5_test_weight', camp.po2_5_test_weight,
+                    'po3_test_weight', camp.po3_test_weight
                 )
             ) as cand_data
         FROM candidates c
@@ -556,8 +560,7 @@ BEGIN
                             'date_answer', ca.date_answer,
                             'abcdef_answer', ca.abcdef_answer,
                             'points_per_option', ca.points_per_option,
-                            'score', ROUND(CAST(ca.score AS NUMERIC), 1),
-                            'ai_explanation', ca.ai_explanation
+                            'score', ROUND(CAST(ca.score AS NUMERIC), 1)
                         ), NULL)
                         FROM candidate_answers ca
                         WHERE ca.question_id = q.id 

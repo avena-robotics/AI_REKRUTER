@@ -87,7 +87,11 @@ BEGIN
                     'po1_test_id', camp.po1_test_id,
                     'po2_test_id', camp.po2_test_id,
                     'po2_5_test_id', camp.po2_5_test_id,
-                    'po3_test_id', camp.po3_test_id
+                    'po3_test_id', camp.po3_test_id,
+                    'po1_test_weight', camp.po1_test_weight,
+                    'po2_test_weight', camp.po2_test_weight,
+                    'po2_5_test_weight', camp.po2_5_test_weight,
+                    'po3_test_weight', camp.po3_test_weight
                 )
             ) as cand_data
         FROM candidates c

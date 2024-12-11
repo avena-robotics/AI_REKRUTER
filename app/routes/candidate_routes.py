@@ -72,7 +72,7 @@ def list():
 def view(id):
     logger.info(f"Rozpoczęcie pobierania szczegółów kandydata {id}")
     try:
-        # Get all data in a single query using the new function
+        # Get all data in a single query using the function
         result = supabase.rpc(
             'get_candidate_with_tests',
             {'p_candidate_id': id}
@@ -121,6 +121,7 @@ def view(id):
                 
                 test_data['started_at'] = started_at
                 test_data['completed_at'] = completed_at
+                
 
         return render_template(
             "candidates/candidate_view.html",

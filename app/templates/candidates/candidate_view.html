@@ -51,6 +51,8 @@
                     <tr>
                         <th>Etap</th>
                         <th>Punkty</th>
+                        <th>Waga</th>
+                        <th>Wynik ważony</th>
                         <th>Data ukończenia</th>
                     </tr>
                 </thead>
@@ -58,30 +60,65 @@
                     <tr>
                         <td>PO1</td>
                         <td>{{ candidate.po1_score if candidate.po1_score is not none else '-' }}</td>
+                        <td>{{ candidate.campaign.po1_test_weight if candidate.campaign.po1_test_weight is not none else '-' }}%</td>
+                        <td>
+                            {% if candidate.po1_score is not none and candidate.campaign.po1_test_weight is not none %}
+                                {{ "%.1f"|format(candidate.po1_score * candidate.campaign.po1_test_weight / 100) }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
                         <td>{{ candidate.po1_completed_at|datetime if candidate.po1_completed_at else '-' }}</td>
                     </tr>
                     <tr>
                         <td>PO2</td>
                         <td>{{ candidate.po2_score if candidate.po2_score is not none else '-' }}</td>
+                        <td>{{ candidate.campaign.po2_test_weight if candidate.campaign.po2_test_weight is not none else '-' }}%</td>
+                        <td>
+                            {% if candidate.po2_score is not none and candidate.campaign.po2_test_weight is not none %}
+                                {{ "%.1f"|format(candidate.po2_score * candidate.campaign.po2_test_weight / 100) }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
                         <td>{{ candidate.po2_completed_at|datetime if candidate.po2_completed_at else '-' }}</td>
                     </tr>
                     <tr>
                         <td>PO2.5</td>
                         <td>{{ candidate.po2_5_score if candidate.po2_5_score is not none else '-' }}</td>
+                        <td>{{ candidate.campaign.po2_5_test_weight if candidate.campaign.po2_5_test_weight is not none else '-' }}%</td>
+                        <td>
+                            {% if candidate.po2_5_score is not none and candidate.campaign.po2_5_test_weight is not none %}
+                                {{ "%.1f"|format(candidate.po2_5_score * candidate.campaign.po2_5_test_weight / 100) }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
                         <td>{{ '-' }}</td>
                     </tr>
                     <tr>
                         <td>PO3</td>
                         <td>{{ candidate.po3_score if candidate.po3_score is not none else '-' }}</td>
+                        <td>{{ candidate.campaign.po3_test_weight if candidate.campaign.po3_test_weight is not none else '-' }}%</td>
+                        <td>
+                            {% if candidate.po3_score is not none and candidate.campaign.po3_test_weight is not none %}
+                                {{ "%.1f"|format(candidate.po3_score * candidate.campaign.po3_test_weight / 100) }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
                         <td>{{ candidate.po3_completed_at|datetime if candidate.po3_completed_at else '-' }}</td>
                     </tr>
                     <tr>
                         <td>PO4</td>
                         <td>{{ candidate.po4_score if candidate.po4_score is not none else '-' }}</td>
+                        <td>-</td>
+                        <td>-</td>
                         <td>{{ candidate.po4_completed_at|datetime if candidate.po4_completed_at else '-' }}</td>
                     </tr>
                     <tr class="table-active">
                         <td><strong>Wynik ogólny</strong></td>
+                        <td colspan="2">-</td>
                         <td><strong>{{ candidate.total_score if candidate.total_score is not none else '-' }}</strong></td>
                         <td>-</td>
                     </tr>
@@ -90,7 +127,6 @@
         </div>
     </div>
 
-    <!-- Po sekcji "Podsumowanie wyników" a przed "Test Answers" -->
     <div class="card mb-4">
         <div class="card-header">
             <h5 class="mb-0">Szczegółowe wyniki</h5>
