@@ -95,12 +95,12 @@ create table candidates (
     email text not null,                            -- jan.kowalski@example.com
     phone text,                                     -- +48 123 456 789
     recruitment_status recruitment_status not null, -- PO1, PO2, PO3, PO4, REJECTED, ACCEPTED
-    po1_score int,                                  -- 100
-    po2_score int,                                  -- 80
-    po2_5_score int,                                -- 80
-    po3_score int,                                  -- 70
-    po4_score int,                                  -- 60
-    total_score float,                                -- 310  
+    po1_score float CHECK (po1_score >= 0),         -- 100.0
+    po2_score float CHECK (po2_score >= 0),         -- 80.0
+    po2_5_score float CHECK (po2_5_score >= 0),     -- 80.0
+    po3_score float CHECK (po3_score >= 0),         -- 70.0
+    po4_score float CHECK (po4_score >= 0),         -- 60.0
+    total_score float CHECK (total_score >= 0),     -- 310.0
     po1_started_at timestamp with time zone,
     po2_started_at timestamp with time zone,
     po3_started_at timestamp with time zone,
@@ -138,7 +138,7 @@ create table candidate_answers (
     date_answer date,                              -- Odpowiedź typu date
     abcdef_answer text,                            -- Odpowiedź typu ABCDEF
     points_per_option jsonb,                       -- Format JSON, np. {"a": 3, "b": 5, "c": 0}
-    score int,                                     -- Punkty za odpowiedź
+    score float CHECK (score >= 0),                -- Punkty za odpowiedź
     ai_explanation text,                           -- Wyjaśnienie odpowiedzi AI
     created_at timestamp default now()
 );
@@ -465,7 +465,7 @@ BEGIN
 END;
 $$;
 
--- Add after other functions
+-- Function to get candidate with tests
 CREATE OR REPLACE FUNCTION get_candidate_with_tests(p_candidate_id bigint)
 RETURNS TABLE (
     candidate_data jsonb,
@@ -484,12 +484,12 @@ BEGIN
                 'recruitment_status', c.recruitment_status,
                 'created_at', c.created_at,
                 'updated_at', c.updated_at,
-                'po1_score', c.po1_score,
-                'po2_score', c.po2_score,
-                'po2_5_score', c.po2_5_score,
-                'po3_score', c.po3_score,
-                'po4_score', c.po4_score,
-                'total_score', c.total_score,
+                'po1_score', ROUND(CAST(c.po1_score AS NUMERIC), 1),
+                'po2_score', ROUND(CAST(c.po2_score AS NUMERIC), 1),
+                'po2_5_score', ROUND(CAST(c.po2_5_score AS NUMERIC), 1),
+                'po3_score', ROUND(CAST(c.po3_score AS NUMERIC), 1),
+                'po4_score', ROUND(CAST(c.po4_score AS NUMERIC), 1),
+                'total_score', ROUND(CAST(c.total_score AS NUMERIC), 1),
                 'po1_started_at', c.po1_started_at,
                 'po2_started_at', c.po2_started_at,
                 'po3_started_at', c.po3_started_at,
@@ -556,7 +556,8 @@ BEGIN
                             'date_answer', ca.date_answer,
                             'abcdef_answer', ca.abcdef_answer,
                             'points_per_option', ca.points_per_option,
-                            'score', ca.score
+                            'score', ROUND(CAST(ca.score AS NUMERIC), 1),
+                            'ai_explanation', ca.ai_explanation
                         ), NULL)
                         FROM candidate_answers ca
                         WHERE ca.question_id = q.id 

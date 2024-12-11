@@ -137,171 +137,143 @@ class TestService:
 
     def calculate_score(self, answer: dict, question: dict) -> float:
         """
-        Oblicza wynik dla pojedynczej odpowiedzi na podstawie typu pytania i poprawnej odpowiedzi.
+        Oblicza wynik dla pojedynczej odpowiedzi.
+        
+        Args:
+            answer: Odpowiedź kandydata
+            question: Pytanie z parametrami oceny
+            
+        Returns:
+            float: Wynik za odpowiedź (zawsze zaokrąglony do 1 miejsca po przecinku)
         """
         try:
             self.logger.debug(f"Rozpoczęcie obliczania wyniku dla pytania typu {question['answer_type']}")
-            answer_type = question['answer_type']
-            max_points = float(question.get('points', 0))
+            
+            # Validate and convert max points
+            try:
+                max_points = float(question.get('points', 0))
+                if max_points < 0:
+                    self.logger.warning(f"Wykryto ujemną wartość punktów: {max_points}, ustawiam na 0")
+                    max_points = 0
+            except (ValueError, TypeError):
+                self.logger.error(f"Nieprawidłowa wartość punktów: {question.get('points')}, ustawiam na 0")
+                max_points = 0
+            
+            # Jeśli pytanie nie ma punktów, nie ma sensu liczyć
+            if max_points == 0:
+                return 0.0
+                
             algorithm_type = question.get('algorithm_type', 'NO_ALGORITHM')
             algorithm_params = question.get('algorithm_params', {})
-            self.logger.debug(f"Parametry algorytmu: typ={algorithm_type}, max_punktów={max_points}")
-
+            
             # Handle empty/None answers
             if not answer:
                 self.logger.warning("Otrzymano pustą odpowiedź, zwracam 0 punktów")
                 return 0.0
 
-            if answer_type == 'TEXT':
+            # Obliczamy wynik w zależności od typu odpowiedzi
+            raw_score = self._calculate_raw_score(
+                answer, 
+                question, 
+                max_points, 
+                algorithm_type, 
+                algorithm_params
+            )
+            
+            # Zawsze zaokrąglamy do 1 miejsca po przecinku
+            final_score = round(float(raw_score), 1)
+            
+            self.logger.debug(
+                f"Wynik dla pytania {question['id']}: {final_score}/{max_points} "
+                f"({(final_score/max_points * 100):.1f}% maksymalnej wartości)"
+            )
+            
+            return final_score
+            
+        except Exception as e:
+            self.logger.error(f"Błąd podczas obliczania wyniku: {str(e)}")
+            return 0.0
+            
+    def _calculate_raw_score(
+        self, 
+        answer: dict, 
+        question: dict, 
+        max_points: float,
+        algorithm_type: str,
+        algorithm_params: dict
+    ) -> float:
+        """
+        Oblicza surowy wynik dla odpowiedzi przed zaokrągleniem.
+        
+        Returns:
+            float: Surowy wynik przed zaokrągleniem
+        """
+        answer_type = question['answer_type']
+        
+        if answer_type == 'TEXT':
+            if algorithm_type == 'NO_ALGORITHM':
+                return 0.0
+            elif algorithm_type == 'EXACT_MATCH':
+                user_answer = str(answer.get('text_answer', '')).strip().lower()
+                correct_answer = str(algorithm_params.get('correct_answer', '')).strip().lower()
+                return float(max_points) if user_answer == correct_answer else 0.0
+            elif algorithm_type == 'EVALUATION_BY_AI':
                 try:
-                    self.logger.debug(f"Obliczanie wyniku dla odpowiedzi tekstowej: '{answer.get('text_answer', '')[:100]}...'")
-                    if algorithm_type == 'NO_ALGORITHM':
-                        self.logger.info("Brak algorytmu oceny dla odpowiedzi tekstowej")
-                        return 0.0
-                    elif algorithm_type == 'EXACT_MATCH':
-                        self.logger.debug("Stosowanie algorytmu dokładnego dopasowania")
-                        user_answer = answer.get('text_answer', '').strip().lower()
-                        correct_answer = str(algorithm_params.get('correct_answer', '')).strip().lower()
-                        self.logger.debug(f"Porównanie odpowiedzi: użytkownika='{user_answer}', prawidłowa='{correct_answer}'")
-                        return float(max_points) if user_answer == correct_answer else 0.0
-                    elif algorithm_type == 'EVALUATION_BY_AI':
-                        self.logger.info("Rozpoczęcie oceny przez AI")
-                        try:
-                            result = self.openai_service.evaluate_answer(
-                                question_text=question['question_text'],
-                                answer_text=answer.get('text_answer', ''),
-                                max_points=float(max_points),
-                                algorithm_params=algorithm_params
-                            )
-                            self.logger.debug(f"Otrzymano wynik oceny AI: {result}")
-                            
-                            if result is not None:
-                                score = result['score']
-                                explanation = result['explanation']
-                                self.logger.info(f"Ocena AI: {score} punktów, uzasadnienie: {explanation}")
-                                self.update_answer_ai_explanation(answer['id'], explanation)
-                                return score if score is not None else 0.0
-                            else:
-                                self.logger.warning("Ocena AI zwróciła None, przyznano 0 punktów")
-                                return 0.0
-                        except Exception as e:
-                            self.logger.error(f"Błąd podczas oceny AI: {str(e)}")
-                            return 0.0
-                    else:
-                        self.logger.warning(f"Nieznany typ algorytmu: {algorithm_type}")
-                        return 0.0
-                except Exception as e:
-                    self.logger.error(f"Błąd podczas obliczania wyniku dla odpowiedzi tekstowej: {str(e)}")
+                    result = self.openai_service.evaluate_answer(
+                        question_text=question['question_text'],
+                        answer_text=answer.get('text_answer', ''),
+                        max_points=float(max_points),
+                        algorithm_params=algorithm_params
+                    )
+                    if result and isinstance(result, dict):
+                        score = result.get('score')
+                        explanation = result.get('explanation')
+                        if score is not None:
+                            score = max(0.0, min(float(score), max_points))
+                            self.update_answer_ai_explanation(answer['id'], explanation)
+                            return score
                     return 0.0
-
-            elif answer_type == 'BOOLEAN':
-                try:
-                    self.logger.debug(f"Obliczanie wyniku dla odpowiedzi logicznej: {answer.get('boolean_answer')}")
-                    if algorithm_type == 'EXACT_MATCH':
-                        user_answer = answer.get('boolean_answer')
-                        correct_answer = algorithm_params.get('correct_answer')
-                        self.logger.debug(f"Porównanie odpowiedzi logicznej: użytkownika={user_answer}, prawidłowa={correct_answer}")
-                        if user_answer is None:
-                            self.logger.warning("Otrzymano pustą odpowiedź logiczną")
-                            return 0.0
-                        return float(max_points) if user_answer == correct_answer else 0.0
-                    else:
-                        self.logger.warning(f"Nieobsługiwany typ algorytmu dla odpowiedzi logicznej: {algorithm_type}")
-                        return 0.0
                 except Exception as e:
-                    self.logger.error(f"Błąd podczas obliczania wyniku dla odpowiedzi logicznej: {str(e)}")
+                    self.logger.error(f"Błąd podczas oceny AI: {str(e)}")
                     return 0.0
-
-            elif answer_type == 'SCALE':
-                try:
-                    self.logger.debug(f"Obliczanie wyniku dla odpowiedzi skalarnej: {answer.get('scale_answer')}")
-                    user_answer = float(str(answer.get('scale_answer')).replace(',', '.'))
-                    self.logger.info(f"Zastosowano algorytm {algorithm_type} dla wartości {user_answer}")
-
-                    if user_answer is None:
-                        return 0.0
                     
-                    elif algorithm_type == 'NO_ALGORITHM':
-                        return 0.0
-                    
-                    elif algorithm_type == 'EXACT_MATCH':
-                        correct_answer = float(algorithm_params.get('correct_answer', 0))
-                        return float(max_points) if user_answer == correct_answer else 0.0
-                    
-                    elif algorithm_type == 'RANGE':
-                        min_value = float(algorithm_params.get('min_value'))
-                        max_value = float(algorithm_params.get('max_value'))
-                        self.logger.debug(f"Sprawdzanie zakresu: min={min_value}, max={max_value}, wartość={user_answer}")
-                        
-                        if user_answer < min_value or user_answer > max_value:
-                            self.logger.info(f"Wartość {user_answer} poza zakresem [{min_value}, {max_value}]")
-                            return 0.0
-                        else:
-                            self.logger.info(f"Wartość {user_answer} w zakresie, przyznano {max_points} punktów")
-                            return max_points
-                        
-                    elif algorithm_type == 'LEFT_SIDED':
-                        self.logger.debug(f"Obliczanie wyniku dla algorytmu lewostronnego")
-                        min_value = float(algorithm_params.get('min_value'))
-                        correct_answer = float(algorithm_params.get('correct_answer'))
-                        self.logger.debug(f"Parametry: min={min_value}, poprawna={correct_answer}, odpowiedź={user_answer}")
-
-                    elif algorithm_type == 'RIGHT_SIDED':
-                        self.logger.debug(f"Obliczanie wyniku dla algorytmu prawostronnego")
-                        max_value = float(algorithm_params.get('max_value'))
-                        correct_answer = float(algorithm_params.get('correct_answer'))
-                        self.logger.debug(f"Parametry: max={max_value}, poprawna={correct_answer}, odpowiedź={user_answer}")
-
-                    elif algorithm_type == 'CENTER':
-                        min_value = float(algorithm_params.get('min_value'))
-                        correct_answer = float(algorithm_params.get('correct_answer'))
-                        max_value = float(algorithm_params.get('max_value'))
-                        
-                        if user_answer == correct_answer:
-                            return float(max_points)
-                        elif user_answer <= min_value or user_answer >= max_value:
-                            return 0.0
-                        elif user_answer < correct_answer:
-                            return max_points * (user_answer - min_value) / (correct_answer - min_value)
-                        else:
-                            return max_points * (max_value - user_answer) / (max_value - correct_answer)
-                        
-                    else:
-                        return 0.0
-                    
-                except Exception as e:
-                    self.logger.error(f"Error in SCALE calculation: {str(e)}")
-                    return 0.0
+        elif answer_type == 'BOOLEAN':
+            if algorithm_type == 'EXACT_MATCH':
+                user_answer = answer.get('boolean_answer')
+                correct_answer = algorithm_params.get('correct_answer')
+                return float(max_points) if user_answer == correct_answer else 0.0
                 
-            elif answer_type == 'SALARY':
+        elif answer_type in ['SCALE', 'SALARY']:
+            try:
+                user_answer = float(str(answer.get(f'{answer_type.lower()}_answer', '')).replace(',', '.'))
+            except (ValueError, TypeError):
+                return 0.0
+                
+            if algorithm_type == 'EXACT_MATCH':
                 try:
-                    self.logger.debug(f"Obliczanie wyniku dla odpowiedzi płacowej: {answer.get('salary_answer')}")
-                    user_answer = float(str(answer.get('salary_answer')).replace(',', '.'))
-                    self.logger.info(f"Zastosowano algorytm {algorithm_type} dla kwoty {user_answer}")
-
-                    if user_answer is None:
-                        return 0.0
+                    correct_answer = float(str(algorithm_params.get('correct_answer', 0)).replace(',', '.'))
+                    epsilon = 0.001 if answer_type == 'SCALE' else 0.01
+                    return float(max_points) if abs(user_answer - correct_answer) < epsilon else 0.0
+                except (ValueError, TypeError):
+                    return 0.0
                     
-                    elif algorithm_type == 'NO_ALGORITHM':
-                        return 0.0
+            elif algorithm_type == 'RANGE':
+                try:
+                    min_value = float(str(algorithm_params.get('min_value', '')).replace(',', '.'))
+                    max_value = float(str(algorithm_params.get('max_value', '')).replace(',', '.'))
+                    return float(max_points) if min_value <= user_answer <= max_value else 0.0
+                except (ValueError, TypeError):
+                    return 0.0
                     
-                    elif algorithm_type == 'EXACT_MATCH':                        
-                        correct_answer = float(str(algorithm_params.get('correct_answer', 0)).replace(',', '.'))
-                        return float(max_points) if user_answer == correct_answer else 0.0
+            elif algorithm_type in ['LEFT_SIDED', 'RIGHT_SIDED', 'CENTER']:
+                try:
+                    if algorithm_type != 'RIGHT_SIDED':
+                        min_value = float(str(algorithm_params.get('min_value', '')).replace(',', '.'))
+                    if algorithm_type != 'LEFT_SIDED':
+                        max_value = float(str(algorithm_params.get('max_value', '')).replace(',', '.'))
+                    correct_answer = float(str(algorithm_params.get('correct_answer', '')).replace(',', '.'))
                     
-                    elif algorithm_type == 'RANGE':
-                        min_value = float(algorithm_params.get('min_value'))
-                        max_value = float(algorithm_params.get('max_value'))
-                        
-                        if user_answer <= min_value or user_answer >= max_value:
-                            return 0.0
-                        else:
-                            return max_points
-                        
-                    elif algorithm_type == 'LEFT_SIDED':
-                        min_value = float(algorithm_params.get('min_value'))
-                        correct_answer = float(str(algorithm_params.get('correct_answer', 0)).replace(',', '.'))
-                        
+                    if algorithm_type == 'LEFT_SIDED':
                         if user_answer <= min_value:
                             return 0.0
                         elif user_answer >= correct_answer:
@@ -309,19 +281,13 @@ class TestService:
                         return max_points * (user_answer - min_value) / (correct_answer - min_value)
                         
                     elif algorithm_type == 'RIGHT_SIDED':
-                        max_value = float(algorithm_params.get('max_value'))
-                        correct_answer = float(algorithm_params.get('correct_answer'))
                         if user_answer >= max_value:
                             return 0.0
                         elif user_answer <= correct_answer:
                             return float(max_points)
                         return max_points * (max_value - user_answer) / (max_value - correct_answer)
-                    
-                    elif algorithm_type == 'CENTER':
-                        min_value = float(algorithm_params.get('min_value'))
-                        correct_answer = float(algorithm_params.get('correct_answer'))
-                        max_value = float(algorithm_params.get('max_value'))
                         
+                    else:  # CENTER
                         if user_answer == correct_answer:
                             return float(max_points)
                         elif user_answer <= min_value or user_answer >= max_value:
@@ -330,170 +296,194 @@ class TestService:
                             return max_points * (user_answer - min_value) / (correct_answer - min_value)
                         else:
                             return max_points * (max_value - user_answer) / (max_value - correct_answer)
-
-                    else:
-                        return 0.0
-                    
-                except Exception as e:
-                    self.logger.error(f"Error in SALARY calculation: {str(e)}")
+                            
+                except (ValueError, TypeError, ZeroDivisionError):
                     return 0.0
-            
-            elif answer_type == 'DATE':
-                try:
-                    self.logger.debug(f"Obliczanie wyniku dla odpowiedzi datowej: {answer.get('date_answer')}")
-                    user_date = answer.get('date_answer')
-                    self.logger.info(f"Zastosowano algorytm {algorithm_type} dla daty {user_date}")
-
-                    if algorithm_type == 'NO_ALGORITHM':
+                    
+        elif answer_type == 'DATE':
+            user_date = answer.get('date_answer')
+            if not user_date:
+                return 0.0
+                
+            try:
+                if isinstance(user_date, str):
+                    user_date = datetime.strptime(user_date, '%Y-%m-%d').date()
+                    
+                correct_date = algorithm_params.get('correct_answer')
+                min_date = algorithm_params.get('min_value')
+                max_date = algorithm_params.get('max_value')
+                
+                if algorithm_type == 'EXACT_MATCH':
+                    if not correct_date:
                         return 0.0
+                    if isinstance(correct_date, str):
+                        correct_date = datetime.strptime(correct_date, '%Y-%m-%d').date()
+                    return float(max_points) if user_date == correct_date else 0.0
                     
-                    # Get algorithm parameters
-                    correct_date = algorithm_params.get('correct_answer')
-                    min_date = algorithm_params.get('min_value')
-                    max_date = algorithm_params.get('max_value')
-                    
-                    # Return 0 if no user answer
-                    if not user_date:
-                        self.logger.warning("Otrzymano pustą datę")
+                elif algorithm_type == 'RANGE':
+                    if not min_date or not max_date:
                         return 0.0
-                        
-                    # Convert string dates to datetime.date objects
-                    if isinstance(user_date, str):
-                        self.logger.debug(f"Konwersja daty z formatu string: {user_date}")
-                        user_date = datetime.strptime(user_date, '%Y-%m-%d').date()
-                        self.logger.debug(f"Data po konwersji: {user_date}")
-
-                    if algorithm_type == 'EXACT_MATCH':
-                        self.logger.debug("Stosowanie algorytmu dokładnego dopasowania dla daty")
-                        if not correct_date:
-                            self.logger.warning("Brak zdefiniowanej poprawnej daty")
-                            return 0.0
-                        if isinstance(correct_date, str):
-                            correct_date = datetime.strptime(correct_date, '%Y-%m-%d').date()
-                        return float(max_points) if user_date == correct_date else 0.0
+                    if isinstance(min_date, str):
+                        min_date = datetime.strptime(min_date, '%Y-%m-%d').date()
+                    if isinstance(max_date, str):
+                        max_date = datetime.strptime(max_date, '%Y-%m-%d').date()
+                    return float(max_points) if min_date <= user_date <= max_date else 0.0
                     
-                    elif algorithm_type == 'RANGE':
-                        if not min_date or not max_date:
-                            return 0.0
-                        if isinstance(min_date, str):
-                            min_date = datetime.strptime(min_date, '%Y-%m-%d').date()
-                        if isinstance(max_date, str):
-                            max_date = datetime.strptime(max_date, '%Y-%m-%d').date()
-                        
-                        return float(max_points) if min_date <= user_date <= max_date else 0.0
-                    
-                    elif algorithm_type == 'LEFT_SIDED':
+                elif algorithm_type in ['LEFT_SIDED', 'RIGHT_SIDED', 'CENTER']:
+                    if algorithm_type != 'RIGHT_SIDED':
                         if not min_date or not correct_date:
                             return 0.0
                         if isinstance(min_date, str):
                             min_date = datetime.strptime(min_date, '%Y-%m-%d').date()
-                        if isinstance(correct_date, str):
-                            correct_date = datetime.strptime(correct_date, '%Y-%m-%d').date()
-                        
-                        if user_date <= min_date:
-                            return 0.0
-                        elif user_date >= correct_date:
-                            return float(max_points)
-                        
-                        total_days = (correct_date - min_date).days
-                        user_days = (user_date - min_date).days
-                        return max_points * (user_days / total_days) if total_days > 0 else 0.0
-                    
-                    elif algorithm_type == 'RIGHT_SIDED':
+                    if algorithm_type != 'LEFT_SIDED':
                         if not max_date or not correct_date:
                             return 0.0
                         if isinstance(max_date, str):
                             max_date = datetime.strptime(max_date, '%Y-%m-%d').date()
-                        if isinstance(correct_date, str):
-                            correct_date = datetime.strptime(correct_date, '%Y-%m-%d').date()
+                    if isinstance(correct_date, str):
+                        correct_date = datetime.strptime(correct_date, '%Y-%m-%d').date()
                         
+                    if algorithm_type == 'LEFT_SIDED':
+                        if user_date <= min_date:
+                            return 0.0
+                        elif user_date >= correct_date:
+                            return float(max_points)
+                        total_days = (correct_date - min_date).days
+                        if total_days <= 0:
+                            return 0.0
+                        user_days = (user_date - min_date).days
+                        return max_points * (user_days / total_days)
+                        
+                    elif algorithm_type == 'RIGHT_SIDED':
                         if user_date >= max_date:
                             return 0.0
                         elif user_date <= correct_date:
                             return float(max_points)
-                        
                         total_days = (max_date - correct_date).days
-                        user_days = (max_date - user_date).days
-                        return max_points * (user_days / total_days) if total_days > 0 else 0.0
-                    
-                    elif algorithm_type == 'CENTER':
-                        if not min_date or not max_date or not correct_date:
+                        if total_days <= 0:
                             return 0.0
-                        if isinstance(min_date, str):
-                            min_date = datetime.strptime(min_date, '%Y-%m-%d').date()
-                        if isinstance(max_date, str):
-                            max_date = datetime.strptime(max_date, '%Y-%m-%d').date()
-                        if isinstance(correct_date, str):
-                            correct_date = datetime.strptime(correct_date, '%Y-%m-%d').date()
+                        user_days = (max_date - user_date).days
+                        return max_points * (user_days / total_days)
                         
+                    else:  # CENTER
                         if user_date == correct_date:
                             return float(max_points)
                         elif user_date <= min_date or user_date >= max_date:
                             return 0.0
-                        
-                        if user_date < correct_date:
+                        elif user_date < correct_date:
                             total_days = (correct_date - min_date).days
+                            if total_days <= 0:
+                                return 0.0
                             user_days = (user_date - min_date).days
-                            return max_points * (user_days / total_days) if total_days > 0 else 0.0
+                            return max_points * (user_days / total_days)
                         else:
                             total_days = (max_date - correct_date).days
+                            if total_days <= 0:
+                                return 0.0
                             user_days = (max_date - user_date).days
-                            return max_points * (user_days / total_days) if total_days > 0 else 0.0
-                    
-                    return 0.0
-                    
-                except Exception as e:
-                    self.logger.error(f"Error in DATE calculation: {str(e)}")
-                    return 0.0
-                    
-            elif answer_type == 'ABCDEF':
-                try:
-                    if algorithm_type == 'NO_ALGORITHM':
-                        return 0.0
-                    elif algorithm_type == 'EXACT_MATCH':
-                        user_answer = answer.get('abcdef_answer', '').strip().lower()
-                        correct_answer = str(algorithm_params.get('correct_answer', '')).strip().lower()
-                        return float(max_points) if user_answer == correct_answer else 0.0
-                    else:
-                        return 0.0
-                except Exception as e:
-                    self.logger.error(f"Error in ABCDEF calculation: {str(e)}")
-                    return 0.0
+                            return max_points * (user_days / total_days)
+                            
+            except (ValueError, TypeError) as e:
+                self.logger.error(f"Błąd podczas obliczania wyniku dla daty: {str(e)}")
+                return 0.0
                 
-            return 0.0
-            
-        except Exception as e:
-            self.logger.error(f"Error in calculate_score: {str(e)}")
-            return 0.0
+        elif answer_type == 'ABCDEF':
+            if algorithm_type == 'EXACT_MATCH':
+                user_answer = str(answer.get('abcdef_answer', '')).strip().lower()
+                correct_answer = str(algorithm_params.get('correct_answer', '')).strip().lower()
+                return float(max_points) if user_answer == correct_answer else 0.0
+                
+        return 0.0
 
-    def calculate_total_score(self, answers_response: dict, questions: dict) -> int:
+    def calculate_total_score(self, answers_response: dict, questions: dict) -> float:
         """
         Oblicza łączny wynik dla wszystkich odpowiedzi.
         
+        Args:
+            answers_response: Odpowiedzi kandydata
+            questions: Słownik z pytaniami i ich parametrami
+            
         Returns:
-            int: Całkowity wynik zaokrąglony do liczby całkowitej
+            float: Całkowity wynik zaokrąglony do 1 miejsca po przecinku
         """
-        self.logger.info(f"Rozpoczęcie obliczania łącznego wyniku dla {len(answers_response.data)} odpowiedzi")
-        total_score = 0.0
-        
-        for answer in answers_response.data:
-            question = questions.get(answer['question_id'])
-            if not question:
-                self.logger.warning(f"Nie znaleziono pytania dla odpowiedzi {answer['id']}")
-                continue
+        try:
+            if not answers_response.data:
+                self.logger.warning("Brak odpowiedzi do oceny")
+                return 0.0
+                
+            self.logger.info(f"Rozpoczęcie obliczania łącznego wyniku dla {len(answers_response.data)} odpowiedzi")
             
-            # Skip EQ questions as they're handled separately
-            if question['answer_type'] == 'AH_POINTS':
-                self.logger.debug(f"Pominięto pytanie EQ {question['id']}")
-                continue
+            # Przechowujemy wyniki cząstkowe dla lepszego logowania
+            partial_scores = []
+            total_points_possible = 0.0
             
-            score = self.calculate_score(answer, question)
-            self.logger.debug(f"Obliczono wynik {score} dla odpowiedzi {answer['id']}")
-            total_score += score
-            self.update_answer_score(answer['id'], score)
-        
-        self.logger.info(f"Zakończono obliczanie łącznego wyniku. Suma punktów: {round(total_score)}")
-        return round(total_score)
+            for answer in answers_response.data:
+                question = questions.get(answer['question_id'])
+                if not question:
+                    self.logger.warning(f"Nie znaleziono pytania dla odpowiedzi {answer['id']}")
+                    continue
+                
+                # Skip EQ questions as they're handled separately
+                if question['answer_type'] == 'AH_POINTS':
+                    self.logger.debug(f"Pominięto pytanie EQ {question['id']}")
+                    continue
+                
+                try:
+                    max_points = float(question.get('points', 0))
+                    if max_points > 0:
+                        total_points_possible += max_points
+                        score = self.calculate_score(answer, question)
+                        if score is not None and score >= 0:
+                            # Zaokrąglamy każdy wynik cząstkowy do 1 miejsca po przecinku
+                            rounded_score = round(score, 1)
+                            partial_scores.append({
+                                'question_id': question['id'],
+                                'max_points': max_points,
+                                'score': rounded_score
+                            })
+                            # Aktualizujemy wynik w bazie danych
+                            self.update_answer_score(answer['id'], rounded_score)
+                            self.logger.debug(
+                                f"Pytanie {question['id']}: {rounded_score}/{max_points} punktów "
+                                f"({(rounded_score/max_points * 100):.1f}%)"
+                            )
+                        else:
+                            self.logger.warning(f"Otrzymano nieprawidłowy wynik {score} dla odpowiedzi {answer['id']}")
+                except (ValueError, TypeError) as e:
+                    self.logger.error(f"Błąd podczas przetwarzania punktów dla pytania {question['id']}: {str(e)}")
+                    continue
+            
+            if total_points_possible > 0:
+                # Obliczamy procent zdobytych punktów
+                raw_total = sum(p['score'] for p in partial_scores)
+                raw_percentage = (raw_total / total_points_possible) * 100
+                
+                # Zaokrąglamy wynik końcowy do 1 miejsca po przecinku
+                final_score = round(raw_percentage, 1)
+                
+                # Logujemy szczegółowe informacje o punktacji
+                self.logger.info(
+                    f"Zakończono obliczanie łącznego wyniku:\n"
+                    f"- Suma punktów: {raw_total:.1f}/{total_points_possible:.1f}\n"
+                    f"- Procent: {raw_percentage:.1f}%\n"
+                    f"- Wynik końcowy: {final_score}"
+                )
+                
+                # Logujemy wyniki cząstkowe dla debugowania
+                for partial in partial_scores:
+                    self.logger.debug(
+                        f"Pytanie {partial['question_id']}: "
+                        f"{partial['score']}/{partial['max_points']} punktów"
+                    )
+                
+                return final_score
+            else:
+                self.logger.warning("Brak pytań z punktami do oceny")
+                return 0.0
+            
+        except Exception as e:
+            self.logger.error(f"Błąd podczas obliczania łącznego wyniku: {str(e)}")
+            return 0.0
     
     def update_answer_ai_explanation(self, answer_id: int, explanation: str) -> None:
         """

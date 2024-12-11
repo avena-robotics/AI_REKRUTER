@@ -239,10 +239,10 @@ class CandidateService:
             )
             return candidate
 
-    def _calculate_total_weighted_score(self, po1_score: Optional[int], 
-                                      po2_score: Optional[int], 
-                                      po2_5_score: Optional[int], 
-                                      po3_score: Optional[int], 
+    def _calculate_total_weighted_score(self, po1_score: Optional[float], 
+                                      po2_score: Optional[float], 
+                                      po2_5_score: Optional[float], 
+                                      po3_score: Optional[float], 
                                       campaign: dict) -> Optional[float]:
         """
         Oblicza całkowity ważony wynik na podstawie wyników testów i wag z kampanii
@@ -258,42 +258,56 @@ class CandidateService:
             Optional[float]: Całkowity ważony wynik lub None jeśli nie można obliczyć
         """
         try:
+            self.logger.debug(f"Obliczanie total_score dla wyników: PO1={po1_score}, PO2={po2_score}, PO2.5={po2_5_score}, PO3={po3_score}")
+            
             # Get weights from campaign
-            po1_weight = float(campaign.get('po1_weight', 0))
-            po2_weight = float(campaign.get('po2_weight', 0))
-            po2_5_weight = float(campaign.get('po2_5_weight', 0))
-            po3_weight = float(campaign.get('po3_weight', 0))
+            
+            
+            po1_weight = campaign.get('po1_test_weight', 0)
+            po2_weight = campaign.get('po2_test_weight', 0)
+            po2_5_weight = campaign.get('po2_5_test_weight', 0)
+            po3_weight = campaign.get('po3_test_weight', 0)
+            
+            po1_weight = float(po1_weight) if po1_weight is not None else 0
+            po2_weight = float(po2_weight) if po2_weight is not None else 0
+            po2_5_weight = float(po2_5_weight) if po2_5_weight is not None else 0
+            po3_weight = float(po3_weight) if po3_weight is not None else 0
+            
+            self.logger.debug(f"Wagi testów: PO1={po1_weight}, PO2={po2_weight}, PO2.5={po2_5_weight}, PO3={po3_weight}")
             
             # Initialize weighted scores
             weighted_scores = []
-            total_weights = 0
+            total_weights = po1_weight + po2_weight + po2_5_weight + po3_weight
             
             # Add weighted scores only for non-None values
             if po1_score is not None and po1_weight > 0:
-                weighted_scores.append(float(po1_score) * po1_weight)
-                total_weights += po1_weight
+                weighted_scores.append(float(po1_score) * po1_weight) 
+                self.logger.debug(f"Dodano wynik PO1: {po1_score} * {po1_weight} = {float(po1_score) * po1_weight}")
                 
             if po2_score is not None and po2_weight > 0:
-                weighted_scores.append(float(po2_score) * po2_weight)
-                total_weights += po2_weight
+                weighted_scores.append(float(po2_score) * po2_weight) 
+                self.logger.debug(f"Dodano wynik PO2: {po2_score} * {po2_weight} = {float(po2_score) * po2_weight}")
                 
             if po2_5_score is not None and po2_5_weight > 0:
-                weighted_scores.append(float(po2_5_score) * po2_5_weight)
-                total_weights += po2_5_weight
+                weighted_scores.append(float(po2_5_score) * po2_5_weight) 
+                self.logger.debug(f"Dodano wynik PO2.5: {po2_5_score} * {po2_5_weight} = {float(po2_5_score) * po2_5_weight}")
                 
             if po3_score is not None and po3_weight > 0:
-                weighted_scores.append(float(po3_score) * po3_weight)
-                total_weights += po3_weight
+                weighted_scores.append(float(po3_score) * po3_weight) 
+                self.logger.debug(f"Dodano wynik PO3: {po3_score} * {po3_weight} = {float(po3_score) * po3_weight}")
             
             # Calculate total score only if we have any valid weighted scores
             if weighted_scores and total_weights > 0:
                 total_score = sum(weighted_scores) / total_weights
-                return round(total_score, 2)
+                final_score = round(total_score, 2)
+                self.logger.info(f"Obliczono total_score: {final_score} (suma ważona: {sum(weighted_scores)}, suma wag: {total_weights})")
+                return final_score
             
+            self.logger.warning("Nie można obliczyć total_score - brak wyników lub wag")
             return None
             
         except Exception as e:
-            self.logger.error(f"Błąd podczas obliczania całkowitego wyniku: {str(e)}")
+            self.logger.error(f"Błąd podczas obliczania całkowitego wyniku: {str(e)}", exc_info=True)
             return None
 
     def update_candidates(self):
