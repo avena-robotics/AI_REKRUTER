@@ -11,6 +11,8 @@ from filters import format_datetime
 from services.group_service import get_user_groups
 from logger import Logger
 
+APP_VERSION = "1.0.1"  # Define version as a constant
+
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
@@ -41,6 +43,11 @@ def create_app(config_class=Config):
             user_groups = get_user_groups(session.get('user_id'))
             return {'user_groups': user_groups}
         return {'user_groups': []}
+
+    @app.context_processor
+    def inject_version():
+        """Make version available to all templates"""
+        return dict(app_version=APP_VERSION)
 
     # Register error handlers
     @app.errorhandler(404)
