@@ -560,7 +560,8 @@ BEGIN
                             'date_answer', ca.date_answer,
                             'abcdef_answer', ca.abcdef_answer,
                             'points_per_option', ca.points_per_option,
-                            'score', ROUND(CAST(ca.score AS NUMERIC), 1)
+                            'score', ROUND(CAST(ca.score AS NUMERIC), 1),
+                            'ai_explanation', ca.ai_explanation
                         ), NULL)
                         FROM candidate_answers ca
                         WHERE ca.question_id = q.id 

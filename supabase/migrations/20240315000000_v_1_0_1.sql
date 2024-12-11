@@ -48,12 +48,12 @@ BEGIN
                 'recruitment_status', c.recruitment_status,
                 'created_at', c.created_at,
                 'updated_at', c.updated_at,
-                'po1_score', CAST(ROUND(CAST(c.po1_score AS NUMERIC), 1) AS FLOAT),
-                'po2_score', CAST(ROUND(CAST(c.po2_score AS NUMERIC), 1) AS FLOAT),
-                'po2_5_score', CAST(ROUND(CAST(c.po2_5_score AS NUMERIC), 1) AS FLOAT),
-                'po3_score', CAST(ROUND(CAST(c.po3_score AS NUMERIC), 1) AS FLOAT),
-                'po4_score', CAST(ROUND(CAST(c.po4_score AS NUMERIC), 1) AS FLOAT),
-                'total_score', CAST(ROUND(CAST(c.total_score AS NUMERIC), 1) AS FLOAT),
+                'po1_score', ROUND(CAST(c.po1_score AS NUMERIC), 1),
+                'po2_score', ROUND(CAST(c.po2_score AS NUMERIC), 1),
+                'po2_5_score', ROUND(CAST(c.po2_5_score AS NUMERIC), 1),
+                'po3_score', ROUND(CAST(c.po3_score AS NUMERIC), 1),
+                'po4_score', ROUND(CAST(c.po4_score AS NUMERIC), 1),
+                'total_score', ROUND(CAST(c.total_score AS NUMERIC), 1),
                 'po1_started_at', c.po1_started_at,
                 'po2_started_at', c.po2_started_at,
                 'po3_started_at', c.po3_started_at,
@@ -124,7 +124,8 @@ BEGIN
                             'date_answer', ca.date_answer,
                             'abcdef_answer', ca.abcdef_answer,
                             'points_per_option', ca.points_per_option,
-                            'score', ROUND(CAST(ca.score AS NUMERIC), 1)
+                            'score', ROUND(CAST(ca.score AS NUMERIC), 1),
+                            'ai_explanation', ca.ai_explanation
                         ), NULL)
                         FROM candidate_answers ca
                         WHERE ca.question_id = q.id 

@@ -434,6 +434,8 @@
                                                 Zakresowy
                                             {% elif question.algorithm_type == 'EXACT_MATCH' %}
                                                 Dokładne dopasowanie
+                                            {% elif question.algorithm_type == 'EVALUATION_BY_AI' %}
+                                                Ocena przez AI
                                             {% else %}
                                                 {{ question.algorithm_type }}
                                             {% endif %}
@@ -463,6 +465,14 @@
                                                 <p>{{ question.answer.date_answer|datetime }}</p>
                                             {% elif question.answer_type == 'ABCDEF' %}
                                                 <p>Odpowiedź: {{ question.answer.abcdef_answer|upper }}</p>
+                                            {% endif %}
+                                            
+                                            <!-- Add AI Explanation display -->
+                                            {% if question.algorithm_type == 'EVALUATION_BY_AI' and question.answer.ai_explanation %}
+                                                <div class="mt-3 p-3 bg-light border rounded">
+                                                    <strong>Wyjaśnienie AI:</strong><br>
+                                                    <p class="mb-0">{{ question.answer.ai_explanation }}</p>
+                                                </div>
                                             {% endif %}
                                         {% else %}
                                             <p class="text-muted">Brak odpowiedzi</p>
