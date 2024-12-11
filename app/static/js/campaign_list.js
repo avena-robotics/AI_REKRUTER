@@ -366,36 +366,57 @@ function updateTestOptions(groupSelect) {
     const form = groupSelect.closest('form');
     const testSelects = form.querySelectorAll('[name$="_test_id"]');
     const weightInputs = form.querySelectorAll('[name$="_test_weight"]');
-    const groupId = groupSelect.value;
     
-    // Clear all test selections and disable both tests and weights
-    testSelects.forEach((select, index) => {
+    // Disable all test selects and weight inputs initially
+    testSelects.forEach(select => {
         select.innerHTML = '<option value="">Brak</option>';
-        select.disabled = !groupId;
-        weightInputs[index].disabled = true;
-        weightInputs[index].value = index === 0 ? '100' : '0';
+        select.disabled = true;
     });
     
-    if (groupId) {
-        fetch(`/campaigns/group/${groupId}/tests`)
-            .then(response => response.json())
-            .then(tests => {
-                testSelects.forEach(select => {
-                    tests.forEach(test => {
-                        const option = document.createElement('option');
-                        option.value = test.id;
-                        option.textContent = `${test.title} - ${test.test_type}`;
-                        select.appendChild(option);
-                    });
-                });
+    // Only disable weight inputs that exist (skip PO2 which doesn't have weight)
+    form.querySelector('[name="po1_test_weight"]').disabled = true;
+    form.querySelector('[name="po2_5_test_weight"]').disabled = true;
+    form.querySelector('[name="po3_test_weight"]').disabled = true;
+    
+    if (!groupSelect.value) return;
+    
+    // Fetch tests for selected group
+    fetch(`/campaigns/group/${groupSelect.value}/tests`)
+        .then(response => response.json())
+        .then(tests => {
+            testSelects.forEach(select => {
+                select.disabled = false;
                 
-                updateTestDependencies(form);
-            })
-            .catch(error => {
-                console.error('Error fetching tests:', error);
-                showToast('Błąd podczas pobierania testów', 'error');
+                // Filter tests based on test type for PO2.5
+                if (select.name === 'po2_5_test_id') {
+                    const eqTests = tests.filter(test => test.test_type === 'EQ_EVALUATION');
+                    eqTests.forEach(test => {
+                        const option = new Option(
+                            `${test.title} - ${test.test_type}`,
+                            test.id
+                        );
+                        select.add(option);
+                    });
+                } else {
+                    tests.forEach(test => {
+                        const option = new Option(
+                            `${test.title} - ${test.test_type}`,
+                            test.id
+                        );
+                        select.add(option);
+                    });
+                }
             });
-    }
+            
+            // Enable weight inputs except for PO2
+            form.querySelector('[name="po1_test_weight"]').disabled = false;
+            form.querySelector('[name="po2_5_test_weight"]').disabled = false;
+            form.querySelector('[name="po3_test_weight"]').disabled = false;
+        })
+        .catch(error => {
+            console.error('Error fetching tests:', error);
+            showToast('Błąd podczas pobierania testów', 'error');
+        });
 }
 
 function updateTestDependencies(form) {
@@ -597,25 +618,19 @@ function updateWeightValidation() {
         const form = document.getElementById(formId);
         if (form) {
             const po1Select = form.querySelector('[name="po1_test_id"]');
-            const po2Select = form.querySelector('[name="po2_test_id"]');
             const po2_5Select = form.querySelector('[name="po2_5_test_id"]');
             const po3Select = form.querySelector('[name="po3_test_id"]');
             
             const po1Weight = form.querySelector('[name="po1_test_weight"]');
-            const po2Weight = form.querySelector('[name="po2_test_weight"]');
             const po2_5Weight = form.querySelector('[name="po2_5_test_weight"]');
             const po3Weight = form.querySelector('[name="po3_test_weight"]');
             
-            // Calculate sum of weights for active tests
+            // Calculate sum of weights for active tests (excluding PO2)
             let sum = 0;
             let activeTests = 0;
             
             if (po1Select.value) {
                 sum += parseInt(po1Weight.value) || 0;
-                activeTests++;
-            }
-            if (po2Select.value) {
-                sum += parseInt(po2Weight.value) || 0;
                 activeTests++;
             }
             if (po2_5Select.value) {
