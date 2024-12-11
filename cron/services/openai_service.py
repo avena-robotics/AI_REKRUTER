@@ -55,7 +55,7 @@ class OpenAIService:
             
             # Domyślny prompt jeśli nie podano własnego
             default_prompt = f"""
-            Jesteś ekspertem oceniającym. Oceń następującą odpowiedź na pytanie.
+            Jesteś ekspertem oceniającym w procesie rekrutacji. Oceń następującą odpowiedź na pytanie.
             
             Pytanie: {question_text}
             
