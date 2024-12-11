@@ -7,18 +7,18 @@ ALTER TABLE candidate_answers DROP COLUMN IF EXISTS score_ai;
 -- Add ai_explanation column to candidate_answers table
 ALTER TABLE candidate_answers ADD COLUMN IF NOT EXISTS ai_explanation text;
 
--- Modify score columns in candidates table to use FLOAT with 1 decimal place
+-- Modify score columns in candidates table to use FLOAT
 ALTER TABLE candidates 
-    ALTER COLUMN po1_score TYPE FLOAT USING ROUND(CAST(po1_score AS FLOAT), 1),
-    ALTER COLUMN po2_score TYPE FLOAT USING ROUND(CAST(po2_score AS FLOAT), 1),
-    ALTER COLUMN po2_5_score TYPE FLOAT USING ROUND(CAST(po2_5_score AS FLOAT), 1),
-    ALTER COLUMN po3_score TYPE FLOAT USING ROUND(CAST(po3_score AS FLOAT), 1),
-    ALTER COLUMN po4_score TYPE FLOAT USING ROUND(CAST(po4_score AS FLOAT), 1),
-    ALTER COLUMN total_score TYPE FLOAT USING ROUND(CAST(total_score AS FLOAT), 1);
+    ALTER COLUMN po1_score TYPE FLOAT USING (CAST(po1_score AS NUMERIC))::FLOAT,
+    ALTER COLUMN po2_score TYPE FLOAT USING (CAST(po2_score AS NUMERIC))::FLOAT,
+    ALTER COLUMN po2_5_score TYPE FLOAT USING (CAST(po2_5_score AS NUMERIC))::FLOAT,
+    ALTER COLUMN po3_score TYPE FLOAT USING (CAST(po3_score AS NUMERIC))::FLOAT,
+    ALTER COLUMN po4_score TYPE FLOAT USING (CAST(po4_score AS NUMERIC))::FLOAT,
+    ALTER COLUMN total_score TYPE FLOAT USING (CAST(total_score AS NUMERIC))::FLOAT;
 
--- Modify score column in candidate_answers table to use FLOAT with 1 decimal place
+-- Modify score column in candidate_answers table to use FLOAT
 ALTER TABLE candidate_answers 
-    ALTER COLUMN score TYPE FLOAT USING ROUND(CAST(score AS FLOAT), 1);
+    ALTER COLUMN score TYPE FLOAT USING (CAST(score AS NUMERIC))::FLOAT;
 
 -- Add check constraints to ensure scores are not negative
 ALTER TABLE candidates
@@ -48,12 +48,12 @@ BEGIN
                 'recruitment_status', c.recruitment_status,
                 'created_at', c.created_at,
                 'updated_at', c.updated_at,
-                'po1_score', ROUND(CAST(c.po1_score AS NUMERIC), 1),
-                'po2_score', ROUND(CAST(c.po2_score AS NUMERIC), 1),
-                'po2_5_score', ROUND(CAST(c.po2_5_score AS NUMERIC), 1),
-                'po3_score', ROUND(CAST(c.po3_score AS NUMERIC), 1),
-                'po4_score', ROUND(CAST(c.po4_score AS NUMERIC), 1),
-                'total_score', ROUND(CAST(c.total_score AS NUMERIC), 1),
+                'po1_score', CAST(ROUND(CAST(c.po1_score AS NUMERIC), 1) AS FLOAT),
+                'po2_score', CAST(ROUND(CAST(c.po2_score AS NUMERIC), 1) AS FLOAT),
+                'po2_5_score', CAST(ROUND(CAST(c.po2_5_score AS NUMERIC), 1) AS FLOAT),
+                'po3_score', CAST(ROUND(CAST(c.po3_score AS NUMERIC), 1) AS FLOAT),
+                'po4_score', CAST(ROUND(CAST(c.po4_score AS NUMERIC), 1) AS FLOAT),
+                'total_score', CAST(ROUND(CAST(c.total_score AS NUMERIC), 1) AS FLOAT),
                 'po1_started_at', c.po1_started_at,
                 'po2_started_at', c.po2_started_at,
                 'po3_started_at', c.po3_started_at,
