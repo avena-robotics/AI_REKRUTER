@@ -1,9 +1,6 @@
 import sys
 import os
-import logging
 from supabase import create_client
-
-from logger import Logger
 
 # Add the cron directory to Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -15,52 +12,55 @@ from services.test_service import TestService
 from services.candidate_service import CandidateService
 from services.openai_service import OpenAIService
 
+from logger import Logger
+
 def main():
     """Główna funkcja skryptu sprawdzająca i aktualizująca statusy kandydatów"""
     try:
-        logger = logging.getLogger('candidate_check')
-        logger.info("====== Rozpoczęcie nowej sesji sprawdzania kandydatów ======")
-        
-        # Inicjalizacja konfiguracji
-        logger.debug("Inicjalizacja konfiguracji")
+        # Initialize configuration
         config = Config()
+    
+        # Initialize logger singleton
+        logger = Logger.instance(config)
+        logger.info("====== Starting new candidate check session ======")
         
-        # Konfiguracja logowania
-        logger.debug("Konfiguracja systemu logowania")
-        log_manager = Logger.instance(config)
-        log_manager.cleanup_old_logs()
+        # Clean up old logs
+        logger.info("Cleaning up old logs")
+        logger.cleanup_old_logs()
         
-        # Inicjalizacja klienta Supabase
-        logger.debug("Inicjalizacja połączenia z bazą danych Supabase")
+        # Initialize Supabase client
+        logger.debug("Initializing Supabase database connection")
         supabase = create_client(config.SUPABASE_URL, config.SUPABASE_KEY)
         
-        # Inicjalizacja serwisów
-        logger.debug("Inicjalizacja serwisu email")
+        # Initialize services
+        logger.debug("Initializing email service")
         email_service = EmailService(config)
-        logger.debug("Inicjalizacja serwisu OpenAI")
+        
+        logger.debug("Initializing OpenAI service")
         openai_service = OpenAIService(config)
-        logger.debug("Inicjalizacja serwisu testów")
+        
+        logger.debug("Initializing test service")
         test_service = TestService(supabase, openai_service)
-        logger.debug("Inicjalizacja serwisu kandydatów")
+        
+        logger.debug("Initializing candidate service")
         candidate_service = CandidateService(
-            supabase, 
-            config, 
-            email_service, 
-            test_service
+            supabase,
+            config,
+            email_service,
+            test_service,
         )
         
-        # Aktualizacja kandydatów
-        logger.info("Rozpoczęcie aktualizacji statusów kandydatów")
+        # Update candidates
+        logger.info("Starting candidate status updates")
         candidate_service.update_candidates()
         
-        logger.info("====== Zakończenie sesji sprawdzania kandydatów ======")
+        logger.info("====== Candidate check session completed ======")
         
     except Exception as e:
-        logger.error(f"Wystąpił krytyczny błąd podczas wykonywania skryptu: {str(e)}")
-        logger.exception("Szczegóły błędu:")
+        logger = Logger.instance()  # Get logger instance without config
+        logger.critical(f"Critical error occurred during script execution: {str(e)}")
         sys.exit(1)
 
+
 if __name__ == "__main__":
-    logger = logging.getLogger('candidate_check')
-    logger.info("Uruchomienie skryptu głównego")
     main() 

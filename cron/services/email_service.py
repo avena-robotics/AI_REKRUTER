@@ -1,5 +1,5 @@
 import smtplib
-import logging
+from logger import Logger
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from config import Config
@@ -9,7 +9,7 @@ class EmailService:
     
     def __init__(self, config: Config):
         self.config = config
-        self.logger = logging.getLogger('candidate_check')
+        self.logger = Logger.instance()
 
     def send_email(self, to_email: str, subject: str, body: str) -> bool:
         """

@@ -1,4 +1,4 @@
-import logging
+from logger import Logger
 from typing import Optional
 from supabase import Client
 from datetime import datetime, timedelta
@@ -11,7 +11,7 @@ class TestService:
     def __init__(self, supabase: Client, openai_service: OpenAIService):
         self.supabase = supabase
         self.openai_service = openai_service
-        self.logger = logging.getLogger('candidate_check')
+        self.logger = Logger.instance()
 
     def calculate_test_score(self, candidate_id: int, test_id: int, stage: str) -> Optional[dict]:
         """
@@ -456,16 +456,14 @@ class TestService:
             if total_points_possible > 0:
                 # Obliczamy procent zdobytych punktów
                 raw_total = sum(p['score'] for p in partial_scores)
-                raw_percentage = (raw_total / total_points_possible) * 100
                 
                 # Zaokrąglamy wynik końcowy do 1 miejsca po przecinku
-                final_score = round(raw_percentage, 1)
+                final_score = round(raw_total, 1)
                 
                 # Logujemy szczegółowe informacje o punktacji
                 self.logger.info(
                     f"Zakończono obliczanie łącznego wyniku:\n"
                     f"- Suma punktów: {raw_total:.1f}/{total_points_possible:.1f}\n"
-                    f"- Procent: {raw_percentage:.1f}%\n"
                     f"- Wynik końcowy: {final_score}"
                 )
                 

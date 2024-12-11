@@ -1,4 +1,4 @@
-import logging
+from logger import Logger
 from openai import OpenAI
 from typing import Optional 
 from config import Config
@@ -9,7 +9,7 @@ class OpenAIService:
     def __init__(self, config: Config):
         self.config = config
         self.client = OpenAI(api_key=self.config.OPENAI_API_KEY)
-        self.logger = logging.getLogger('openai_service')
+        self.logger = Logger.instance()
         
     def evaluate_answer(
         self,
