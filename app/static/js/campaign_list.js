@@ -569,6 +569,7 @@ function cloneCampaign(campaignId) {
                 setTimeout(() => {
                     const po1Select = form.querySelector('[name="po1_test_id"]');
                     const po2Select = form.querySelector('[name="po2_test_id"]');
+                    const po2_5Select = form.querySelector('[name="po2_5_test_id"]');
                     const po3Select = form.querySelector('[name="po3_test_id"]');
                     
                     if (campaign.po1_test_id) {
@@ -578,6 +579,11 @@ function cloneCampaign(campaignId) {
                     
                     if (campaign.po2_test_id) {
                         po2Select.value = campaign.po2_test_id;
+                        po2_5Select.disabled = false;
+                    }
+                    
+                    if (campaign.po2_5_test_id) {
+                        po2_5Select.value = campaign.po2_5_test_id;
                         po3Select.disabled = false;
                     }
                     
