@@ -11,16 +11,16 @@
 </script>
 {% endif %}
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-4 w-100">
     <h1>Kampanie rekrutacyjne</h1>
     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCampaignModal">
         Dodaj kampanię
     </button>
 </div>
 
-<div class="table-wrapper">
+<div class="table-wrapper w-100">
     <div class="table-scroll">
-        <table class="table table-striped campaign-table">
+        <table class="table table-striped campaign-table w-100">
             <thead>
                 <tr>
                     <th>Kod kampanii</th>
@@ -604,6 +604,7 @@
 
 {% block head %}
 {{ super() }}
+<link href="{{ url_for('static', filename='css/campaign_list.css') }}" rel="stylesheet">
 <script src="{{ url_for('static', filename='js/toast.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/campaign_list.js') }}" defer></script>
 {% endblock %}

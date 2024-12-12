@@ -175,9 +175,8 @@ textarea.form-control {
     display: flex;
     justify-content: center;
     overflow: hidden;
-    padding: 0 15px;
+    padding: 0 10px;
     width: 100%;
-    max-width: 1450px;
     margin: 0 auto;
 }
 
@@ -187,25 +186,27 @@ textarea.form-control {
     overflow-x: auto;
     margin: 0 auto;
     width: 100%;
+    padding: 0 5px;
 }
 
 .table {
-    width: max-content;
+    width: 100%;
     margin-bottom: 0;
     min-width: 100%;
 }
 
 .table.table-striped {
-    width: max-content;
+    width: 100%;
     max-width: none;
     margin: 0;
 }
 
 .container {
-    max-width: 1500px !important;
+    width: 100% !important;
+    max-width: none !important;
     overflow-x: hidden;
     margin: 0 auto;
-    padding: 0 25px;
+    padding: 0 15px;
 }
 
 .dropdown-menu {
@@ -310,14 +311,15 @@ td {
 @media (max-width: 1500px) {
     .table-wrapper {
         max-width: 100%;
+        padding: 0 5px;
     }
     
     .container {
-        padding: 0 15px;
+        padding: 0 10px;
     }
     
     .table {
-        overflow-x: auto;
+        width: 100%;
     }
 }
 

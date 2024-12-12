@@ -1,0 +1,117 @@
+.table-wrapper {
+    height: calc(100vh - 380px);
+    position: relative;
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+    padding: 0 10px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.table-scroll {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: auto;
+    margin: 0 auto;
+    width: 100%;
+    padding: 0 5px;
+}
+
+/* Table styles */
+.table {
+    width: 100%;
+    margin-bottom: 0;
+    min-width: 100%;
+}
+
+.table.table-striped {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+}
+
+/* Container styles */
+.container {
+    width: 100% !important;
+    max-width: none !important;
+    overflow-x: hidden;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+/* Campaign table specific widths */
+.campaign-table th,
+.campaign-table td {
+    white-space: nowrap;
+}
+
+.campaign-table th:nth-child(1),
+.campaign-table td:nth-child(1) { width: 200px; } /* Kod kampanii */
+
+.campaign-table th:nth-child(2),
+.campaign-table td:nth-child(2) { width: 250px; } /* Tytuł */
+
+.campaign-table th:nth-child(3),
+.campaign-table td:nth-child(3) { width: 120px; } /* Lokalizacja */
+
+.campaign-table th:nth-child(4),
+.campaign-table td:nth-child(4) { width: 100px; } /* Status */
+
+.campaign-table th:nth-child(5),
+.campaign-table td:nth-child(5) { width: 120px; } /* Link */
+
+.campaign-table th:nth-child(6),
+.campaign-table td:nth-child(6) { width: 180px; } /* Data utworzenia */
+
+.campaign-table th:nth-child(7),
+.campaign-table td:nth-child(7) { width: 200px; } /* Akcje */
+
+.campaign-table td {
+    max-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Dropdown styles */
+.dropdown-menu {
+    z-index: 1021 !important;
+    position: absolute;
+}
+
+.dropdown {
+    position: relative !important;
+}
+
+td {
+    position: relative;
+}
+
+/* Table header styles */
+.table thead th {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 1;
+    box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Table hover effect */
+.table tbody tr:hover {
+    background-color: rgba(0,0,0,.075);
+}
+
+@media (max-width: 1500px) {
+    .table-wrapper {
+        max-width: 100%;
+        padding: 0 5px;
+    }
+    
+    .container {
+        padding: 0 10px;
+    }
+    
+    .table {
+        width: 100%;
+    }
+} 

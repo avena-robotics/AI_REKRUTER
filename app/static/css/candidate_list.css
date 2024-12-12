@@ -1,11 +1,42 @@
 .table-wrapper {
     height: calc(100vh - 300px);
+    position: relative;
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+    padding: 0 10px;
+    width: 100%;
+    margin: 0 auto;
 }
 
 .table-scroll {
     overflow-x: auto;
     overflow-y: auto;
     height: 100%;
+    width: 100%;
+    padding: 0 5px;
+}
+
+/* Update table styles */
+.table {
+    width: 100%;
+    margin-bottom: 0;
+    min-width: 100%;
+}
+
+.table.table-striped {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+}
+
+/* Container styles */
+.container {
+    width: 100% !important;
+    max-width: none !important;
+    overflow-x: hidden;
+    margin: 0 auto;
+    padding: 0 15px;
 }
 
 /* Ensure dropdown is always on top */
@@ -67,4 +98,19 @@ td {
 /* Table hover effect */
 .table tbody tr:hover {
     background-color: rgba(0,0,0,.075);
+} 
+
+@media (max-width: 1500px) {
+    .table-wrapper {
+        max-width: 100%;
+        padding: 0 5px;
+    }
+    
+    .container {
+        padding: 0 10px;
+    }
+    
+    .table {
+        width: 100%;
+    }
 } 
