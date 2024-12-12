@@ -26,7 +26,7 @@ ALTER TABLE candidate_answers
     DROP COLUMN IF EXISTS date_answer,
     DROP COLUMN IF EXISTS abcdef_answer;
 
-
+DROP TABLE IF EXISTS candidate_notes;
 create table candidate_notes (
     id bigserial primary key,
     candidate_id bigint not null references candidates(id) on delete cascade, -- Powiązanie z tabelą kandydatów
@@ -36,6 +36,7 @@ create table candidate_notes (
     updated_at timestamp default now()  -- Data ostatniej aktualizacji
 );
 
+DROP FUNCTION IF EXISTS get_candidate_with_tests(bigint);
 -- Update get_candidate_with_tests function to include notes
 CREATE OR REPLACE FUNCTION get_candidate_with_tests(p_candidate_id bigint)
 RETURNS TABLE (

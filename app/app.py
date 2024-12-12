@@ -11,7 +11,7 @@ from filters import format_datetime
 from services.group_service import get_user_groups
 from logger import Logger
 
-APP_VERSION = "1.0.1"  # Define version as a constant
+APP_VERSION = "1.0.2"  # Define version as a constant
 
 def create_app(config_class=Config):
     app = Flask(__name__)
