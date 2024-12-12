@@ -91,8 +91,11 @@
                             <br>
                             Pozostało punktów: <span class="points-remaining" data-question="{{ question.id }}">10</span>
                         </div>
-                        <div class="alert alert-danger mb-3 points-error" style="display: none;" data-question="{{ question.id }}">
-                            Musisz rozdysponować wszystkie punkty w sekcji: {{ question.question_text }}
+                        <div class="alert alert-danger mb-3 points-error points-too-few" style="display: none;" data-question="{{ question.id }}">
+                            Musisz rozdysponować wszystkie punkty w sekcji!
+                        </div>
+                        <div class="alert alert-danger mb-3 points-error points-too-many" style="display: none;" data-question="{{ question.id }}">
+                            Rozdysponowałeś za dużo punktów! Maksymalnie możesz przydzielić 10 punktów.
                         </div>
                         <div class="options-grid">
                             {% for letter in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] %}
@@ -236,35 +239,33 @@
             }
 
             function updatePointsTotal(questionId) {
-                const inputs = document.querySelectorAll(`input[data-question="${questionId}"]`);
-                let total = 0;
+                const container = document.querySelector(`.ah-points-container [data-question="${questionId}"]`).closest('.ah-points-container');
+                const inputs = container.querySelectorAll('.points-input');
+                const remainingSpan = container.querySelector('.points-remaining');
+                const tooFewError = container.querySelector('.points-too-few');
+                const tooManyError = container.querySelector('.points-too-many');
                 
-                // First ensure no negative values and calculate total
+                let total = 0;
                 inputs.forEach(input => {
-                    const value = parseInt(input.value) || 0;
-                    if (value < 0) input.value = 0;
                     total += parseInt(input.value) || 0;
                 });
                 
-                // Update remaining points display
-                const remainingSpan = document.querySelector(`.points-remaining[data-question="${questionId}"]`);
-                const remaining = Math.max(0, 10 - total);
+                const remaining = 10 - total;
                 remainingSpan.textContent = remaining;
-
-                // Update max values for all inputs
-                inputs.forEach(input => {
-                    const currentValue = parseInt(input.value) || 0;
-                    // Max value is remaining points plus this input's current value
-                    const maxAllowed = remaining + currentValue;
-                    input.max = maxAllowed;
-                    
-                    // If current value exceeds new max, adjust it
-                    if (currentValue > maxAllowed) {
-                        input.value = maxAllowed;
-                        // Recalculate total after adjustment
-                        updatePointsTotal(questionId);
-                    }
-                });
+                
+                // Reset error states
+                container.classList.remove('error-container');
+                tooFewError.style.display = 'none';
+                tooManyError.style.display = 'none';
+                
+                // Show appropriate error message
+                if (remaining < 0) {
+                    container.classList.add('error-container');
+                    tooManyError.style.display = 'block';
+                } else if (remaining > 0) {
+                    container.classList.add('error-container');
+                    tooFewError.style.display = 'block';
+                }
             }
 
             // Initialize timer if needed
