@@ -566,7 +566,16 @@ function createQuestionHtml(question = null) {
         <div class="question-card card mb-3">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="card-title mb-0">Pytanie</h6>
+                    <div class="d-flex align-items-center gap-3">
+                        <h6 class="card-title mb-0">Pytanie</h6>
+                        <div class="form-check form-switch">
+                            <input type="checkbox" class="form-check-input" 
+                                   name="questions[${questionCounter}][is_required]" 
+                                   id="required_${questionCounter}"
+                                   ${q.is_required !== false ? 'checked' : ''}>
+                            <label class="form-check-label" for="required_${questionCounter}">Wymagane</label>
+                        </div>
+                    </div>
                     <button type="button" class="btn btn-danger btn-sm remove-question">
                         Usuń pytanie
                     </button>
@@ -578,24 +587,6 @@ function createQuestionHtml(question = null) {
                         <textarea class="form-control" 
                                 name="questions[${questionCounter}][question_text]" 
                                 required>${q.question_text || ''}</textarea>
-                    </div>
-                </div>
-
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Punkty</label>
-                        <input type="number" class="form-control" 
-                               name="questions[${questionCounter}][points]" 
-                               value="${q.points || 0}" min="0">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Wymagane?</label>
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" 
-                                   name="questions[${questionCounter}][is_required]" 
-                                   ${q.is_required !== false ? 'checked' : ''}>
-                            <label class="form-check-label">Tak</label>
-                        </div>
                     </div>
                 </div>
 
@@ -1042,6 +1033,17 @@ function createAnswerFieldsHtml(questionCounter, question) {
         </div>
     `;
 
+    const pointsHtml = `
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Maksymalna liczba punktów za</label>
+                <input type="number" class="form-control" 
+                    name="questions[${questionCounter}][points]" 
+                    value="${q.points || 0}" min="0">
+            </div>
+        </div>
+    `;
+
     // Common answer type selection HTML
     const answerTypeHtml = `
         <div class="col-md-6">
@@ -1131,6 +1133,7 @@ function createAnswerFieldsHtml(questionCounter, question) {
     return `
         <div class="row">
             ${imageUploadHtml}
+            ${pointsHtml}
             ${answerTypeHtml}
             ${algorithmSelectionHtml}
             ${algorithmParamsHtml}
