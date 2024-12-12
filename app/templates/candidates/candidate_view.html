@@ -311,7 +311,22 @@
                         data-bs-target="#collapse{{ stage }}"
                         aria-expanded="false"
                         aria-controls="collapse{{ stage }}">
-                    Etap {{ stage|replace('_', '.') }} - {{ tests[stage].test.test_type }}
+                    <div class="d-flex align-items-center justify-content-between w-100">
+                        <div class="d-flex align-items-center" style="min-width: 300px;">
+                            <span class="badge bg-primary" style="min-width: 100px;">
+                                Etap {{ stage|replace('_', '.') }}
+                            </span>
+                            <span class="fw-medium ms-3">{{ tests[stage].test.test_type }}</span>
+                        </div>
+                        {% if tests[stage].scored_points is defined %}
+                            <div class="d-flex align-items-center" style="min-width: 120px;">
+                                <i class="bitext-warning me-2"></i>
+                                <span class="fw-medium">
+                                    {{ tests[stage].scored_points }}/{{ tests[stage].total_points }} pkt
+                                </span>
+                            </div>
+                        {% endif %}
+                    </div>
                 </button>
             </h2>
             <div id="collapse{{ stage }}" 
@@ -319,57 +334,72 @@
                  aria-labelledby="heading{{ stage }}"
                  data-bs-parent="#candidateAccordion">
                 <div class="accordion-body">
-                    <!-- Test Details -->
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <h6>Informacje o teście</h6>
-                            <p class="mb-1"><strong>Typ testu:</strong> {{ tests[stage].test.test_type }}</p>
-                            <p class="mb-1"><strong>Opis:</strong> {{ tests[stage].test.description }}</p>
-                            <p class="mb-1"><strong>Limit czasu:</strong> {{ tests[stage].test.time_limit_minutes }} minut</p>
-                            {% if tests[stage].started_at %}
-                            <p class="mb-1">
-                                <strong>Rozpoczęto:</strong> {{ tests[stage].started_at|datetime }}
-                                {% if tests[stage].completed_at %}
-                                    <br><strong>Zakończono:</strong> {{ tests[stage].completed_at|datetime }}
-                                    {% if tests[stage].started_at and tests[stage].completed_at %}
-                                        {% set duration_seconds = (tests[stage].completed_at - tests[stage].started_at).total_seconds() %}
-                                        {% set minutes = (duration_seconds / 60)|int %}
-                                        {% set seconds = (duration_seconds % 60)|int %}
-                                        <br><strong>Czas wykonania:</strong> {{ minutes }} min {{ seconds }} sek
+                    <!-- Informacje o teście -->
+                    <div class="test-info-wrapper mb-5 border rounded p-4 bg-body-tertiary shadow-sm">
+                        <div class="test-header mb-4 pb-3 border-bottom">
+                            <h5 class="fs-5 fw-bold mb-0">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Informacje o teście
+                            </h5>
+                        </div>
+                        
+                        <div class="test-details px-2">
+                            <div class="mb-4">
+                                <p class="mb-3"><strong>Opis:</strong> {{ tests[stage].test.description }}</p>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-3"><strong>Limit czasu:</strong> {{ tests[stage].test.time_limit_minutes }} minut</p>
+                                    <p class="mb-3"><strong>Liczba pytań:</strong> {{ tests[stage].question_count }}</p>
+                                    <p class="mb-3"><strong>Próg zaliczenia:</strong> {{ tests[stage].test.passing_threshold }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    {% if tests[stage].started_at %}
+                                        <p class="mb-3">
+                                            <strong>Rozpoczęto:</strong> {{ tests[stage].started_at|datetime }}
+                                            {% if tests[stage].completed_at %}
+                                                <br><strong>Zakończono:</strong> {{ tests[stage].completed_at|datetime }}
+                                                {% if tests[stage].started_at and tests[stage].completed_at %}
+                                                    {% set duration_seconds = (tests[stage].completed_at - tests[stage].started_at).total_seconds() %}
+                                                    {% set minutes = (duration_seconds / 60)|int %}
+                                                    {% set seconds = (duration_seconds % 60)|int %}
+                                                    <br><strong>Czas wykonania:</strong> {{ minutes }} min {{ seconds }} sek
+                                                {% endif %}
+                                            {% endif %}
+                                        </p>
                                     {% endif %}
-                                {% endif %}
-                            </p>
-                            {% endif %}
-                            <p class="mb-1"><strong>Liczba pytań:</strong> {{ tests[stage].question_count }}</p>
-                            <p class="mb-1"><strong>Próg zaliczenia:</strong> {{ tests[stage].test.passing_threshold }}</p>
-                            <p class="mb-0">
-                                <strong>Punkty:</strong> 
-                                {% if tests[stage].scored_points is defined %}
-                                    {{ tests[stage].scored_points }} / {{ tests[stage].total_points }}
-                                {% else %}
-                                    0 / {{ tests[stage].total_points }}
-                                {% endif %}
-                            </p>
+                                    <p class="mb-3">
+                                        <strong>Punkty:</strong> 
+                                        {% if tests[stage].scored_points is defined %}
+                                            {{ tests[stage].scored_points }} / {{ tests[stage].total_points }}
+                                        {% else %}
+                                            0 / {{ tests[stage].total_points }}
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Questions and Answers -->
                     {% for question in tests[stage].questions %}
-                    <div class="question-wrapper my-4 border rounded p-3 bg-light bg-opacity-50">
+                    <div class="question-wrapper my-5 border rounded p-4 bg-body-tertiary shadow-sm">
                         <!-- Treść pytania -->
-                        <div class="question-header mb-3 d-flex justify-content-between align-items-start">
-                            <h5 class="fs-5 fw-bold mb-0">
-                                {{ question.question_text }}
-                            </h5>
-                            <div class="d-flex flex-column align-items-end">
-                                {% if question.is_required %}
-                                    <span class="badge bg-danger mb-1">Wymagane</span>
-                                {% endif %}
-                                {% if question.answer_type != 'AH_POINTS' and question.answer %}
-                                    <span class="badge bg-info">
-                                        Punkty: {{ question.answer.score }}/{{ question.points }}
-                                    </span>
-                                {% endif %}
+                        <div class="question-header mb-4 pb-3 border-bottom">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <h5 class="fs-5 fw-bold mb-0">
+                                    {{ question.question_text }}
+                                </h5>
+                                <div class="d-flex flex-column align-items-end">
+                                    {% if question.is_required %}
+                                        <span class="badge bg-danger mb-1">Wymagane</span>
+                                    {% endif %}
+                                    {% if question.answer_type != 'AH_POINTS' and question.answer %}
+                                        <span class="badge bg-info">
+                                            Punkty: {{ question.answer.score }}/{{ question.points }}
+                                        </span>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
 
@@ -377,32 +407,37 @@
                             <img src="{{ question.image }}" class="img-fluid mb-3" alt="Question image">
                         {% endif %}
                         
-                        <div class="answer-content">
+                        <div class="answer-content px-2">
                             {% if question.answer_type == 'AH_POINTS' %}
                                 {% if question.answer and question.answer.points_per_option %}
                                     <div class="table-responsive">
-                                        <table class="table table-hover table-bordered">
-                                            <thead class="table-light">
-                                                <tr>
-                                                    <th style="width: 8%" class="text-center">Opcja</th>
-                                                    <th>Treść</th>
-                                                    <th style="width: 15%" class="text-center">Punkty</th>
+                                        <table class="table table-hover border rounded">
+                                            <thead>
+                                                <tr class="bg-light">
+                                                    <th style="width: 5%" class="text-center border-bottom-0"></th>
+                                                    <th style="width: 85%" class="border-bottom-0 ps-4">Treść odpowiedzi</th>
+                                                    <th style="width: 10%" class="text-center border-bottom-0">Punkty</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {% for letter in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] %}
                                                     {% if question.options and question.options[letter] %}
-                                                        <tr>
-                                                            <td class="align-middle text-center bg-light">
-                                                                <span class="badge bg-secondary">
+                                                        <tr class="border-bottom">
+                                                            <td class="align-middle text-center py-3">
+                                                                <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-secondary bg-opacity-10 text-secondary" 
+                                                                     style="width: 32px; height: 32px; font-weight: 500;">
                                                                     {{ letter|upper }}
-                                                                </span>
+                                                                </div>
                                                             </td>
-                                                            <td class="align-middle">{{ question.options[letter] }}</td>
-                                                            <td class="align-middle text-center">
-                                                                <span class="fs-6 text-dark">
-                                                                    {{ question.answer.points_per_option[letter]|default(0) }}
-                                                                </span>
+                                                            <td class="align-middle py-3 ps-4">
+                                                                <span class="text-dark">{{ question.options[letter] }}</span>
+                                                            </td>
+                                                            <td class="align-middle text-center py-3">
+                                                                <div class="d-inline-flex align-items-center justify-content-center rounded bg-light px-3 py-1">
+                                                                    <span class="fs-6 text-dark fw-medium">
+                                                                        {{ question.answer.points_per_option[letter]|default(0) }}
+                                                                    </span>
+                                                                </div>
                                                             </td>
                                                         </tr>
                                                     {% endif %}
