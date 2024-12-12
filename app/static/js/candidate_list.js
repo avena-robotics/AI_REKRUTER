@@ -8,6 +8,11 @@ window.viewCandidate = async function(candidateId) {
         initializeCopyLinks();
         initializeExtendTokens();
         const modal = new bootstrap.Modal(document.getElementById('candidateModal'));
+        document.getElementById('candidateModal').addEventListener('hidden.bs.modal', function () {
+            document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+                backdrop.remove();
+            });
+        });
         modal.show();
     } catch (error) {
         console.error('Error:', error);
@@ -94,6 +99,79 @@ window.deleteCandidate = async function(candidateId) {
         console.error('Error:', error);
         showToast('Błąd podczas usuwania aplikacji', 'error');
         setButtonLoading(`deleteBtn_${candidateId}`, false);
+    }
+};
+
+window.toggleNewNoteForm = function() {
+    const form = document.getElementById('newNoteForm');
+    if (form.classList.contains('d-none')) {
+        form.classList.remove('d-none');
+        document.getElementById('noteType').value = '';
+        document.getElementById('noteContent').value = '';
+        document.getElementById('noteType').focus();
+    } else {
+        form.classList.add('d-none');
+    }
+};
+
+window.saveNote = async function(candidateId) {
+    const noteType = document.getElementById('noteType').value.trim();
+    const noteContent = document.getElementById('noteContent').value.trim();
+    
+    if (!noteType || !noteContent) {
+        showToast('Wypełnij wszystkie pola', 'error');
+        return;
+    }
+    
+    const saveButton = document.querySelector('#newNoteForm .btn-primary');
+    setButtonLoading(saveButton, true);
+    
+    try {
+        const response = await fetch(`/candidates/${candidateId}/notes`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                note_type: noteType,
+                content: noteContent
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        
+        showToast('Notatka została zapisana', 'success');
+        toggleNewNoteForm();
+        await viewCandidate(candidateId);
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Błąd podczas zapisywania notatki', 'error');
+    } finally {
+        setButtonLoading(saveButton, false);
+    }
+};
+
+window.deleteNote = async function(candidateId, noteId) {
+    if (!confirm('Czy na pewno chcesz usunąć tę notatkę?')) return;
+    
+    try {
+        const response = await fetch(`/candidates/${candidateId}/notes/${noteId}`, {
+            method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        
+        showToast('Notatka została usunięta', 'success');
+        await viewCandidate(candidateId);
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Błąd podczas usuwania notatki', 'error');
     }
 };
 
@@ -198,4 +276,106 @@ document.addEventListener('DOMContentLoaded', function() {
             e.stopPropagation();
         });
     });
+
+    // Add note save handler
+    document.getElementById('saveNoteBtn').addEventListener('click', async function() {
+        const candidateId = this.getAttribute('data-candidate-id');
+        const noteType = document.getElementById('noteType').value.trim();
+        const noteContent = document.getElementById('noteContent').value.trim();
+        
+        if (!noteType || !noteContent) {
+            showToast('Wypełnij wszystkie pola', 'error');
+            return;
+        }
+        
+        setButtonLoading('saveNoteBtn', true);
+        
+        try {
+            const response = await fetch(`/candidates/${candidateId}/notes`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    note_type: noteType,
+                    content: noteContent
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            
+            // Hide modal and show success message
+            bootstrap.Modal.getInstance(document.getElementById('addNoteModal')).hide();
+            showToast('Notatka została zapisana', 'success');
+            
+            // If candidate modal is open, refresh it
+            const candidateModal = document.getElementById('candidateModal');
+            if (candidateModal.classList.contains('show')) {
+                await viewCandidate(candidateId);
+            }
+            
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('Błąd podczas zapisywania notatki', 'error');
+        } finally {
+            setButtonLoading('saveNoteBtn', false);
+        }
+    });
 }); 
+
+window.editNote = function(candidateId, noteId, noteType, noteContent) {
+    // Wypełnij formularz danymi notatki
+    const form = document.getElementById('newNoteForm');
+    const typeInput = document.getElementById('noteType');
+    const contentInput = document.getElementById('noteContent');
+    const saveButton = form.querySelector('.btn-primary');
+    
+    // Pokaż formularz i wypełnij danymi
+    form.classList.remove('d-none');
+    typeInput.value = noteType;
+    contentInput.value = noteContent;
+    
+    // Zmień funkcję przycisku Zapisz
+    saveButton.onclick = async function() {
+        const updatedType = typeInput.value.trim();
+        const updatedContent = contentInput.value.trim();
+        
+        if (!updatedType || !updatedContent) {
+            showToast('Wypełnij wszystkie pola', 'error');
+            return;
+        }
+        
+        setButtonLoading(saveButton, true);
+        
+        try {
+            const response = await fetch(`/candidates/${candidateId}/notes/${noteId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    note_type: updatedType,
+                    content: updatedContent
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            
+            showToast('Notatka została zaktualizowana', 'success');
+            toggleNewNoteForm();
+            await viewCandidate(candidateId);
+            
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('Błąd podczas aktualizacji notatki', 'error');
+        } finally {
+            setButtonLoading(saveButton, false);
+            // Przywróć oryginalną funkcję przycisku
+            saveButton.onclick = () => saveNote(candidateId);
+        }
+    };
+}; 

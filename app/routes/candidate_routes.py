@@ -85,6 +85,7 @@ def view(id):
         logger.debug(f"Pobrano dane kandydata {id} wraz z testami")
         candidate_data = result.data[0]['candidate_data']
         tests_data = result.data[0]['tests_data'] or {}
+        notes_data = result.data[0]['notes_data'] or []
 
         # Process test data to add question count and total points
         logger.debug(f"Rozpoczęcie przetwarzania danych testów dla kandydata {id}")
@@ -127,6 +128,7 @@ def view(id):
             "candidates/candidate_view.html",
             candidate=candidate_data,
             tests=tests_data,
+            notes_data=notes_data,
         )
 
     except Exception as e:
@@ -416,3 +418,75 @@ def next_stage(id):
     except Exception as e:
         logger.error(f"Błąd podczas przenoszenia kandydata {id} do następnego etapu: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500 
+
+
+@candidate_bp.route("/<int:id>/notes", methods=["POST"])
+@login_required
+def add_note(id):
+    try:
+        data = request.get_json()
+        note_type = data.get('note_type')
+        content = data.get('content')
+        
+        if not note_type or not content:
+            return jsonify({"error": "Brak wymaganych pól"}), 400
+        
+        # Insert note into database
+        result = supabase.from_("candidate_notes").insert({
+            "candidate_id": id,
+            "note_type": note_type,
+            "content": content
+        }).execute()
+        
+        return jsonify({"success": True, "data": result.data[0]})
+    
+    except Exception as e:
+        logger.error(f"Błąd podczas dodawania notatki: {str(e)}")
+        return jsonify({"error": "Wystąpił błąd podczas zapisywania notatki"}), 500 
+
+
+@candidate_bp.route("/<int:id>/notes/<int:note_id>", methods=["DELETE"])
+@login_required
+def delete_note(id, note_id):
+    try:
+        result = supabase.from_("candidate_notes").delete().eq("id", note_id).eq("candidate_id", id).execute()
+        
+        if not result.data:
+            return jsonify({"error": "Notatka nie została znaleziona"}), 404
+             
+        return jsonify({"success": True})
+    
+    except Exception as e:
+        logger.error(f"Błąd podczas usuwania notatki: {str(e)}")
+        return jsonify({"error": "Wystąpił błąd podczas usuwania notatki"}), 500
+
+
+@candidate_bp.route("/<int:id>/notes/<int:note_id>", methods=["PUT"])
+@login_required
+def update_note(id, note_id):
+    try:
+        data = request.get_json()
+        note_type = data.get('note_type')
+        content = data.get('content')
+        
+        if not note_type or not content:
+            return jsonify({"error": "Brak wymaganych pól"}), 400
+        
+        result = (supabase.from_("candidate_notes")
+                 .update({
+                     "note_type": note_type,
+                     "content": content,
+                     "updated_at": datetime.now(timezone.utc).isoformat()
+                 })
+                 .eq("id", note_id)
+                 .eq("candidate_id", id)
+                 .execute())
+        
+        if not result.data:
+            return jsonify({"error": "Notatka nie została znaleziona"}), 404
+             
+        return jsonify({"success": True, "data": result.data[0]})
+    
+    except Exception as e:
+        logger.error(f"Błąd podczas aktualizacji notatki: {str(e)}")
+        return jsonify({"error": "Wystąpił błąd podczas aktualizacji notatki"}), 500

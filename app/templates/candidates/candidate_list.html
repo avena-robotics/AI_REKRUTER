@@ -158,6 +158,7 @@
                             <ul class="dropdown-menu dropdown-menu-end" 
                                 aria-labelledby="dropdownMenuButton{{ candidate.id }}"
                                 style="z-index: 1021;">
+                                <!-- Section 1: Neutral actions -->
                                 <li>
                                     <button class="dropdown-item" onclick="viewCandidate('{{ candidate.id }}')" 
                                             id="viewBtn_{{ candidate.id }}">
@@ -165,6 +166,18 @@
                                         <span class="button-text">Podgląd</span>
                                     </button>
                                 </li>
+                                <li>
+                                    <button class="dropdown-item" onclick="addNote('{{ candidate.id }}')"
+                                            id="addNoteBtn_{{ candidate.id }}">
+                                        <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                                        <span class="button-text">Dodaj notatkę</span>
+                                    </button>
+                                </li>
+                                
+                                <!-- Divider -->
+                                <li><hr class="dropdown-divider"></li>
+                                
+                                <!-- Section 2: Status actions -->
                                 {% if candidate.recruitment_status not in ['ACCEPTED', 'PO4'] %}
                                 <li>
                                     <button class="dropdown-item" onclick="moveToNextStage('{{ candidate.id }}')"
@@ -190,7 +203,11 @@
                                         <span class="button-text">Zaakceptuj</span>
                                     </button>
                                 </li>
+
+                                <!-- Divider -->
                                 <li><hr class="dropdown-divider"></li>
+
+                                <!-- Section 3: Destructive actions -->
                                 <li>
                                     <button class="dropdown-item text-danger" onclick="deleteCandidate('{{ candidate.id }}')"
                                             id="deleteBtn_{{ candidate.id }}">
@@ -210,9 +227,9 @@
 
 <!-- Modal for candidate details -->
 <div class="modal fade" id="candidateModal" tabindex="-1" 
-+    data-bs-backdrop="static" 
+     data-bs-backdrop="static" 
      data-bs-keyboard="false">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Szczegóły kandydata</h5>
@@ -223,6 +240,36 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addNoteModal" tabindex="-1" aria-labelledby="addNoteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addNoteModalLabel">Dodaj notatkę</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="noteForm">
+                    <div class="mb-3">
+                        <label for="noteType" class="form-label">Tytuł notatki</label>
+                        <input type="text" class="form-control" id="noteType" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="noteContent" class="form-label">Treść notatki</label>
+                        <textarea class="form-control" id="noteContent" rows="4" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                <button type="button" class="btn btn-primary" id="saveNoteBtn">
+                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    <span class="button-text">Zapisz</span>
+                </button>
             </div>
         </div>
     </div>

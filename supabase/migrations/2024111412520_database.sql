@@ -20,6 +20,7 @@ DROP FUNCTION IF EXISTS get_campaigns_with_groups(bigint[], integer, integer);
 DROP FUNCTION IF EXISTS get_campaigns_count(bigint[]);
 DROP FUNCTION IF EXISTS get_group_tests(bigint[]);
 DROP FUNCTION IF EXISTS get_single_campaign_data(bigint);
+DROP FUNCTION IF EXISTS get_candidate_with_tests(bigint);
 
 -- Create types first
 create type test_type as enum ('SURVEY', 'EQ', 'IQ', 'EQ_EVALUATION');

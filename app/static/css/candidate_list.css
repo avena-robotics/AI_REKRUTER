@@ -114,3 +114,23 @@ td {
         width: 100%;
     }
 } 
+
+/* Fix modal stacking */
+.modal-backdrop.show {
+    z-index: 1055 !important;
+}
+
+.modal.show {
+    z-index: 1056 !important;
+}
+
+/* When two modals are open, increase z-index for the top one */
+.modal.show ~ .modal.show,
+.modal.show ~ .modal-backdrop.show {
+    z-index: 1057 !important;
+}
+
+/* Prevent multiple backdrops */
+.modal-backdrop ~ .modal-backdrop {
+    display: none;
+} 

@@ -26,11 +26,22 @@ ALTER TABLE candidate_answers
     DROP COLUMN IF EXISTS date_answer,
     DROP COLUMN IF EXISTS abcdef_answer;
 
--- Update get_candidate_with_tests function
+
+create table candidate_notes (
+    id bigserial primary key,
+    candidate_id bigint not null references candidates(id) on delete cascade, -- Powiązanie z tabelą kandydatów
+    note_type text not null, -- Typ notatki (np. "Rozmowa telefoniczna", "Ocena", "Uwagi")
+    content text not null,   -- Treść notatki
+    created_at timestamp default now(), -- Data utworzenia notatki
+    updated_at timestamp default now()  -- Data ostatniej aktualizacji
+);
+
+-- Update get_candidate_with_tests function to include notes
 CREATE OR REPLACE FUNCTION get_candidate_with_tests(p_candidate_id bigint)
 RETURNS TABLE (
     candidate_data jsonb,
-    tests_data jsonb
+    tests_data jsonb,
+    notes_data jsonb
 ) LANGUAGE plpgsql AS $$
 BEGIN
     RETURN QUERY
@@ -94,6 +105,18 @@ BEGIN
         FROM candidates c
         JOIN campaigns camp ON c.campaign_id = camp.id
         WHERE c.id = p_candidate_id
+    ),
+    notes_info AS (
+        SELECT jsonb_agg(
+            jsonb_build_object(
+                'id', n.id,
+                'note_type', n.note_type,
+                'content', n.content,
+                'created_at', n.created_at
+            ) ORDER BY n.created_at DESC
+        ) as notes
+        FROM candidate_notes n
+        WHERE n.candidate_id = p_candidate_id
     ),
     questions_with_answers AS (
         SELECT 
@@ -170,7 +193,8 @@ BEGIN
     )
     SELECT 
         (SELECT cand_data FROM candidate_info) as candidate_data,
-        jsonb_object_agg(stages.stage, test_data) as tests_data
+        jsonb_object_agg(stages.stage, test_data) as tests_data,
+        (SELECT notes FROM notes_info) as notes_data
     FROM test_data stages
     GROUP BY 1;
 END;
