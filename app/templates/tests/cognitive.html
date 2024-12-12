@@ -24,19 +24,23 @@
                  
                 <div class="card-body">                    
                     {% if question.image %}
-                    <img src="{{ question.image }}" class="img-fluid mb-3" alt="Question image">
+                    <div class="text-center mb-3">
+                        <img src="{{ question.image }}" class="img-fluid" alt="Question image">
+                    </div>
                     {% endif %}
 
                     {% if question.answer_type == 'ABCDEF' %}
-                    <div class="list-group">
+                    <div class="abcdef-options-container">
                         {% for letter in ['A', 'B', 'C', 'D', 'E', 'F'] %}
-                        <label class="list-group-item" style="cursor: pointer;">
+                        <label class="abcdef-option">
                             <input type="radio" 
                                    name="answer_{{ question.id }}" 
                                    value="{{ letter }}" 
-                                   class="me-2"
-                                   {% if question.is_required %}required{% endif %}>
-                            <span class="ms-2">{{ letter }}</span>
+                                   {% if question.is_required %}required{% endif %}
+                                   class="abcdef-radio">
+                            <div class="abcdef-content">
+                                <span class="letter">{{ letter }}</span>
+                            </div>
                         </label>
                         {% endfor %}
                     </div>
@@ -425,6 +429,77 @@
         .form-check-label {
             cursor: pointer;
             user-select: none;
+        }
+
+        .abcdef-options-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .abcdef-option {
+            position: relative;
+            cursor: pointer;
+            user-select: none;
+            margin: 0;
+        }
+        
+        .abcdef-radio {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+        }
+        
+        .abcdef-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            background-color: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .letter {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        /* Hover effect */
+        .abcdef-option:hover .abcdef-content {
+            background-color: #e9ecef;
+            border-color: #adb5bd;
+        }
+        
+        /* Selected state */
+        .abcdef-radio:checked + .abcdef-content {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+        
+        .abcdef-radio:checked + .abcdef-content .letter {
+            color: white;
+        }
+        
+        /* Focus state for accessibility */
+        .abcdef-radio:focus + .abcdef-content {
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .abcdef-options-container {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .abcdef-options-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
     </style>
 
