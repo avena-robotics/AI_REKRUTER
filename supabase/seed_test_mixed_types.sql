@@ -91,99 +91,93 @@ INSERT INTO candidates (id, campaign_id, first_name, last_name, email, phone, re
 
 -- Insert answers for the first candidate (all correct)
 INSERT INTO candidate_answers (
-    id, candidate_id, question_id, stage, 
-    boolean_answer, scale_answer, salary_answer, date_answer, abcdef_answer, 
-    score, created_at
+    id, candidate_id, question_id, stage, answer, score, created_at
 ) VALUES
     -- BOOLEAN answers
-    (61, 4, 21, 'PO1', true, NULL, NULL, NULL, NULL, 5, now()),
-    (62, 4, 22, 'PO1', false, NULL, NULL, NULL, NULL, 5, now()),
-    (63, 4, 23, 'PO1', true, NULL, NULL, NULL, NULL, 5, now()),
-    (64, 4, 24, 'PO1', false, NULL, NULL, NULL, NULL, 5, now()),
+    (61, 4, 21, 'PO1', 'true', 5, now()),
+    (62, 4, 22, 'PO1', 'false', 5, now()),
+    (63, 4, 23, 'PO1', 'true', 5, now()),
+    (64, 4, 24, 'PO1', 'false', 5, now()),
     -- SCALE answers
-    (65, 4, 25, 'PO1', NULL, 5, NULL, NULL, NULL, 5, now()),
-    (66, 4, 26, 'PO1', NULL, 5, NULL, NULL, NULL, 5, now()),
-    (67, 4, 27, 'PO1', NULL, 5, NULL, NULL, NULL, 5, now()),
-    (68, 4, 28, 'PO1', NULL, 5, NULL, NULL, NULL, 5, now()),
+    (65, 4, 25, 'PO1', '5', 5, now()),
+    (66, 4, 26, 'PO1', '5', 5, now()),
+    (67, 4, 27, 'PO1', '5', 5, now()),
+    (68, 4, 28, 'PO1', '5', 5, now()),
     -- SALARY answers
-    (69, 4, 29, 'PO1', NULL, NULL, 5500, NULL, NULL, 5, now()),
-    (70, 4, 30, 'PO1', NULL, NULL, 4500, NULL, NULL, 5, now()),
-    (71, 4, 31, 'PO1', NULL, NULL, 6500, NULL, NULL, 5, now()),
-    (72, 4, 32, 'PO1', NULL, NULL, 40, NULL, NULL, 5, now()),
+    (69, 4, 29, 'PO1', '5500', 5, now()),
+    (70, 4, 30, 'PO1', '4500', 5, now()),
+    (71, 4, 31, 'PO1', '6500', 5, now()),
+    (72, 4, 32, 'PO1', '40', 5, now()),
     -- DATE answers
-    (73, 4, 33, 'PO1', NULL, NULL, NULL, '2024-02-15', NULL, 5, now()),
-    (74, 4, 34, 'PO1', NULL, NULL, NULL, '2024-02-20', NULL, 5, now()),
-    (75, 4, 35, 'PO1', NULL, NULL, NULL, '2026-01-01', NULL, 5, now()),
-    (76, 4, 36, 'PO1', NULL, NULL, NULL, '2022-12-01', NULL, 5, now()),
+    (73, 4, 33, 'PO1', '2024-02-15', 5, now()),
+    (74, 4, 34, 'PO1', '2024-02-20', 5, now()),
+    (75, 4, 35, 'PO1', '2026-01-01', 5, now()),
+    (76, 4, 36, 'PO1', '2022-12-01', 5, now()),
     -- ABCDEF answers
-    (77, 4, 37, 'PO1', NULL, NULL, NULL, NULL, 'A', 5, now()),
-    (78, 4, 38, 'PO1', NULL, NULL, NULL, NULL, 'D', 5, now()),
-    (79, 4, 39, 'PO1', NULL, NULL, NULL, NULL, 'C', 5, now()),
-    (80, 4, 40, 'PO1', NULL, NULL, NULL, NULL, 'B', 5, now());
+    (77, 4, 37, 'PO1', 'A', 5, now()),
+    (78, 4, 38, 'PO1', 'D', 5, now()),
+    (79, 4, 39, 'PO1', 'C', 5, now()),
+    (80, 4, 40, 'PO1', 'B', 5, now());
 
 -- Insert answers for the second candidate (all wrong)
 INSERT INTO candidate_answers (
-    id, candidate_id, question_id, stage, 
-    boolean_answer, scale_answer, salary_answer, date_answer, abcdef_answer, 
-    score, created_at
+    id, candidate_id, question_id, stage, answer, score, created_at
 ) VALUES
     -- BOOLEAN answers
-    (81, 5, 21, 'PO1', false, NULL, NULL, NULL, NULL, 0, now()),
-    (82, 5, 22, 'PO1', true, NULL, NULL, NULL, NULL, 0, now()),
-    (83, 5, 23, 'PO1', false, NULL, NULL, NULL, NULL, 0, now()),
-    (84, 5, 24, 'PO1', true, NULL, NULL, NULL, NULL, 0, now()),
+    (81, 5, 21, 'PO1', 'false', 0, now()),
+    (82, 5, 22, 'PO1', 'true', 0, now()),
+    (83, 5, 23, 'PO1', 'false', 0, now()),
+    (84, 5, 24, 'PO1', 'true', 0, now()),
     -- SCALE answers
-    (85, 5, 25, 'PO1', NULL, 1, NULL, NULL, NULL, 0, now()),
-    (86, 5, 26, 'PO1', NULL, 0, NULL, NULL, NULL, 0, now()),
-    (87, 5, 27, 'PO1', NULL, 1, NULL, NULL, NULL, 0, now()),
-    (88, 5, 28, 'PO1', NULL, 0, NULL, NULL, NULL, 0, now()),
+    (85, 5, 25, 'PO1', '1', 0, now()),
+    (86, 5, 26, 'PO1', '1', 0, now()),
+    (87, 5, 27, 'PO1', '1', 0, now()),
+    (88, 5, 28, 'PO1', '0', 0, now()),
     -- SALARY answers
-    (89, 5, 29, 'PO1', NULL, NULL, 8000, NULL, NULL, 0, now()),
-    (90, 5, 30, 'PO1', NULL, NULL, 7000, NULL, NULL, 0, now()),
-    (91, 5, 31, 'PO1', NULL, NULL, 9000, NULL, NULL, 0, now()),
-    (92, 5, 32, 'PO1', NULL, NULL, 60, NULL, NULL, 0, now()),
+    (89, 5, 29, 'PO1', '8000', 0, now()),
+    (90, 5, 30, 'PO1', '7000', 0, now()),
+    (91, 5, 31, 'PO1', '9000', 0, now()),
+    (92, 5, 32, 'PO1', '60', 0, now()),
     -- DATE answers
-    (93, 5, 33, 'PO1', NULL, NULL, NULL, '2024-06-01', NULL, 0, now()),
-    (94, 5, 34, 'PO1', NULL, NULL, NULL, '2024-05-01', NULL, 0, now()),
-    (95, 5, 35, 'PO1', NULL, NULL, NULL, '2024-12-31', NULL, 0, now()),
-    (96, 5, 36, 'PO1', NULL, NULL, NULL, '2023-12-31', NULL, 0, now()),
+    (93, 5, 33, 'PO1', '2024-06-01', 0, now()),
+    (94, 5, 34, 'PO1', '2024-05-01', 0, now()),
+    (95, 5, 35, 'PO1', '2024-12-31', 0, now()),
+    (96, 5, 36, 'PO1', '2023-12-31', 0, now()),
     -- ABCDEF answers
-    (97, 5, 37, 'PO1', NULL, NULL, NULL, NULL, 'F', 0, now()),
-    (98, 5, 38, 'PO1', NULL, NULL, NULL, NULL, 'B', 0, now()),
-    (99, 5, 39, 'PO1', NULL, NULL, NULL, NULL, 'E', 0, now()),
-    (100, 5, 40, 'PO1', NULL, NULL, NULL, NULL, 'F', 0, now());
+    (97, 5, 37, 'PO1', 'F', 0, now()),
+    (98, 5, 38, 'PO1', 'B', 0, now()),
+    (99, 5, 39, 'PO1', 'E', 0, now()),
+    (100, 5, 40, 'PO1', 'F', 0, now());
 
 -- Insert answers for the third candidate (mixed results - approximately 50% correct)
 INSERT INTO candidate_answers (
-    id, candidate_id, question_id, stage, 
-    boolean_answer, scale_answer, salary_answer, date_answer, abcdef_answer, 
-    score, created_at
+    id, candidate_id, question_id, stage, answer, score, created_at
 ) VALUES
     -- BOOLEAN answers (2/4 correct)
-    (101, 6, 21, 'PO1', true, NULL, NULL, NULL, NULL, 5, now()),
-    (102, 6, 22, 'PO1', true, NULL, NULL, NULL, NULL, 0, now()),
-    (103, 6, 23, 'PO1', true, NULL, NULL, NULL, NULL, 5, now()),
-    (104, 6, 24, 'PO1', true, NULL, NULL, NULL, NULL, 0, now()),
+    (101, 6, 21, 'PO1', 'true', 5, now()),
+    (102, 6, 22, 'PO1', 'true', 0, now()),
+    (103, 6, 23, 'PO1', 'true', 5, now()),
+    (104, 6, 24, 'PO1', 'true', 0, now()),
     -- SCALE answers (2/4 correct)
-    (105, 6, 25, 'PO1', NULL, 5, NULL, NULL, NULL, 5, now()),
-    (106, 6, 26, 'PO1', NULL, 3, NULL, NULL, NULL, 0, now()),
-    (107, 6, 27, 'PO1', NULL, 5, NULL, NULL, NULL, 5, now()),
-    (108, 6, 28, 'PO1', NULL, 2, NULL, NULL, NULL, 0, now()),
+    (105, 6, 25, 'PO1', '5', 5, now()),
+    (106, 6, 26, 'PO1', '3', 0, now()),
+    (107, 6, 27, 'PO1', '5', 5, now()),
+    (108, 6, 28, 'PO1', '2', 0, now()),
     -- SALARY answers (2/4 correct)
-    (109, 6, 29, 'PO1', NULL, NULL, 5500, NULL, NULL, 5, now()),
-    (110, 6, 30, 'PO1', NULL, NULL, 4500, NULL, NULL, 5, now()),
-    (111, 6, 31, 'PO1', NULL, NULL, 9000, NULL, NULL, 0, now()),
-    (112, 6, 32, 'PO1', NULL, NULL, 60, NULL, NULL, 0, now()),
+    (109, 6, 29, 'PO1', '5500', 5, now()),
+    (110, 6, 30, 'PO1', '4500', 5, now()),
+    (111, 6, 31, 'PO1', '9000', 0, now()),
+    (112, 6, 32, 'PO1', '60', 0, now()),
     -- DATE answers (2/4 correct)
-    (113, 6, 33, 'PO1', NULL, NULL, NULL, '2024-02-15', NULL, 5, now()),
-    (114, 6, 34, 'PO1', NULL, NULL, NULL, '2024-02-20', NULL, 5, now()),
-    (115, 6, 35, 'PO1', NULL, NULL, NULL, '2024-12-31', NULL, 0, now()),
-    (116, 6, 36, 'PO1', NULL, NULL, NULL, '2023-12-31', NULL, 0, now()),
+    (113, 6, 33, 'PO1', '2024-02-15', 5, now()),
+    (114, 6, 34, 'PO1', '2024-02-20', 5, now()),
+    (115, 6, 35, 'PO1', '2024-12-31', 0, now()),
+    (116, 6, 36, 'PO1', '2023-12-31', 0, now()),
     -- ABCDEF answers (2/4 correct)
-    (117, 6, 37, 'PO1', NULL, NULL, NULL, NULL, 'A', 5, now()),
-    (118, 6, 38, 'PO1', NULL, NULL, NULL, NULL, 'D', 5, now()),
-    (119, 6, 39, 'PO1', NULL, NULL, NULL, NULL, 'E', 0, now()),
-    (120, 6, 40, 'PO1', NULL, NULL, NULL, NULL, 'F', 0, now());
+    (117, 6, 37, 'PO1', 'A', 5, now()),
+    (118, 6, 38, 'PO1', 'D', 5, now()),
+    (119, 6, 39, 'PO1', 'E', 0, now()),
+    (120, 6, 40, 'PO1', 'F', 0, now());
 
 -- Dodaj nowy test IQ
 INSERT INTO tests (id, title, test_type, description, passing_threshold, time_limit_minutes, created_at, updated_at) VALUES
@@ -213,114 +207,114 @@ SET
 WHERE id = 2;
 
 -- Dodaj odpowiedzi Piotra (wszystkie poprawne)
-INSERT INTO candidate_answers (id, candidate_id, question_id, stage, boolean_answer, scale_answer, salary_answer, date_answer, abcdef_answer, score, created_at) VALUES
-    (121, 4, 41, 'PO2', NULL, NULL, NULL, NULL, 'A', 10, now()),
-    (122, 4, 42, 'PO2', NULL, NULL, NULL, NULL, 'C', 10, now()),
-    (123, 4, 43, 'PO2', NULL, NULL, NULL, NULL, 'B', 10, now()),
-    (124, 4, 44, 'PO2', NULL, NULL, NULL, NULL, 'C', 10, now()),
-    (125, 4, 45, 'PO2', NULL, NULL, NULL, NULL, 'A', 10, now()),
-    (126, 4, 46, 'PO2', NULL, NULL, NULL, NULL, 'B', 10, now()),
-    (127, 4, 47, 'PO2', NULL, NULL, NULL, NULL, 'A', 10, now()),
-    (128, 4, 48, 'PO2', NULL, NULL, NULL, NULL, 'C', 10, now()),
-    (129, 4, 49, 'PO2', NULL, NULL, NULL, NULL, 'E', 10, now()),
-    (130, 4, 50, 'PO2', NULL, NULL, NULL, NULL, 'C', 10, now());
+INSERT INTO candidate_answers (id, candidate_id, question_id, stage, answer, score, created_at) VALUES
+    (121, 4, 41, 'PO2', 'A', 10, now()),
+    (122, 4, 42, 'PO2', 'C', 10, now()),
+    (123, 4, 43, 'PO2', 'B', 10, now()),
+    (124, 4, 44, 'PO2', 'C', 10, now()),
+    (125, 4, 45, 'PO2', 'A', 10, now()),
+    (126, 4, 46, 'PO2', 'B', 10, now()),
+    (127, 4, 47, 'PO2', 'A', 10, now()),
+    (128, 4, 48, 'PO2', 'C', 10, now()),
+    (129, 4, 49, 'PO2', 'E', 10, now()),
+    (130, 4, 50, 'PO2', 'C', 10, now());
 
 -- Dodaj odpowiedzi Katarzyny (wszystkie błędne)
-INSERT INTO candidate_answers (id, candidate_id, question_id, stage, boolean_answer, scale_answer, salary_answer, date_answer, abcdef_answer, score, created_at) VALUES
-    (131, 5, 41, 'PO2', NULL, NULL, NULL, NULL, 'B', 0, now()),
-    (132, 5, 42, 'PO2', NULL, NULL, NULL, NULL, 'A', 0, now()),
-    (133, 5, 43, 'PO2', NULL, NULL, NULL, NULL, 'C', 0, now()),
-    (134, 5, 44, 'PO2', NULL, NULL, NULL, NULL, 'A', 0, now()),
-    (135, 5, 45, 'PO2', NULL, NULL, NULL, NULL, 'B', 0, now()),
-    (136, 5, 46, 'PO2', NULL, NULL, NULL, NULL, 'A', 0, now()),
-    (137, 5, 47, 'PO2', NULL, NULL, NULL, NULL, 'B', 0, now()),
-    (138, 5, 48, 'PO2', NULL, NULL, NULL, NULL, 'A', 0, now()),
-    (139, 5, 49, 'PO2', NULL, NULL, NULL, NULL, 'A', 0, now()),
-    (140, 5, 50, 'PO2', NULL, NULL, NULL, NULL, 'A', 0, now());
+INSERT INTO candidate_answers (id, candidate_id, question_id, stage, answer, score, created_at) VALUES
+    (131, 5, 41, 'PO2', 'B', 0, now()),
+    (132, 5, 42, 'PO2', 'A', 0, now()),
+    (133, 5, 43, 'PO2', 'C', 0, now()),
+    (134, 5, 44, 'PO2', 'A', 0, now()),
+    (135, 5, 45, 'PO2', 'B', 0, now()),
+    (136, 5, 46, 'PO2', 'A', 0, now()),
+    (137, 5, 47, 'PO2', 'B', 0, now()),
+    (138, 5, 48, 'PO2', 'A', 0, now()),
+    (139, 5, 49, 'PO2', 'A', 0, now()),
+    (140, 5, 50, 'PO2', 'A', 0, now());
 
 -- Dodaj odpowiedzi Tomasza (60% poprawnych)
-INSERT INTO candidate_answers (id, candidate_id, question_id, stage, boolean_answer, scale_answer, salary_answer, date_answer, abcdef_answer, score, created_at) VALUES
-    (141, 6, 41, 'PO2', NULL, NULL, NULL, NULL, 'A', 10, now()), -- poprawna
-    (142, 6, 42, 'PO2', NULL, NULL, NULL, NULL, 'C', 10, now()), -- poprawna
-    (143, 6, 43, 'PO2', NULL, NULL, NULL, NULL, 'B', 10, now()), -- poprawna
-    (144, 6, 44, 'PO2', NULL, NULL, NULL, NULL, 'A', 0, now()),  -- błędna
-    (145, 6, 45, 'PO2', NULL, NULL, NULL, NULL, 'B', 0, now()),  -- błędna
-    (146, 6, 46, 'PO2', NULL, NULL, NULL, NULL, 'B', 10, now()), -- poprawna
-    (147, 6, 47, 'PO2', NULL, NULL, NULL, NULL, 'B', 0, now()),  -- błędna
-    (148, 6, 48, 'PO2', NULL, NULL, NULL, NULL, 'C', 10, now()), -- poprawna
-    (149, 6, 49, 'PO2', NULL, NULL, NULL, NULL, 'A', 0, now()),  -- błędna
-    (150, 6, 50, 'PO2', NULL, NULL, NULL, NULL, 'C', 10, now()); -- poprawna
+INSERT INTO candidate_answers (id, candidate_id, question_id, stage, answer, score, created_at) VALUES
+    (141, 6, 41, 'PO2', 'A', 10, now()), -- poprawna
+    (142, 6, 42, 'PO2', 'C', 10, now()), -- poprawna
+    (143, 6, 43, 'PO2', 'B', 10, now()), -- poprawna
+    (144, 6, 44, 'PO2', 'A', 0, now()),  -- błędna
+    (145, 6, 45, 'PO2', 'B', 0, now()),  -- błędna
+    (146, 6, 46, 'PO2', 'B', 10, now()), -- poprawna
+    (147, 6, 47, 'PO2', 'B', 0, now()),  -- błędna
+    (148, 6, 48, 'PO2', 'C', 10, now()), -- poprawna
+    (149, 6, 49, 'PO2', 'A', 0, now()),  -- błędna
+    (150, 6, 50, 'PO2', 'C', 10, now()); -- poprawna
 
 -- Zmiana odpowiedzi Tomasza na więcej poprawnych (75% poprawnych = 75 punktów)
 UPDATE candidate_answers 
 SET 
-    boolean_answer = true,
+    answer = true,
     score = 5
 WHERE id = 102 AND candidate_id = 6;  -- pytanie 22
 
 UPDATE candidate_answers 
 SET 
-    boolean_answer = false,
+    answer = false,
     score = 5
 WHERE id = 104 AND candidate_id = 6;  -- pytanie 24
 
 UPDATE candidate_answers 
 SET 
-    scale_answer = 5,
+    answer = 5,
     score = 5
 WHERE id = 106 AND candidate_id = 6;  -- pytanie 26
 
 UPDATE candidate_answers 
 SET 
-    scale_answer = 5,
+    answer = 5,
     score = 5
 WHERE id = 108 AND candidate_id = 6;  -- pytanie 28
 
 UPDATE candidate_answers 
 SET 
-    salary_answer = 6000,
+    answer = 6000,
     score = 5
 WHERE id = 111 AND candidate_id = 6;  -- pytanie 31
 
 UPDATE candidate_answers 
 SET 
-    salary_answer = 45,
+    answer = 45,
     score = 5
 WHERE id = 112 AND candidate_id = 6;  -- pytanie 32
 
 UPDATE candidate_answers 
 SET 
-    date_answer = '2025-12-31',
+    answer = '2025-12-31',
     score = 5
 WHERE id = 115 AND candidate_id = 6;  -- pytanie 35
 
 UPDATE candidate_answers 
 SET 
-    date_answer = '2022-12-01',
+    answer = '2022-12-01',
     score = 5
 WHERE id = 116 AND candidate_id = 6;  -- pytanie 36
 
 UPDATE candidate_answers 
 SET 
-    abcdef_answer = 'C',
+    answer = 'C',
     score = 5
 WHERE id = 119 AND candidate_id = 6;  -- pytanie 39
 
 UPDATE candidate_answers 
 SET 
-    abcdef_answer = 'B',
+    answer = 'B',
     score = 5
 WHERE id = 120 AND candidate_id = 6;  -- pytanie 40;
 
 -- Popraw odpowiedzi Piotra na SCALE
 UPDATE candidate_answers 
-SET scale_answer = 5, score = 5
+SET answer = 5, score = 5
 WHERE candidate_id = 4 AND question_id IN (25, 26, 27, 28);
 
 -- Popraw odpowiedzi Piotra na SALARY
 UPDATE candidate_answers 
 SET 
-    salary_answer = CASE 
+    answer = CASE 
         WHEN question_id = 29 THEN 5500
         WHEN question_id = 30 THEN 4500
         WHEN question_id = 31 THEN 6500
@@ -332,7 +326,7 @@ WHERE candidate_id = 4 AND question_id IN (29, 30, 31, 32);
 -- Popraw odpowiedzi Piotra na DATE
 UPDATE candidate_answers 
 SET 
-    date_answer = CASE 
+    answer = CASE 
         WHEN question_id = 33 THEN '2024-02-15'::date
         WHEN question_id = 34 THEN '2024-02-20'::date
         WHEN question_id = 35 THEN '2026-01-01'::date

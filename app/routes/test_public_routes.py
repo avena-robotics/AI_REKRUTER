@@ -259,17 +259,17 @@ def process_test_answers(candidate_id, test_id, form_data):
         
         # Set the appropriate answer field based on type
         if answer_type == 'TEXT':
-            answer_data['text_answer'] = value
+            answer_data['answer'] = str(value)
         elif answer_type == 'BOOLEAN':
-            answer_data['boolean_answer'] = value.lower() == 'true'
+            answer_data['answer'] = str(value.lower() == 'true')
         elif answer_type == 'SCALE':
-            answer_data['scale_answer'] = int(value)
+            answer_data['answer'] = str(value)
         elif answer_type == 'SALARY':
-            answer_data['salary_answer'] = float(value) if value else 0
+            answer_data['answer'] = str(float(value) if value else 0)
         elif answer_type == 'DATE':
-            answer_data['date_answer'] = value
+            answer_data['answer'] = str(value)
         elif answer_type == 'ABCDEF':
-            answer_data['abcdef_answer'] = value
+            answer_data['answer'] = str(value)
             
         answers_to_insert.append(answer_data)
 

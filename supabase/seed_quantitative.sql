@@ -220,14 +220,14 @@ FROM candidate_data;
 INSERT INTO candidate_answers (
     candidate_id,
     question_id,
-    text_answer,
+    answer,
     score,
     created_at
 )
 SELECT 
     c.id as candidate_id,
     q.id as question_id,
-    'Odpowiedź kandydata ' || c.id || ' na pytanie ' || q.id as text_answer,
+    'Odpowiedź kandydata ' || c.id || ' na pytanie ' || q.id as answer,
     floor(random() * 10)::int as score,
     c.po1_completed_at
 FROM candidates c

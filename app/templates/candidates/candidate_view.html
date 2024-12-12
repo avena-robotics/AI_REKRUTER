@@ -454,17 +454,17 @@
                                         <strong>Odpowiedź kandydata:</strong><br>
                                         {% if question.answer %}
                                             {% if question.answer_type == 'TEXT' %}
-                                                <p>{{ question.answer.text_answer }}</p>
+                                                <p>{{ question.answer.answer }}</p>
                                             {% elif question.answer_type == 'BOOLEAN' %}
-                                                <p>{{ 'Tak' if question.answer.boolean_answer else 'Nie' }}</p>
+                                                <p>{{ 'Tak' if question.answer.answer.lower() == 'true' else 'Nie' }}</p>
                                             {% elif question.answer_type == 'SCALE' %}
-                                                <p>{{ question.answer.scale_answer }}/5</p>
+                                                <p>{{ question.answer.answer }}</p>
                                             {% elif question.answer_type == 'SALARY' %}
-                                                <p>{{ question.answer.salary_answer|default(0) }} Netto PLN</p>
+                                                <p>{{ question.answer.answer }} Netto PLN</p>
                                             {% elif question.answer_type == 'DATE' %}
-                                                <p>{{ question.answer.date_answer|datetime }}</p>
+                                                <p>{{ question.answer.answer|datetime }}</p>
                                             {% elif question.answer_type == 'ABCDEF' %}
-                                                <p>Odpowiedź: {{ question.answer.abcdef_answer|upper }}</p>
+                                                <p>Odpowiedź: {{ question.answer.answer|upper }}</p>
                                             {% endif %}
                                             
                                             <!-- Add AI Explanation display -->

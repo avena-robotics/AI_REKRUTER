@@ -59,7 +59,7 @@ INSERT INTO candidates (id, campaign_id, first_name, last_name, email, phone, re
     (9003, 9001, 'Maria', 'Wiśniewska', 'maria.wisniewska@example.com', '+48555666777', 'PO1', now(), now(), now() - interval '2 hours', now() - interval '1 hour');
 
 -- Insert answers for the first candidate (excellent answers)
-INSERT INTO candidate_answers (id, candidate_id, question_id, stage, text_answer, score, created_at) VALUES
+INSERT INTO candidate_answers (id, candidate_id, question_id, stage, answer, score, created_at) VALUES
     (1, 9001, 9001, 'PO1', 'Procedura przyjęcia towaru do magazynu składa się z następujących etapów: 1. Kontrola dokumentacji dostawy (list przewozowy, faktura), 2. Wstępna inspekcja stanu towaru i opakowań, 3. Szczegółowa weryfikacja ilościowa z dokumentami, 4. Kontrola jakościowa towaru, 5. Oznaczenie lokalizacji magazynowej zgodnie z systemem, 6. Wprowadzenie danych do systemu WMS, 7. Generowanie i drukowanie etykiet lokalizacyjnych, 8. Fizyczne rozmieszczenie towaru, 9. Potwierdzenie przyjęcia w systemie.', 10, now()),
     (2, 9001, 9002, 'PO1', 'Główne systemy organizacji przestrzeni biurowej to: 1. Open space - wspólna przestrzeń sprzyjająca komunikacji i współpracy, 2. Cubicles - wydzielone boksy zapewniające prywatność, 3. Hot-desking - elastyczny system bez przypisanych miejsc, 4. Activity-based working - przestrzenie dostosowane do rodzaju wykonywanej pracy. Najbardziej efektywny jest system activity-based working, ponieważ pozwala na optymalne wykorzystanie przestrzeni, wspiera różne style pracy i zwiększa produktywność poprzez dostosowanie środowiska do konkretnych zadań.', 10, now()),
     (3, 9001, 9003, 'PO1', 'W przypadku trudnego klienta wewnętrznego stosuję następujące podejście: 1. Aktywne słuchanie i zrozumienie potrzeb, 2. Spokojne wyjaśnienie realistycznych ram czasowych, 3. Przedstawienie szczegółowego planu realizacji z uwzględnieniem innych zobowiązań, 4. Zaproponowanie alternatywnych rozwiązań (np. realizacja częściowa), 5. Dokumentacja ustaleń mailem, 6. Regularna komunikacja o postępach. Kluczowe jest zachowanie profesjonalizmu i znalezienie kompromisu.', 10, now()),
@@ -82,7 +82,7 @@ INSERT INTO candidate_answers (id, candidate_id, question_id, stage, text_answer
     (20, 9001, 90020, 'PO1', 'System kontroli jakości w magazynie: 1. Procedury kontroli na przyjęciu (AQL sampling), 2. Kontrola międzyoperacyjna z check-listami, 3. Audyty 5S codzienne, 4. System raportowania niezgodności, 5. Analiza Pareto błędów, 6. Karty kontrolne dla kluczowych procesów, 7. Szkolenia jakościowe dla pracowników. Narzędzia: tablety z aplikacją QC, skanery, wagi kontrolne. Miesięczny przegląd KPI jakościowych.', 10, now());
 
 -- Insert answers for the second candidate (poor answers)
-INSERT INTO candidate_answers (id, candidate_id, question_id, stage, text_answer, score, created_at) VALUES
+INSERT INTO candidate_answers (id, candidate_id, question_id, stage, answer, score, created_at) VALUES
     (21, 9002, 9001, 'PO1', 'Trzeba sprawdzić towar i położyć go na półkę.', 0, now()),
     (22, 9002, 9002, 'PO1', 'Biurka i krzesła, najlepiej żeby każdy miał swoje.', 0, now()),
     (23, 9002, 9003, 'PO1', 'Powiem mu żeby poczekał.', 0, now()),
@@ -105,7 +105,7 @@ INSERT INTO candidate_answers (id, candidate_id, question_id, stage, text_answer
     (40, 9002, 90020, 'PO1', 'Sprawdzać czy nie ma błędów.', 0, now());
 
 -- Insert answers for the third candidate (mixed quality answers)
-INSERT INTO candidate_answers (id, candidate_id, question_id, stage, text_answer, score, created_at) VALUES
+INSERT INTO candidate_answers (id, candidate_id, question_id, stage, answer, score, created_at) VALUES
     (41, 9003, 9001, 'PO1', 'Przyjęcie towaru wymaga sprawdzenia dokumentów, przeliczenia ilości i wprowadzenia do systemu. Należy też oznaczyć miejsce składowania.', 5, now()),
     (42, 9003, 9002, 'PO1', 'Znam open space i system gabinetowy. Open space jest lepszy do współpracy, ale może być głośno. Gabinetowy zapewnia spokój, ale utrudnia komunikację.', 7.5, now()),
     (43, 9003, 9003, 'PO1', 'Staram się wysłuchać klienta i wytłumaczyć mu sytuację. Czasem trzeba poszukać kompromisu.', 5, now()),

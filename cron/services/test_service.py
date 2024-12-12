@@ -24,12 +24,7 @@ class TestService:
                 .select('''
                     id,
                     question_id,
-                    text_answer,
-                    boolean_answer,
-                    salary_answer,
-                    scale_answer,
-                    date_answer,
-                    abcdef_answer,
+                    answer,
                     points_per_option
                 ''')\
                 .eq('candidate_id', candidate_id)\
@@ -214,14 +209,14 @@ class TestService:
             if algorithm_type == 'NO_ALGORITHM':
                 return 0.0
             elif algorithm_type == 'EXACT_MATCH':
-                user_answer = str(answer.get('text_answer', '')).strip().lower()
+                user_answer = str(answer.get('answer', '')).strip().lower()
                 correct_answer = str(algorithm_params.get('correct_answer', '')).strip().lower()
                 return float(max_points) if user_answer == correct_answer else 0.0
             elif algorithm_type == 'EVALUATION_BY_AI':
                 try:
                     result = self.openai_service.evaluate_answer(
                         question_text=question['question_text'],
-                        answer_text=answer.get('text_answer', ''),
+                        answer_text=answer.get('answer', ''),
                         max_points=float(max_points),
                         algorithm_params=algorithm_params
                     )
@@ -239,13 +234,16 @@ class TestService:
                     
         elif answer_type == 'BOOLEAN':
             if algorithm_type == 'EXACT_MATCH':
-                user_answer = answer.get('boolean_answer')
-                correct_answer = algorithm_params.get('correct_answer')
-                return float(max_points) if user_answer == correct_answer else 0.0
-                
+                try:
+                    user_answer = str(answer.get('answer', '')).lower() == 'true'
+                    correct_answer = algorithm_params.get('correct_answer')
+                    return float(max_points) if user_answer == correct_answer else 0.0
+                except:
+                    return 0.0
+                    
         elif answer_type in ['SCALE', 'SALARY']:
             try:
-                user_answer = float(str(answer.get(f'{answer_type.lower()}_answer', '')).replace(',', '.'))
+                user_answer = float(str(answer.get('answer', '')).replace(',', '.'))
             except (ValueError, TypeError):
                 return 0.0
                 
@@ -301,14 +299,13 @@ class TestService:
                     return 0.0
                     
         elif answer_type == 'DATE':
-            user_date = answer.get('date_answer')
-            if not user_date:
+            user_date_str = answer.get('answer')
+            if not user_date_str:
                 return 0.0
                 
             try:
-                if isinstance(user_date, str):
-                    user_date = datetime.strptime(user_date, '%Y-%m-%d').date()
-                    
+                user_date = datetime.strptime(user_date_str, '%Y-%m-%d').date()
+                
                 correct_date = algorithm_params.get('correct_answer')
                 min_date = algorithm_params.get('min_value')
                 max_date = algorithm_params.get('max_value')
@@ -389,7 +386,7 @@ class TestService:
                 
         elif answer_type == 'ABCDEF':
             if algorithm_type == 'EXACT_MATCH':
-                user_answer = str(answer.get('abcdef_answer', '')).strip().lower()
+                user_answer = str(answer.get('answer', '')).strip().lower()
                 correct_answer = str(algorithm_params.get('correct_answer', '')).strip().lower()
                 return float(max_points) if user_answer == correct_answer else 0.0
                 
@@ -583,8 +580,8 @@ class TestService:
                         'candidate_id': candidate_id,
                         'question_id': question['id'],
                         'stage': 'PO2_5',
-                        'salary_answer': matching_score,  # Using salary type as per schema
-                        'score': matching_score,  # Original EQ score
+                        'answer': str(matching_score),
+                        'score': matching_score,
                         'created_at': current_time.isoformat()
                     }
                     answers_to_insert.append(answer)
