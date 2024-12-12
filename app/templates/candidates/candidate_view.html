@@ -416,6 +416,8 @@
                                             <p>{{ question.algorithm_params.correct_answer }} Netto PLN</p>
                                         {% elif question.answer_type == 'DATE' %}
                                             <p>{{ question.algorithm_params.correct_answer|datetime }}</p>
+                                        {% elif question.answer_type == 'NUMERIC' %}
+                                            <p>{{ question.algorithm_params.correct_answer }}</p>
                                         {% elif question.answer_type == 'ABCDEF' %}
                                             <p>Odpowiedź: {{ question.algorithm_params.correct_answer|upper }}</p>
                                         {% endif %}
@@ -461,6 +463,8 @@
                                                 <p>{{ question.answer.answer }}</p>
                                             {% elif question.answer_type == 'SALARY' %}
                                                 <p>{{ question.answer.answer }} Netto PLN</p>
+                                            {% elif question.answer_type == 'NUMERIC' %}
+                                                <p>{{ question.answer.answer }}</p>
                                             {% elif question.answer_type == 'DATE' %}
                                                 <p>{{ question.answer.answer|datetime }}</p>
                                             {% elif question.answer_type == 'ABCDEF' %}

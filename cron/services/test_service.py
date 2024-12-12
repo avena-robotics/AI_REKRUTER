@@ -241,7 +241,7 @@ class TestService:
                 except:
                     return 0.0
                     
-        elif answer_type in ['SCALE', 'SALARY']:
+        elif answer_type in ['SCALE', 'SALARY', 'NUMERIC']:
             try:
                 user_answer = float(str(answer.get('answer', '')).replace(',', '.'))
             except (ValueError, TypeError):

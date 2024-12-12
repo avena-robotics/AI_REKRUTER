@@ -466,7 +466,7 @@ def clean_algorithm_params(answer_type, params):
         value = params['correct_answer']
         if answer_type == 'BOOLEAN':
             clean_params['correct_answer'] = value.lower() == 'true' if isinstance(value, str) else bool(value)
-        elif answer_type in ('SCALE', 'SALARY'):
+        elif answer_type in ('SCALE', 'SALARY', 'NUMERIC'):
             try:
                 clean_params['correct_answer'] = float(value)
             except (ValueError, TypeError):

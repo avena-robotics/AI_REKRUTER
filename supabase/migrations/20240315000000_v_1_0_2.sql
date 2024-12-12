@@ -1,3 +1,6 @@
+-- Add new answer type 'NUMERIC'
+ALTER TYPE answer_type ADD VALUE IF NOT EXISTS 'NUMERIC';
+
 -- Add new answer column
 ALTER TABLE candidate_answers
     ADD COLUMN answer text;

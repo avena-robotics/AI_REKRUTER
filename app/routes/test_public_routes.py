@@ -270,6 +270,8 @@ def process_test_answers(candidate_id, test_id, form_data):
             answer_data['answer'] = str(value)
         elif answer_type == 'ABCDEF':
             answer_data['answer'] = str(value)
+        elif answer_type == 'NUMERIC':
+            answer_data['answer'] = str(float(value) if value else 0)
             
         answers_to_insert.append(answer_data)
 

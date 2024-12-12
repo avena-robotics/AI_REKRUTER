@@ -263,6 +263,15 @@
                                    {% if question.is_required %}required{% endif %}>
                         </div>
 
+                        {% elif question.answer_type == 'NUMERIC' %}
+                        <div class="form-group">
+                            <input type="number" 
+                                   class="form-control" 
+                                   name="answer_{{ question.id }}"
+                                   step="1"
+                                   {% if question.is_required %}required{% endif %}>
+                        </div>
+
                         {% elif question.answer_type == 'DATE' %}
                         <div class="form-group">
                             <div class="date-input-container" style="cursor: pointer;" onclick="document.getElementById('date_{{ question.id }}').showPicker()">

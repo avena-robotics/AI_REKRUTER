@@ -421,6 +421,13 @@ function setAnswerFields(questionCard, question) {
                 salaryInput.value = question.algorithm_params.correct_answer;
             }
             break;
+
+        case 'NUMERIC':
+            const numericInput = questionCard.querySelector(`[name$="[algorithm_params][correct_answer]"]`);
+            if (numericInput && question.algorithm_params?.correct_answer !== null) {
+                numericInput.value = question.algorithm_params.correct_answer;
+            }
+            break;
             
         case 'DATE':
             const dateInput = questionCard.querySelector(`[name$="[algorithm_params][correct_answer]"]`);
@@ -1055,6 +1062,7 @@ function createAnswerFieldsHtml(questionCounter, question) {
                 <option value="SALARY" ${answerType === 'SALARY' ? 'selected' : ''}>Wynagrodzenie</option>
                 <option value="DATE" ${answerType === 'DATE' ? 'selected' : ''}>Data</option>
                 <option value="ABCDEF" ${answerType === 'ABCDEF' ? 'selected' : ''}>ABCDEF</option>
+                <option value="NUMERIC" ${answerType === 'NUMERIC' ? 'selected' : ''}>Liczba</option>
                 <option value="AH_POINTS" ${answerType === 'AH_POINTS' ? 'selected' : ''}>Punkty A-H</option>
             </select>
         </div>
@@ -1174,6 +1182,12 @@ function getCorrectAnswerInput(answerType, questionCounter, value) {
             return `<input type="number" class="form-control" 
                            name="questions[${questionCounter}][algorithm_params][correct_answer]"
                            min="0" step="1" 
+                           value="${value !== null ? value : ''}">`;
+
+        case 'NUMERIC':
+            return `<input type="number" class="form-control" 
+                           name="questions[${questionCounter}][algorithm_params][correct_answer]"
+                           step="1" 
                            value="${value !== null ? value : ''}">`;
         
         case 'DATE':
@@ -1334,6 +1348,7 @@ function getAlgorithmParamsValue(input, answerType) {
             return value === 'true';
         case 'SCALE':
         case 'SALARY':
+        case 'NUMERIC':
             return parseFloat(value) || null;
         default:
             return value;
@@ -1359,6 +1374,12 @@ function getMinMaxValueInput(answerType, questionCounter, fieldName, value) {
             return `<input type="number" class="form-control" 
                            name="questions[${questionCounter}][algorithm_params][${fieldName}]"
                            min="0" step="1" 
+                           value="${value !== null ? value : ''}">`;
+
+        case 'NUMERIC':
+            return `<input type="number" class="form-control" 
+                           name="questions[${questionCounter}][algorithm_params][${fieldName}]"
+                           step="1" 
                            value="${value !== null ? value : ''}">`;
         
         default:

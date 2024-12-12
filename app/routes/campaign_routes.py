@@ -313,7 +313,21 @@ def delete(campaign_id):
         return jsonify({'success': True})
     
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
+        error_message = str(e)
+        
+        # Sprawdzanie konkretnych przypadków błędów
+        if 'candidates_campaign_id_fkey' in error_message:
+            return jsonify({
+                'success': False,
+                'error': 'Nie można usunąć kampanii, ponieważ jest wykorzystywana w odpowiedziach kandydata'
+            })
+        # Tutaj można dodać więcej przypadków błędów w przyszłości
+        
+        # Domyślny komunikat błędu
+        return jsonify({
+            'success': False,
+            'error': 'Wystąpił błąd podczas usuwania kampanii'
+        })
 
 @campaign_bp.route('/<int:campaign_id>/generate-link', methods=['POST'])
 def generate_link(campaign_id):
