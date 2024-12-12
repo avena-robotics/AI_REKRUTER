@@ -379,3 +379,16 @@ window.editNote = function(candidateId, noteId, noteType, noteContent) {
         }
     };
 }; 
+
+window.addNote = async function(candidateId) {
+    // Clear previous form data
+    document.getElementById('noteType').value = '';
+    document.getElementById('noteContent').value = '';
+    
+    // Store candidateId for later use
+    document.getElementById('saveNoteBtn').setAttribute('data-candidate-id', candidateId);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('addNoteModal'));
+    modal.show();
+}; 
