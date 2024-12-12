@@ -329,26 +329,36 @@ def next_stage(id):
         else:
             return jsonify({"success": False, "error": "Nieprawidłowy obecny etap"}), 400
 
-        # Generate token and send email for PO2 and PO3
-        logger.debug(f"Generowanie tokenu dla kandydata {id}")
-        current_time = datetime.now(timezone.utc)
-        token_expiry = current_time + timedelta(days=7)
-        formatted_expiry = token_expiry.astimezone(ZoneInfo("Europe/Warsaw")).strftime("%Y-%m-%d %H:%M")
-        
+       
+        logger.debug(f"Przygotowanie aktualizacji dla kandydata {id}") 
         updates = {
             "recruitment_status": next_status,
-            f"access_token_{next_status.lower()}_expires_at": token_expiry.isoformat(),
-            f"access_token_{next_status.lower()}_is_used": False,
-            'updated_at': current_time.isoformat()
+            'updated_at': datetime.now(timezone.utc).isoformat()
         }
         
         if next_status in ["PO2", "PO3"] and test_id:
+            logger.debug(f"Generowanie tokenu dla kandydata {id}")
+
+            expiry_days = {
+                'PO1': campaign.get('po1_token_expiry_days'),
+                'PO2': campaign.get('po2_token_expiry_days'),
+                'PO3': campaign.get('po3_token_expiry_days')
+            }.get(current_status, 7) 
+                
+            current_time = datetime.now(timezone.utc)
+            token_expiry = (current_time + timedelta(days=expiry_days)).replace(hour=23, minute=59, second=59)
+            formatted_expiry = token_expiry.astimezone(ZoneInfo("Europe/Warsaw")).strftime("%Y-%m-%d %H:%M")
+            
+            updates = {
+                f"access_token_{next_status.lower()}_expires_at": token_expiry.isoformat(),
+                f"access_token_{next_status.lower()}_is_used": False,
+                'updated_at': current_time.isoformat()
+            }
+            
             logger.info(f"Przygotowanie emaila z dostępem do testu dla kandydata {id}")
             # Generate token and expiry date
             token = secrets.token_urlsafe(32) 
-            token_expiry = datetime.now(timezone.utc) + timedelta(days=7)
-            formatted_expiry = token_expiry.strftime("%Y-%m-%d %H:%M")
-            
+
             # Add token fields to updates
             updates.update({
                 f"access_token_{next_status.lower()}": token,
