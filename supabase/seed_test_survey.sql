@@ -69,7 +69,7 @@ questions_insert AS (
         
         ('Jakie certyfikaty i szkolenia zawodowe posiadasz?', 'TEXT', NULL, 0, 12, false, 'NO_ALGORITHM', NULL),
         
-        ('Ile godzin tygodniowo możesz pracować?', 'NUMERIC', NULL, 10, 13, true, 'RANGE', '{"min_value": 20, "max_value": 50}'::jsonb),
+        ('Ile godzin tygodniowo możesz pracować?', 'NUMERIC', NULL, 10, 13, true, 'RANGE', '{"min_value": 20, "max_value": 0}'::jsonb),
         
         ('Czy posiadasz prawo jazdy?', 'BOOLEAN', NULL, 10, 14, true, 'EXACT_MATCH', '{"correct_answer": true}'::jsonb),
 
