@@ -55,7 +55,7 @@ SELECT
     true,
     'NO_ALGORITHM'::algorithm_type,
     jsonb_build_object('correct_answer', 'Odpowiedź na pytanie ' || generate_series(1, 50))
-FROM series;
+;
 
 -- 6. Link all tests to Sebastian's groups
 INSERT INTO link_groups_tests (group_id, test_id)
@@ -65,13 +65,36 @@ SELECT
 FROM generate_series(1, 50) g(id)
 CROSS JOIN generate_series(1, 50) t(id);
 
--- 7. 50 Campaigns
+-- 7. 50 Campaigns with updated structure
 INSERT INTO campaigns (
-    id, code, title, workplace_location, contract_type, employment_type,
-    work_start_date, duties, requirements, employer_offerings, job_description,
-    salary_range_min, salary_range_max, po1_test_id, po2_test_id, po3_test_id,
-    po1_test_weight, po2_test_weight, po3_test_weight, universal_access_token,
-    is_active, created_at, updated_at
+    id, 
+    code, 
+    title, 
+    workplace_location, 
+    contract_type, 
+    employment_type,
+    work_start_date, 
+    duties, 
+    requirements, 
+    employer_offerings, 
+    job_description,
+    salary_range_min, 
+    salary_range_max, 
+    po1_test_id, 
+    po2_test_id, 
+    po2_5_test_id,
+    po3_test_id,
+    po1_test_weight, 
+    po2_test_weight, 
+    po2_5_test_weight,
+    po3_test_weight,
+    po1_token_expiry_days,
+    po2_token_expiry_days,
+    po3_token_expiry_days,
+    universal_access_token,
+    is_active, 
+    created_at, 
+    updated_at
 )
 SELECT 
     id,
@@ -87,16 +110,27 @@ SELECT
     'Opis stanowiska ' || id,
     5000,
     10000,
-    id,
-    id,
-    id,
-    30,
-    30,
-    40,
+    id,                          -- po1_test_id
+    id,                          -- po2_test_id
+    CASE WHEN id % 2 = 0 
+        THEN id                  -- po2_5_test_id (only for even numbered campaigns)
+        ELSE NULL 
+    END,
+    id,                          -- po3_test_id
+    30,                          -- po1_test_weight
+    30,                          -- po2_test_weight
+    CASE WHEN id % 2 = 0 
+        THEN 20                  -- po2_5_test_weight (only for even numbered campaigns)
+        ELSE 0 
+    END,
+    20,                          -- po3_test_weight
+    7,                           -- po1_token_expiry_days
+    7,                           -- po2_token_expiry_days
+    7,                           -- po3_token_expiry_days
     'token_' || id,
     true,
-    now(),
-    now()
+    now() - (floor(random() * 60) || ' days')::interval,
+    now() - (floor(random() * 60) || ' days')::interval
 FROM generate_series(1, 50) id;
 
 -- 8. Link campaigns to Sebastian's groups
@@ -222,6 +256,7 @@ INSERT INTO candidate_answers (
     question_id,
     answer,
     score,
+    stage,
     created_at
 )
 SELECT 
@@ -229,6 +264,7 @@ SELECT
     q.id as question_id,
     'Odpowiedź kandydata ' || c.id || ' na pytanie ' || q.id as answer,
     floor(random() * 10)::int as score,
+    'PO1' as stage,
     c.po1_completed_at
 FROM candidates c
 CROSS JOIN questions q

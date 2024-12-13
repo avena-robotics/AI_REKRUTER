@@ -23,12 +23,17 @@ def login():
         email = request.form['username']
         password = request.form['password']
         
+        # Autentykacja przez LDAP
         auth_success, auth_message = ldap_authenticate(email, password)
         if auth_success:
+            # Sprawdzenie, czy użytkownik istnieje w bazie danych
             user_success, user_data = check_user_by_email_supabase(email)
             if user_success:
+                # Logowanie udane, zapisanie w sesji
                 session['user_email'] = email
                 session['user_id'] = user_data['id']
+                
+                # Przekierowanie na stronę docelową
                 next_url = session.pop('next_url', None)
                 return jsonify({
                     'success': True,
@@ -39,13 +44,13 @@ def login():
             else:
                 return jsonify({
                     'success': False,
-                    'message': f'Błąd: {user_data}',
+                    'message': user_data["error"],
                     'type': 'error'
                 })
         else:
             return jsonify({
                 'success': False,
-                'message': f'Błąd logowania: {auth_message}',
+                'message': auth_message["error"],
                 'type': 'error'
             })
     

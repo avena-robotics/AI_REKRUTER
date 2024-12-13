@@ -1,68 +1,86 @@
 from database import supabase
+from logger import Logger
+
+logger = Logger.instance()
+
 
 def get_user_groups(user_id):
     """
-    Get all groups assigned to a user using a single JOIN query
+    Pobiera grupy przypisane do użytkownika.
     
     Args:
-        user_id: The ID of the user
-        
+        user_id (int): ID użytkownika.
+
     Returns:
-        list: List of group dictionaries with id and name
+        list: Lista grup (id i nazwa).
     """
     try:
-        # Single query using JOIN
-        response = (
-            supabase.from_("link_groups_users")
-            .select("groups:group_id(*)")
-            .eq("user_id", user_id)
+        response = supabase.from_("link_groups_users") \
+            .select("groups:group_id(*)") \
+            .eq("user_id", user_id) \
             .execute()
-        )
-        
-        if not response.data:
-            return []
             
-        # Extract groups from nested response
+        if not response.data:
+            logger.warning(f"Żadna grupa nie została przypisana do użytkownika {user_id}")
+            return []
+        
         return [item["groups"] for item in response.data]
         
     except Exception as e:
-        print(f"Error fetching user groups: {str(e)}")
+        logger.error(f"Błąd podczas pobierania grup użytkownika: {str(e)}")
         return []
+
 
 def get_test_groups(test_id):
-    """Get groups assigned to a test using a single JOIN query"""
+    """
+    Pobiera grupy przypisane do testu.
+
+    Args:
+        test_id (int): ID testu.
+
+    Returns:
+        list: Lista grup (id i nazwa).
+    """
     try:
-        response = (
-            supabase.from_("link_groups_tests")
-            .select("groups:group_id(*)")
-            .eq("test_id", test_id)
+        response = supabase.from_("link_groups_tests") \
+            .select("groups:group_id(*)") \
+            .eq("test_id", test_id) \
             .execute()
-        )
-        
-        if not response.data:
-            return []
             
+        if not response.data:
+            logger.warning(f"Żadna grupa nie została przypisana do testu {test_id}")
+            return []
+        
         return [item["groups"] for item in response.data]
         
     except Exception as e:
-        print(f"Error fetching test groups: {str(e)}")
+        logger.error(f"Błąd podczas pobierania grup testu: {str(e)}")
         return []
 
+
 def get_campaign_groups(campaign_id):
-    """Get groups assigned to a campaign using a single JOIN query"""
-    try:
-        response = (
-            supabase.from_("link_groups_campaigns")
-            .select("groups:group_id(*)")
-            .eq("campaign_id", campaign_id)
+    """
+    Pobiera grupy przypisane do kampanii.
+
+    Args:
+        campaign_id (int): ID kampanii.
+
+    Returns:
+        list: Lista grup (id i nazwa).
+    """
+    try: 
+        response = supabase.from_("link_groups_campaigns") \
+            .select("groups:group_id(*)") \
+            .eq("campaign_id", campaign_id) \
             .execute()
-        )
         
         if not response.data:
+            logger.warning(f"Żadna grupa nie została przypisana do kampanii {campaign_id}")
             return []
-            
+        
+        # Wyciąganie danych z odpowiedzi
         return [item["groups"] for item in response.data]
         
     except Exception as e:
-        print(f"Error fetching campaign groups: {str(e)}")
+        logger.error(f"Błąd podczas pobierania grup kampanii: {str(e)}")
         return []

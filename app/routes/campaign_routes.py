@@ -21,7 +21,7 @@ def get_cached_user_groups(user_id, timestamp):
 def list():
     try:
         page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 20, type=int)
+        per_page = request.args.get('per_page', 155, type=int)
         
         # Cache timestamp - updates every 5 minutes
         cache_timestamp = datetime.now().replace(second=0, microsecond=0)

@@ -1,15 +1,18 @@
-import ldap3
 from ldap3 import Server, Connection, ALL, SUBTREE
+import ldap3
 from config import Config
 from contextlib import contextmanager
+from logger import Logger
+
+logger = Logger.instance()
 
 @contextmanager
 def ldap_connection(user=None, password=None):
-    """Context manager for LDAP connections"""
+    """Zarządzanie połączeniem LDAP"""
     server = Server(Config.LDAP_SERVER, get_info=ALL)
     conn = None
     try:
-        # Use service account if no user credentials provided
+        # Użycie konta serwisowego, jeśli nie podano poświadczeń użytkownika
         if not user:
             conn = Connection(
                 server,
@@ -28,36 +31,46 @@ def ldap_connection(user=None, password=None):
             )
         yield conn
     except ldap3.core.exceptions.LDAPBindError:
+        logger.error(f"LDAP Bind Error: {str(e)}")
         raise
     except Exception as e:
+        logger.error(f"Błąd podczas tworzenia połączenia LDAP: {str(e)}")
         raise
     finally:
         if conn and conn.bound:
             conn.unbind()
 
-def ldap_authenticate(email, password):
-    """Authenticate user against LDAP"""
+def ldap_authenticate(email, password) -> tuple[bool, dict]:
+    """Autentykacja użytkownika przez LDAP"""
     try:
-        # First find user DN
+        # Znajdowanie użytkownika w LDAP
+        logger.info(f"LDAP: Autentykacja użytkownika {email}")
         with ldap_connection() as conn:
+            search_filter = f'(userPrincipalName={email})'
             conn.search(
                 search_base=Config.LDAP_BASE_DN,
-                search_filter=f'(userPrincipalName={email})',
+                search_filter=search_filter,
                 search_scope=SUBTREE,
                 attributes=['distinguishedName']
             )
             
             if not conn.entries:
-                return False, "Użytkownik nie znaleziony"
+                logger.warning(f"Użytkownik {email} nie znaleziony w LDAP")
+                return False, { "error": "Użytkownik nie znaleziony"}
             
+            logger.info(f"LDAP: Użytkownik {email} znaleziony w LDAP")
+            # Pobranie DN użytkownika
             user_dn = conn.entries[0].distinguishedName.value
-
-        # Then try to authenticate with user credentials
+            
+        # Próba uwierzytelnienia użytkownika
         with ldap_connection(user_dn, password):
+            logger.info(f"LDAP: Użytkownik {email} pomyślnie uwierzytelniony")
             return True, None
             
     except ldap3.core.exceptions.LDAPBindError:
-        return False, "Nieprawidłowy login lub hasło"
+        logger.warning(f"LDAP: Nieprawidłowe poświadczenia dla {email}")
+        return False, { "error": "Nieprawidłowy login lub hasło"}
     except Exception as e:
-        return False, "Wystąpił błąd podczas logowania"
+        logger.error(f"LDAP: Wystąpił błąd podczas logowania dla {email}: {str(e)}")
+        return False, { "error": "Wystąpił błąd podczas logowania"}
 
