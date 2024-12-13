@@ -107,14 +107,42 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+
+    // Dla modalu dodawania/klonowania
+    const addModal = document.getElementById('addCampaignModal');
+    if (addModal) {
+        addModal.addEventListener('hidden.bs.modal', function() {
+            resetAddCampaignForm();
+        });
+    }
+    
+    // Dla modalu edycji
+    const editModal = document.getElementById('editCampaignModal');
+    if (editModal) {
+        editModal.addEventListener('hidden.bs.modal', function() {
+            const form = document.getElementById('editCampaignForm');
+            resetCodeValidation(form);
+        });
+    }
 }); 
 
 function editCampaign(campaignId) {
     fetch(`/campaigns/${campaignId}/data`)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => {
+                    throw new Error(err.error || 'Błąd podczas ładowania danych kampanii');
+                });
+            }
+            return response.json();
+        })
         .then(campaign => {
-            console.log('Campaign data received:', campaign);
             const form = document.getElementById('editCampaignForm');
+            
+            // Reset validation state before filling form
+            resetCodeValidation(form);
+            
+            // Populate form fields
             form.action = `/campaigns/${campaignId}/edit`;
             
             // Populate form fields
@@ -193,7 +221,7 @@ function editCampaign(campaignId) {
         })
         .catch(error => {
             console.error('Error:', error);
-            showToast('Błąd podczas ładowania danych kampanii', 'error');
+            showToast(error.message || 'Błąd podczas ładowania danych kampanii', 'error');
         });
 }
 
@@ -360,64 +388,64 @@ function handleCampaignFormSubmit(e) {
 
 function updateTestOptions(groupSelect) {
     const form = groupSelect.closest('form');
-    const testSelects = form.querySelectorAll('[name$="_test_id"]');
+    const groupId = groupSelect.value;
     
-    // Disable all test selects and weight inputs initially
-    testSelects.forEach(select => {
+    // Reset all test selects
+    form.querySelectorAll('[name$="_test_id"]').forEach(select => {
         select.innerHTML = '<option value="">Brak</option>';
         select.disabled = true;
     });
     
-    // Only disable weight inputs that exist (skip PO2 which doesn't have weight)
-    form.querySelector('[name="po1_test_weight"]').disabled = true;
-    form.querySelector('[name="po2_5_test_weight"]').disabled = true;
-    form.querySelector('[name="po3_test_weight"]').disabled = true;
-    
-    if (!groupSelect.value) return;
+    if (!groupId) return;
     
     // Fetch tests for selected group
-    fetch(`/campaigns/group/${groupSelect.value}/tests`)
-        .then(response => response.json())
-        .then(tests => {
-            testSelects.forEach(select => {
-                select.disabled = false;
-                
-                // Filter tests based on stage
-                let filteredTests;
-                switch(select.name) {
-                    case 'po1_test_id':
-                        filteredTests = tests.filter(test => test.test_type === 'SURVEY');
-                        break;
-                    case 'po2_test_id':
-                        filteredTests = tests.filter(test => test.test_type === 'EQ');
-                        break;
-                    case 'po2_5_test_id':
-                        filteredTests = tests.filter(test => test.test_type === 'EQ_EVALUATION');
-                        break;
-                    case 'po3_test_id':
-                        filteredTests = tests.filter(test => test.test_type === 'IQ');
-                        break;
-                    default:
-                        filteredTests = [];
-                }
-                
-                filteredTests.forEach(test => {
-                    const option = new Option(
-                        `${test.title} - ${test.test_type}`,
-                        test.id
-                    );
-                    select.add(option);
+    fetch(`/campaigns/group/${groupId}/tests`)
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => {
+                    throw new Error(err.error || 'Błąd podczas pobierania testów');
                 });
+            }
+            return response.json();
+        })
+        .then(tests => {
+            const po1Select = form.querySelector('[name="po1_test_id"]');
+            const po2Select = form.querySelector('[name="po2_test_id"]');
+            const po2_5Select = form.querySelector('[name="po2_5_test_id"]');
+            const po3Select = form.querySelector('[name="po3_test_id"]');
+            
+            // Enable PO1 select by default
+            po1Select.disabled = false;
+            
+            // Group tests by type
+            tests.forEach(test => {
+                const option = new Option(
+                    `${test.title} - ${test.test_type}`, 
+                    test.id
+                );
+                
+                switch(test.test_type) {
+                    case 'SURVEY':
+                        po1Select.add(option.cloneNode(true));
+                        break;
+                    case 'EQ':
+                        po2Select.add(option.cloneNode(true));
+                        break;
+                    case 'EQ_EVALUATION':
+                        po2_5Select.add(option.cloneNode(true));
+                        break;
+                    case 'IQ':
+                        po3Select.add(option.cloneNode(true));
+                        break;
+                }
             });
             
-            // Enable weight inputs except for PO2
-            form.querySelector('[name="po1_test_weight"]').disabled = false;
-            form.querySelector('[name="po2_5_test_weight"]').disabled = false;
-            form.querySelector('[name="po3_test_weight"]').disabled = false;
+            // Update dependencies
+            updateTestDependencies(form);
         })
         .catch(error => {
-            console.error('Error fetching tests:', error);
-            showToast('Błąd podczas pobierania testów', 'error');
+            console.error('Error:', error);
+            showToast(error.message || 'Błąd podczas pobierania testów', 'error');
         });
 }
 
@@ -528,12 +556,24 @@ function updateMaxWeights(form) {
 
 function cloneCampaign(campaignId) {
     fetch(`/campaigns/${campaignId}/data`)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => {
+                    throw new Error(err.error || 'Błąd podczas ładowania danych kampanii');
+                });
+            }
+            return response.json();
+        })
         .then(campaign => {
             const form = document.getElementById('addCampaignForm');
             
+            // Reset validation state before filling form
+            resetCodeValidation(form);
+            
+            // Clear code field specifically for cloning
+            form.querySelector('[name="code"]').value = '';
+            
             // Populate form fields except code
-            form.querySelector('[name="code"]').value = ''; // Leave empty
             form.querySelector('[name="title"]').value = campaign.title || '';
             form.querySelector('[name="workplace_location"]').value = campaign.workplace_location || '';
             form.querySelector('[name="work_start_date"]').value = campaign.work_start_date || '';
@@ -612,7 +652,7 @@ function cloneCampaign(campaignId) {
         })
         .catch(error => {
             console.error('Error:', error);
-            showToast('Błąd podczas ładowania danych kampanii', 'error');
+            showToast(error.message || 'Błąd podczas ładowania danych kampanii', 'error');
         });
 } 
 
@@ -657,7 +697,19 @@ function updateWeightValidation() {
     });
 } 
 
-// Add this new function at the top level
+// Dodaj tę funkcję do resetowania stanu walidacji kodu
+function resetCodeValidation(form) {
+    const codeInput = form.querySelector('[name="code"]');
+    const feedbackDiv = codeInput.nextElementSibling;
+    
+    codeInput.classList.remove('is-invalid');
+    if (feedbackDiv) {
+        feedbackDiv.style.display = 'none';
+        feedbackDiv.textContent = '';
+    }
+}
+
+// Zmodyfikuj istniejącą funkcję resetAddCampaignForm
 function resetAddCampaignForm() {
     const form = document.getElementById('addCampaignForm');
     
@@ -668,6 +720,9 @@ function resetAddCampaignForm() {
     form.querySelectorAll('.is-invalid').forEach(el => {
         el.classList.remove('is-invalid');
     });
+    
+    // Reset code validation specifically
+    resetCodeValidation(form);
     
     // Reset all select elements to default state
     form.querySelectorAll('select').forEach(select => {

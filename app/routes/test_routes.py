@@ -10,18 +10,6 @@ import time
 test_bp = Blueprint("test", __name__, url_prefix="/tests")
 logger = Logger.instance()
 
-# Add helper function for retrying database operations
-def retry_on_disconnect(operation, max_retries=3):
-    for attempt in range(max_retries):
-        try:
-            return operation()
-        except Exception as e:
-            if "Server disconnected" in str(e) and attempt < max_retries - 1:
-                logger.warning(f"Utracono połączenie z serwerem, ponowne próby... (próba {attempt + 1})")
-                time.sleep(1)  # Wait before retry
-                continue
-            raise
-
 
 @test_bp.route("/")
 @login_required

@@ -16,7 +16,7 @@ DROP TYPE IF EXISTS answer_type CASCADE;
 DROP TYPE IF EXISTS test_type CASCADE;
 DROP TYPE IF EXISTS algorithm_type CASCADE;
 
-DROP FUNCTION IF EXISTS get_campaigns_with_groups(bigint[], integer, integer);
+DROP FUNCTION IF EXISTS get_campaigns_with_groups(bigint[]);
 DROP FUNCTION IF EXISTS get_campaigns_count(bigint[]);
 DROP FUNCTION IF EXISTS get_group_tests(bigint[]);
 DROP FUNCTION IF EXISTS get_single_campaign_data(bigint);
@@ -195,18 +195,7 @@ CREATE INDEX idx_campaigns_is_active ON campaigns(is_active);
 CREATE INDEX idx_link_groups_campaigns_campaign_id ON link_groups_campaigns(campaign_id);
 CREATE INDEX idx_link_groups_users_user_id ON link_groups_users(user_id);
 
--- Function to get total campaign count
-CREATE OR REPLACE FUNCTION get_campaigns_count(
-    p_user_group_ids bigint[]
-) RETURNS TABLE (count bigint) LANGUAGE plpgsql AS $$
-BEGIN
-    RETURN QUERY
-    SELECT COUNT(DISTINCT c.id)
-    FROM campaigns c
-    JOIN link_groups_campaigns lgc ON c.id = lgc.campaign_id
-    WHERE lgc.group_id = ANY(p_user_group_ids);
-END;
-$$;
+
 
 -- Function to get tests for groups
 CREATE OR REPLACE FUNCTION get_group_tests(
@@ -219,10 +208,11 @@ CREATE OR REPLACE FUNCTION get_group_tests(
 ) LANGUAGE plpgsql AS $$
 BEGIN
     RETURN QUERY
-    SELECT DISTINCT t.id, t.test_type::text, t.title, t.description
+    SELECT t.id, t.test_type::text, t.title, t.description
     FROM tests t
     JOIN link_groups_tests lgt ON t.id = lgt.test_id
     WHERE lgt.group_id = ANY(p_group_ids)
+    GROUP BY t.id, t.test_type, t.title, t.description
     ORDER BY t.test_type;
 END;
 $$;
@@ -230,9 +220,7 @@ $$;
 
 -- Drop and recreate get_campaigns_with_groups function with new columns
 CREATE OR REPLACE FUNCTION get_campaigns_with_groups(
-    p_user_group_ids bigint[],
-    p_limit integer,
-    p_offset integer
+    p_user_group_ids bigint[]
 ) RETURNS TABLE (
     id bigint,
     code text,
@@ -271,7 +259,7 @@ CREATE OR REPLACE FUNCTION get_campaigns_with_groups(
 BEGIN
     RETURN QUERY
     WITH campaign_groups AS (
-        SELECT DISTINCT c.*, 
+        SELECT c.*, 
             jsonb_agg(
                 jsonb_build_object(
                     'id', g.id,
@@ -282,7 +270,7 @@ BEGIN
         JOIN link_groups_campaigns lgc ON c.id = lgc.campaign_id
         JOIN groups g ON lgc.group_id = g.id
         WHERE lgc.group_id = ANY(p_user_group_ids)
-        GROUP BY c.id
+        GROUP BY c.id, c.created_at
     )
     SELECT 
         cg.id,
@@ -339,9 +327,7 @@ BEGIN
     LEFT JOIN tests t2 ON cg.po2_test_id = t2.id
     LEFT JOIN tests t2_5 ON cg.po2_5_test_id = t2_5.id
     LEFT JOIN tests t3 ON cg.po3_test_id = t3.id
-    ORDER BY cg.created_at DESC
-    LIMIT p_limit
-    OFFSET p_offset;
+    ORDER BY cg.created_at DESC;
 END;
 $$;
 
@@ -459,89 +445,6 @@ BEGIN
 END;
 $$;
 
-
-
--- Function to duplicate campaign
-CREATE OR REPLACE FUNCTION duplicate_campaign(
-    p_campaign_id bigint,
-    p_new_code text
-) RETURNS TABLE (
-    id bigint,
-    code text
-) LANGUAGE plpgsql AS $$
-DECLARE
-    new_campaign_id bigint;
-BEGIN
-    -- Insert new campaign
-    INSERT INTO campaigns (
-        code,
-        title,
-        workplace_location,
-        contract_type,
-        employment_type,
-        work_start_date,
-        duties,
-        requirements,
-        employer_offerings,
-        job_description,
-        salary_range_min,
-        salary_range_max,
-        is_active,
-        po1_test_id,
-        po2_test_id,
-        po2_5_test_id,
-        po3_test_id,
-        po1_test_weight,
-        po2_test_weight,
-        po2_5_test_weight,
-        po3_test_weight,
-        po1_token_expiry_days,
-        po2_token_expiry_days,
-        po3_token_expiry_days,
-        created_at,
-        updated_at
-    )
-    SELECT 
-        p_new_code,
-        title,
-        workplace_location,
-        contract_type,
-        employment_type,
-        work_start_date,
-        duties,
-        requirements,
-        employer_offerings,
-        job_description,
-        salary_range_min,
-        salary_range_max,
-        is_active,
-        po1_test_id,    
-        po2_test_id,
-        po2_5_test_id,
-        po3_test_id,
-        po1_test_weight,
-        po2_test_weight,
-        po2_5_test_weight,
-        po3_test_weight,
-        po1_token_expiry_days,
-        po2_token_expiry_days,
-        po3_token_expiry_days,
-        now(),
-        now()
-    FROM campaigns
-    WHERE id = p_campaign_id
-    RETURNING id INTO new_campaign_id;
-    
-    -- Copy group associations
-    INSERT INTO link_groups_campaigns (group_id, campaign_id)
-    SELECT group_id, new_campaign_id
-    FROM link_groups_campaigns
-    WHERE campaign_id = p_campaign_id;
-    
-    RETURN QUERY
-    SELECT new_campaign_id, p_new_code;
-END;
-$$;
 
 -- Update get_candidate_with_tests function to handle float scores
 CREATE OR REPLACE FUNCTION get_candidate_with_tests(p_candidate_id bigint)

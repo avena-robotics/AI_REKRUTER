@@ -1,10 +1,10 @@
 from database import supabase
 from logger import Logger
+from typing import List, Dict
 
 logger = Logger.instance()
 
-
-def get_user_groups(user_id):
+def get_user_groups(user_id: int) -> List[Dict]:
     """
     Pobiera grupy przypisane do użytkownika.
     
@@ -30,8 +30,7 @@ def get_user_groups(user_id):
         logger.error(f"Błąd podczas pobierania grup użytkownika: {str(e)}")
         return []
 
-
-def get_test_groups(test_id):
+def get_test_groups(test_id: int) -> List[Dict]:
     """
     Pobiera grupy przypisane do testu.
 
@@ -57,8 +56,7 @@ def get_test_groups(test_id):
         logger.error(f"Błąd podczas pobierania grup testu: {str(e)}")
         return []
 
-
-def get_campaign_groups(campaign_id):
+def get_campaign_groups(campaign_id: int) -> List[Dict]:
     """
     Pobiera grupy przypisane do kampanii.
 
