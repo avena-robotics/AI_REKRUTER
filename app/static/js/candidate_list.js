@@ -323,7 +323,94 @@ document.addEventListener('DOMContentLoaded', function() {
             setButtonLoading('saveNoteBtn', false);
         }
     });
-}); 
+
+    // Obsługa filtrowania i sortowania
+    const filterForm = document.getElementById('filter-form');
+    if (filterForm) {
+        filterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            applyFilters();
+        });
+    }
+
+    // Obsługa przycisków akcji
+    setupActionButtons();
+});
+
+function setupActionButtons() {
+    // Przycisk następnego etapu
+    document.querySelectorAll('.next-stage-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const candidateId = this.dataset.candidateId;
+            moveToNextStage(candidateId);
+        });
+    });
+
+    // Przycisk odrzucenia
+    document.querySelectorAll('.reject-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const candidateId = this.dataset.candidateId;
+            rejectCandidate(candidateId);
+        });
+    });
+
+    // Przycisk akceptacji
+    document.querySelectorAll('.accept-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const candidateId = this.dataset.candidateId;
+            acceptCandidate(candidateId);
+        });
+    });
+
+    // Przycisk usuwania
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const candidateId = this.dataset.candidateId;
+            deleteCandidate(candidateId);
+        });
+    });
+}
+
+// Funkcje obsługi akcji
+async function moveToNextStage(candidateId) {
+    if (!confirm('Czy na pewno chcesz przenieść kandydata do następnego etapu?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/candidates/${candidateId}/next-stage`, {
+            method: 'POST'
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            showToast('success', 'Kandydat został przeniesiony do następnego etapu');
+            window.location.reload();
+        } else {
+            showToast('error', data.error || 'Wystąpił błąd');
+        }
+    } catch (error) {
+        showToast('error', 'Wystąpił błąd podczas przenoszenia do następnego etapu');
+    }
+}
+
+function applyFilters() {
+    const campaign = document.getElementById('campaign-filter').value;
+    const status = document.getElementById('status-filter').value;
+    const search = document.getElementById('search-input').value;
+    const sortBy = document.getElementById('sort-by').value;
+    const sortOrder = document.getElementById('sort-order').value;
+
+    const params = new URLSearchParams({
+        campaign_code: campaign,
+        status: status,
+        search: search,
+        sort_by: sortBy,
+        sort_order: sortOrder
+    });
+
+    window.location.href = `${window.location.pathname}?${params.toString()}`;
+}
 
 window.editNote = function(candidateId, noteId, noteType, noteContent) {
     // Wypełnij formularz danymi notatki

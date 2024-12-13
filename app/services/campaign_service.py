@@ -306,3 +306,29 @@ class CampaignService:
                 message="Błąd podczas generowania linku kampanii.",
                 original_error=e
             )
+
+    @staticmethod
+    def get_campaigns_for_dropdown() -> List[Dict]:
+        """
+        Pobiera listę kampanii do wyświetlenia w dropdownie.
+        
+        Returns:
+            List[Dict]: Lista kampanii z kodem i tytułem
+            
+        Raises:
+            CampaignException: Gdy wystąpi błąd podczas pobierania kampanii
+        """
+        try:
+            result = supabase.from_("campaigns")\
+                .select("code, title")\
+                .order("code", desc=False)\
+                .execute()
+                
+            return result.data
+                
+        except Exception as e:
+            logger.error(f"Błąd podczas pobierania listy kampanii: {str(e)}")
+            raise CampaignException(
+                message="Wystąpił błąd podczas pobierania listy kampanii",
+                original_error=e
+            )

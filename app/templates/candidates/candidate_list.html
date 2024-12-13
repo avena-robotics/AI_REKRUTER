@@ -145,7 +145,7 @@
                     <td>{{ candidate.score_kz if candidate.score_kz is not none else '-' }}</td>
                     <td>{{ candidate.score_dz if candidate.score_dz is not none else '-' }}</td>
                     <td>{{ candidate.score_sw if candidate.score_sw is not none else '-' }}</td>
-                    <td>{{ candidate.created_at|datetime }}</td>
+                    <td>{{ candidate.created_at|format_datetime }}</td>
                     <td>
                         <div class="dropdown">
                             <button class="btn btn-primary btn-sm dropdown-toggle" 

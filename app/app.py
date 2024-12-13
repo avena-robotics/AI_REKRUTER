@@ -24,7 +24,7 @@ def create_app(config_class=Config):
     app.debug = Config.DEBUG_MODE
 
     # Register custom filters
-    app.jinja_env.filters['datetime'] = format_datetime
+    app.jinja_env.filters['format_datetime'] = format_datetime
 
     # Register blueprints
     app.register_blueprint(auth_bp)

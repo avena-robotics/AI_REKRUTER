@@ -113,7 +113,8 @@ BEGIN
                 'id', n.id,
                 'note_type', n.note_type,
                 'content', n.content,
-                'created_at', n.created_at
+                'created_at', n.created_at,
+                'updated_at', n.updated_at
             ) ORDER BY n.created_at DESC
         ) as notes
         FROM candidate_notes n

@@ -2,13 +2,23 @@ from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 def format_datetime(dt):
+    """
+    Formatuje datę i czas do czytelnego formatu.
+    
+    Args:
+        dt: Data i czas (str lub datetime)
+        
+    Returns:
+        str: Sformatowana data i czas
+    """
     if not dt:
-        return None
+        return ""
+        
     try:
         # If input is string, convert to datetime
         if isinstance(dt, str):
             if '.' in dt:
-                dt = dt.split('.')[0]
+                dt = dt.split('.')[0]  # Usuń mikrosekundy
             dt = datetime.fromisoformat(dt.replace('Z', '+00:00'))
         
         # Ensure timezone info
@@ -17,7 +27,8 @@ def format_datetime(dt):
             
         # Convert to local timezone
         local_dt = dt.astimezone(ZoneInfo("Europe/Warsaw"))
-        return local_dt.strftime('%Y-%m-%d %H:%M:%S')
+        return local_dt.strftime('%Y-%m-%d %H:%M')
+        
     except Exception as e:
         print(f"Error formatting datetime {dt}: {str(e)}")
         return str(dt)

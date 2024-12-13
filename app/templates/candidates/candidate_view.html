@@ -27,7 +27,7 @@
                             {{ candidate.recruitment_status }}
                         </span>
                     </p>
-                    <p class="mb-3"><strong>Data aplikacji:</strong> {{ candidate.created_at|datetime }}</p>
+                    <p class="mb-3"><strong>Data aplikacji:</strong> {{ candidate.created_at|format_datetime }}</p>
                 </div>
             </div>
             <!-- Notatki w sekcji informacji -->
@@ -77,7 +77,7 @@
                                         <div class="d-flex align-items-center gap-3">
                                             <small class="text-muted">
                                                 <i class="bi bi-clock me-1"></i>
-                                                {{ note.created_at|datetime }}
+                                                {{ note.created_at|format_datetime }}
                                             </small>
                                             <button class="btn btn-outline-primary btn-sm" 
                                                     onclick="editNote('{{ candidate.id }}', '{{ note.id }}', '{{ note.note_type }}', '{{ note.content }}')"
@@ -171,7 +171,7 @@
                                             <p class="mb-0">
                                                 <strong>Wygasa:</strong>
                                                 <span class="ms-2" id="expiryTime{{ stage }}">
-                                                    {{ expires_at|datetime }}
+                                                    {{ expires_at|format_datetime }}
                                                 </span>
                                                 {% if not is_used %}
                                                     <span class="ms-2" id="timeRemaining{{ stage }}"></span>
@@ -243,7 +243,7 @@
                                             -
                                         {% endif %}
                                     </td>
-                                    <td>{{ candidate.po1_completed_at|datetime if candidate.po1_completed_at else '-' }}</td>
+                                    <td>{{ candidate.po1_completed_at|format_datetime if candidate.po1_completed_at else '-' }}</td>
                                 </tr>
                                 <tr>
                                     <td>PO2</td>
@@ -256,7 +256,7 @@
                                             -
                                         {% endif %}
                                     </td>
-                                    <td>{{ candidate.po2_completed_at|datetime if candidate.po2_completed_at else '-' }}</td>
+                                    <td>{{ candidate.po2_completed_at|format_datetime if candidate.po2_completed_at else '-' }}</td>
                                 </tr>
                                 <tr>
                                     <td>PO2.5</td>
@@ -282,14 +282,14 @@
                                             -
                                         {% endif %}
                                     </td>
-                                    <td>{{ candidate.po3_completed_at|datetime if candidate.po3_completed_at else '-' }}</td>
+                                    <td>{{ candidate.po3_completed_at|format_datetime if candidate.po3_completed_at else '-' }}</td>
                                 </tr>
                                 <tr>
                                     <td>PO4</td>
                                     <td>{{ candidate.po4_score if candidate.po4_score is not none else '-' }}</td>
                                     <td>-</td>
                                     <td>-</td>
-                                    <td>{{ candidate.po4_completed_at|datetime if candidate.po4_completed_at else '-' }}</td>
+                                    <td>{{ candidate.po4_completed_at|format_datetime if candidate.po4_completed_at else '-' }}</td>
                                 </tr>
                                 <tr class="table-active">
                                     <td><strong>Wynik ogólny</strong></td>
@@ -418,9 +418,9 @@
                                     <div class="col-md-6">
                                         {% if tests[stage].started_at %}
                                             <p class="mb-3">
-                                                <strong>Rozpoczęto:</strong> {{ tests[stage].started_at|datetime }}
+                                                <strong>Rozpoczęto:</strong> {{ tests[stage].started_at|format_datetime }}
                                                 {% if tests[stage].completed_at %}
-                                                    <br><strong>Zakończono:</strong> {{ tests[stage].completed_at|datetime }}
+                                                    <br><strong>Zakończono:</strong> {{ tests[stage].completed_at|format_datetime }}
                                                     {% if tests[stage].started_at and tests[stage].completed_at %}
                                                         {% set duration_seconds = (tests[stage].completed_at - tests[stage].started_at).total_seconds() %}
                                                         {% set minutes = (duration_seconds / 60)|int %}
@@ -535,7 +535,7 @@
                                                 {% elif question.answer_type == 'SALARY' %}
                                                     <p class="mb-0">{{ question.algorithm_params.correct_answer }} Netto PLN</p>
                                                 {% elif question.answer_type == 'DATE' %}
-                                                    <p class="mb-0">{{ question.algorithm_params.correct_answer|datetime }}</p>
+                                                    <p class="mb-0">{{ question.algorithm_params.correct_answer|format_datetime }}</p>
                                                 {% elif question.answer_type == 'NUMERIC' %}
                                                     <p class="mb-0">{{ question.algorithm_params.correct_answer }}</p>
                                                 {% elif question.answer_type == 'ABCDEF' %}
@@ -566,7 +566,7 @@
                                                 {% elif question.answer_type == 'NUMERIC' %}
                                                     <p class="mb-0">{{ question.answer.answer }}</p>
                                                 {% elif question.answer_type == 'DATE' %}
-                                                    <p class="mb-0">{{ question.answer.answer|datetime }}</p>
+                                                    <p class="mb-0">{{ question.answer.answer|format_datetime }}</p>
                                                 {% elif question.answer_type == 'ABCDEF' %}
                                                     <p class="mb-0">{{ question.answer.answer|upper }}</p>
                                                 {% endif %}
