@@ -968,57 +968,136 @@ function updateQuestionOrders(container) {
     });
 }
 
-function duplicateTest(testId) {
-    fetch(`/tests/${testId}/data`)
-        .then(response => response.json())
-        .then(test => {
-            const form = document.getElementById('addTestForm');
-            
-            // Populate form fields except unique identifiers
-            form.querySelector('[name="title"]').value = test.title ? `${test.title} - kopia` : '';
-            form.querySelector('[name="test_type"]').value = test.test_type || '';
-            form.querySelector('[name="description"]').value = test.description || '';
-            form.querySelector('[name="passing_threshold"]').value = test.passing_threshold || 0;
-            form.querySelector('[name="time_limit_minutes"]').value = test.time_limit_minutes || '';
-
-            // Set groups
-            if (test.groups) {
-                test.groups.forEach(group => {
-                    const checkbox = form.querySelector(`input[name="groups[]"][value="${group.id}"]`);
-                    if (checkbox) checkbox.checked = true;
+async function duplicateTest(testId) {
+    try {
+        // Load test data
+        const response = await fetch(`/tests/${testId}/data`);
+        const test = await response.json();
+        
+        const form = document.getElementById('addTestForm');
+        
+        // Remove default submit handler
+        const defaultSubmit = form.onsubmit;
+        form.onsubmit = null;
+        
+        // Populate form fields except unique identifiers
+        form.querySelector('[name="title"]').value = test.title ? `${test.title} - kopia` : '';
+        form.querySelector('[name="test_type"]').value = test.test_type || '';
+        form.querySelector('[name="description"]').value = test.description || '';
+        form.querySelector('[name="passing_threshold"]').value = test.passing_threshold || 0;
+        form.querySelector('[name="time_limit_minutes"]').value = test.time_limit_minutes || '';
+        
+        // Set groups
+        if (test.groups) {
+            test.groups.forEach(group => {
+                const checkbox = form.querySelector(`input[name="groups[]"][value="${group.id}"]`);
+                if (checkbox) checkbox.checked = true;
+            });
+        }
+        
+        // Clear existing questions container
+        const questionsContainer = form.querySelector('.questions-container');
+        questionsContainer.innerHTML = '';
+        
+        // Add questions
+        if (test.questions && test.questions.length > 0) {
+            test.questions
+                .sort((a, b) => a.order_number - b.order_number)
+                .forEach(question => {
+                    // Remove ID from question to create new one
+                    const questionData = { ...question };
+                    delete questionData.id;
+                    const questionHtml = createQuestionHtml(questionData);
+                    questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
+                    
+                    // Set answer type specific fields
+                    const questionCard = questionsContainer.lastElementChild;
+                    setAnswerFields(questionCard, questionData);
                 });
-            }
-
-            // Clear existing questions container
-            const questionsContainer = form.querySelector('.questions-container');
-            questionsContainer.innerHTML = '';
-
-            // Add questions
-            if (test.questions && test.questions.length > 0) {
-                test.questions
-                    .sort((a, b) => a.order_number - b.order_number)
-                    .forEach(question => {
-                        // Remove ID from question to create new one
-                        delete question.id;
-                        const questionHtml = createQuestionHtml(question);
-                        questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
-
-                        // Set answer type specific fields
-                        const questionCard = questionsContainer.lastElementChild;
-                        setAnswerFields(questionCard, question);
-                    });
-            }
-
-            // Update modal title to indicate duplication
-            document.querySelector('#addTestModal .modal-title').textContent = 'Duplikuj szablon testu';
+        }
+        
+        // Update modal title to indicate duplication
+        document.querySelector('#addTestModal .modal-title').textContent = 'Duplikuj szablon testu';
+        
+        // Add custom submit handler for duplication
+        form.addEventListener('submit', async function duplicateSubmitHandler(e) {
+            e.preventDefault();
+            e.stopPropagation();
             
-            // Show the modal
-            new bootstrap.Modal(document.getElementById('addTestModal')).show();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showToast('Błąd podczas ładowania danych testu', 'error');
+            try {
+                // First create the test without questions
+                const basicFormData = new FormData();
+                basicFormData.append('title', form.querySelector('[name="title"]').value);
+                basicFormData.append('test_type', form.querySelector('[name="test_type"]').value);
+                basicFormData.append('description', form.querySelector('[name="description"]').value);
+                basicFormData.append('passing_threshold', form.querySelector('[name="passing_threshold"]').value);
+                basicFormData.append('time_limit_minutes', form.querySelector('[name="time_limit_minutes"]').value);
+                
+                // Add groups
+                form.querySelectorAll('input[name="groups[]"]:checked').forEach(checkbox => {
+                    basicFormData.append('groups[]', checkbox.value);
+                });
+                
+                const createResponse = await fetch('/tests/add', {
+                    method: 'POST',
+                    body: basicFormData
+                });
+                
+                const result = await createResponse.json();
+                if (!result.success) {
+                    throw new Error(result.error || 'Failed to create test');
+                }
+                
+                const newTestId = result.test_id;
+                
+                // Then add questions one by one
+                const questions = Array.from(questionsContainer.querySelectorAll('.question-card'))
+                    .map(card => {
+                        const questionData = {};
+                        card.querySelectorAll('[name^="questions["]').forEach(input => {
+                            const name = input.name.match(/\[([^\]]+)\]$/)[1];
+                            questionData[name] = input.value;
+                        });
+                        return questionData;
+                    });
+                
+                for (const question of questions) {
+                    const questionFormData = new FormData();
+                    questionFormData.append('test_id', newTestId);
+                    questionFormData.append('questions', JSON.stringify([question]));
+                    
+                    const questionResponse = await fetch('/tests/add/questions', {
+                        method: 'POST',
+                        body: questionFormData
+                    });
+                    
+                    const questionResult = await questionResponse.json();
+                    if (!questionResult.success) {
+                        throw new Error(questionResult.error || 'Failed to add question');
+                    }
+                }
+                
+                showToast('Test został zduplikowany', 'success');
+                window.location.reload();
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Błąd podczas duplikowania testu: ' + error.message, 'error');
+            } finally {
+                // Restore default submit handler
+                form.onsubmit = defaultSubmit;
+                // Remove this handler
+                form.removeEventListener('submit', duplicateSubmitHandler);
+            }
         });
+        
+        // Show the modal
+        new bootstrap.Modal(document.getElementById('addTestModal')).show();
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Błąd podczas ładowania danych testu', 'error');
+    }
 }
 
 function createAnswerFieldsHtml(questionCounter, question) {
