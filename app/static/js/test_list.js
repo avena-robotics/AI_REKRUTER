@@ -609,8 +609,13 @@ function createQuestionHtml(question = null) {
     `;
 }
 
-function handleAnswerTypeChange(select) {
+function handleAnswerTypeChange(event) {
+    const select = event.target;
     const questionCard = select.closest('.question-card');
+    if (!questionCard) {
+        console.error('Could not find parent question card');
+        return;
+    }
     const answerFieldsContainer = questionCard.querySelector('.answer-fields');
     
     // Get current algorithm type and params
@@ -1447,4 +1452,5 @@ function getAlgorithmDescription(algorithmType) {
         'EVALUATION_BY_AI': 'Ocena przez sztuczną inteligencję na podstawie zdefiniowanych kryteriów.'
     };
     return descriptions[algorithmType] || '';
-} 
+}
+ 
