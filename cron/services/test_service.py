@@ -67,7 +67,7 @@ class TestService:
                 # Handle regular test scoring
                 total_score = self.calculate_total_score(answers_response, questions)
                 self.logger.info(f"[TEST {test_id}] Obliczono wynik standardowy dla kandydata {candidate_id}: {total_score}")
-                return total_score
+                return total_score or 0  # Test został wykonany, więc zwracamy wynik (nawet 0)
             
         except Exception as e:
             self.logger.error(f"[TEST {test_id}] Krytyczny błąd podczas obliczania wyniku dla kandydata {candidate_id}: {str(e)}")
