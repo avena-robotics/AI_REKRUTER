@@ -5,19 +5,20 @@ from contextlib import contextmanager
 from logger import Logger
 
 logger = Logger.instance()
+config = Config.instance()
 
 @contextmanager
 def ldap_connection(user=None, password=None):
     """Zarządzanie połączeniem LDAP"""
-    server = Server(Config.LDAP_SERVER, get_info=ALL)
+    server = Server(config.LDAP_SERVER, get_info=ALL)
     conn = None
     try:
         # Użycie konta serwisowego, jeśli nie podano poświadczeń użytkownika
         if not user:
             conn = Connection(
                 server,
-                user=Config.LDAP_SERVICE_USER,
-                password=Config.LDAP_SERVICE_PASSWORD,
+                user=config.LDAP_SERVICE_USER,
+                password=config.LDAP_SERVICE_PASSWORD,
                 authentication=ldap3.SIMPLE,
                 auto_bind=True
             )
@@ -48,7 +49,7 @@ def ldap_authenticate(email, password) -> tuple[bool, dict]:
         with ldap_connection() as conn:
             search_filter = f'(userPrincipalName={email})'
             conn.search(
-                search_base=Config.LDAP_BASE_DN,
+                search_base=config.LDAP_BASE_DN,
                 search_filter=search_filter,
                 search_scope=SUBTREE,
                 attributes=['distinguishedName']

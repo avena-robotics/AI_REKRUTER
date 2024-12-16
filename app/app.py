@@ -11,17 +11,21 @@ from filters import format_datetime
 from services.group_service import get_user_groups
 from logger import Logger
 
-APP_VERSION = "1.0.2"  # Define version as a constant
+APP_VERSION = "1.0.3"  # Define version as a constant
 
-def create_app(config_class=Config):
+def create_app():
+    print(f"Create app")
+    config = Config.instance()
+    print(f"Config: {config}")
+    
     app = Flask(__name__)
-    app.config.from_object(config_class)
+    app.config.from_object(config)
     
     # Initialize logger
-    logger = Logger.instance(config_class)
+    logger = Logger.instance(config)
     
     # Set debug mode from environment variable
-    app.debug = Config.DEBUG_MODE
+    app.debug = config.DEBUG_MODE
 
     # Register custom filters
     app.jinja_env.filters['format_datetime'] = format_datetime
@@ -70,7 +74,9 @@ app = create_app()
 
 if __name__ == '__main__':
     # Use debug mode from config when running directly
+    print(f"Start app")
+    config = Config.instance()
     app.run(
         port=5000, 
-        debug=Config.DEBUG_MODE
-    ) 
+        debug=config.DEBUG_MODE
+    )   
