@@ -101,10 +101,12 @@ class CandidateService:
                 if test_data and 'questions' in test_data:
                     # Calculate question count
                     test_data['question_count'] = len(test_data['questions'])
+                    logger.debug(f"Liczba pytań w etapie {stage}: {test_data['question_count']}")
                     
                     # Calculate total points
                     total_points = sum(q['points'] for q in test_data['questions'])
                     test_data['total_points'] = total_points
+                    logger.debug(f"Łączna liczba punktów w etapie {stage}: {test_data['total_points']}")
                     
                     # Calculate scored points
                     scored_points = sum(
@@ -113,7 +115,8 @@ class CandidateService:
                         if q.get('answer') and q['answer'].get('score') is not None
                     )
                     test_data['scored_points'] = scored_points
-
+                    logger.debug(f"Łączna liczba punktów w etapie {stage}: {test_data['scored_points']}")
+                    
                     # Add started_at and completed_at from candidate data
                     started_at_field = f"{stage.lower()}_started_at"
                     completed_at_field = f"{stage.lower()}_completed_at"
@@ -129,8 +132,9 @@ class CandidateService:
                     
                     test_data['started_at'] = started_at
                     test_data['completed_at'] = completed_at
-            
-            logger.info(f"Pobrano dane kandydata {candidate_id} wraz z testami")
+                    
+                    for q in test_data['questions']:
+                        logger.debug(f"Pytanie {q['id']}: {q['answer']}")
             return { 
                 'candidate': candidate_data,
                 'tests': tests_data,
