@@ -701,10 +701,14 @@ async function handleTestFormSubmit(e) {
     const form = this;
     const isEdit = form.id === 'editTestForm';
     
-    // Get button elements
+    // Get button and progress elements
     const submitButton = form.querySelector('button[type="submit"]');
     const spinner = submitButton.querySelector('.spinner-border');
     const buttonText = submitButton.querySelector('.button-text');
+    const progressSection = form.querySelector('.save-progress');
+    const progressBar = progressSection.querySelector('.progress-bar');
+    const currentQuestionSpan = progressSection.querySelector('.current-question');
+    const totalQuestionsSpan = progressSection.querySelector('.total-questions');
     
     try {
         // Show loading state
@@ -716,15 +720,15 @@ async function handleTestFormSubmit(e) {
         const formData = new FormData();
         const basicFields = ['title', 'test_type', 'description', 'passing_threshold', 'time_limit_minutes'];
         
-        // Get original data once for both basic fields and questions comparison
+        // Get original data for edit mode
         let originalData = null;
         if (isEdit) {
             originalData = await fetch(form.action.replace('/edit', '/data')).then(r => r.json());
         }
         
-        // Check if any basic fields changed
-        let hasBasicChanges = false;
+        // Add basic fields
         if (isEdit) {
+            let hasBasicChanges = false;
             for (const field of basicFields) {
                 const newValue = form.querySelector(`[name="${field}"]`).value;
                 const oldValue = originalData[field]?.toString() || '';
@@ -747,7 +751,6 @@ async function handleTestFormSubmit(e) {
                 });
             }
         } else {
-            // For new test, add all fields
             basicFields.forEach(field => {
                 formData.append(field, form.querySelector(`[name="${field}"]`).value);
             });
@@ -764,39 +767,117 @@ async function handleTestFormSubmit(e) {
         });
 
         // For edit mode, compare questions with original
-        let hasQuestionChanges = false;
         if (isEdit && originalData) {
             const {added, modified, deleted} = compareQuestions(originalData.questions || [], questions);
-            hasQuestionChanges = added.length > 0 || modified.length > 0 || deleted.length > 0;
             
-            if (hasQuestionChanges) {
+            // Handle deleted questions first
+            if (deleted.length > 0) {
                 formData.append('questions', JSON.stringify({
-                    added: added,
-                    modified: modified,
                     deleted: deleted
                 }));
             }
+            
+            // Save basic changes and deletions
+            if (hasBasicChanges || deleted.length > 0) {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.error || 'Wystąpił błąd podczas zapisywania podstawowych danych testu');
+                }
+            }
+            
+            // Show progress section for remaining operations
+            if (added.length > 0 || modified.length > 0) {
+                progressSection.classList.remove('d-none');
+                totalQuestionsSpan.textContent = added.length + modified.length;
+                let currentQuestion = 0;
+                
+                // Handle added questions
+                for (const question of added) {
+                    currentQuestion++;
+                    currentQuestionSpan.textContent = currentQuestion;
+                    progressBar.style.width = `${(currentQuestion / (added.length + modified.length)) * 100}%`;
+                    
+                    const questionFormData = new FormData();
+                    questionFormData.append('test_id', originalData.id);
+                    questionFormData.append('question', JSON.stringify(question));
+                    
+                    const response = await fetch('/tests/add/question', {
+                        method: 'POST',
+                        body: questionFormData
+                    });
+                    
+                    const result = await response.json();
+                    if (!result.success) {
+                        throw new Error(`Błąd podczas dodawania pytania ${currentQuestion}: ${result.error}`);
+                    }
+                }
+                
+                // Handle modified questions
+                for (const mod of modified) {
+                    currentQuestion++;
+                    currentQuestionSpan.textContent = currentQuestion;
+                    progressBar.style.width = `${(currentQuestion / (added.length + modified.length)) * 100}%`;
+                    
+                    const questionFormData = new FormData();
+                    for (const [key, value] of Object.entries(mod.changes)) {
+                        questionFormData.append(key, JSON.stringify(value));
+                    }
+                    
+                    const response = await fetch(`/tests/${originalData.id}/questions/${mod.id}/edit`, {
+                        method: 'POST',
+                        body: questionFormData
+                    });
+                    
+                    const result = await response.json();
+                    if (!result.success) {
+                        throw new Error(`Błąd podczas aktualizacji pytania ${currentQuestion}: ${result.error}`);
+                    }
+                }
+            }
+            
         } else if (!isEdit) {
-            formData.append('questions', JSON.stringify(questions));
-        }
-
-        // If nothing changed in edit mode, just close the modal
-        if (isEdit && !hasBasicChanges && !hasQuestionChanges) {
-            const modal = bootstrap.Modal.getInstance(form.closest('.modal'));
-            modal.hide();
-            showToast('Nie wprowadzono żadnych zmian', 'success');
-            return;
-        }
-
-        // Send the data
-        const response = await fetch(form.action, {
-            method: 'POST',
-            body: formData
-        });
-
-        const result = await response.json();
-        if (!result.success) {
-            throw new Error(result.error || 'Wystąpił błąd podczas zapisywania testu');
+            // For new test, first save basic info
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.error || 'Wystąpił błąd podczas zapisywania podstawowych danych testu');
+            }
+            
+            const testId = result.test_id;
+            
+            // Then save questions one by one with progress
+            if (questions.length > 0) {
+                progressSection.classList.remove('d-none');
+                totalQuestionsSpan.textContent = questions.length;
+                
+                for (let i = 0; i < questions.length; i++) {
+                    currentQuestionSpan.textContent = i + 1;
+                    progressBar.style.width = `${((i + 1) / questions.length) * 100}%`;
+                    
+                    const questionFormData = new FormData();
+                    questionFormData.append('test_id', testId);
+                    questionFormData.append('question', JSON.stringify(questions[i]));
+                    
+                    const response = await fetch('/tests/add/question', {
+                        method: 'POST',
+                        body: questionFormData
+                    });
+                    
+                    const result = await response.json();
+                    if (!result.success) {
+                        throw new Error(`Błąd podczas dodawania pytania ${i + 1}: ${result.error}`);
+                    }
+                }
+            }
         }
 
         // Show success message and reload
@@ -816,10 +897,11 @@ async function handleTestFormSubmit(e) {
         console.error('Error submitting form:', error);
         showToast(error.message, 'error');
         
-        // Reset button state
+        // Reset button state and hide progress
         submitButton.disabled = false;
         spinner.classList.add('d-none');
         buttonText.textContent = isEdit ? 'Zapisz zmiany' : 'Zapisz test';
+        progressSection.classList.add('d-none');
     }
 }
 
@@ -968,136 +1050,57 @@ function updateQuestionOrders(container) {
     });
 }
 
-async function duplicateTest(testId) {
-    try {
-        // Load test data
-        const response = await fetch(`/tests/${testId}/data`);
-        const test = await response.json();
-        
-        const form = document.getElementById('addTestForm');
-        
-        // Remove default submit handler
-        const defaultSubmit = form.onsubmit;
-        form.onsubmit = null;
-        
-        // Populate form fields except unique identifiers
-        form.querySelector('[name="title"]').value = test.title ? `${test.title} - kopia` : '';
-        form.querySelector('[name="test_type"]').value = test.test_type || '';
-        form.querySelector('[name="description"]').value = test.description || '';
-        form.querySelector('[name="passing_threshold"]').value = test.passing_threshold || 0;
-        form.querySelector('[name="time_limit_minutes"]').value = test.time_limit_minutes || '';
-        
-        // Set groups
-        if (test.groups) {
-            test.groups.forEach(group => {
-                const checkbox = form.querySelector(`input[name="groups[]"][value="${group.id}"]`);
-                if (checkbox) checkbox.checked = true;
-            });
-        }
-        
-        // Clear existing questions container
-        const questionsContainer = form.querySelector('.questions-container');
-        questionsContainer.innerHTML = '';
-        
-        // Add questions
-        if (test.questions && test.questions.length > 0) {
-            test.questions
-                .sort((a, b) => a.order_number - b.order_number)
-                .forEach(question => {
-                    // Remove ID from question to create new one
-                    const questionData = { ...question };
-                    delete questionData.id;
-                    const questionHtml = createQuestionHtml(questionData);
-                    questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
-                    
-                    // Set answer type specific fields
-                    const questionCard = questionsContainer.lastElementChild;
-                    setAnswerFields(questionCard, questionData);
-                });
-        }
-        
-        // Update modal title to indicate duplication
-        document.querySelector('#addTestModal .modal-title').textContent = 'Duplikuj szablon testu';
-        
-        // Add custom submit handler for duplication
-        form.addEventListener('submit', async function duplicateSubmitHandler(e) {
-            e.preventDefault();
-            e.stopPropagation();
+function duplicateTest(testId) {
+    fetch(`/tests/${testId}/data`)
+        .then(response => response.json())
+        .then(test => {
+            const form = document.getElementById('addTestForm');
             
-            try {
-                // First create the test without questions
-                const basicFormData = new FormData();
-                basicFormData.append('title', form.querySelector('[name="title"]').value);
-                basicFormData.append('test_type', form.querySelector('[name="test_type"]').value);
-                basicFormData.append('description', form.querySelector('[name="description"]').value);
-                basicFormData.append('passing_threshold', form.querySelector('[name="passing_threshold"]').value);
-                basicFormData.append('time_limit_minutes', form.querySelector('[name="time_limit_minutes"]').value);
-                
-                // Add groups
-                form.querySelectorAll('input[name="groups[]"]:checked').forEach(checkbox => {
-                    basicFormData.append('groups[]', checkbox.value);
+            // Populate form fields except unique identifiers
+            form.querySelector('[name="title"]').value = test.title ? `${test.title} - kopia` : '';
+            form.querySelector('[name="test_type"]').value = test.test_type || '';
+            form.querySelector('[name="description"]').value = test.description || '';
+            form.querySelector('[name="passing_threshold"]').value = test.passing_threshold || 0;
+            form.querySelector('[name="time_limit_minutes"]').value = test.time_limit_minutes || '';
+            
+            // Set groups
+            if (test.groups) {
+                test.groups.forEach(group => {
+                    const checkbox = form.querySelector(`input[name="groups[]"][value="${group.id}"]`);
+                    if (checkbox) checkbox.checked = true;
                 });
-                
-                const createResponse = await fetch('/tests/add', {
-                    method: 'POST',
-                    body: basicFormData
-                });
-                
-                const result = await createResponse.json();
-                if (!result.success) {
-                    throw new Error(result.error || 'Failed to create test');
-                }
-                
-                const newTestId = result.test_id;
-                
-                // Then add questions one by one
-                const questions = Array.from(questionsContainer.querySelectorAll('.question-card'))
-                    .map(card => {
-                        const questionData = {};
-                        card.querySelectorAll('[name^="questions["]').forEach(input => {
-                            const name = input.name.match(/\[([^\]]+)\]$/)[1];
-                            questionData[name] = input.value;
-                        });
-                        return questionData;
-                    });
-                
-                for (const question of questions) {
-                    const questionFormData = new FormData();
-                    questionFormData.append('test_id', newTestId);
-                    questionFormData.append('questions', JSON.stringify([question]));
-                    
-                    const questionResponse = await fetch('/tests/add/questions', {
-                        method: 'POST',
-                        body: questionFormData
-                    });
-                    
-                    const questionResult = await questionResponse.json();
-                    if (!questionResult.success) {
-                        throw new Error(questionResult.error || 'Failed to add question');
-                    }
-                }
-                
-                showToast('Test został zduplikowany', 'success');
-                window.location.reload();
-                
-            } catch (error) {
-                console.error('Error:', error);
-                showToast('Błąd podczas duplikowania testu: ' + error.message, 'error');
-            } finally {
-                // Restore default submit handler
-                form.onsubmit = defaultSubmit;
-                // Remove this handler
-                form.removeEventListener('submit', duplicateSubmitHandler);
             }
+            
+            // Clear existing questions container
+            const questionsContainer = form.querySelector('.questions-container');
+            questionsContainer.innerHTML = '';
+            
+            // Add questions
+            if (test.questions && test.questions.length > 0) {
+                test.questions
+                    .sort((a, b) => a.order_number - b.order_number)
+                    .forEach(question => {
+                        // Remove ID from question to create new one
+                        delete question.id;
+                        const questionHtml = createQuestionHtml(question);
+                        questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
+
+                        // Set answer type specific fields
+                        const questionCard = questionsContainer.lastElementChild;
+                        setAnswerFields(questionCard, question);
+                    });
+            }
+            
+            // Update modal title to indicate duplication
+            document.querySelector('#addTestModal .modal-title').textContent = 'Duplikuj szablon testu';
+            
+            // Show the modal
+            new bootstrap.Modal(document.getElementById('addTestModal')).show();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Błąd podczas ładowania danych testu', 'error');
         });
-        
-        // Show the modal
-        new bootstrap.Modal(document.getElementById('addTestModal')).show();
-        
-    } catch (error) {
-        console.error('Error:', error);
-        showToast('Błąd podczas ładowania danych testu', 'error');
-    }
 }
 
 function createAnswerFieldsHtml(questionCounter, question) {

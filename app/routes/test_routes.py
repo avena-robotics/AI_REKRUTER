@@ -201,3 +201,31 @@ def edit_questions(test_id):
             "success": False, 
             "error": "Wystąpił nieoczekiwany błąd podczas edycji pytań."
         })
+
+@test_bp.route("/add/question", methods=["POST"])
+@login_required
+def add_single_question():
+    try:
+        test_id = request.form.get("test_id")
+        question_data = json.loads(request.form.get("question"))
+        
+        if not test_id:
+            raise TestException(message="Brak parametru test_id")
+
+        # Add single question
+        question_data['test_id'] = int(test_id)
+        result = supabase.from_("questions").insert(question_data).execute()
+        
+        if not result.data:
+            raise TestException(message="Nie udało się dodać pytania")
+            
+        return jsonify({
+            "success": True,
+            "question_id": result.data[0]["id"]
+        })
+
+    except TestException as e:
+        return jsonify({"success": False, "error": e.message})
+    except Exception as e:
+        logger.error(f"Błąd podczas dodawania pytania: {str(e)}")
+        return jsonify({"success": False, "error": "Wystąpił nieoczekiwany błąd podczas dodawania pytania."})
