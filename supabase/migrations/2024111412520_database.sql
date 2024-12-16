@@ -534,7 +534,12 @@ BEGIN
     questions_with_answers AS (
         SELECT 
             t.id as test_id,
-            stages.stage,
+            CASE 
+                WHEN t.id = camp.po1_test_id THEN 'PO1'
+                WHEN t.id = camp.po2_test_id THEN 'PO2'
+                WHEN t.id = camp.po2_5_test_id THEN 'PO2_5'
+                WHEN t.id = camp.po3_test_id THEN 'PO3'
+            END as stage,
             jsonb_agg(
                 jsonb_build_object(
                     'id', q.id,
@@ -548,41 +553,26 @@ BEGIN
                     'algorithm_type', q.algorithm_type,
                     'algorithm_params', q.algorithm_params,
                     'answer', (
-                        SELECT COALESCE(jsonb_build_object(
+                        SELECT jsonb_build_object(
                             'id', ca.id,
                             'answer', ca.answer,
                             'points_per_option', ca.points_per_option,
                             'score', ROUND(CAST(ca.score AS NUMERIC), 1),
                             'ai_explanation', ca.ai_explanation
-                        ), NULL)
+                        )
                         FROM candidate_answers ca
                         WHERE ca.question_id = q.id 
                         AND ca.candidate_id = p_candidate_id
-                        AND ca.stage = stages.stage
                         LIMIT 1
                     )
                 ) ORDER BY q.order_number
             ) as questions
-        FROM (
-            SELECT 'PO1' as stage, po1_test_id as test_id 
-            FROM campaigns 
-            WHERE id = (SELECT campaign_id FROM candidates WHERE id = p_candidate_id)
-            UNION ALL
-            SELECT 'PO2', po2_test_id 
-            FROM campaigns 
-            WHERE id = (SELECT campaign_id FROM candidates WHERE id = p_candidate_id)
-            UNION ALL
-            SELECT 'PO2_5', po2_5_test_id 
-            FROM campaigns 
-            WHERE id = (SELECT campaign_id FROM candidates WHERE id = p_candidate_id)
-            UNION ALL
-            SELECT 'PO3', po3_test_id 
-            FROM campaigns 
-            WHERE id = (SELECT campaign_id FROM candidates WHERE id = p_candidate_id)
-        ) stages
-        JOIN tests t ON stages.test_id = t.id
+        FROM candidates cand
+        JOIN campaigns camp ON cand.campaign_id = camp.id
+        JOIN tests t ON t.id IN (camp.po1_test_id, camp.po2_test_id, camp.po2_5_test_id, camp.po3_test_id)
         JOIN questions q ON q.test_id = t.id
-        GROUP BY t.id, stages.stage
+        WHERE cand.id = p_candidate_id
+        GROUP BY t.id, camp.po1_test_id, camp.po2_test_id, camp.po2_5_test_id, camp.po3_test_id
     ),
     test_data AS (
         SELECT 
