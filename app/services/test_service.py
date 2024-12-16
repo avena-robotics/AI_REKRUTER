@@ -212,8 +212,14 @@ class TestService:
                 test_data['description'] = description
             if passing_threshold is not None and original_test.data['passing_threshold'] != passing_threshold:
                 test_data['passing_threshold'] = passing_threshold
-            if time_limit_minutes is not None and original_test.data['time_limit_minutes'] != time_limit_minutes:
-                test_data['time_limit_minutes'] = time_limit_minutes
+            if time_limit_minutes is not None:
+                try:
+                    time_limit_value = int(time_limit_minutes) if time_limit_minutes else None
+                    if original_test.data['time_limit_minutes'] != time_limit_value:
+                        test_data['time_limit_minutes'] = time_limit_value
+                except (ValueError, TypeError):
+                    logger.warning(f"Invalid time_limit_minutes value: {time_limit_minutes}")
+                    test_data['time_limit_minutes'] = None
 
             # Update test if there are changes
             if test_data:

@@ -300,7 +300,7 @@ function editTest(testId) {
             form.querySelector('[name="test_type"]').value = test.test_type || '';
             form.querySelector('[name="description"]').value = test.description || '';
             form.querySelector('[name="passing_threshold"]').value = test.passing_threshold || 0;
-            form.querySelector('[name="time_limit_minutes"]').value = test.time_limit_minutes || '';
+            form.querySelector('[name="time_limit_minutes"]').value = test.time_limit_minutes !== null ? test.time_limit_minutes : '0';
 
             // Update group checkboxes
             const testGroups = test.groups || [];
