@@ -407,3 +407,29 @@ td {
     color: #6c757d;
     font-size: 0.9rem;
 }
+
+.sortable-ghost {
+    opacity: 0.4;
+    background: #f8f9fa;
+}
+
+.sortable-drag {
+    opacity: 0.9;
+    background: white;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.drag-handle {
+    color: #6c757d;
+    padding: 0.25rem;
+    margin: -0.25rem;
+    border-radius: 0.25rem;
+}
+
+.drag-handle:hover {
+    background: #f8f9fa;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}

@@ -570,11 +570,14 @@ function createQuestionHtml(question = null) {
     const questionCounter = document.querySelectorAll('.question-card').length;
     
     return `
-        <div class="question-card card mb-3">
+        <div class="question-card card mb-3" data-order="${questionCounter + 1}">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div class="d-flex align-items-center gap-3">
-                        <h6 class="card-title mb-0">Pytanie</h6>
+                        <div class="drag-handle" style="cursor: grab;">
+                            <i class="bi bi-grip-vertical" style="font-size: 1.2rem;"></i>
+                        </div>
+                        <h6 class="card-title mb-0">Pytanie ${questionCounter + 1}</h6>
                         <div class="form-check form-switch">
                             <input type="checkbox" class="form-check-input" 
                                    name="questions[${questionCounter}][is_required]" 
@@ -699,6 +702,13 @@ function handleImageUpload(input) {
 async function handleTestFormSubmit(e) {
     e.preventDefault();
     const form = this;
+    
+    // Update question orders before collecting data
+    const questionsContainer = form.querySelector('.questions-container');
+    if (questionsContainer) {
+        updateQuestionOrders(questionsContainer);
+    }
+    
     const isEdit = form.id === 'editTestForm';
     
     // Get button and progress elements
@@ -722,13 +732,12 @@ async function handleTestFormSubmit(e) {
         
         // Get original data for edit mode
         let originalData = null;
+        let hasBasicChanges = false;
+        
         if (isEdit) {
             originalData = await fetch(form.action.replace('/edit', '/data')).then(r => r.json());
-        }
-        
-        // Add basic fields
-        if (isEdit) {
-            let hasBasicChanges = false;
+            
+            // Check basic fields changes
             for (const field of basicFields) {
                 const newValue = form.querySelector(`[name="${field}"]`).value;
                 const oldValue = originalData[field]?.toString() || '';
@@ -751,6 +760,7 @@ async function handleTestFormSubmit(e) {
                 });
             }
         } else {
+            // For new test, add all fields
             basicFields.forEach(field => {
                 formData.append(field, form.querySelector(`[name="${field}"]`).value);
             });
@@ -824,8 +834,13 @@ async function handleTestFormSubmit(e) {
                     progressBar.style.width = `${(currentQuestion / (added.length + modified.length)) * 100}%`;
                     
                     const questionFormData = new FormData();
+                    // Add all changes as separate fields
                     for (const [key, value] of Object.entries(mod.changes)) {
-                        questionFormData.append(key, JSON.stringify(value));
+                        if (key === 'algorithm_params' || key === 'options') {
+                            questionFormData.append(key, JSON.stringify(value));
+                        } else {
+                            questionFormData.append(key, value);
+                        }
                     }
                     
                     const response = await fetch(`/tests/${originalData.id}/questions/${mod.id}/edit`, {
@@ -1036,6 +1051,8 @@ function initializeSortable() {
         container.sortableInstance = new Sortable(container, {
             animation: 150,
             handle: '.drag-handle',
+            ghostClass: 'sortable-ghost',
+            dragClass: 'sortable-drag',
             onEnd: function(evt) {
                 updateQuestionOrders(container);
             }
@@ -1044,9 +1061,25 @@ function initializeSortable() {
 }
 
 function updateQuestionOrders(container) {
+    // Update question numbers and order inputs
     container.querySelectorAll('.question-card').forEach((card, index) => {
+        // Update question number in title
+        const title = card.querySelector('.card-title');
+        title.textContent = `Pytanie ${index + 1}`;
+        
+        // Update order number input
+        const orderInput = card.querySelector('input[name$="[order_number]"]');
+        if (orderInput) {
+            orderInput.value = index + 1;
+        }
+        
+        // Update data-order attribute
         card.dataset.order = index + 1;
-        card.querySelector('input[name$="[order_number]"]').value = index + 1;
+        
+        // Update all field names to match new order
+        card.querySelectorAll('[name*="questions["]').forEach(field => {
+            field.name = field.name.replace(/questions\[\d+\]/, `questions[${index}]`);
+        });
     });
 }
 

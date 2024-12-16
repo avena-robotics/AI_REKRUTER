@@ -229,3 +229,39 @@ def add_single_question():
     except Exception as e:
         logger.error(f"Błąd podczas dodawania pytania: {str(e)}")
         return jsonify({"success": False, "error": "Wystąpił nieoczekiwany błąd podczas dodawania pytania."})
+
+@test_bp.route("/<int:test_id>/questions/<int:question_id>/edit", methods=["POST"])
+@login_required
+def edit_single_question(test_id, question_id):
+    try:
+        # Parse the changes from the request
+        changes = {}
+        for key in request.form:
+            try:
+                changes[key] = json.loads(request.form[key])
+            except json.JSONDecodeError:
+                changes[key] = request.form[key]
+
+        # Update the question in the database
+        result = supabase.from_("questions")\
+            .update(changes)\
+            .eq("id", question_id)\
+            .eq("test_id", test_id)\
+            .execute()
+            
+        if not result.data:
+            raise TestException(message="Nie udało się zaktualizować pytania")
+            
+        return jsonify({
+            "success": True,
+            "question_id": question_id
+        })
+
+    except TestException as e:
+        return jsonify({"success": False, "error": e.message})
+    except Exception as e:
+        logger.error(f"Błąd podczas aktualizacji pytania {question_id}: {str(e)}")
+        return jsonify({
+            "success": False, 
+            "error": "Wystąpił nieoczekiwany błąd podczas aktualizacji pytania"
+        })
