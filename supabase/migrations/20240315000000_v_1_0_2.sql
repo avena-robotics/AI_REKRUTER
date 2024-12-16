@@ -32,8 +32,8 @@ create table candidate_notes (
     candidate_id bigint not null references candidates(id) on delete cascade, -- Powiązanie z tabelą kandydatów
     note_type text not null, -- Typ notatki (np. "Rozmowa telefoniczna", "Ocena", "Uwagi")
     content text not null,   -- Treść notatki
-    created_at timestamp default now(), -- Data utworzenia notatki
-    updated_at timestamp default now()  -- Data ostatniej aktualizacji
+    created_at timestamp with time zone default now(), -- Data utworzenia notatki
+    updated_at timestamp with time zone default now()  -- Data ostatniej aktualizacji
 );
 
 DROP FUNCTION IF EXISTS get_candidate_with_tests(bigint);

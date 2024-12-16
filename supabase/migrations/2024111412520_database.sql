@@ -9,6 +9,7 @@ DROP TABLE IF EXISTS candidates CASCADE;
 DROP TABLE IF EXISTS questions CASCADE;
 DROP TABLE IF EXISTS tests CASCADE;
 DROP TABLE IF EXISTS campaigns CASCADE;
+DROP TABLE IF EXISTS candidate_notes CASCADE;
 
 -- Drop custom types
 DROP TYPE IF EXISTS recruitment_status CASCADE;
@@ -44,8 +45,8 @@ create table tests (
     description text,
     passing_threshold int not null,
     time_limit_minutes int,
-    created_at timestamp default now(),
-    updated_at timestamp default now()
+    created_at timestamp with time zone default now(),
+    updated_at timestamp with time zone default now()
 );
 
 -- Now create campaigns table (which references tests)
@@ -73,8 +74,8 @@ create table campaigns (
     po2_test_weight integer,
     po2_5_test_weight integer,                     -- New column for EQ_EVALUATION weight
     po3_test_weight integer,
-    created_at timestamp default now(),
-    updated_at timestamp default now()
+    created_at timestamp with time zone default now(),
+    updated_at timestamp with time zone default now()
 );
 
 -- Tabela pytań
@@ -127,8 +128,8 @@ create table candidates (
     score_kz int,
     score_dz int,
     score_sw int,
-    created_at timestamp default now(),
-    updated_at timestamp default now()
+    created_at timestamp with time zone default now(),
+    updated_at timestamp with time zone default now()
 );
 
 -- Tabela odpowiedzi kandydatów
@@ -146,7 +147,7 @@ create table candidate_answers (
     points_per_option jsonb,                       -- Format JSON, np. {"a": 3, "b": 5, "c": 0}
     score float CHECK (score >= 0),                -- Punkty za odpowiedź
     ai_explanation text,                           -- Wyjaśnienie odpowiedzi AI
-    created_at timestamp default now()
+    created_at timestamp with time zone default now()
 );
 
 -- Users table
@@ -157,16 +158,16 @@ create table users (
     email text not null unique,
     phone text,
     can_edit_tests boolean default false,
-    created_at timestamp default now(),
-    updated_at timestamp default now()
+    created_at timestamp with time zone default now(),
+    updated_at timestamp with time zone default now()
 );
 
 -- Groups table
 create table groups (
     id bigserial primary key,
     name text not null,
-    created_at timestamp default now(),
-    updated_at timestamp default now()
+    created_at timestamp with time zone default now(),
+    updated_at timestamp with time zone default now()
 );
 
 -- Linking table for users and groups
@@ -248,8 +249,8 @@ CREATE OR REPLACE FUNCTION get_campaigns_with_groups(
     po1_token_expiry_days integer,
     po2_token_expiry_days integer,
     po3_token_expiry_days integer,
-    created_at timestamp,
-    updated_at timestamp,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
     groups jsonb,
     po1_test jsonb,
     po2_test jsonb,
@@ -361,8 +362,8 @@ CREATE OR REPLACE FUNCTION get_single_campaign_data(
     po1_token_expiry_days integer,
     po2_token_expiry_days integer,
     po3_token_expiry_days integer,
-    created_at timestamp,
-    updated_at timestamp,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
     groups jsonb,
     po1_test jsonb,
     po2_test jsonb,
@@ -446,11 +447,13 @@ END;
 $$;
 
 
--- Update get_candidate_with_tests function to handle float scores
+DROP FUNCTION IF EXISTS get_candidate_with_tests(bigint);
+-- Update get_candidate_with_tests function to include notes
 CREATE OR REPLACE FUNCTION get_candidate_with_tests(p_candidate_id bigint)
 RETURNS TABLE (
     candidate_data jsonb,
-    tests_data jsonb
+    tests_data jsonb,
+    notes_data jsonb
 ) LANGUAGE plpgsql AS $$
 BEGIN
     RETURN QUERY
@@ -515,6 +518,19 @@ BEGIN
         JOIN campaigns camp ON c.campaign_id = camp.id
         WHERE c.id = p_candidate_id
     ),
+    notes_info AS (
+        SELECT jsonb_agg(
+            jsonb_build_object(
+                'id', n.id,
+                'note_type', n.note_type,
+                'content', n.content,
+                'created_at', n.created_at,
+                'updated_at', n.updated_at
+            ) ORDER BY n.created_at DESC
+        ) as notes
+        FROM candidate_notes n
+        WHERE n.candidate_id = p_candidate_id
+    ),
     questions_with_answers AS (
         SELECT 
             t.id as test_id,
@@ -534,12 +550,7 @@ BEGIN
                     'answer', (
                         SELECT COALESCE(jsonb_build_object(
                             'id', ca.id,
-                            'text_answer', ca.text_answer,
-                            'boolean_answer', ca.boolean_answer,
-                            'salary_answer', ca.salary_answer,
-                            'scale_answer', ca.scale_answer,
-                            'date_answer', ca.date_answer,
-                            'abcdef_answer', ca.abcdef_answer,
+                            'answer', ca.answer,
                             'points_per_option', ca.points_per_option,
                             'score', ROUND(CAST(ca.score AS NUMERIC), 1),
                             'ai_explanation', ca.ai_explanation
@@ -595,7 +606,8 @@ BEGIN
     )
     SELECT 
         (SELECT cand_data FROM candidate_info) as candidate_data,
-        jsonb_object_agg(stages.stage, test_data) as tests_data
+        jsonb_object_agg(stages.stage, test_data) as tests_data,
+        (SELECT notes FROM notes_info) as notes_data
     FROM test_data stages
     GROUP BY 1;
 END;

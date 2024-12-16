@@ -238,7 +238,7 @@ def process_test_answers(candidate_id, test_id, form_data):
             'question_id': int(question_id),
             'stage': stage,
             'points_per_option': points,
-            'created_at': datetime.now().isoformat()
+            'created_at': datetime.now(timezone.utc).isoformat()
         }
         answers_to_insert.append(answer_data)
 
@@ -252,7 +252,7 @@ def process_test_answers(candidate_id, test_id, form_data):
             'candidate_id': candidate_id,
             'question_id': int(question_id),
             'stage': stage,
-            'created_at': datetime.now().isoformat()
+            'created_at': datetime.now(timezone.utc).isoformat()
         }
         
         answer_type = question['answer_type']
@@ -465,7 +465,7 @@ def cancel_test(token):
             stage = test_info['stage']
             update_data = {
                 f'access_token_{stage.lower()}_is_used': True,
-                'updated_at': datetime.now().isoformat()
+                'updated_at': datetime.now(timezone.utc).isoformat()
             }
             
             supabase.table('candidates')\
@@ -503,7 +503,7 @@ def cancel_candidate_test(token):
             # Mark PO2 token as used
             update_data = {
                 'access_token_po2_is_used': True,
-                'updated_at': datetime.now().isoformat()
+                'updated_at': datetime.now(timezone.utc).isoformat()
             }
             
             supabase.table('candidates')\
@@ -525,7 +525,7 @@ def cancel_candidate_test(token):
             # Mark PO3 token as used
             update_data = {
                 'access_token_po3_is_used': True,
-                'updated_at': datetime.now().isoformat()
+                'updated_at': datetime.now(timezone.utc).isoformat()
             }
             
             supabase.table('candidates')\

@@ -68,7 +68,7 @@ class Logger:
             return
 
         try:
-            cutoff_date = datetime.now() - timedelta(days=self.config.LOG_RETENTION_DAYS)
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=self.config.LOG_RETENTION_DAYS)
 
             with open(self.log_path, "r", encoding="utf-8") as file:
                 logs = file.readlines()

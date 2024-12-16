@@ -406,7 +406,7 @@ class CandidateService:
         token = generate_access_token()
         test_url = f"{self.config.BASE_URL}/test/candidate/{token}"
         
-        current_time = datetime.now(timezone.utc)
+        current_time = datetime.now()
         token_expiry = (current_time + timedelta(days=expiry_days)).replace(hour=23, minute=59, second=59)
         formatted_expiry = token_expiry.strftime("%Y-%m-%d %H:%M")
         
