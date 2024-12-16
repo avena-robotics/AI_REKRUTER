@@ -87,11 +87,6 @@ class Logger:
             with open(self.log_path, "w", encoding="utf-8") as file:
                 file.writelines(recent_logs)
 
-            print(f"Cleaned old logs from file: {self.log_path}")
-            print(
-                f"Removed {len(logs) - len(recent_logs)} entries older than {self.config.LOG_RETENTION_DAYS} days"
-            )
-
         except Exception as e:
             print(f"Error cleaning logs: {str(e)}")
 

@@ -205,6 +205,8 @@ class TestService:
         """
         answer_type = question['answer_type']
         
+        self.logger.debug(f"Obliczanie wyniku dla pytania {question['id']} typu {answer_type} z algorytmem {algorithm_type}")
+                
         if answer_type == 'TEXT':
             if algorithm_type == 'NO_ALGORITHM':
                 return 0.0
@@ -235,8 +237,10 @@ class TestService:
         elif answer_type == 'BOOLEAN':
             if algorithm_type == 'EXACT_MATCH':
                 try:
-                    user_answer = str(answer.get('answer', '')).lower() == 'true'
+                    user_answer = str(answer.get('answer', '')).lower()
                     correct_answer = algorithm_params.get('correct_answer')
+                    self.logger.debug(f"Odpowiedź użytkownika: {user_answer}, odpowiedź poprawna: {correct_answer}")
+                    self.logger.debug(f"Wynik: {float(max_points) if user_answer == correct_answer else 0.0}")
                     return float(max_points) if user_answer == correct_answer else 0.0
                 except:
                     return 0.0

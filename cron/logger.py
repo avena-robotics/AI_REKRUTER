@@ -85,9 +85,6 @@ class Logger:
 
             with open(self.log_path, 'w', encoding='utf-8') as file:
                 file.writelines(recent_logs)
-
-            print(f"Wyczyszczono stare logi z pliku: {self.log_path}")
-            print(f"Usunięto {len(logs) - len(recent_logs)} wpisów starszych niż {self.config.LOG_RETENTION_DAYS} dni")
             
         except Exception as e:
             print(f"Błąd podczas czyszczenia logów: {str(e)}")

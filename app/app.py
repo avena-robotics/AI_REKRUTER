@@ -14,9 +14,7 @@ from logger import Logger
 APP_VERSION = "1.0.3"  # Define version as a constant
 
 def create_app():
-    print(f"Create app")
     config = Config.instance()
-    print(f"Config: {config}")
     
     app = Flask(__name__)
     app.config.from_object(config)
@@ -74,7 +72,6 @@ app = create_app()
 
 if __name__ == '__main__':
     # Use debug mode from config when running directly
-    print(f"Start app")
     config = Config.instance()
     app.run(
         port=5000, 
