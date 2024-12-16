@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, abort
 from logger import Logger
 from database import supabase
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+import secrets
 
 test_public_bp = Blueprint('test_public', __name__)
 logger = Logger.instance()
@@ -317,11 +318,16 @@ def start_test(token):
             .order('order_number')\
             .execute()
         
+        # Check if test has auto-progression to PO2
+        has_next_stage = (test_info['test'].get('passing_threshold', 1) == 0 and 
+                         test_info['campaign'].get('po2_test_id'))
+        
         return render_template('tests/survey.html',
                              campaign=test_info['campaign'],
                              test=test_info['test'],
                              questions=questions.data,
-                             token=token)
+                             token=token,
+                             has_next_stage=has_next_stage)
     
     except Exception as e:
         print(f"Error starting test: {str(e)}")
@@ -348,7 +354,6 @@ def submit_test(token):
         
         logger.debug(f"Sprawdzanie istniejących wypełnień dla kampanii {campaign_id} email: {email}, phone: {phone}")
         
-        # # Query for existing submissions with email
         existing_submissions = supabase.table('candidates')\
             .select('id')\
             .eq('campaign_id', campaign_id)\
@@ -373,6 +378,17 @@ def submit_test(token):
             start_time = datetime.now(timezone.utc)
             
         current_time = datetime.now(timezone.utc)
+
+        # Generate PO2 token if test has passing_threshold of 0
+        po2_token = None
+        po2_expires_at = None
+        recruitment_status = 'PO1'
+        if test_info['test'].get('passing_threshold', 1) == 0 and test_info['campaign'].get('po2_test_id'):
+            po2_token = secrets.token_urlsafe(32)
+            # Get expiry days from campaign or default to 7 days
+            expiry_days = test_info['campaign'].get('po2_token_expiry_days', 7)
+            po2_expires_at = current_time + timedelta(days=expiry_days)
+            recruitment_status = 'PO2'  # Update recruitment status to PO2
         
         # Create candidate for universal test (PO1)
         candidate_data = {
@@ -381,29 +397,24 @@ def submit_test(token):
             'last_name': request.form.get('last_name'),
             'email': request.form.get('email'),
             'phone': request.form.get('phone'),
-            'recruitment_status': 'PO1',
+            'recruitment_status': recruitment_status,  # Use dynamic recruitment status
             'po1_started_at': start_time.isoformat(),
             'po1_completed_at': current_time.isoformat(),
             'created_at': current_time.isoformat(),
-            'updated_at': current_time.isoformat()
+            'updated_at': current_time.isoformat(),
+            'access_token_po2': po2_token,
+            'access_token_po2_expires_at': po2_expires_at.isoformat() if po2_expires_at else None
         }
         
         result = supabase.table('candidates').insert(candidate_data).execute()
         candidate_id = result.data[0]['id']
 
         # Process answers and calculate score
-        total_score = process_test_answers(candidate_id, test_info['test']['id'], request.form)
+        process_test_answers(candidate_id, test_info['test']['id'], request.form)
         
-        # Update candidate with score
-        update_data = {
-            'po1_score': total_score,
-            'updated_at': current_time.isoformat()
-        }
-        
-        supabase.table('candidates')\
-            .update(update_data)\
-            .eq('id', candidate_id)\
-            .execute()
+        # If PO2 token was generated, redirect directly to PO2 landing page
+        if po2_token:
+            return redirect(url_for('test_public.candidate_landing', token=po2_token))
         
         return redirect(url_for('test_public.complete'))
         
@@ -551,7 +562,9 @@ def cancel_candidate_test(token):
 @test_public_bp.route('/test/complete')
 def complete():
     """Show test completion page"""
-    return render_template('tests/complete.html')
+    # Get next_test_url from query params if it exists
+    next_test_url = request.args.get('next_test_url')
+    return render_template('tests/complete.html', next_test_url=next_test_url)
 
 @test_public_bp.route('/test/candidate/<token>')
 def candidate_landing(token):

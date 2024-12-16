@@ -15,6 +15,10 @@
         .card-body {
             padding: 3rem;
         }
+
+        .btn-proceed {
+            margin-top: 2rem;
+        }
     </style>
 </head>
 <body>
@@ -23,9 +27,18 @@
             <div class="card text-center">
                 <div class="card-body">
                     <h2 class="card-title mb-4">Dziękujemy za wypełnienie testu!</h2>
+                    {% if next_test_url %}
+                    <p class="card-text lead">
+                        Twoje odpowiedzi zostały zapisane. Możesz teraz przejść do kolejnego etapu rekrutacji.
+                    </p>
+                    <a href="{{ next_test_url }}" class="btn btn-primary btn-lg btn-proceed">
+                        Przejdź do kolejnego testu
+                    </a>
+                    {% else %}
                     <p class="card-text lead">
                         Twoje odpowiedzi zostały zapisane. Skontaktujemy się z Tobą w sprawie dalszych kroków rekrutacji.
                     </p>
+                    {% endif %}
                 </div>
             </div>
         </div>

@@ -306,10 +306,16 @@
                     <small><span class="text-danger">*</span> - pola wymagane</small>
                 </div>
 
-                <div class="d-grid gap-2 col-md-6 mx-auto mb-4">
+                <div class="text-center mb-5">
                     <button type="submit" class="btn btn-primary btn-lg">
                         <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                        <span class="button-text">Zakończ test</span>
+                        <span class="button-text">
+                            {% if has_next_stage %}
+                            Zapisz i przejdź do kolejnego etapu
+                            {% else %}
+                            Zakończ test
+                            {% endif %}
+                        </span>
                     </button>
                 </div>
             </form>
