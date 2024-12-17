@@ -17,7 +17,11 @@
                 <div class="alert alert-info mt-4">
                     <h4>Ważne informacje:</h4>
                     <ul>
+                        {% if test.time_limit_minutes and test.time_limit_minutes > 0 %}
                         <li>Czas na wykonanie testu: {{ test.time_limit_minutes }} minut</li>
+                        {% else %}
+                        <li>Test ma nieograniczony limit czasowy</li>
+                        {% endif %}
                         <li>Test rozpocznie się po kliknięciu przycisku "Rozpocznij test"</li>
                         <li>Nie można wstrzymać testu po jego rozpoczęciu</li>
                         <li>Upewnij się, że masz stabilne połączenie internetowe</li>
@@ -26,6 +30,12 @@
                         <li>Na każde pytanie jest tylko jedna poprawna odpowiedź</li>
                         {% endif %}
                     </ul>
+                    <hr class="my-3">
+                    <p class="mb-0">
+                        <strong>Wsparcie techniczne:</strong> W razie problemów technicznych lub pytań dotyczących testu, 
+                        prosimy o kontakt pod adresem <a href="mailto:praca@pomagier.info">praca@pomagier.info</a>. 
+                        Nasz zespół postara się pomóc jak najszybciej.
+                    </p>
                 </div>
 
                 {% if test.description %}
