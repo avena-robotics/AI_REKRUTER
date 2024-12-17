@@ -50,7 +50,7 @@ class CandidateService:
             
             self.logger.info(f"Kandydat {candidate['id']} - potrzebuje aktualizacji EQ: {needs_eq_update}")
 
-            # Sprawdzenie i obliczenie wyniku PO1 (zawsze sprawdzaj, niezależnie od statusu)
+            # Sprawdzenie i obliczenie wyniku PO1
             if (candidate.get('po1_score') is None and campaign.get('po1_test_id')):
                 self.logger.info(f"Obliczanie wyniku PO1 dla kandydata {candidate['id']}, test {campaign['po1_test_id']}")
                 
@@ -60,7 +60,7 @@ class CandidateService:
                     'PO1'
                 )
                 
-                if result is not None:  # Regular test score
+                if result is not None:
                     updates['po1_score'] = result
                     
                     test_response = self.supabase.table('tests')\
@@ -74,6 +74,8 @@ class CandidateService:
                         if result < passing_threshold and candidate.get('recruitment_status') == 'PO1':
                             updates['recruitment_status'] = 'REJECTED'
                             self.logger.warning(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO1 (wynik: {result})")
+                        else:
+                            self._handle_token_generation(candidate, 'PO2')
                 else:
                     self.logger.warning(f"Nie otrzymano wyniku dla kandydata {candidate['id']} w teście PO1")
 
@@ -97,6 +99,9 @@ class CandidateService:
                             campaign_id=campaign['id'],
                             eq_scores=result
                         )
+                        updates['po2_score'] = 0
+                        self.logger.info(f"Ustawiono wynik PO2=0 i zaktualizowano status na PO2_5 dla kandydata {candidate['id']}")
+
                 elif result is not None:  # Regular test score
                     updates['po2_score'] = result
                     
@@ -111,6 +116,8 @@ class CandidateService:
                         if result < passing_threshold and candidate.get('recruitment_status') == 'PO2':
                             updates['recruitment_status'] = 'REJECTED'
                             self.logger.info(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO2")
+                        else:
+                            self._handle_token_generation(candidate, 'PO3')
 
             # Sprawdzenie i obliczenie wyniku PO2_5
             if (candidate.get('po2_5_score') is None and campaign.get('po2_5_test_id')):
@@ -136,7 +143,9 @@ class CandidateService:
                         if result < passing_threshold and candidate.get('recruitment_status') == 'PO2_5':
                             updates['recruitment_status'] = 'REJECTED'
                             self.logger.info(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO2_5")
-                            
+                        else:
+                            self._handle_token_generation(candidate, 'PO3')
+
             # Sprawdzenie i obliczenie wyniku PO3
             if (candidate.get('po3_score') is None and campaign.get('po3_test_id')):
                 self.logger.info(f"Obliczanie wyniku PO3 dla kandydata {candidate['id']}, test {campaign['po3_test_id']}")
@@ -161,6 +170,8 @@ class CandidateService:
                         if result < passing_threshold and candidate.get('recruitment_status') == 'PO3':
                             updates['recruitment_status'] = 'REJECTED'
                             self.logger.info(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO3")
+                        else:
+                            self._next_stage(candidate)
 
             if updates:
                 self.logger.info(f"Aktualizacja danych kandydata {candidate['id']}: {updates}")

@@ -237,8 +237,8 @@ class TestPublicService:
             result = supabase.table('candidates').insert(candidate_data).execute()
             candidate_id = result.data[0]['id']
 
-            # Process answers
-            TestPublicService.process_test_answers(candidate_id, test_info['test']['id'], form_data)
+            # Process answers - always use PO1 for universal test submissions
+            TestPublicService.process_test_answers(candidate_id, test_info['test']['id'], form_data, 'PO1')
             
             return True, po2_token, None
 
@@ -311,18 +311,18 @@ class TestPublicService:
         }
 
     @staticmethod
-    def process_test_answers(candidate_id: int, test_id: int, form_data: Dict[str, Any]) -> None:
+    def process_test_answers(candidate_id: int, test_id: int, form_data: Dict[str, Any], stage: Optional[str] = None) -> None:
         """Process test answers"""
         try:
-            def get_stage_for_candidate(candidate_id: int) -> Optional[str]:
+            if stage is None:
+                # Only get stage from candidate if not explicitly provided
                 result = supabase.table('candidates')\
                     .select('recruitment_status')\
                     .eq('id', candidate_id)\
                     .single()\
                     .execute()
-                return result.data['recruitment_status'] if result.data else None
-
-            stage = get_stage_for_candidate(candidate_id)
+                stage = result.data['recruitment_status'] if result.data else None
+                
             if not stage:
                 raise TestPublicException(
                     message="Could not determine stage for candidate",

@@ -20,6 +20,20 @@ class TestService:
         try:
             self.logger.info(f"[TEST {test_id}] Rozpoczęcie obliczania wyniku dla kandydata {candidate_id} w etapie {stage}")
             
+            # First get test type
+            test_response = self.supabase.table('tests')\
+                .select('test_type')\
+                .eq('id', test_id)\
+                .single()\
+                .execute()
+                
+            if not test_response.data:
+                self.logger.warning(f"[TEST {test_id}] Nie znaleziono testu")
+                return None
+                
+            test_type = test_response.data['test_type']
+            self.logger.info(f"[TEST {test_id}] Typ testu: {test_type}")
+
             answers_response = self.supabase.table('candidate_answers')\
                 .select('''
                     id,
@@ -52,23 +66,26 @@ class TestService:
                 
             questions = {q['id']: q for q in questions_response.data}
             self.logger.info(f"[TEST {test_id}] Pobrano {len(questions)} pytań")
-            
-            # Check if there are any AH_POINTS questions
-            ah_points_questions = [q for q in questions.values() if q['answer_type'] == 'AH_POINTS']
-            
-            if ah_points_questions:
-                self.logger.info(f"[TEST {test_id}] Wykryto test EQ z {len(ah_points_questions)} pytaniami typu AH_POINTS")
-                # Calculate EQ scores for AH_POINTS questions
-                eq_scores = self.calculate_eq_scores(answers_response.data, ah_points_questions)
-                self.logger.info(f"[TEST {test_id}] Obliczono wyniki EQ dla kandydata {candidate_id}: {eq_scores}")
-                return eq_scores
+
+            # Handle different test types
+            if test_type == 'EQ':
+                # Only process AH_POINTS questions for EQ tests
+                eq_questions = [q for q in questions.values() if q['answer_type'] == 'AH_POINTS']
+                if eq_questions:
+                    self.logger.info(f"[TEST {test_id}] Wykryto test EQ z {len(eq_questions)} pytaniami typu AH_POINTS")
+                    eq_scores = self.calculate_eq_scores(answers_response.data, eq_questions)
+                    self.logger.info(f"[TEST {test_id}] Obliczono wyniki EQ dla kandydata {candidate_id}: {eq_scores}")
+                    return eq_scores
+                else:
+                    self.logger.warning(f"[TEST {test_id}] Test oznaczony jako EQ, ale nie znaleziono pytań typu AH_POINTS")
+                    return None
             else:
-                self.logger.info(f"[TEST {test_id}] Wykryto standardowy test, rozpoczęcie obliczania wyniku")
-                # Handle regular test scoring
+                # For non-EQ tests, calculate regular score
+                self.logger.info(f"[TEST {test_id}] Wykryto standardowy test typu {test_type}")
                 total_score = self.calculate_total_score(answers_response, questions)
                 self.logger.info(f"[TEST {test_id}] Obliczono wynik standardowy dla kandydata {candidate_id}: {total_score}")
                 return total_score or 0  # Test został wykonany, więc zwracamy wynik (nawet 0)
-            
+                
         except Exception as e:
             self.logger.error(f"[TEST {test_id}] Krytyczny błąd podczas obliczania wyniku dla kandydata {candidate_id}: {str(e)}")
             return None
