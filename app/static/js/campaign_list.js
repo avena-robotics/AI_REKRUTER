@@ -161,7 +161,6 @@ function editCampaign(campaignId) {
             form.querySelector('[name="is_active"]').checked = campaign.is_active;
             
             // Add these lines to populate token expiry days
-            form.querySelector('[name="po1_token_expiry_days"]').value = campaign.po1_token_expiry_days || 7;
             form.querySelector('[name="po2_token_expiry_days"]').value = campaign.po2_token_expiry_days || 7;
             form.querySelector('[name="po3_token_expiry_days"]').value = campaign.po3_token_expiry_days || 7;
             
@@ -588,7 +587,6 @@ function cloneCampaign(campaignId) {
             form.querySelector('[name="is_active"]').checked = campaign.is_active;
             
             // Add these lines to populate token expiry days
-            form.querySelector('[name="po1_token_expiry_days"]').value = campaign.po1_token_expiry_days || 7;
             form.querySelector('[name="po2_token_expiry_days"]').value = campaign.po2_token_expiry_days || 7;
             form.querySelector('[name="po3_token_expiry_days"]').value = campaign.po3_token_expiry_days || 7;
             

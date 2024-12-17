@@ -526,7 +526,7 @@ class CandidateService:
             )
 
     @staticmethod
-    def extend_token(candidate_id: int, stage: str) -> None:
+    def extend_token(candidate_id: int, stage: str) -> datetime:
         """
         Przedłuża ważność tokenu dostępu do testu.
         
@@ -549,20 +549,24 @@ class CandidateService:
                 raise CandidateException(message="Nie znaleziono kandydata")
                 
             # Get token expiry days from campaign
-            expiry_days = candidate.data['campaigns'].get(f'{stage}_token_expiry_days', 7)
+            expiry_days = candidate.data['campaigns'].get(f'{stage.lower()}_token_expiry_days', 7)
+            logger.debug(f"Przedłużanie tokenu dla kandydata {candidate_id} do etapu {stage} o {expiry_days} dni")
             
             # Calculate new expiry date
             current_time = datetime.now(timezone.utc)
             new_expiry = (current_time + timedelta(days=expiry_days)).replace(hour=23, minute=59, second=59)
+            logger.debug(f"Nowa data ważności tokenu: {new_expiry}")
             
             # Update token expiry
             supabase.from_("candidates")\
                 .update({
-                    f'access_token_{stage}_expires_at': new_expiry.isoformat(),
+                    f'access_token_{stage.lower()}_expires_at': new_expiry.isoformat(),
                     'updated_at': current_time.isoformat()
                 })\
                 .eq("id", candidate_id)\
                 .execute()
+                
+            return new_expiry
                 
         except Exception as e:
             logger.error(f"Błąd podczas przedłużania tokenu dla kandydata {candidate_id}: {str(e)}")

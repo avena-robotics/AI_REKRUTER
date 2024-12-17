@@ -23,10 +23,7 @@ def landing(token):
         
         # Handle inactive campaign
         if stage == 'PO1' and is_invalid:
-            return render_template('tests/error.html',
-                                title="Test niedostępny",
-                                message="Ten test nie jest już dostępny.",
-                                error_type="test_inactive")
+            return render_template('tests/inactive.html')
         
         # Get test info
         test_info = TestPublicService.get_universal_test_info(token)
@@ -66,10 +63,7 @@ def start_test(token):
                                 error_type="test_not_found")
         
         if not test_info['campaign'].get('is_active', False):
-            return render_template('tests/error.html',
-                                title="Test niedostępny",
-                                message="Ten test nie jest już dostępny.",
-                                error_type="test_inactive")
+            return render_template('tests/inactive.html')
         
         questions = supabase.table('questions')\
             .select('*')\

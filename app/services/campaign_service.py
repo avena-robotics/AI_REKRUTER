@@ -149,7 +149,7 @@ class CampaignService:
                 'po2_test_weight': int(data['po2_test_weight']) if data.get('po2_test_weight') else 0,
                 'po2_5_test_weight': int(data['po2_5_test_weight']) if data.get('po2_5_test_weight') else 0,
                 'po3_test_weight': int(data['po3_test_weight']) if data.get('po3_test_weight') else 0,
-                'po1_token_expiry_days': int(data.get('po1_token_expiry_days', 7)),
+                'po1_token_expiry_days': 36500,  # ~100 years as "infinite"
                 'po2_token_expiry_days': int(data.get('po2_token_expiry_days', 7)),
                 'po3_token_expiry_days': int(data.get('po3_token_expiry_days', 7)),
                 'created_at': current_time.isoformat(),
@@ -213,7 +213,7 @@ class CampaignService:
                 'po2_test_weight': int(data['po2_test_weight']) if data.get('po2_test_weight') else 0,
                 'po2_5_test_weight': int(data['po2_5_test_weight']) if data.get('po2_5_test_weight') else 0,
                 'po3_test_weight': int(data['po3_test_weight']) if data.get('po3_test_weight') else 0,
-                'po1_token_expiry_days': int(data.get('po1_token_expiry_days', 7)),
+                'po1_token_expiry_days': 36500,  # ~100 years as "infinite"
                 'po2_token_expiry_days': int(data.get('po2_token_expiry_days', 7)),
                 'po3_token_expiry_days': int(data.get('po3_token_expiry_days', 7)),
                 'updated_at': current_time.isoformat()

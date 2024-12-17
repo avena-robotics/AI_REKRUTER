@@ -130,7 +130,7 @@ def delete(id):
     except CandidateException as e:
         return jsonify({"success": False, "error": e.message})
     except Exception as e:
-        return jsonify({"success": False, "error": "Wystąpił nieznany b��ąd podczas usuwania kandydata"}), 500
+        return jsonify({"success": False, "error": "Wystąpił nieznany błąd podczas usuwania kandydata"}), 500
 
 
 @candidate_bp.route("/<int:id>/notes", methods=["POST"])
@@ -190,10 +190,11 @@ def update_note(id, note_id):
 @login_required
 def extend_token(id, stage):
     try:
-        CandidateService.extend_token(id, stage)
+        new_expiry = CandidateService.extend_token(id, stage)
         return jsonify({
             "success": True,
-            "message": "Token został przedłużony"
+            "message": "Token został przedłużony",
+            "new_expiry": new_expiry.isoformat()
         })
         
     except CandidateException as e:
