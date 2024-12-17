@@ -39,7 +39,7 @@ class CandidateService:
                 if stage in ['po1', 'po2', 'po2_5', 'po3']:
                     updates[f'{stage}_completed_at'] = current_time.isoformat()
             
-            self.logger.info(f"Rozpoczęcie aktualizacji wyników dla kandydata {candidate['id']}")
+            self.logger.info(f"Rozpoczęcie aktualizacji wyników dla kandydata {candidate['id']} o statusie {candidate.get('recruitment_status')}")
             
             # Sprawdź czy kandydat potrzebuje aktualizacji wyników EQ
             needs_eq_update = all(
@@ -74,7 +74,7 @@ class CandidateService:
                         if result < passing_threshold and candidate.get('recruitment_status') == 'PO1':
                             updates['recruitment_status'] = 'REJECTED'
                             self.logger.warning(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO1 (wynik: {result})")
-                        else:
+                        elif candidate.get('recruitment_status') == 'PO1':
                             self._handle_token_generation(candidate, 'PO2')
                 else:
                     self.logger.warning(f"Nie otrzymano wyniku dla kandydata {candidate['id']} w teście PO1")
@@ -116,7 +116,7 @@ class CandidateService:
                         if result < passing_threshold and candidate.get('recruitment_status') == 'PO2':
                             updates['recruitment_status'] = 'REJECTED'
                             self.logger.info(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO2")
-                        else:
+                        elif candidate.get('recruitment_status') == 'PO2':
                             self._handle_token_generation(candidate, 'PO3')
 
             # Sprawdzenie i obliczenie wyniku PO2_5
@@ -143,7 +143,7 @@ class CandidateService:
                         if result < passing_threshold and candidate.get('recruitment_status') == 'PO2_5':
                             updates['recruitment_status'] = 'REJECTED'
                             self.logger.info(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO2_5")
-                        else:
+                        elif candidate.get('recruitment_status') == 'PO2' or candidate.get('recruitment_status') == 'PO2_5':
                             self._handle_token_generation(candidate, 'PO3')
 
             # Sprawdzenie i obliczenie wyniku PO3
@@ -170,7 +170,7 @@ class CandidateService:
                         if result < passing_threshold and candidate.get('recruitment_status') == 'PO3':
                             updates['recruitment_status'] = 'REJECTED'
                             self.logger.info(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO3")
-                        else:
+                        elif candidate.get('recruitment_status') == 'PO3':
                             self._next_stage(candidate)
 
             if updates:
@@ -375,9 +375,9 @@ class CandidateService:
             candidate: Dane kandydata
             stage: Etap rekrutacji (PO2/PO3)
         """
-        # Get campaign data first
+        # Get campaign and test data
         campaign_response = self.supabase.table('campaigns')\
-            .select('po1_token_expiry_days, po2_token_expiry_days, po3_token_expiry_days')\
+            .select('title, po2_test_id, po3_test_id, po1_token_expiry_days, po2_token_expiry_days, po3_token_expiry_days')\
             .eq('id', candidate['campaign_id'])\
             .single()\
             .execute()
@@ -386,19 +386,36 @@ class CandidateService:
             self.logger.error(f"Nie znaleziono kampanii dla kandydata {candidate['id']}")
             return
         
+        # Get test details
+        test_id = None
+        if stage == 'PO2':
+            test_id = campaign_response.data.get('po2_test_id')
+        elif stage == 'PO3':
+            test_id = campaign_response.data.get('po3_test_id')
+        
+        test_details = None
+        if test_id:
+            test_response = self.supabase.table('tests')\
+                .select('title, description, time_limit_minutes')\
+                .eq('id', test_id)\
+                .single()\
+                .execute()
+            if test_response.data:
+                test_details = test_response.data
+        
         # Get expiry days based on stage
         expiry_days = {
             'PO1': campaign_response.data['po1_token_expiry_days'],
             'PO2': campaign_response.data['po2_token_expiry_days'],
             'PO3': campaign_response.data['po3_token_expiry_days']
-        }.get(candidate.get('recruitment_status'), 7)  # Default to 7 if stage not found
+        }.get(candidate.get('recruitment_status'), 7)
         
         token = generate_access_token()
         test_url = f"{self.config.BASE_URL}/test/candidate/{token}"
         
         current_time = datetime.now()
         token_expiry = (current_time + timedelta(days=expiry_days)).replace(hour=23, minute=59, second=59)
-        formatted_expiry = token_expiry.strftime("%Y-%m-%d %H:%M")
+        formatted_expiry = token_expiry.strftime("%d.%m.%Y, %H:%M")
         
         updates = {
             f'access_token_{stage.lower()}': token,
@@ -412,16 +429,24 @@ class CandidateService:
             .update(updates)\
             .eq('id', candidate['id'])\
             .execute()
+
+        # Prepare stage name for email
+        stage_names = {
+            'PO1': 'Test kwalifikacyjny',
+            'PO2': 'Test kompetencji',
+            'PO3': 'Test końcowy'
+        }
+        stage_name = stage_names.get(stage, f'Test {stage}')
         
-        if self.email_service.send_email(
-            candidate['email'],
-            f"Dostęp do etapu {stage}",
-            f"Gratulacje! Pomyślnie ukończyłeś/aś etap {stage[:-1]} "
-            f"i otrzymujesz dostęp do kolejnego etapu rekrutacji.\n"
-            f"Link do testu: {test_url}\n"
-            f"Link jest ważny do: {formatted_expiry}"
+        if self.email_service.send_test_invitation(
+            to_email=candidate['email'],
+            stage_name=stage_name,
+            campaign_title=campaign_response.data['title'],
+            test_url=test_url,
+            expiry_date=formatted_expiry,
+            test_details=test_details
         ):
-            self.logger.info(f"Wysłano token {stage} do kandydata {candidate['id']}") 
+            self.logger.info(f"Wysłano zaproszenie na {stage_name} do kandydata {candidate['id']}")
 
     def _get_test_threshold(self, test_id: int) -> int:
         """
