@@ -11,7 +11,7 @@ from filters import format_datetime
 from services.group_service import get_user_groups
 from logger import Logger
 
-APP_VERSION = "1.0.3"  # Define version as a constant
+APP_VERSION = "1.0.4"  # Define version as a constant
 
 def create_app():
     config = Config.instance()
