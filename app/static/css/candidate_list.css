@@ -7,114 +7,194 @@
     padding: 1.5rem;
     width: 100%;
     margin: 0 auto;
-}
-
-.table-scroll {
-    overflow-x: auto;
-    overflow-y: auto;
-    height: 100%;
-    width: 100%;
-    padding: 0 5px;
-}
-
-/* Update table styles */
-.table {
-    width: 100%;
-    margin-bottom: 0;
-    min-width: 100%;
     background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.table.table-striped {
-    width: 100%;
-    max-width: none;
-    margin: 0;
-}
-
-/* Container styles */
-.container {
-    width: 100% !important;
-    max-width: none !important;
-    overflow-x: hidden;
-    margin: 0 auto;
-    padding: 0 15px;
-}
-
-/* Ensure dropdown is always on top */
-.dropdown-menu {
-    z-index: 1021 !important;
-}
-
-/* Ensure dropdown isn't clipped */
 .table-scroll {
-    overflow: visible !important;
-    overflow-x: auto !important;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: auto;
+    margin: 0 auto;
+    width: 100%;
+    padding: 0.75rem;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f1f5f9;
 }
 
-/* Fix dropdown positioning */
-.dropdown {
-    position: relative !important;
+/* Scrollbar styling */
+.table-scroll::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
 }
 
-/* Ensure table cell has proper overflow */
-td {
-    overflow: visible !important;
+.table-scroll::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
 }
 
-/* Set sticky header */
+.table-scroll::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Table styles */
+.table {
+    width: max-content;
+    min-width: 100%;
+    margin-bottom: 0;
+    background: white;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+}
+
+/* Table header styles */
 .table thead th {
     position: sticky;
     top: 0;
-    background: white;
+    background: #f8fafc;
     z-index: 1;
-    box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+    padding: 1rem 0.75rem;
+    font-weight: 600;
+    color: #475569;
+    border-bottom: 2px solid #e5e7eb;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-/* Add styles for dropdown item spinners */
+/* Table cell styles */
+.table td {
+    padding: 1rem 0.75rem;
+    color: #1f2937;
+    border-bottom: 1px solid #e5e7eb;
+    background-color: white;
+}
+
+/* Alternating row colors */
+.table tbody tr:nth-child(even) td {
+    background-color: #f8fafc;
+}
+
+/* Hover effect */
+.table tbody tr:hover td {
+    background-color: #f1f5f9;
+    transition: background-color 0.15s ease-in-out;
+}
+
+/* Vertical lines between columns */
+.table th:not(:last-child),
+.table td:not(:last-child) {
+    border-right: 1px solid #e5e7eb;
+}
+
+/* Column widths */
+.table th:nth-child(1),
+.table td:nth-child(1) { 
+    min-width: 200px; /* Name */
+    background-color: #f8fafc;
+}
+
+.table th:nth-child(2),
+.table td:nth-child(2) { min-width: 150px; } /* Campaign code */
+
+.table th:nth-child(3),
+.table td:nth-child(3) { min-width: 200px; } /* Email */
+
+.table th:nth-child(4),
+.table td:nth-child(4) { min-width: 150px; } /* Phone */
+
+.table th:nth-child(5),
+.table td:nth-child(5) { min-width: 120px; } /* Status */
+
+.table th:nth-child(6),
+.table td:nth-child(6) { min-width: 100px; } /* PO1 */
+
+.table th:nth-child(7),
+.table td:nth-child(7) { min-width: 100px; } /* PO2 */
+
+.table th:nth-child(8),
+.table td:nth-child(8) { min-width: 100px; } /* PO2.5 */
+
+.table th:nth-child(9),
+.table td:nth-child(9) { min-width: 100px; } /* PO3 */
+
+.table th:nth-child(10),
+.table td:nth-child(10) { min-width: 100px; } /* PO4 */
+
+.table th:nth-child(11),
+.table td:nth-child(11) { min-width: 120px; } /* Total score */
+
+/* Competency scores */
+.table th:nth-child(12),
+.table td:nth-child(12),
+.table th:nth-child(13),
+.table td:nth-child(13),
+.table th:nth-child(14),
+.table td:nth-child(14),
+.table th:nth-child(15),
+.table td:nth-child(15),
+.table th:nth-child(16),
+.table td:nth-child(16),
+.table th:nth-child(17),
+.table td:nth-child(17),
+.table th:nth-child(18),
+.table td:nth-child(18),
+.table th:nth-child(19),
+.table td:nth-child(19) { 
+    min-width: 80px; 
+}
+
+.table th:nth-child(20),
+.table td:nth-child(20) { 
+    min-width: 250px;
+    padding-right: 1rem;
+} /* Actions */
+
+/* Status badge styling */
+.table .badge {
+    padding: 0.35em 0.65em;
+    font-size: 0.75em;
+    font-weight: 600;
+    border-radius: 9999px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Dropdown menu styling */
+.dropdown-menu {
+    z-index: 1021 !important;
+    position: absolute;
+    right: 0;
+    left: auto !important;
+    padding: 0.5rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
 .dropdown-item {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    color: #374151;
 }
 
-.dropdown-item .spinner-border {
-    width: 1rem;
-    height: 1rem;
-    margin-right: 0.25rem;
+.dropdown-item:hover {
+    background-color: #f3f4f6;
+    color: #111827;
 }
-
-.dropdown-item .button-text {
-    transition: opacity 0.2s;
-}
-
-.dropdown-item:disabled .button-text {
-    opacity: 0.5;
-}
-
-.dropdown-item:disabled {
-    cursor: not-allowed;
-    opacity: 0.65;
-}
-
-/* Table hover effect */
-.table tbody tr:hover {
-    background-color: rgba(0,0,0,.075);
-} 
-
-@media (max-width: 1500px) {
-    .table-wrapper {
-        max-width: 100%;
-        padding: 0 5px;
-    }
-    
-    .container {
-        padding: 0 10px;
-    }
-    
-    .table {
-        width: 100%;
-    }
-} 
 
 /* Fix modal stacking */
 .modal-backdrop.show {
@@ -125,7 +205,7 @@ td {
     z-index: 1056 !important;
 }
 
-/* When two modals are open, increase z-index for the top one */
+/* When two modals are open */
 .modal.show ~ .modal.show,
 .modal.show ~ .modal-backdrop.show {
     z-index: 1057 !important;
@@ -134,9 +214,31 @@ td {
 /* Prevent multiple backdrops */
 .modal-backdrop ~ .modal-backdrop {
     display: none;
-} 
+}
 
-/* Add new styles for filter section */
+/* Filter wrapper */
 .filter-wrapper {
     width: 100%;
+    margin-bottom: 1.5rem;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1500px) {
+    .container {
+        padding: 1rem;
+    }
+    
+    .table-wrapper {
+        padding: 1rem;
+    }
+}
+
+@media (max-height: 800px) {
+    .table-wrapper {
+        height: calc(100vh - 250px);
+    }
 } 
