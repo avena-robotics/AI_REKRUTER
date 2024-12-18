@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, abort
+from flask import Blueprint, render_template, request, redirect, url_for
 from logger import Logger
 from services.test_public_service import TestPublicService, TestPublicException
 from database import supabase
@@ -33,10 +33,14 @@ def landing(token):
                                 message="Nie znaleziono testu dla podanego linku.",
                                 error_type="test_not_found")
         
+        # Dodaj nazwę etapu
+        stage_name = "Ankieta wstępna"
+        
         return render_template('tests/landing.html',
                             campaign=test_info['campaign'],
                             test=test_info['test'],
-                            token=token)
+                            token=token,
+                            stage_name=stage_name)
                             
     except TestPublicException as e:
         logger.error(f"Error in landing page: {str(e)}")
@@ -162,11 +166,22 @@ def candidate_landing(token):
                                 message="Nie znaleziono testu dla podanego linku.",
                                 error_type="test_not_found")
         
+        # Dodaj nazwę etapu w zależności od typu testu i stage
+        stage_name = ""
+        if test_info['stage'] == 'PO2':
+            if test_info['test']['test_type'] == 'IQ':
+                stage_name = "Ankieta nr 2 - Test zdolności poznawczych"
+            elif test_info['test']['test_type'] == 'EQ':
+                stage_name = "Ankieta nr 2 - Kwestionariusz Samooceny"
+        elif test_info['stage'] == 'PO3':
+            stage_name = "Ankieta nr 3 - Test końcowy"
+        
         return render_template('tests/landing.html',
                             campaign=test_info['campaign'],
                             test=test_info['test'],
                             token=token,
-                            candidate=test_info.get('candidate'))
+                            candidate=test_info.get('candidate'),
+                            stage_name=stage_name)
                             
     except TestPublicException as e:
         logger.error(f"Error in candidate landing: {str(e)}")

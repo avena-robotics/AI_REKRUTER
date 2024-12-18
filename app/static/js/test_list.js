@@ -136,7 +136,8 @@ function updateTable(applyFilters) {
             const testTypeMatch = !filterTestType.value || 
                 (filterTestType.value === 'SURVEY' && testType === 'Ankieta') ||
                 (filterTestType.value === 'EQ' && testType === 'Test EQ') ||
-                (filterTestType.value === 'IQ' && testType === 'Test IQ');
+                (filterTestType.value === 'IQ' && testType === 'Test IQ') ||
+                (filterTestType.value === 'EQ_EVALUATION' && testType === 'Ocena EQ');
                 
             const groupMatch = !filterGroup.value || 
                 testGroups.some(group => group.id === parseInt(filterGroup.value));
