@@ -74,7 +74,7 @@ class CandidateService:
                         if result < passing_threshold and candidate.get('recruitment_status') == 'PO1':
                             updates['recruitment_status'] = 'REJECTED'
                             self.logger.warning(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO1 (wynik: {result})")
-                        elif candidate.get('recruitment_status') == 'PO1':
+                        elif result >= passing_threshold and candidate.get('recruitment_status') == 'PO1':
                             self._handle_token_generation(candidate, 'PO2')
                 else:
                     self.logger.warning(f"Nie otrzymano wyniku dla kandydata {candidate['id']} w teście PO1")
@@ -116,7 +116,7 @@ class CandidateService:
                         if result < passing_threshold and candidate.get('recruitment_status') == 'PO2':
                             updates['recruitment_status'] = 'REJECTED'
                             self.logger.info(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO2")
-                        elif candidate.get('recruitment_status') == 'PO2':
+                        elif result >= passing_threshold and candidate.get('recruitment_status') == 'PO2':
                             self._handle_token_generation(candidate, 'PO3')
 
             # Sprawdzenie i obliczenie wyniku PO2_5
@@ -143,7 +143,7 @@ class CandidateService:
                         if result < passing_threshold and candidate.get('recruitment_status') == 'PO2_5':
                             updates['recruitment_status'] = 'REJECTED'
                             self.logger.info(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO2_5")
-                        elif candidate.get('recruitment_status') == 'PO2' or candidate.get('recruitment_status') == 'PO2_5':
+                        elif result >= passing_threshold and (candidate.get('recruitment_status') == 'PO2' or candidate.get('recruitment_status') == 'PO2_5'):
                             self._handle_token_generation(candidate, 'PO3')
 
             # Sprawdzenie i obliczenie wyniku PO3
@@ -170,7 +170,7 @@ class CandidateService:
                         if result < passing_threshold and candidate.get('recruitment_status') == 'PO3':
                             updates['recruitment_status'] = 'REJECTED'
                             self.logger.info(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO3")
-                        elif candidate.get('recruitment_status') == 'PO3':
+                        elif result >= passing_threshold and candidate.get('recruitment_status') == 'PO3':
                             self._next_stage(candidate)
 
             if updates:
