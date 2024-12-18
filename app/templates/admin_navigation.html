@@ -15,93 +15,112 @@
     {% block head %}{% endblock %}
 </head>
 <body>
-    <nav class="navbar navbar-dark bg-dark fixed-top">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/">AI Rekruter</a>
-            
-            {% if session.get('user_email') %}
-                <div class="d-flex align-items-center">
-                    <span class="text-light me-3 d-none d-lg-inline">
-                        <i class="bi bi-person-circle"></i>
-                        {{ session.get('user_email') }}
-                    </span>
-                    <button class="btn btn-dark" type="button" data-bs-toggle="offcanvas" data-bs-target="#sideMenu">
-                        <i class="bi bi-list fs-4"></i>
-                    </button>
+    <script>
+        // Check localStorage before any rendering
+        document.documentElement.style.visibility = 'hidden';
+        window.addEventListener('DOMContentLoaded', () => {
+            const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (sidebarCollapsed) {
+                document.getElementById('sidebar').classList.add('collapsed');
+                document.getElementById('content').classList.add('expanded');
+            }
+            document.documentElement.style.visibility = '';
+        });
+    </script>
+
+    {% if session.get('user_email') %}
+    <div class="wrapper">
+        <!-- Sidebar -->
+        <nav id="sidebar" class="sidebar{% if request.cookies.get('sidebarCollapsed') == 'true' %} collapsed{% endif %}">
+            <div class="sidebar-header">
+                <a class="navbar-brand sidebar-text" href="/">AI Rekruter</a>
+                <button id="sidebarCollapseBtn" class="btn btn-link sidebar-toggle">
+                    <i class="bi bi-chevron-left toggle-icon"></i>
+                </button>
+            </div>
+
+            <div class="sidebar-content">
+                <!-- User Info -->
+                <div class="user-info">
+                    <i class="bi bi-person-circle"></i>
+                    <span class="sidebar-text">{{ session.get('user_email') }}</span>
                 </div>
 
-                <!-- Offcanvas Menu -->
-                <div class="offcanvas offcanvas-end bg-dark text-white" 
-                     tabindex="-1" 
-                     id="sideMenu" 
-                     data-bs-backdrop="false">
-                    <div class="offcanvas-header">
-                        <h5 class="offcanvas-title">
-                            <i class="bi bi-person-circle"></i>
-                            {{ session.get('user_email') }}
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-                    </div>
-                    <div class="offcanvas-body">
-                        <div class="d-flex flex-column h-100">
-                            <!-- Navigation Links -->
-                            <div class="nav flex-column mb-auto">
-                                <a class="nav-link text-white {% if request.endpoint == 'campaign.list' %}active{% endif %}" 
-                                   href="{{ url_for('campaign.list') }}">
-                                    <i class="bi bi-briefcase me-2"></i>
-                                    Kampanie
-                                </a>
-                                <a class="nav-link text-white {% if request.endpoint == 'candidate.list' %}active{% endif %}" 
-                                   href="{{ url_for('candidate.list') }}">
-                                    <i class="bi bi-people me-2"></i>
-                                    Kandydaci
-                                </a>
-                                <a class="nav-link text-white {% if request.endpoint == 'test.list' %}active{% endif %}" 
-                                   href="{{ url_for('test.list') }}">
-                                    <i class="bi bi-clipboard-check me-2"></i>
-                                    Testy
-                                </a>
-                            </div>
+                <!-- Navigation Links -->
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'campaign.list' %}active{% endif %}" 
+                           href="{{ url_for('campaign.list') }}">
+                            <i class="bi bi-briefcase"></i>
+                            <span class="sidebar-text">Kampanie</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'candidate.list' %}active{% endif %}" 
+                           href="{{ url_for('candidate.list') }}">
+                            <i class="bi bi-people"></i>
+                            <span class="sidebar-text">Kandydaci</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'test.list' %}active{% endif %}" 
+                           href="{{ url_for('test.list') }}">
+                            <i class="bi bi-clipboard-check"></i>
+                            <span class="sidebar-text">Testy</span>
+                        </a>
+                    </li>
 
-                            <!-- Groups Section -->
-                            <hr class="nav-divider">
-                            <div class="nav flex-column">
-                                <div class="nav-link text-white-50">
-                                    <i class="bi bi-people-fill me-2"></i>
-                                    Moje grupy
-                                </div>
+                    <!-- Groups Section -->
+                    <li class="nav-item">
+                        <a class="nav-link groups-toggle" data-bs-toggle="collapse" href="#groupsCollapse">
+                            <i class="bi bi-people-fill"></i>
+                            <span class="sidebar-text">Moje grupy</span>
+                            <i class="bi bi-chevron-down ms-auto group-indicator"></i>
+                        </a>
+                        <div class="collapse" id="groupsCollapse">
+                            <ul class="nav flex-column group-list">
                                 {% if user_groups %}
                                     {% for group in user_groups %}
-                                        <div class="nav-link text-white-50 ps-4">
-                                            <small>{{ group.name }}</small>
-                                        </div>
+                                        <li class="nav-item">
+                                            <a class="nav-link sub-link">
+                                                <i class="bi bi-dot"></i>
+                                                <span class="sidebar-text">{{ group.name }}</span>
+                                            </a>
+                                        </li>
                                     {% endfor %}
                                 {% else %}
-                                    <div class="nav-link text-white-50 ps-4">
-                                        <small>Brak przypisanych grup</small>
-                                    </div>
+                                    <li class="nav-item">
+                                        <span class="nav-link sub-link text-muted">
+                                            <i class="bi bi-dot"></i>
+                                            <span class="sidebar-text">Brak przypisanych grup</span>
+                                        </span>
+                                    </li>
                                 {% endif %}
-                            </div>
-
-                            <!-- Logout Button -->
-                            <hr class="nav-divider mt-auto">
-                            <button class="btn btn-outline-light w-100" onclick="handleLogout()">
-                                <i class="bi bi-box-arrow-right me-2"></i>
-                                Wyloguj
-                            </button>
-                            <div class="text-center mt-2">
-                                <small class="text-white">v: {{ app_version }}</small>
-                            </div>
+                            </ul>
                         </div>
+                    </li>
+                </ul>
+
+                <!-- Logout Section -->
+                <div class="sidebar-footer">
+                    <button class="btn btn-outline-light w-100" onclick="handleLogout()">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span class="sidebar-text">Wyloguj</span>
+                    </button>
+                    <div class="version-info text-center mt-2">
+                        <small class="sidebar-text">v: {{ app_version }}</small>
                     </div>
                 </div>
-            {% endif %}
-        </div>
-    </nav>
+            </div>
+        </nav>
 
-    <!-- Main Content with top margin to account for fixed navbar -->
-    <div class="container" style="margin-top: 5rem;">
-        {% block content %}{% endblock %}
+        <!-- Page Content -->
+        <div id="content">
+            <div class="container-fluid">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
     </div>
+    {% endif %}
 </body>
 </html> 

@@ -12,20 +12,46 @@ document.addEventListener('DOMContentLoaded', function() {
         return new bootstrap.Popover(popoverTriggerEl)
     });
 
-    // Handle offcanvas click outside
-    const sideMenu = document.getElementById('sideMenu');
-    if (sideMenu) {
-        document.addEventListener('click', function(event) {
-            // Check if click is outside the offcanvas
-            if (!sideMenu.contains(event.target) && 
-                !event.target.closest('[data-bs-toggle="offcanvas"]')) {
-                const offcanvas = bootstrap.Offcanvas.getInstance(sideMenu);
-                if (offcanvas) {
-                    offcanvas.hide();
-                }
+    // Sidebar collapse functionality
+    const sidebar = document.getElementById('sidebar');
+    const content = document.getElementById('content');
+    const sidebarCollapseBtn = document.getElementById('sidebarCollapseBtn');
+
+    if (sidebarCollapseBtn) {
+        sidebarCollapseBtn.addEventListener('click', function() {
+            sidebar.classList.toggle('collapsed');
+            content.classList.toggle('expanded');
+            
+            // Store the state in both localStorage and cookie
+            const isCollapsed = sidebar.classList.contains('collapsed');
+            localStorage.setItem('sidebarCollapsed', isCollapsed);
+            document.cookie = `sidebarCollapsed=${isCollapsed}; path=/; max-age=31536000`; // 1 year
+        });
+    }
+
+    // Groups collapse indicator
+    const groupsToggle = document.querySelector('.groups-toggle');
+    if (groupsToggle) {
+        groupsToggle.addEventListener('click', function() {
+            const isExpanded = this.getAttribute('aria-expanded') === 'true';
+            const indicator = this.querySelector('.group-indicator');
+            
+            if (indicator) {
+                indicator.style.transform = isExpanded ? 'rotate(0deg)' : 'rotate(180deg)';
             }
         });
     }
+
+    // Handle responsive behavior
+    function handleResize() {
+        if (window.innerWidth <= 768) {
+            sidebar.classList.add('collapsed');
+            content.classList.add('expanded');
+        }
+    }
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Initial check
 
     // Check for pending toast after page load
     const pendingToast = sessionStorage.getItem('pendingToast');
@@ -58,7 +84,6 @@ function handleLogout() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Store success message for next page
                 sessionStorage.setItem('pendingToast', JSON.stringify({
                     message: data.message,
                     type: data.type
