@@ -256,86 +256,152 @@ function setButtonLoading(buttonId, isLoading) {
     }
 }
 
-// Initialize on document load
+// Store original rows globally
+let originalRows = [];
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize all dropdowns
-    if (typeof bootstrap === 'undefined') {
-        console.error('Bootstrap is not loaded!');
+    // Store original table rows
+    const tbody = document.querySelector('tbody');
+    originalRows = Array.from(tbody.querySelectorAll('tr'));
+    
+    // Initialize event listeners
+    initializeEventListeners();
+    
+    // Setup action buttons
+    setupActionButtons();
+});
+
+function initializeEventListeners() {
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            updateTable(true);
+        });
+    }
+
+    // Filter buttons
+    document.getElementById('applyFiltersBtn').addEventListener('click', function() {
+        updateTable(true);
+    });
+
+    document.getElementById('resetFiltersBtn').addEventListener('click', function() {
+        resetFilters();
+    });
+}
+
+function updateTable(applyFilters) {
+    const tbody = document.querySelector('tbody');
+    const searchText = document.getElementById('searchText').value.toLowerCase();
+    const filterCampaign = document.getElementById('filterCampaign').value;
+    const filterStatus = document.getElementById('filterStatus').value;
+    const sortBy = document.getElementById('sortBy').value;
+    const sortOrder = document.getElementById('sortOrder').value;
+    
+    if (!applyFilters) {
+        // Reset to original state
+        tbody.innerHTML = '';
+        originalRows.forEach(row => tbody.appendChild(row.cloneNode(true)));
         return;
     }
 
-    document.querySelectorAll('[data-bs-toggle="dropdown"]').forEach(function(dropdownToggle) {
-        new bootstrap.Dropdown(dropdownToggle, {
-            boundary: 'window'
-        });
-    });
-
-    // Stop click propagation in dropdowns
-    document.querySelectorAll('.dropdown-menu').forEach(function(dropdownMenu) {
-        dropdownMenu.addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-    });
-
-    // Add note save handler
-    document.getElementById('saveNoteBtn').addEventListener('click', async function() {
-        const candidateId = this.getAttribute('data-candidate-id');
-        const noteType = document.getElementById('noteType').value.trim();
-        const noteContent = document.getElementById('noteContent').value.trim();
+    // Filter rows
+    let filteredRows = originalRows.filter(row => {
+        const text = row.textContent.toLowerCase();
+        const campaignCode = row.querySelector('td:nth-child(2)').textContent.trim();
+        const status = row.querySelector('.badge').textContent.trim();
         
-        if (!noteType || !noteContent) {
-            showToast('Wypełnij wszystkie pola', 'error');
-            return;
+        const matchesSearch = !searchText || text.includes(searchText);
+        const matchesCampaign = !filterCampaign || campaignCode === filterCampaign;
+        const matchesStatus = !filterStatus || status === filterStatus;
+        
+        return matchesSearch && matchesCampaign && matchesStatus;
+    });
+
+    // Sort rows
+    filteredRows.sort((a, b) => {
+        let aValue = getRowValue(a, sortBy);
+        let bValue = getRowValue(b, sortBy);
+        
+        if (sortOrder === 'desc') {
+            [aValue, bValue] = [bValue, aValue];
         }
         
-        setButtonLoading('saveNoteBtn', true);
-        
-        try {
-            const response = await fetch(`/candidates/${candidateId}/notes`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    note_type: noteType,
-                    content: noteContent
-                })
-            });
-            
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            
-            // Hide modal and show success message
-            bootstrap.Modal.getInstance(document.getElementById('addNoteModal')).hide();
-            showToast('Notatka została zapisana', 'success');
-            
-            // If candidate modal is open, refresh it
-            const candidateModal = document.getElementById('candidateModal');
-            if (candidateModal.classList.contains('show')) {
-                await viewCandidate(candidateId);
-            }
-            
-        } catch (error) {
-            console.error('Error:', error);
-            showToast('Błąd podczas zapisywania notatki', 'error');
-        } finally {
-            setButtonLoading('saveNoteBtn', false);
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+            return aValue - bValue;
         }
+        return String(aValue).localeCompare(String(bValue));
     });
 
-    // Obsługa filtrowania i sortowania
-    const filterForm = document.getElementById('filter-form');
-    if (filterForm) {
-        filterForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            applyFilters();
-        });
+    // Update table
+    tbody.innerHTML = '';
+    filteredRows.forEach(row => {
+        const newRow = row.cloneNode(true);
+        tbody.appendChild(newRow);
+    });
+    
+    // Update URL without page reload
+    const params = new URLSearchParams({
+        search: searchText,
+        campaign_code: filterCampaign,
+        status: filterStatus,
+        sort_by: sortBy,
+        sort_order: sortOrder
+    });
+    
+    window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`);
+}
+
+function getRowValue(row, sortBy) {
+    const cellIndex = {
+        'email': 2,
+        'phone': 3,
+        'recruitment_status': 4,
+        'po1_score': 5,
+        'po2_score': 6,
+        'po2_5_score': 7,
+        'po3_score': 8,
+        'po4_score': 9,
+        'total_score': 10,
+        'score_ko': 11,
+        'score_re': 12,
+        'score_w': 13,
+        'score_in': 14,
+        'score_pz': 15,
+        'score_kz': 16,
+        'score_dz': 17,
+        'score_sw': 18,
+        'created_at': 19
+    }[sortBy] || 19;
+
+    const cell = row.querySelector(`td:nth-child(${cellIndex})`);
+    const value = cell.textContent.trim();
+
+    // Handle numeric values
+    if (['po1_score', 'po2_score', 'po2_5_score', 'po3_score', 'po4_score', 
+         'total_score', 'score_ko', 'score_re', 'score_w', 'score_in', 
+         'score_pz', 'score_kz', 'score_dz', 'score_sw'].includes(sortBy)) {
+        return value === '-' ? -Infinity : parseFloat(value);
     }
 
-    // Obsługa przycisków akcji
-    setupActionButtons();
-});
+    // Handle dates
+    if (sortBy === 'created_at') {
+        return new Date(value).getTime();
+    }
+
+    return value;
+}
+
+function resetFilters() {
+    document.getElementById('searchText').value = '';
+    document.getElementById('filterCampaign').value = '';
+    document.getElementById('filterStatus').value = '';
+    document.getElementById('sortBy').value = 'created_at';
+    document.getElementById('sortOrder').value = 'desc';
+    
+    updateTable(false);
+    window.history.pushState({}, '', window.location.pathname);
+}
 
 function setupActionButtons() {
     // Przycisk następnego etapu

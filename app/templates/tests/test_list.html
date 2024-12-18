@@ -19,63 +19,60 @@
     </button>
 </div>
 
-<!-- Update filters and sort section -->
-<div class="card mb-4">
-    <div class="card-body">
-        <form class="row g-3">
-            <!-- First row -->
-            <div class="col-md-6 col-lg-3">
-                <label class="form-label">Typ testu</label>
-                <select class="form-select" id="filterTestType">
-                    <option value="">Wszystkie</option>
-                    <option value="SURVEY">Ankieta</option>
-                    <option value="EQ">Test EQ</option>
-                    <option value="IQ">Test IQ</option>
-                    <option value="EQ_EVALUATION">Ocena EQ</option>
-                </select>
-            </div>
-            
-            <div class="col-md-6 col-lg-3">
-                <label class="form-label">Grupa</label>
-                <select class="form-select" id="filterGroup">
-                    <option value="">Wszystkie</option>
-                    {% for group in user_groups %}
-                        <option value="{{ group.id }}">{{ group.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+<div class="filter-wrapper mb-4 border rounded p-4 bg-body-tertiary shadow-sm">
+    <form class="row g-3">
+        <!-- First row -->
+        <div class="col-md-6 col-lg-3">
+            <label class="form-label">Typ testu</label>
+            <select class="form-select" id="filterTestType">
+                <option value="">Wszystkie</option>
+                <option value="SURVEY">Ankieta</option>
+                <option value="EQ">Test EQ</option>
+                <option value="IQ">Test IQ</option>
+                <option value="EQ_EVALUATION">Ocena EQ</option>
+            </select>
+        </div>
+        
+        <div class="col-md-6 col-lg-3">
+            <label class="form-label">Grupa</label>
+            <select class="form-select" id="filterGroup">
+                <option value="">Wszystkie</option>
+                {% for group in user_groups %}
+                    <option value="{{ group.id }}">{{ group.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
 
-            <div class="col-md-6 col-lg-3">
-                <label class="form-label">Sortuj według</label>
-                <select class="form-select" id="sortBy">
-                    <option value="created_at">Data utworzenia</option>
-                    <option value="time_limit">Limit czasu</option>
-                    <option value="questions">Liczba pytań</option>
-                </select>
-            </div>
+        <div class="col-md-6 col-lg-3">
+            <label class="form-label">Sortuj według</label>
+            <select class="form-select" id="sortBy">
+                <option value="created_at">Data utworzenia</option>
+                <option value="time_limit">Limit czasu</option>
+                <option value="questions">Liczba pytań</option>
+            </select>
+        </div>
 
-            <div class="col-md-6 col-lg-3">
-                <label class="form-label">Kolejność</label>
-                <select class="form-select" id="sortOrder">
-                    <option value="desc">Malejąco</option>
-                    <option value="asc">Rosnąco</option>
-                </select>
-            </div>
+        <div class="col-md-6 col-lg-3">
+            <label class="form-label">Kolejność</label>
+            <select class="form-select" id="sortOrder">
+                <option value="desc">Malejąco</option>
+                <option value="asc">Rosnąco</option>
+            </select>
+        </div>
 
-            <!-- Second row - buttons -->
-            <div class="col-12 d-flex justify-content-end gap-2 mt-3">
-                <button type="button" class="btn btn-outline-secondary" id="resetFilters">
-                    Resetuj filtry
-                </button>
-                <button type="button" class="btn btn-primary" id="applyFilters">
-                    Zastosuj
-                </button>
-            </div>
-        </form>
-    </div>
+        <!-- Second row - buttons -->
+        <div class="col-12 d-flex justify-content-end gap-2 mt-3">
+            <button type="button" class="btn btn-outline-secondary" id="resetFilters">
+                Resetuj filtry
+            </button>
+            <button type="button" class="btn btn-primary" id="applyFilters">
+                Zastosuj
+            </button>
+        </div>
+    </form>
 </div>
 
-<div class="table-wrapper">
+<div class="table-wrapper border rounded bg-body-tertiary shadow-sm">
     <div class="table-scroll">
         <table class="table table-striped">
             <thead>

@@ -10,85 +10,83 @@
 {% endblock %}
 
 {% block content %}
-<div class="card mb-4 w-100">
-    <div class="card-body">
-        <form method="GET" class="row g-3 align-items-end">
-            <div class="col-md-12 mb-3">
-                <label class="form-label">Wyszukaj</label>
-                <input type="text" 
-                       class="form-control" 
-                       id="searchText" 
-                       name="search" 
-                       placeholder="Wyszukaj w imieniu, nazwisku, emailu lub telefonie"
-                       value="{{ request.args.get('search', '') }}">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Kod kampanii</label>
-                <select class="form-select" id="filterCampaign" name="campaign_code">
-                    <option value="">Wszystkie kampanie</option>
-                    {% for campaign in campaigns %}
-                        <option value="{{ campaign.code }}" {% if request.args.get('campaign_code') == campaign.code %}selected{% endif %}>
-                            {{ campaign.code }} - {{ campaign.title }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Status rekrutacji</label>
-                <select class="form-select" id="filterStatus" name="status">
-                    <option value="">Wszystkie statusy</option>
-                    <option value="PO1" {% if request.args.get('status') == 'PO1' %}selected{% endif %}>PO1</option>
-                    <option value="PO2" {% if request.args.get('status') == 'PO2' %}selected{% endif %}>PO2</option>
-                    <option value="PO2_5" {% if request.args.get('status') == 'PO2_5' %}selected{% endif %}>PO2.5</option>
-                    <option value="PO3" {% if request.args.get('status') == 'PO3' %}selected{% endif %}>PO3</option>
-                    <option value="PO4" {% if request.args.get('status') == 'PO4' %}selected{% endif %}>PO4</option>
-                    <option value="REJECTED" {% if request.args.get('status') == 'REJECTED' %}selected{% endif %}>Odrzucony</option>
-                    <option value="ACCEPTED" {% if request.args.get('status') == 'ACCEPTED' %}selected{% endif %}>Zaakceptowany</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Sortuj według</label>
-                <select class="form-select" id="sortBy" name="sort_by">
-                    <option value="created_at" {% if request.args.get('sort_by', 'created_at') == 'created_at' %}selected{% endif %}>Data aplikacji</option>
-                    <option value="email" {% if request.args.get('sort_by') == 'email' %}selected{% endif %}>Email</option>
-                    <option value="phone" {% if request.args.get('sort_by') == 'phone' %}selected{% endif %}>Telefon</option>
-                    <option value="recruitment_status" {% if request.args.get('sort_by') == 'recruitment_status' %}selected{% endif %}>Status rekrutacji</option>
-                    <option value="po1_score" {% if request.args.get('sort_by') == 'po1_score' %}selected{% endif %}>PO1</option>
-                    <option value="po2_score" {% if request.args.get('sort_by') == 'po2_score' %}selected{% endif %}>PO2</option>
-                    <option value="po2_5_score" {% if request.args.get('sort_by') == 'po2_5_score' %}selected{% endif %}>PO2.5</option>
-                    <option value="po3_score" {% if request.args.get('sort_by') == 'po3_score' %}selected{% endif %}>PO3</option>
-                    <option value="po4_score" {% if request.args.get('sort_by') == 'po4_score' %}selected{% endif %}>PO4</option>
-                    <option value="total_score" {% if request.args.get('sort_by') == 'total_score' %}selected{% endif %}>Wynik ogólny</option>
-                    <option value="score_ko" {% if request.args.get('sort_by') == 'score_ko' %}selected{% endif %}>KO</option>
-                    <option value="score_re" {% if request.args.get('sort_by') == 'score_re' %}selected{% endif %}>RE</option>
-                    <option value="score_w" {% if request.args.get('sort_by') == 'score_w' %}selected{% endif %}>W</option>
-                    <option value="score_in" {% if request.args.get('sort_by') == 'score_in' %}selected{% endif %}>IN</option>
-                    <option value="score_pz" {% if request.args.get('sort_by') == 'score_pz' %}selected{% endif %}>PZ</option>
-                    <option value="score_kz" {% if request.args.get('sort_by') == 'score_kz' %}selected{% endif %}>KZ</option>
-                    <option value="score_dz" {% if request.args.get('sort_by') == 'score_dz' %}selected{% endif %}>DZ</option>
-                    <option value="score_sw" {% if request.args.get('sort_by') == 'score_sw' %}selected{% endif %}>SW</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Kolejność</label>
-                <select class="form-select" id="sortOrder" name="sort_order">
-                    <option value="desc" {% if request.args.get('sort_order', 'desc') == 'desc' %}selected{% endif %}>Malejąco</option>
-                    <option value="asc" {% if request.args.get('sort_order') == 'asc' %}selected{% endif %}>Rosnąco</option>
-                </select>
-            </div>
-            <div class="col-12 text-end mt-3">
-                <a href="{{ url_for('candidate.list') }}" class="btn btn-outline-secondary">
-                    Resetuj filtry
-                </a>
-                <button type="submit" class="btn btn-primary ms-2">
-                    Zastosuj
-                </button>
-            </div>
-        </form>
-    </div>
+<div class="filter-wrapper mb-4 border rounded p-4 bg-body-tertiary shadow-sm">
+    <form class="row g-3 align-items-end" onsubmit="return false;">
+        <div class="col-md-12 mb-3">
+            <label class="form-label">Wyszukaj</label>
+            <input type="text" 
+                   class="form-control" 
+                   id="searchText" 
+                   name="search" 
+                   placeholder="Wyszukaj w imieniu, nazwisku, emailu lub telefonie"
+                   value="{{ request.args.get('search', '') }}">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Kod kampanii</label>
+            <select class="form-select" id="filterCampaign" name="campaign_code">
+                <option value="">Wszystkie kampanie</option>
+                {% for campaign in campaigns %}
+                    <option value="{{ campaign.code }}" {% if request.args.get('campaign_code') == campaign.code %}selected{% endif %}>
+                        {{ campaign.code }} - {{ campaign.title }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Status rekrutacji</label>
+            <select class="form-select" id="filterStatus" name="status">
+                <option value="">Wszystkie statusy</option>
+                <option value="PO1" {% if request.args.get('status') == 'PO1' %}selected{% endif %}>PO1</option>
+                <option value="PO2" {% if request.args.get('status') == 'PO2' %}selected{% endif %}>PO2</option>
+                <option value="PO2_5" {% if request.args.get('status') == 'PO2_5' %}selected{% endif %}>PO2.5</option>
+                <option value="PO3" {% if request.args.get('status') == 'PO3' %}selected{% endif %}>PO3</option>
+                <option value="PO4" {% if request.args.get('status') == 'PO4' %}selected{% endif %}>PO4</option>
+                <option value="REJECTED" {% if request.args.get('status') == 'REJECTED' %}selected{% endif %}>Odrzucony</option>
+                <option value="ACCEPTED" {% if request.args.get('status') == 'ACCEPTED' %}selected{% endif %}>Zaakceptowany</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Sortuj według</label>
+            <select class="form-select" id="sortBy" name="sort_by">
+                <option value="created_at" {% if request.args.get('sort_by', 'created_at') == 'created_at' %}selected{% endif %}>Data aplikacji</option>
+                <option value="email" {% if request.args.get('sort_by') == 'email' %}selected{% endif %}>Email</option>
+                <option value="phone" {% if request.args.get('sort_by') == 'phone' %}selected{% endif %}>Telefon</option>
+                <option value="recruitment_status" {% if request.args.get('sort_by') == 'recruitment_status' %}selected{% endif %}>Status rekrutacji</option>
+                <option value="po1_score" {% if request.args.get('sort_by') == 'po1_score' %}selected{% endif %}>PO1</option>
+                <option value="po2_score" {% if request.args.get('sort_by') == 'po2_score' %}selected{% endif %}>PO2</option>
+                <option value="po2_5_score" {% if request.args.get('sort_by') == 'po2_5_score' %}selected{% endif %}>PO2.5</option>
+                <option value="po3_score" {% if request.args.get('sort_by') == 'po3_score' %}selected{% endif %}>PO3</option>
+                <option value="po4_score" {% if request.args.get('sort_by') == 'po4_score' %}selected{% endif %}>PO4</option>
+                <option value="total_score" {% if request.args.get('sort_by') == 'total_score' %}selected{% endif %}>Wynik ogólny</option>
+                <option value="score_ko" {% if request.args.get('sort_by') == 'score_ko' %}selected{% endif %}>KO</option>
+                <option value="score_re" {% if request.args.get('sort_by') == 'score_re' %}selected{% endif %}>RE</option>
+                <option value="score_w" {% if request.args.get('sort_by') == 'score_w' %}selected{% endif %}>W</option>
+                <option value="score_in" {% if request.args.get('sort_by') == 'score_in' %}selected{% endif %}>IN</option>
+                <option value="score_pz" {% if request.args.get('sort_by') == 'score_pz' %}selected{% endif %}>PZ</option>
+                <option value="score_kz" {% if request.args.get('sort_by') == 'score_kz' %}selected{% endif %}>KZ</option>
+                <option value="score_dz" {% if request.args.get('sort_by') == 'score_dz' %}selected{% endif %}>DZ</option>
+                <option value="score_sw" {% if request.args.get('sort_by') == 'score_sw' %}selected{% endif %}>SW</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Kolejność</label>
+            <select class="form-select" id="sortOrder" name="sort_order">
+                <option value="desc" {% if request.args.get('sort_order', 'desc') == 'desc' %}selected{% endif %}>Malejąco</option>
+                <option value="asc" {% if request.args.get('sort_order') == 'asc' %}selected{% endif %}>Rosnąco</option>
+            </select>
+        </div>
+        <div class="col-12 text-end mt-3">
+            <button type="button" class="btn btn-outline-secondary" id="resetFiltersBtn">
+                Resetuj filtry
+            </button>
+            <button type="button" class="btn btn-primary ms-2" id="applyFiltersBtn">
+                Zastosuj
+            </button>
+        </div>
+    </form>
 </div>
 
-<div class="table-wrapper w-100">
+<div class="table-wrapper border rounded bg-body-tertiary shadow-sm">
     <div class="table-scroll">
         <table class="table table-striped w-100" id="candidatesTable">
             <thead style="position: sticky; top: 0; background: white; z-index: 1;">

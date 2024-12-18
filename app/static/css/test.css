@@ -175,7 +175,7 @@ textarea.form-control {
     display: flex;
     justify-content: center;
     overflow: hidden;
-    padding: 0 10px;
+    padding: 1.5rem;
     width: 100%;
     margin: 0 auto;
 }
@@ -193,6 +193,7 @@ textarea.form-control {
     width: 100%;
     margin-bottom: 0;
     min-width: 100%;
+    background: white;
 }
 
 .table.table-striped {
@@ -432,4 +433,9 @@ td {
 
 .drag-handle:active {
     cursor: grabbing;
+}
+
+/* Add new styles for filter section */
+.filter-wrapper {
+    width: 100%;
 }
