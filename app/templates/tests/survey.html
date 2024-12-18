@@ -194,7 +194,17 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="email" class="form-label">Email*</label>
-                                <input type="email" class="form-control" id="email" name="email" required>
+                                <input type="email" 
+                                       class="form-control" 
+                                       id="email" 
+                                       name="email" 
+                                       required 
+                                       pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                                       oninvalid="this.setCustomValidity('Proszę podać prawidłowy adres email')"
+                                       oninput="this.setCustomValidity('')">
+                                <div class="invalid-feedback">
+                                    Proszę podać prawidłowy adres email
+                                </div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="phone" class="form-label">Telefon*</label>
@@ -479,6 +489,35 @@
             const startTime = localStorage.getItem('testStartTime');
             if (startTime) {
                 document.getElementById('testStartTime').value = startTime;
+            }
+
+            // Enable Bootstrap form validation
+            const form = document.getElementById('testForm');
+            
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                
+                form.classList.add('was-validated');
+            });
+
+            // Custom email validation
+            const emailInput = document.getElementById('email');
+            if (emailInput) {
+                emailInput.addEventListener('input', function() {
+                    const email = this.value;
+                    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+                    
+                    if (email === '') {
+                        this.setCustomValidity('To pole jest wymagane');
+                    } else if (!emailRegex.test(email)) {
+                        this.setCustomValidity('Proszę podać prawidłowy adres email');
+                    } else {
+                        this.setCustomValidity('');
+                    }
+                });
             }
         });
     </script>
