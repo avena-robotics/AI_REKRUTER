@@ -17,7 +17,7 @@
         </div>
         {% endif %}
 
-        <form id="testForm" method="POST" action="{{ url_for('test_public.submit_candidate_test', token=token) if candidate else url_for('test_public.submit_test', token=token) }}">
+        <form id="testForm" class="needs-validation" novalidate method="POST" action="{{ url_for('test_public.submit_candidate_test', token=token) if candidate else url_for('test_public.submit_test', token=token) }}">
             {% for question in questions %}
             <div class="card mb-4 question-card" data-question-id="{{ question.id }}">
                 <h5>{{ question.question_text }}</h5>
@@ -265,6 +265,7 @@
                 let total = 0;
                 inputs.forEach(input => {
                     total += parseInt(input.value) || 0;
+                    input.classList.remove('is-valid');
                 });
                 
                 const remaining = 10 - total;
@@ -293,23 +294,21 @@
 
             // Form validation
             document.getElementById('testForm').addEventListener('submit', function(e) {
-                const submitButton = this.querySelector('button[type="submit"]');
+                e.preventDefault();
+                
+                const form = this;
+                const submitButton = form.querySelector('button[type="submit"]');
                 const spinner = submitButton.querySelector('.spinner-border');
                 const buttonText = submitButton.querySelector('.button-text');
                 
-                const ahPointsQuestions = document.querySelectorAll('.ah-points-container');
+                // Reset validation state
+                form.classList.remove('was-validated');
                 let isValid = true;
+                let firstInvalidElement = null;
 
-                // First hide all error messages and remove error styling
-                document.querySelectorAll('.points-error').forEach(error => {
-                    error.style.display = 'none';
-                });
-                document.querySelectorAll('.ah-points-container').forEach(container => {
-                    container.classList.remove('error-container');
-                });
-
+                // Validate AH Points questions
+                const ahPointsQuestions = document.querySelectorAll('.ah-points-container');
                 ahPointsQuestions.forEach(container => {
-                    const questionId = container.querySelector('input').dataset.question;
                     const inputs = container.querySelectorAll('input');
                     let total = 0;
                     
@@ -319,13 +318,56 @@
 
                     if (total !== 10) {
                         isValid = false;
-                        container.querySelector('.points-error').style.display = 'block';
                         container.classList.add('error-container');
+                        container.querySelector('.points-error').style.display = 'block';
+                        
+                        if (!firstInvalidElement) {
+                            firstInvalidElement = container;
+                        }
+                    } else {
+                        container.classList.remove('error-container');
+                        container.querySelector('.points-error').style.display = 'none';
+                    }
+                });
+
+                // Validate required fields
+                const requiredInputs = form.querySelectorAll('[required]');
+                requiredInputs.forEach(input => {
+                    if (!input.value) {
+                        isValid = false;
+                        input.classList.add('is-invalid');
+                        
+                        if (!firstInvalidElement) {
+                            firstInvalidElement = input;
+                        }
+                    } else {
+                        input.classList.remove('is-invalid');
+                    }
+                });
+
+                // Validate radio button groups
+                const radioGroups = {};
+                form.querySelectorAll('input[type="radio"][required]').forEach(radio => {
+                    const name = radio.getAttribute('name');
+                    if (!radioGroups[name]) {
+                        radioGroups[name] = false;
+                        const checkedRadio = form.querySelector(`input[name="${name}"]:checked`);
+                        if (!checkedRadio) {
+                            isValid = false;
+                            const radioContainer = radio.closest('.question-card');
+                            if (!firstInvalidElement) {
+                                firstInvalidElement = radioContainer;
+                            }
+                        }
                     }
                 });
 
                 if (!isValid) {
-                    e.preventDefault();
+                    // Scroll to first invalid element
+                    if (firstInvalidElement) {
+                        firstInvalidElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    form.classList.add('was-validated');
                     return;
                 }
 
@@ -333,6 +375,25 @@
                 submitButton.disabled = true;
                 spinner.classList.remove('d-none');
                 buttonText.textContent = 'Zapisywanie...';
+
+                // Submit form
+                fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form)
+                })
+                .then(response => {
+                    if (response.ok) {
+                        window.location.href = response.url;
+                    } else {
+                        throw new Error('Network response was not ok');
+                    }
+                })
+                .catch(error => {
+                    submitButton.disabled = false;
+                    spinner.classList.add('d-none');
+                    buttonText.textContent = 'Zakończ test';
+                    alert('Wystąpił błąd podczas zapisywania odpowiedzi. Spróbuj ponownie.');
+                });
             });
 
             // Make functions globally available
@@ -513,6 +574,55 @@
             .abcdef-options-container {
                 grid-template-columns: repeat(2, 1fr);
             }
+        }
+
+        .is-invalid {
+            border-color: #dc3545 !important;
+        }
+
+        .invalid-feedback {
+            display: none;
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .was-validated .form-control:invalid,
+        .was-validated .form-check-input:invalid {
+            border-color: #dc3545;
+        }
+
+        .was-validated .form-control:invalid ~ .invalid-feedback,
+        .was-validated .form-check-input:invalid ~ .invalid-feedback {
+            display: block;
+        }
+
+        .question-card {
+            transition: all 0.3s ease;
+        }
+
+        .question-card.highlight {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+        }
+
+        /* Nadpisanie stylów Bootstrap dla AH Points */
+        .ah-points-container .form-control:valid {
+            border-color: #ced4da !important;  /* Standardowy kolor bordera */
+            background-image: none !important;  /* Usunięcie ikony checkmark */
+            padding-right: 0.75rem !important; /* Standardowy padding */
+        }
+
+        .ah-points-container .form-control.is-invalid {
+            border-color: #dc3545 !important;
+            background-image: none !important;
+        }
+
+        /* Nadpisanie stylów was-validated dla AH Points */
+        .was-validated .ah-points-container .form-control:valid {
+            border-color: #ced4da !important;
+            background-image: none !important;
+            padding-right: 0.75rem !important;
         }
     </style>
 
