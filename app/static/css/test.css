@@ -190,9 +190,9 @@ textarea.form-control {
 }
 
 .table {
-    width: 100%;
-    margin-bottom: 0;
+    width: max-content;
     min-width: 100%;
+    margin-bottom: 0;
     background: white;
 }
 
@@ -213,6 +213,8 @@ textarea.form-control {
 .dropdown-menu {
     z-index: 1021 !important;
     position: absolute;
+    right: 0;
+    left: auto !important;
 }
 
 .dropdown {
@@ -258,12 +260,13 @@ td {
 .table th,
 .table td {
     white-space: nowrap;
-    justify-content: center;
+    padding: 0.75rem;
+    vertical-align: middle;
 }
 
 .table th:nth-child(1),
 .table td:nth-child(1) { 
-    min-width: 200px; 
+    min-width: 250px;
     max-width: none;
     width: auto;
     white-space: normal;
@@ -271,33 +274,40 @@ td {
 }
 
 .table th:nth-child(2),
-.table td:nth-child(2) { width: 100px; }
+.table td:nth-child(2) { min-width: 120px; }
 
 .table th:nth-child(3),
-.table td:nth-child(3) { width: 100px; }
+.table td:nth-child(3) { min-width: 100px; }
 
 .table th:nth-child(4),
-.table td:nth-child(4) { width: 120px; }
+.table td:nth-child(4) { min-width: 120px; }
 
 .table th:nth-child(5),
-.table td:nth-child(5) { width: 120px; }
+.table td:nth-child(5) { min-width: 120px; }
 
 .table th:nth-child(6),
-.table td:nth-child(6) { width: 130px; }
+.table td:nth-child(6) { min-width: 130px; }
 
 .table th:nth-child(7),
-.table td:nth-child(7) { width: 200px; }
+.table td:nth-child(7) { 
+    min-width: 200px;
+    white-space: normal;
+    line-height: 1.2;
+}
 
 .table th:nth-child(8),
-.table td:nth-child(8) { width: 180px; }
+.table td:nth-child(8) { min-width: 180px; }
 
 .table th:nth-child(9),
-.table td:nth-child(9) { width: 200px; }
+.table td:nth-child(9) { 
+    min-width: 250px;
+    padding-right: 1rem;
+}
 
 .table td {
-    max-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
 }
 
 .table td:first-child {
@@ -312,11 +322,11 @@ td {
 @media (max-width: 1500px) {
     .table-wrapper {
         max-width: 100%;
-        padding: 0 5px;
+        padding: 0.75rem;
     }
     
     .container {
-        padding: 0 10px;
+        padding: 0 0.75rem;
     }
     
     .table {
