@@ -85,7 +85,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="addCampaignForm" method="POST" action="{{ url_for('campaign.add') }}">
+                <form id="addCampaignForm" method="POST" action="{{ url_for('campaign.add') }}" class="needs-validation" novalidate>
                     <div class="row mb-3">
                         <div class="col-12">
                             <div class="form-check form-switch">
@@ -99,13 +99,16 @@
                         <div class="col-md-6">
                             <label class="form-label">Kod kampanii*</label>
                             <input type="text" class="form-control" name="code" required>
-                            <div class="invalid-feedback" style="display: none;">
-                                Kampania o takim kodzie już istnieje
+                            <div class="invalid-feedback">
+                                Proszę podać kod kampanii.
                             </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Tytuł*</label>
                             <input type="text" class="form-control" name="title" required>
+                            <div class="invalid-feedback">
+                                Proszę podać tytuł kampanii.
+                            </div>
                         </div>
                     </div>
                     
@@ -345,7 +348,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="editCampaignForm" method="POST">
+                <form id="editCampaignForm" method="POST" class="needs-validation" novalidate>
                     <div class="row mb-3">
                         <div class="col-12">
                             <div class="form-check form-switch">

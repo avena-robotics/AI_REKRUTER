@@ -124,6 +124,23 @@ document.addEventListener('DOMContentLoaded', function() {
             resetCodeValidation(form);
         });
     }
+
+    // Add input event listener for code fields
+    ['addCampaignForm', 'editCampaignForm'].forEach(formId => {
+        const form = document.getElementById(formId);
+        if (form) {
+            const codeInput = form.querySelector('[name="code"]');
+            codeInput.addEventListener('input', function() {
+                // Clear custom validity on input change
+                this.setCustomValidity('');
+                this.classList.remove('is-invalid');
+                const feedbackDiv = this.nextElementSibling;
+                if (feedbackDiv) {
+                    feedbackDiv.style.display = 'none';
+                }
+            });
+        }
+    });
 }); 
 
 function editCampaign(campaignId) {
@@ -267,54 +284,7 @@ function handleCampaignFormSubmit(e) {
     e.preventDefault();
     const form = e.target;
     
-    // Reset validation state
-    form.querySelectorAll('[name$="_test_weight"]').forEach(input => {
-        input.classList.remove('is-invalid');
-    });
-    form.querySelector('#weightValidationAlert').classList.add('d-none');
-    
-    // Get test selects and weights
-    const po1Select = form.querySelector('[name="po1_test_id"]');
-    const po2Select = form.querySelector('[name="po2_test_id"]');
-    const po2_5Select = form.querySelector('[name="po2_5_test_id"]');
-    const po3Select = form.querySelector('[name="po3_test_id"]');
-    
-    const po1Weight = form.querySelector('[name="po1_test_weight"]');
-    const po2_5Weight = form.querySelector('[name="po2_5_test_weight"]');
-    const po3Weight = form.querySelector('[name="po3_test_weight"]');
-    
-    // Calculate sum of weights for active tests
-    let sum = 0;
-    let activeTests = 0;
-    
-    if (po1Select.value) {
-        sum += parseInt(po1Weight.value) || 0;
-        activeTests++;
-    }
-    if (po2Select.value) {
-        activeTests++;
-    }
-    if (po2_5Select.value) {
-        sum += parseInt(po2_5Weight.value) || 0;
-        activeTests++;
-    }
-    if (po3Select.value) {
-        sum += parseInt(po3Weight.value) || 0;
-        activeTests++;
-    }
-    
-    // Validate only if there are active tests
-    if (activeTests > 0 && sum !== 100) {
-        [po1Weight, po2_5Weight, po3Weight].forEach(input => {
-            if (input.closest('.d-flex').querySelector('select').value) {
-                input.classList.add('is-invalid');
-            }
-        });
-        form.querySelector('#weightValidationAlert').classList.remove('d-none');
-        showToast('Suma wag dla wybranych testów musi wynosić 100%', 'error');
-        return;
-    }
-    
+    // Get elements
     const formData = new FormData(form);
     const code = formData.get('code');
     const campaignId = form.action.includes('/edit') ? form.action.split('/').slice(-2)[0] : null;
@@ -325,6 +295,14 @@ function handleCampaignFormSubmit(e) {
     const submitButton = form.querySelector('button[type="submit"]');
     const spinner = submitButton.querySelector('.spinner-border');
     const buttonText = submitButton.querySelector('.button-text');
+    
+    // Add validation class only on submit
+    form.classList.add('was-validated');
+    
+    // Check basic form validity first
+    if (!form.checkValidity()) {
+        return;
+    }
     
     // Show loading state
     submitButton.disabled = true;
@@ -345,15 +323,25 @@ function handleCampaignFormSubmit(e) {
     .then(response => response.json())
     .then(data => {
         if (!data.valid) {
+            // Add Bootstrap validation classes for code error
+            codeInput.classList.remove('is-valid');
             codeInput.classList.add('is-invalid');
+            feedbackDiv.classList.remove('valid-feedback');
+            feedbackDiv.classList.add('invalid-feedback');
             feedbackDiv.style.display = 'block';
-            feedbackDiv.textContent = data.error;
+            feedbackDiv.textContent = 'Kampania o takim kodzie już istnieje';
+            
+            // Force invalid state for code input
+            codeInput.setCustomValidity('Kampania o takim kodzie już istnieje');
             
             submitButton.disabled = false;
             spinner.classList.add('d-none');
             buttonText.textContent = campaignId ? 'Zapisz zmiany' : 'Zapisz kampanię';
             
             throw new Error(data.error);
+        } else {
+            // Clear custom validity if code is valid
+            codeInput.setCustomValidity('');
         }
         
         return fetch(form.action, {
@@ -671,15 +659,15 @@ function updateWeightValidation() {
             let sum = 0;
             let activeTests = 0;
             
-            if (po1Select.value) {
+            if (po1Select.value !== "") {
                 sum += parseInt(po1Weight.value) || 0;
                 activeTests++;
             }
-            if (po2_5Select.value) {
+            if (po2_5Select.value !== "") {
                 sum += parseInt(po2_5Weight.value) || 0;
                 activeTests++;
             }
-            if (po3Select.value) {
+            if (po3Select.value !== "") {
                 sum += parseInt(po3Weight.value) || 0;
                 activeTests++;
             }
@@ -701,6 +689,7 @@ function resetCodeValidation(form) {
     const feedbackDiv = codeInput.nextElementSibling;
     
     codeInput.classList.remove('is-invalid');
+    form.classList.remove('was-validated');
     if (feedbackDiv) {
         feedbackDiv.style.display = 'none';
         feedbackDiv.textContent = '';
