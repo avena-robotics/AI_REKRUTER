@@ -241,4 +241,84 @@
     .table-wrapper {
         height: calc(100vh - 250px);
     }
+}
+
+/* AH Points Grid Styling */
+.ah-points-grid {
+    display: grid;
+    grid-template-columns: 60px 1fr 100px;
+    gap: 0;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    background: white;
+}
+
+.ah-points-header {
+    display: contents;
+}
+
+.ah-points-header > div {
+    background: #f8fafc;
+    padding: 0.75rem;
+    font-weight: 600;
+    color: #475569;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.ah-points-row {
+    display: contents;
+}
+
+.ah-points-row > div {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+}
+
+.ah-points-row:last-child > div {
+    border-bottom: none;
+}
+
+.ah-letter-col {
+    justify-content: center;
+    border-right: 1px solid #e5e7eb;
+}
+
+.ah-content-col {
+    border-right: 1px solid #e5e7eb;
+    line-height: 1.4;
+}
+
+.ah-points-col {
+    justify-content: center;
+}
+
+.letter-circle {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(107, 114, 128, 0.1);
+    color: #4b5563;
+    border-radius: 50%;
+    font-weight: 500;
+}
+
+.points-badge {
+    background: #f3f4f6;
+    padding: 0.25rem 1rem;
+    border-radius: 4px;
+    font-weight: 500;
+    color: #1f2937;
+}
+
+/* Add hover effect */
+.ah-points-row:hover > div {
+    background-color: #f8fafc;
 } 
