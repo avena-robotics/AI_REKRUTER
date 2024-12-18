@@ -106,6 +106,21 @@ function initializeEventListeners() {
             editTest(row.dataset.testId);
         }
     });
+
+    // Dodaj obsługę zmiany typu testu dla obu formularzy
+    ['addTestForm', 'editTestForm'].forEach(formId => {
+        const form = document.getElementById(formId);
+        if (form) {
+            const testTypeSelect = form.querySelector('[name="test_type"]');
+            if (testTypeSelect) {
+                testTypeSelect.addEventListener('change', function() {
+                    handleTestTypeChange(this);
+                });
+                // Inicjalizuj stan przy załadowaniu formularza
+                handleTestTypeChange(testTypeSelect);
+            }
+        }
+    });
 }
 
 function updateTable(applyFilters) {
@@ -252,7 +267,9 @@ function resetAddTestForm() {
     form.querySelector('[name="time_limit_minutes"]').value = '';
     
     // Reset test type to first option
-    form.querySelector('[name="test_type"]').selectedIndex = 0;
+    const testTypeSelect = form.querySelector('[name="test_type"]');
+    testTypeSelect.selectedIndex = 0;
+    handleTestTypeChange(testTypeSelect);
     
     // Clear questions container
     const questionsContainer = form.querySelector('.questions-container');
@@ -302,6 +319,10 @@ function editTest(testId) {
             form.querySelector('[name="description"]').value = test.description || '';
             form.querySelector('[name="passing_threshold"]').value = test.passing_threshold || 0;
             form.querySelector('[name="time_limit_minutes"]').value = test.time_limit_minutes !== null ? test.time_limit_minutes : '0';
+
+            // Inicjalizuj stan typu testu
+            const testTypeSelect = form.querySelector('[name="test_type"]');
+            handleTestTypeChange(testTypeSelect);
 
             // Update group checkboxes
             const testGroups = test.groups || [];
@@ -622,9 +643,15 @@ function handleAnswerTypeChange(event) {
     }
     const answerFieldsContainer = questionCard.querySelector('.answer-fields');
     
-    // Get current algorithm type and params
+    // Get current algorithm type and check if it's available for new answer type
     const algorithmTypeSelect = questionCard.querySelector('.algorithm-type-select');
-    const currentAlgorithmType = algorithmTypeSelect ? algorithmTypeSelect.value : 'NO_ALGORITHM';
+    let currentAlgorithmType = algorithmTypeSelect ? algorithmTypeSelect.value : 'NO_ALGORITHM';
+    
+    // Reset to NO_ALGORITHM if current algorithm is not available for new answer type
+    const availableAlgorithms = getAvailableAlgorithms(select.value);
+    if (!availableAlgorithms.includes(currentAlgorithmType)) {
+        currentAlgorithmType = 'NO_ALGORITHM';
+    }
     
     // Get current algorithm params
     const minValueInput = questionCard.querySelector('input[name$="[algorithm_params][min_value]"]');
@@ -641,23 +668,33 @@ function handleAnswerTypeChange(event) {
         correct_answer: correctAnswerInput ? correctAnswerInput.value : ''
     };
 
-    // Create new answer fields HTML
+    // Get question index
     const questionCounter = parseInt(select.name.match(/\[(\d+)\]/)[1]);
+
+    // Create new answer fields HTML with current values
     const answerFieldsHtml = createAnswerFieldsHtml(questionCounter, {
         answer_type: select.value,
         algorithm_type: currentAlgorithmType,
         algorithm_params: currentParams,
-        image: currentImage
+        image: currentImage,
+        points: questionCard.querySelector('input[name$="[points]"]')?.value || 0
     });
     
     // Update the container
     answerFieldsContainer.innerHTML = answerFieldsHtml;
     
-    // Re-initialize algorithm type handler and image previews
+    // Re-initialize algorithm type handler
     const newAlgorithmSelect = answerFieldsContainer.querySelector('.algorithm-type-select');
     if (newAlgorithmSelect) {
         handleAlgorithmTypeChange(newAlgorithmSelect);
     }
+
+    // Re-initialize any new answer type selects
+    const answerTypeSelect = answerFieldsContainer.querySelector('[name$="[answer_type]"]');
+    if (answerTypeSelect) {
+        answerTypeSelect.value = select.value;
+    }
+
     initializeImagePreviews();
 }
 
@@ -1161,7 +1198,8 @@ function createAnswerFieldsHtml(questionCounter, question) {
         </div>
     `;
 
-    const pointsHtml = `
+    // Points HTML - hide for AH_POINTS
+    const pointsHtml = answerType !== 'AH_POINTS' ? `
         <div class="row mb-3">
             <div class="col-md-6">
                 <label class="form-label">Maksymalna liczba punktów za</label>
@@ -1170,13 +1208,13 @@ function createAnswerFieldsHtml(questionCounter, question) {
                     value="${q.points || 0}" min="0">
             </div>
         </div>
-    `;
+    ` : '';
 
     // Common answer type selection HTML
     const answerTypeHtml = `
         <div class="col-md-6">
             <label class="form-label">Typ odpowiedzi</label>
-            <select class="form-select" name="questions[${questionCounter}][answer_type]" onchange="handleAnswerTypeChange(this)">
+            <select class="form-select" name="questions[${questionCounter}][answer_type]" onchange="handleAnswerTypeChange(event)">
                 <option value="TEXT" ${answerType === 'TEXT' ? 'selected' : ''}>Tekst</option>
                 <option value="BOOLEAN" ${answerType === 'BOOLEAN' ? 'selected' : ''}>Tak/Nie</option>
                 <option value="SCALE" ${answerType === 'SCALE' ? 'selected' : ''}>Skala (0-5)</option>
@@ -1189,27 +1227,31 @@ function createAnswerFieldsHtml(questionCounter, question) {
         </div>
     `;
 
-    // Common algorithm selection HTML
-    const algorithmSelectionHtml = `
+    // Algorithm selection HTML - hide for AH_POINTS and show only available algorithms
+    const algorithmSelectionHtml = answerType !== 'AH_POINTS' ? `
         <div class="col-md-6">
             <label class="form-label">Algorytm punktacji</label>
             <select class="form-select algorithm-type-select" 
                     name="questions[${questionCounter}][algorithm_type]"
                     onchange="handleAlgorithmTypeChange(this)">
-                <option value="NO_ALGORITHM" ${algorithmType === 'NO_ALGORITHM' ? 'selected' : ''}>Brak algorytmu</option>
-                <option value="EXACT_MATCH" ${algorithmType === 'EXACT_MATCH' ? 'selected' : ''}>Dokładne dopasowanie</option>
-                <option value="RANGE" ${algorithmType === 'RANGE' ? 'selected' : ''}>Przedział</option>
-                <option value="LEFT_SIDED" ${algorithmType === 'LEFT_SIDED' ? 'selected' : ''}>Lewostronny</option>
-                <option value="RIGHT_SIDED" ${algorithmType === 'RIGHT_SIDED' ? 'selected' : ''}>Prawostronny</option>
-                <option value="CENTER" ${algorithmType === 'CENTER' ? 'selected' : ''}>Środkowy</option>
-                <option value="EVALUATION_BY_AI" ${algorithmType === 'EVALUATION_BY_AI' ? 'selected' : ''}>Ocena przez AI</option>
+                ${getAvailableAlgorithms(answerType).map(alg => `
+                    <option value="${alg}" ${algorithmType === alg ? 'selected' : ''}>
+                        ${alg === 'NO_ALGORITHM' ? 'Brak algorytmu' :
+                          alg === 'EXACT_MATCH' ? 'Dokładne dopasowanie' :
+                          alg === 'RANGE' ? 'Przedział' :
+                          alg === 'LEFT_SIDED' ? 'Lewostronny' :
+                          alg === 'RIGHT_SIDED' ? 'Prawostronny' :
+                          alg === 'CENTER' ? 'Środkowy' :
+                          alg === 'EVALUATION_BY_AI' ? 'Ocena przez AI' : alg}
+                    </option>
+                `).join('')}
             </select>
             <small class="text-muted">${getAlgorithmDescription(algorithmType)}</small>
         </div>
-    `;
+    ` : '';
 
-    // Algorithm parameters HTML
-    const algorithmParamsHtml = `
+    // Algorithm parameters HTML - hide for AH_POINTS
+    const algorithmParamsHtml = answerType !== 'AH_POINTS' ? `
         <div class="col-12 mt-2 algorithm-params" style="display: ${algorithmType === 'NO_ALGORITHM' ? 'none' : 'block'}">
             <div class="row">
                 <div class="col-md-4 min-value-container" style="display: ${['RANGE', 'LEFT_SIDED', 'CENTER'].includes(algorithmType) ? 'block' : 'none'}">
@@ -1226,7 +1268,7 @@ function createAnswerFieldsHtml(questionCounter, question) {
                 </div>
             </div>
         </div>
-    `;
+    ` : '';
 
     // Add answer type specific HTML
     let answerTypeSpecificHtml = '';
@@ -1283,36 +1325,36 @@ function getCorrectAnswerInput(answerType, questionCounter, value) {
                 <div class="form-check">
                     <input type="radio" class="form-check-input" 
                            name="questions[${questionCounter}][algorithm_params][correct_answer]" 
-                           value="true" ${value === true ? 'checked' : ''}>
+                           value="true" ${value === 'true' ? 'checked' : ''}>
                     <label class="form-check-label">Prawda</label>
                 </div>
                 <div class="form-check">
                     <input type="radio" class="form-check-input" 
                            name="questions[${questionCounter}][algorithm_params][correct_answer]" 
-                           value="false" ${value === false ? 'checked' : ''}>
+                           value="false" ${value === 'false' ? 'checked' : ''}>
                     <label class="form-check-label">Fałsz</label>
                 </div>`;
         
         case 'SCALE':
-            return `<input type="number" class="form-control" 
+            return `<input type="range" class="form-control" 
                            name="questions[${questionCounter}][algorithm_params][correct_answer]"
-                           min="0" max="5" 
-                           value="${value || ''}">`;
+                           min="0" max="5" step="1"
+                           value="${value || '0'}">`;
         
         case 'SALARY':
             return `<input type="number" class="form-control" 
                            name="questions[${questionCounter}][algorithm_params][correct_answer]"
-                           min="0" step="1" 
-                           value="${value !== null ? value : ''}">`;
+                           min="0" step="1000" 
+                           value="${value || ''}">`;
 
         case 'NUMERIC':
             return `<input type="number" class="form-control" 
                            name="questions[${questionCounter}][algorithm_params][correct_answer]"
                            step="1" 
-                           value="${value !== null ? value : ''}">`;
+                           value="${value || ''}">`;
         
         case 'DATE':
-            return `<input type="date" class="form-control date-picker-input" 
+            return `<input type="date" class="form-control" 
                            name="questions[${questionCounter}][algorithm_params][correct_answer]"
                            value="${value || ''}"
                            onclick="showDatePicker(this)">`;
@@ -1321,12 +1363,12 @@ function getCorrectAnswerInput(answerType, questionCounter, value) {
             return `<select class="form-select" 
                             name="questions[${questionCounter}][algorithm_params][correct_answer]">
                         <option value="" ${!value ? 'selected' : ''}>Wybierz odpowiedź</option>
-                        <option value="A" ${value && value.toUpperCase() === 'A' ? 'selected' : ''}>A</option>
-                        <option value="B" ${value && value.toUpperCase() === 'B' ? 'selected' : ''}>B</option>
-                        <option value="C" ${value && value.toUpperCase() === 'C' ? 'selected' : ''}>C</option>
-                        <option value="D" ${value && value.toUpperCase() === 'D' ? 'selected' : ''}>D</option>
-                        <option value="E" ${value && value.toUpperCase() === 'E' ? 'selected' : ''}>E</option>
-                        <option value="F" ${value && value.toUpperCase() === 'F' ? 'selected' : ''}>F</option>
+                        <option value="A" ${value === 'A' ? 'selected' : ''}>A</option>
+                        <option value="B" ${value === 'B' ? 'selected' : ''}>B</option>
+                        <option value="C" ${value === 'C' ? 'selected' : ''}>C</option>
+                        <option value="D" ${value === 'D' ? 'selected' : ''}>D</option>
+                        <option value="E" ${value === 'E' ? 'selected' : ''}>E</option>
+                        <option value="F" ${value === 'F' ? 'selected' : ''}>F</option>
                     </select>`;
         
         default:
@@ -1568,5 +1610,41 @@ function getAlgorithmDescription(algorithmType) {
         'EVALUATION_BY_AI': 'Ocena przez sztuczną inteligencję na podstawie zdefiniowanych kryteriów.'
     };
     return descriptions[algorithmType] || '';
+}
+
+// Dodaj nową funkcję do określania dostępnych algorytmów
+function getAvailableAlgorithms(answerType) {
+    const commonAlgorithms = ['NO_ALGORITHM'];
+    
+    switch (answerType) {
+        case 'TEXT':
+            return [...commonAlgorithms, 'EXACT_MATCH', 'EVALUATION_BY_AI'];
+        case 'BOOLEAN':
+            return [...commonAlgorithms, 'EXACT_MATCH'];
+        case 'SCALE':
+        case 'NUMERIC':
+        case 'SALARY':
+            return [...commonAlgorithms, 'RANGE', 'LEFT_SIDED', 'RIGHT_SIDED', 'CENTER'];
+        case 'DATE':
+            return [...commonAlgorithms, 'EXACT_MATCH', 'RANGE', 'LEFT_SIDED', 'RIGHT_SIDED'];
+        case 'ABCDEF':
+            return [...commonAlgorithms, 'EXACT_MATCH'];
+        default:
+            return commonAlgorithms;
+    }
+}
+
+// Dodaj tę funkcję na początku pliku
+function handleTestTypeChange(select) {
+    const form = select.closest('form');
+    const thresholdContainer = form.querySelector('[name="passing_threshold"]').closest('.col-md-12');
+    
+    if (select.value === 'EQ') {
+        thresholdContainer.style.display = 'none';
+        // Ustaw wartość na 0 gdy ukrywamy
+        thresholdContainer.querySelector('input').value = '0';
+    } else {
+        thresholdContainer.style.display = 'block';
+    }
 }
  
