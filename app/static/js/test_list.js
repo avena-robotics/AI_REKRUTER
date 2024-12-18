@@ -1336,10 +1336,24 @@ function getCorrectAnswerInput(answerType, questionCounter, value) {
                 </div>`;
         
         case 'SCALE':
-            return `<input type="range" class="form-control" 
+            return `
+                <div class="scale-input-container">
+                    <div class="scale-value-display" id="scaleValue_${questionCounter}">
+                        Wybrana wartość: <span>${value || '0'}</span>
+                    </div>
+                    <input type="range" 
+                           class="form-range" 
                            name="questions[${questionCounter}][algorithm_params][correct_answer]"
-                           min="0" max="5" step="1"
-                           value="${value || '0'}">`;
+                           min="0" 
+                           max="5" 
+                           step="1"
+                           value="${value || '0'}"
+                           oninput="updateScaleValue(this, ${questionCounter})">
+                    <div class="scale-labels">
+                        <span class="scale-min">0 (Min)</span>
+                        <span class="scale-max">5 (Max)</span>
+                    </div>
+                </div>`;
         
         case 'SALARY':
             return `<input type="number" class="form-control" 

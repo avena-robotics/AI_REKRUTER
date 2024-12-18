@@ -625,3 +625,115 @@ td {
     background-color: #f3f4f6;
     color: #111827;
 }
+
+/* Update badge styling for groups column */
+.table td .badge {
+    margin: 0.25rem 0.25rem;  /* Add margin around badges */
+    padding: 0.35rem 0.65rem;  /* Keep existing padding or adjust if needed */
+    display: inline-block;     /* Ensure margins work properly */
+}
+
+/* Specific styling for group column to handle multiple badges */
+.table td:nth-child(7) {  /* Column for 'Grupy' */
+    padding: 0.5rem 0.75rem;  /* Adjust cell padding to accommodate badge margins */
+    line-height: 1.8;         /* Give more vertical space between lines */
+}
+
+/* Scale input styling */
+.scale-input-container {
+    padding: 1rem 0.5rem;
+    position: relative;
+}
+
+.scale-value-display {
+    text-align: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: #475569;
+}
+
+.scale-value-display span {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.scale-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+    padding: 0 0.25rem;
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+/* Custom range input styling */
+.form-range {
+    height: 1.5rem;
+    padding: 0;
+    background: transparent;
+    appearance: none;
+    width: 100%;
+}
+
+.form-range::-webkit-slider-thumb {
+    appearance: none;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 50%;
+    background: #3b82f6;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    cursor: pointer;
+    margin-top: -0.5rem;
+    transition: all 0.2s ease;
+}
+
+.form-range::-webkit-slider-thumb:hover {
+    background: #2563eb;
+    transform: scale(1.1);
+}
+
+.form-range::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 0.25rem;
+    background: #e5e7eb;
+    border-radius: 0.25rem;
+    cursor: pointer;
+}
+
+.form-range:focus {
+    outline: none;
+}
+
+.form-range:focus::-webkit-slider-thumb {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+/* Firefox styles */
+.form-range::-moz-range-thumb {
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 50%;
+    background: #3b82f6;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.form-range::-moz-range-thumb:hover {
+    background: #2563eb;
+    transform: scale(1.1);
+}
+
+.form-range::-moz-range-track {
+    width: 100%;
+    height: 0.25rem;
+    background: #e5e7eb;
+    border-radius: 0.25rem;
+    cursor: pointer;
+}
+
+.form-range:focus::-moz-range-thumb {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
