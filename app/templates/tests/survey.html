@@ -172,7 +172,7 @@
             </div>
 
             <!-- Candidate Form -->
-            <form id="testForm" method="POST" action="{{ url_for('test_public.submit_candidate_test', token=token) if candidate else url_for('test_public.submit_test', token=token) }}">
+            <form id="testForm" class="needs-validation" novalidate method="POST" action="{{ url_for('test_public.submit_candidate_test', token=token) if candidate else url_for('test_public.submit_test', token=token) }}">
                 <input type="hidden" name="test_start_time" id="testStartTime">
                 <!-- Personal Information Section -->
                 {% if not candidate %}
@@ -184,11 +184,25 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="first_name" class="form-label">Imię*</label>
-                                <input type="text" class="form-control" id="first_name" name="first_name" required>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="first_name" 
+                                       name="first_name" 
+                                       required>
+                                <div class="invalid-feedback">
+                                    Proszę podać imię.
+                                </div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="last_name" class="form-label">Nazwisko*</label>
-                                <input type="text" class="form-control" id="last_name" name="last_name" required>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="last_name" 
+                                       name="last_name" 
+                                       required>
+                                <div class="invalid-feedback">
+                                    Proszę podać nazwisko.
+                                </div>
                             </div>
                         </div>
                         <div class="row">
@@ -199,16 +213,22 @@
                                        id="email" 
                                        name="email" 
                                        required 
-                                       pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
-                                       oninvalid="this.setCustomValidity('Proszę podać prawidłowy adres email')"
-                                       oninput="this.setCustomValidity('')">
+                                       pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$">
                                 <div class="invalid-feedback">
-                                    Proszę podać prawidłowy adres email
+                                    Proszę podać prawidłowy adres email.
                                 </div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="phone" class="form-label">Telefon*</label>
-                                <input type="tel" class="form-control" id="phone" name="phone" required>
+                                <input type="tel" 
+                                       class="form-control" 
+                                       id="phone" 
+                                       name="phone" 
+                                       required
+                                       pattern="[0-9]{9}">
+                                <div class="invalid-feedback">
+                                    Proszę podać prawidłowy numer telefonu (9 cyfr).
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -232,26 +252,52 @@
 
                         {% if question.answer_type == 'TEXT' %}
                         <div class="form-group">
-                            <textarea class="form-control" name="answer_{{ question.id }}" rows="3"
-                                    {% if question.is_required %}required{% endif %}></textarea>
+                            <textarea class="form-control" 
+                                      name="answer_{{ question.id }}" 
+                                      rows="3"
+                                      {% if question.is_required %}required{% endif %}></textarea>
+                            <div class="invalid-feedback">
+                                To pole jest wymagane.
+                            </div>
                         </div>
 
                         {% elif question.answer_type == 'BOOLEAN' %}
-                        <div class="form-check">
-                            <input type="radio" class="form-check-input" name="answer_{{ question.id }}" value="true" 
-                                   id="answer_{{ question.id }}_true" {% if question.is_required %}required{% endif %}>
-                            <label class="form-check-label" for="answer_{{ question.id }}_true">Tak</label>
-                        </div>
-                        <div class="form-check">
-                            <input type="radio" class="form-check-input" name="answer_{{ question.id }}" value="false" 
-                                   id="answer_{{ question.id }}_false" {% if question.is_required %}required{% endif %}>
-                            <label class="form-check-label" for="answer_{{ question.id }}_false">Nie</label>
+                        <div class="form-group">
+                            <div class="form-check">
+                                <input type="radio" 
+                                       class="form-check-input" 
+                                       name="answer_{{ question.id }}" 
+                                       value="true" 
+                                       id="answer_{{ question.id }}_true" 
+                                       {% if question.is_required %}required{% endif %}>
+                                <label class="form-check-label" for="answer_{{ question.id }}_true">Tak</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="radio" 
+                                       class="form-check-input" 
+                                       name="answer_{{ question.id }}" 
+                                       value="false" 
+                                       id="answer_{{ question.id }}_false" 
+                                       {% if question.is_required %}required{% endif %}>
+                                <label class="form-check-label" for="answer_{{ question.id }}_false">Nie</label>
+                            </div>
+                            <div class="invalid-feedback">
+                                Proszę wybrać jedną z opcji.
+                            </div>
                         </div>
 
                         {% elif question.answer_type == 'SCALE' %}
                         <div class="range-container">
-                            <input type="range" class="form-range" name="answer_{{ question.id }}" 
-                                   min="0" max="5" step="1" {% if question.is_required %}required{% endif %}>
+                            <input type="range" 
+                                   class="form-range" 
+                                   name="answer_{{ question.id }}" 
+                                   min="0" 
+                                   max="5" 
+                                   step="1" 
+                                   {% if question.is_required %}required{% endif %}>
+                            <div class="invalid-feedback">
+                                Proszę wybrać wartość.
+                            </div>
                             <div class="range-labels">
                                 <span>0</span>
                                 <span>1</span>
@@ -271,6 +317,9 @@
                                    min="0" 
                                    step="1"
                                    {% if question.is_required %}required{% endif %}>
+                            <div class="invalid-feedback">
+                                Proszę podać kwotę wynagrodzenia.
+                            </div>
                         </div>
 
                         {% elif question.answer_type == 'NUMERIC' %}
@@ -280,24 +329,30 @@
                                    name="answer_{{ question.id }}"
                                    step="1"
                                    {% if question.is_required %}required{% endif %}>
+                            <div class="invalid-feedback">
+                                Proszę podać wartość liczbową.
+                            </div>
                         </div>
 
                         {% elif question.answer_type == 'DATE' %}
                         <div class="form-group">
-                            <div class="date-input-container" style="cursor: pointer;" onclick="document.getElementById('date_{{ question.id }}').showPicker()">
+                            <div class="date-input-container">
                                 <input type="date" 
                                        class="form-control" 
                                        name="answer_{{ question.id }}"
                                        id="date_{{ question.id }}"
                                        {% if question.is_required %}required{% endif %}
                                        style="cursor: pointer;">
+                                <div class="invalid-feedback">
+                                    Proszę wybrać datę.
+                                </div>
                             </div>
                         </div>
 
                         {% elif question.answer_type == 'ABCDEF' %}
                         <div class="list-group">
                             {% for letter in ['A', 'B', 'C', 'D', 'E', 'F'] %}
-                            <label class="list-group-item" style="cursor: pointer;">
+                            <label class="list-group-item">
                                 <input type="radio" 
                                        name="answer_{{ question.id }}" 
                                        value="{{ letter }}" 
@@ -306,6 +361,9 @@
                                 <span class="ms-2">{{ letter }}</span>
                             </label>
                             {% endfor %}
+                            <div class="invalid-feedback">
+                                Proszę wybrać jedną z opcji.
+                            </div>
                         </div>
                         {% endif %}
                     </div>
@@ -425,41 +483,18 @@
                 e.preventDefault();
                 
                 const form = this;
+                
+                // Check form validity first
+                if (!form.checkValidity()) {
+                    e.stopPropagation();
+                    form.classList.add('was-validated');
+                    return; // Stop here if form is invalid
+                }
+                
                 const submitButton = form.querySelector('button[type="submit"]');
                 const spinner = submitButton.querySelector('.spinner-border');
                 const buttonText = submitButton.querySelector('.button-text');
                 
-                // Validate AH_POINTS questions
-                const ahPointsQuestions = document.querySelectorAll('.ah-points-container');
-                let isValid = true;
-
-                document.querySelectorAll('.points-error').forEach(error => {
-                    error.style.display = 'none';
-                });
-                document.querySelectorAll('.ah-points-container').forEach(container => {
-                    container.classList.remove('error-container');
-                });
-
-                ahPointsQuestions.forEach(container => {
-                    const questionId = container.querySelector('input').dataset.question;
-                    const inputs = container.querySelectorAll('input');
-                    let total = 0;
-                    
-                    inputs.forEach(input => {
-                        total += parseInt(input.value) || 0;
-                    });
-
-                    if (total !== 10) {
-                        isValid = false;
-                        container.querySelector('.points-error').style.display = 'block';
-                        container.classList.add('error-container');
-                    }
-                });
-
-                if (!isValid) {
-                    return;
-                }
-
                 // Show loading state
                 submitButton.disabled = true;
                 spinner.classList.remove('d-none');
@@ -491,18 +526,6 @@
                 document.getElementById('testStartTime').value = startTime;
             }
 
-            // Enable Bootstrap form validation
-            const form = document.getElementById('testForm');
-            
-            form.addEventListener('submit', function(event) {
-                if (!form.checkValidity()) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-                
-                form.classList.add('was-validated');
-            });
-
             // Custom email validation
             const emailInput = document.getElementById('email');
             if (emailInput) {
@@ -519,6 +542,20 @@
                     }
                 });
             }
+
+            // Fetch all forms that need validation
+            const forms = document.querySelectorAll('.needs-validation');
+
+            // Loop over them and prevent submission
+            Array.prototype.slice.call(forms).forEach(function(form) {
+                form.addEventListener('submit', function(event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
         });
     </script>
 
