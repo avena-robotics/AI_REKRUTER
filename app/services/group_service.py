@@ -1,5 +1,5 @@
 from database import supabase
-from logger import Logger
+from common.logger import Logger
 from typing import List, Dict
 
 logger = Logger.instance()

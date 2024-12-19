@@ -1,5 +1,5 @@
 from supabase import create_client
-from config import Config
+from common.config import Config
 
 config = Config.instance()
 

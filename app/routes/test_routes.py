@@ -3,8 +3,7 @@ from flask import Blueprint, render_template, request, jsonify, session
 from routes.auth_routes import login_required
 from services.test_service import TestService, TestException
 from services.group_service import get_user_groups
-from logger import Logger 
-import time
+from common.logger import Logger 
 from database import supabase
 
 test_bp = Blueprint("test", __name__, url_prefix="/tests")

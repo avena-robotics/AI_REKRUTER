@@ -1,11 +1,11 @@
 from database import supabase
-from logger import Logger
+from common.logger import Logger
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional, Tuple, Union
 from zoneinfo import ZoneInfo
 import secrets
-from config import Config
-from services.email_service import EmailService
+from common.config import Config
+from common.email_service import EmailService
 
 logger = Logger.instance()
 

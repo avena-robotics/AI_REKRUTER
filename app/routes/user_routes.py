@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify
 from database import supabase
-from logger import Logger
+from common.logger import Logger
 from services.user_service import UserService
 
 user_bp = Blueprint('user', __name__, url_prefix='/users')

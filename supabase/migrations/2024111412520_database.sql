@@ -20,7 +20,6 @@ DROP TYPE IF EXISTS algorithm_type CASCADE;
 DROP FUNCTION IF EXISTS get_campaigns_with_groups(bigint[]);
 DROP FUNCTION IF EXISTS get_campaigns_count(bigint[]);
 DROP FUNCTION IF EXISTS get_group_tests(bigint[]);
-DROP FUNCTION IF EXISTS get_single_campaign_data(bigint);
 DROP FUNCTION IF EXISTS get_candidate_with_tests(bigint);
 
 -- Create types first
@@ -329,120 +328,6 @@ BEGIN
     LEFT JOIN tests t2_5 ON cg.po2_5_test_id = t2_5.id
     LEFT JOIN tests t3 ON cg.po3_test_id = t3.id
     ORDER BY cg.created_at DESC;
-END;
-$$;
-
--- Drop and recreate get_single_campaign_data function with new columns
-CREATE OR REPLACE FUNCTION get_single_campaign_data(
-    p_campaign_id bigint
-) RETURNS TABLE (
-    id bigint,
-    code text,
-    title text,
-    workplace_location text,
-    contract_type text,
-    employment_type text,
-    work_start_date date,
-    duties text,
-    requirements text,
-    employer_offerings text,
-    job_description text,
-    salary_range_min integer,
-    salary_range_max integer,
-    is_active boolean,
-    universal_access_token text,
-    po1_test_id integer,
-    po2_test_id integer,
-    po2_5_test_id integer,
-    po3_test_id integer,
-    po1_test_weight integer,
-    po2_test_weight integer,
-    po2_5_test_weight integer,
-    po3_test_weight integer,
-    po1_token_expiry_days integer,
-    po2_token_expiry_days integer,
-    po3_token_expiry_days integer,
-    created_at timestamp with time zone,
-    updated_at timestamp with time zone,
-    groups jsonb,
-    po1_test jsonb,
-    po2_test jsonb,
-    po2_5_test jsonb,
-    po3_test jsonb
-) LANGUAGE plpgsql AS $$
-BEGIN
-    RETURN QUERY
-    WITH campaign_groups AS (
-        SELECT 
-            c.*,
-            jsonb_agg(
-                jsonb_build_object(
-                    'id', g.id,
-                    'name', g.name
-                )
-            ) FILTER (WHERE g.id IS NOT NULL) AS groups
-        FROM campaigns c
-        LEFT JOIN link_groups_campaigns lgc ON c.id = lgc.campaign_id
-        LEFT JOIN groups g ON lgc.group_id = g.id
-        WHERE c.id = p_campaign_id
-        GROUP BY c.id
-    )
-    SELECT 
-        cg.id,
-        cg.code,
-        cg.title,
-        cg.workplace_location,
-        cg.contract_type,
-        cg.employment_type,
-        cg.work_start_date,
-        cg.duties,
-        cg.requirements,
-        cg.employer_offerings,
-        cg.job_description,
-        cg.salary_range_min,
-        cg.salary_range_max,
-        cg.is_active,
-        cg.universal_access_token,
-        cg.po1_test_id,
-        cg.po2_test_id,
-        cg.po2_5_test_id,
-        cg.po3_test_id,
-        cg.po1_test_weight,
-        cg.po2_test_weight,
-        cg.po2_5_test_weight,
-        cg.po3_test_weight,
-        cg.po1_token_expiry_days,
-        cg.po2_token_expiry_days,
-        cg.po3_token_expiry_days,
-        cg.created_at,
-        cg.updated_at,
-        cg.groups,
-        jsonb_build_object(
-            'test_type', t1.test_type,
-            'title', t1.title,
-            'description', t1.description
-        ) AS po1_test,
-        jsonb_build_object(
-            'test_type', t2.test_type,
-            'title', t2.title,
-            'description', t2.description
-        ) AS po2_test,
-        jsonb_build_object(
-            'test_type', t2_5.test_type,
-            'title', t2_5.title,
-            'description', t2_5.description
-        ) AS po2_5_test,
-        jsonb_build_object(
-            'test_type', t3.test_type,
-            'title', t3.title,
-            'description', t3.description
-        ) AS po3_test
-    FROM campaign_groups cg
-    LEFT JOIN tests t1 ON cg.po1_test_id = t1.id
-    LEFT JOIN tests t2 ON cg.po2_test_id = t2.id
-    LEFT JOIN tests t2_5 ON cg.po2_5_test_id = t2_5.id
-    LEFT JOIN tests t3 ON cg.po3_test_id = t3.id
-    WHERE cg.id = p_campaign_id;
 END;
 $$;
 

@@ -54,7 +54,6 @@ class Config:
         # Logging Configuration
         self.LOG_DIR = os.getenv('LOG_DIR')
         self.LOG_RETENTION_DAYS = int(os.getenv('LOG_RETENTION_DAYS'))
-        self.LOG_FILE = "log_flask.log"
         
         # Debug Mode
         self.DEBUG_MODE = os.getenv('FLASK_DEBUG', 'True').lower() == 'true'
@@ -83,7 +82,6 @@ class Config:
         logging.debug(f"SENDER_EMAIL: {self.SENDER_EMAIL}")
         logging.debug(f"BASE_URL: {self.BASE_URL}")
         logging.debug(f"LOG_DIR: {self.LOG_DIR}")
-        logging.debug(f"LOG_FILE: {self.LOG_FILE}")
         logging.debug(f"LOG_RETENTION_DAYS: {self.LOG_RETENTION_DAYS}")
         logging.debug(f"DEBUG_MODE: {self.DEBUG_MODE}")
         logging.debug(f"OPENAI_API_KEY: {'*' * 8 if self.OPENAI_API_KEY else None}")
@@ -109,7 +107,6 @@ class Config:
             self.PERMANENT_SESSION_LIFETIME,
             self.LOG_DIR,
             self.LOG_RETENTION_DAYS,
-            self.LOG_FILE,
             self.DEBUG_MODE,
             self.OPENAI_API_KEY
         ]

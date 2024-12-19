@@ -1,5 +1,5 @@
 from database import supabase
-from logger import Logger
+from common.logger import Logger
 from typing import Dict, List, Optional, Union
 from datetime import datetime, timezone
 import json

@@ -6,22 +6,22 @@ from supabase import create_client
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from config import Config
-from services.email_service import EmailService
+from common.config import Config
+from common.email_service import EmailService
 from services.test_service import TestService
 from services.candidate_service import CandidateService
-from services.openai_service import OpenAIService
+from common.openai_service import OpenAIService
 
-from logger import Logger
+from common.logger import Logger
 
 def main():
     """Główna funkcja skryptu sprawdzająca i aktualizująca statusy kandydatów"""
     try:
         # Initialize configuration
-        config = Config()
+        config = Config.instance()
     
         # Initialize logger singleton
-        logger = Logger.instance(config)
+        logger = Logger.instance(config, logFile='cron_app.log')
         logger.info("====== Starting new candidate check session ======")
         
         # Clean up old logs

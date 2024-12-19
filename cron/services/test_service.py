@@ -1,9 +1,8 @@
-from logger import Logger
 from typing import Optional
 from supabase import Client
-from datetime import datetime, timedelta
-from datetime import timezone
-from services.openai_service import OpenAIService
+from datetime import datetime, timezone
+from common.logger import Logger
+from common.openai_service import OpenAIService
 
 class TestService:
     """Serwis do obliczania wyników testów kandydatów"""

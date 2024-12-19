@@ -4,7 +4,7 @@ from routes.auth_routes import login_required
 from services.group_service import get_user_groups
 from services.campaign_service import CampaignService, CampaignException
 from services.test_service import TestService, TestException
-from logger import Logger
+from common.logger import Logger
 
 campaign_bp = Blueprint('campaign', __name__, url_prefix='/campaigns')
 logger = Logger.instance()

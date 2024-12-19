@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for
-from logger import Logger
+from common.logger import Logger
 from services.test_public_service import TestPublicService, TestPublicException
 from database import supabase
 from datetime import datetime, timezone

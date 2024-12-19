@@ -1,5 +1,12 @@
+import sys
+import os
+
+# Add the cron directory to Python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from flask import Flask, render_template, session
-from config import Config
+from common.config import Config
 from routes.main_routes import main_bp
 from routes.campaign_routes import campaign_bp
 from routes.candidate_routes import candidate_bp
@@ -9,7 +16,9 @@ from routes.auth_routes import auth_bp
 from routes.user_routes import user_bp
 from filters import format_datetime
 from services.group_service import get_user_groups
-from logger import Logger
+from common.logger import Logger
+
+
 
 APP_VERSION = "1.0.5"  # Define version as a constant
 
@@ -20,7 +29,7 @@ def create_app():
     app.config.from_object(config)
     
     # Initialize logger
-    logger = Logger.instance(config)
+    logger = Logger.instance(config, logFile='flask_app.log')
     
     # Set debug mode from environment variable
     app.debug = config.DEBUG_MODE

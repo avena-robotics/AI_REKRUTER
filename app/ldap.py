@@ -1,8 +1,8 @@
 from ldap3 import Server, Connection, ALL, SUBTREE
 import ldap3
-from config import Config
+from common.config import Config
 from contextlib import contextmanager
-from logger import Logger
+from common.logger import Logger
 
 logger = Logger.instance()
 config = Config.instance()

@@ -3,7 +3,7 @@ from flask import Blueprint, render_template, request, jsonify, current_app
 from routes.auth_routes import login_required
 from services.candidate_service import CandidateService, CandidateException
 from services.campaign_service import CampaignService, CampaignException
-from logger import Logger
+from common.logger import Logger
 
 candidate_bp = Blueprint("candidate", __name__, url_prefix="/candidates")
 logger = Logger.instance()

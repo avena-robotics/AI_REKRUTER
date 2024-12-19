@@ -1,5 +1,6 @@
+import json
 from database import supabase
-from logger import Logger
+from common.logger import Logger
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple, Union
 import secrets
@@ -90,18 +91,17 @@ class CampaignService:
             Optional[Dict]: Dane kampanii lub None jeśli nie znaleziono
         """
         try:
-            campaign_response = supabase.rpc('get_single_campaign_data', {
-                'p_campaign_id': campaign_id
-            }).execute()
+            response = (
+                supabase.from_('campaigns')
+                .select('*, link_groups_campaigns(groups(id, name)), po1_test:tests!po1_test_id (test_type, title, description), po2_test:tests!po2_test_id (test_type, title, description), po2_5_test:tests!po2_5_test_id (test_type, title, description), po3_test:tests!po3_test_id (test_type, title, description)')
+                .eq('id', campaign_id)
+                .execute()
+            )
+
+            logger.debug(f"Pobieranie danych kampanii o ID {campaign_id}: {json.dumps(response.data, indent=4)}")
+            campaign = response.data[0]
+            campaign['groups'] = [group['groups'] for group in campaign['link_groups_campaigns']]
             
-            if not campaign_response.data:
-                logger.warning(f"Nie znaleziono kampanii o ID {campaign_id}")
-                raise CampaignException(
-                    message="Nie znaleziono kampanii.",
-                    original_error=e
-                )
-                
-            campaign = campaign_response.data[0]
             return campaign
             
         except Exception as e:
