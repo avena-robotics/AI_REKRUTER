@@ -140,7 +140,7 @@ class CandidateService:
                         
                     if test_response.data:
                         passing_threshold = test_response.data['passing_threshold']
-                        if result < passing_threshold and candidate.get('recruitment_status') == 'PO2_5':
+                        if result < passing_threshold and (candidate.get('recruitment_status') == 'PO2' or candidate.get('recruitment_status') == 'PO2_5'):
                             updates['recruitment_status'] = 'REJECTED'
                             self.logger.info(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO2_5")
                         elif result >= passing_threshold and (candidate.get('recruitment_status') == 'PO2' or candidate.get('recruitment_status') == 'PO2_5'):
