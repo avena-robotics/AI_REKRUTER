@@ -1358,7 +1358,7 @@ function getCorrectAnswerInput(answerType, questionCounter, value) {
         case 'SALARY':
             return `<input type="number" class="form-control" 
                            name="questions[${questionCounter}][algorithm_params][correct_answer]"
-                           min="0" step="1000" 
+                           min="0" step="1" 
                            value="${value || ''}">`;
 
         case 'NUMERIC':
