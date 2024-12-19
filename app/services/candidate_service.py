@@ -4,6 +4,8 @@ from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional, Tuple, Union
 from zoneinfo import ZoneInfo
 import secrets
+from config import Config
+from services.email_service import EmailService
 
 logger = Logger.instance()
 
@@ -381,31 +383,39 @@ class CandidateService:
             CandidateException: Gdy wystąpi błąd podczas wysyłania emaila
         """
         try:
-            from email.mime.multipart import MIMEMultipart
-            from email.mime.text import MIMEText
-            import smtplib
+            # Create EmailService instance
+            config = Config.instance()
+            email_service = EmailService(config)
             
+            # Format expiry date
             formatted_expiry = token_expiry.astimezone(ZoneInfo("Europe/Warsaw")).strftime("%Y-%m-%d %H:%M")
-            test_url = f"{smtp_config['host_url'].rstrip('/')}/test/candidate/{token}"
             
-            msg = MIMEMultipart()
-            msg["From"] = smtp_config["sender_email"]
-            msg["To"] = candidate_data["email"]
-            msg["Subject"] = f"Dostęp do etapu {next_status}"
+            # Generate test URL
+            test_url = f"{config.BASE_URL.rstrip('/')}/test/candidate/{token}"
             
-            email_body = (
-                f"Gratulacje! Pomyślnie ukończyłeś/aś etap {current_status} "
-                f"i otrzymujesz dostęp do kolejnego etapu rekrutacji.\n"
-                f"Link do testu: {test_url}\n"
-                f"Link jest ważny do: {formatted_expiry}"
+            # Map status to stage name
+            stage_names = {
+                'PO1': 'Test kwalifikacyjny',
+                'PO2': 'Test kompetencji',
+                'PO3': 'Test końcowy'
+            }
+            stage_name = stage_names.get(next_status, f'Test {next_status}')
+            
+            # Get campaign title
+            campaign_title = candidate_data.get('campaigns', {}).get('title', 'Rekrutacja')
+            
+            # Send email using EmailService
+            success = email_service.send_test_invitation(
+                to_email=candidate_data["email"],
+                stage_name=stage_name,
+                campaign_title=campaign_title,
+                test_url=test_url,
+                expiry_date=formatted_expiry,
+                test_details=None  # We don't have test details at this point
             )
             
-            msg.attach(MIMEText(email_body, "plain"))
-            
-            with smtplib.SMTP(smtp_config["server"], smtp_config["port"]) as server:
-                server.starttls()
-                server.login(smtp_config["username"], smtp_config["password"])
-                server.send_message(msg)
+            if not success:
+                raise CandidateException(message="Nie udało się wysłać emaila z dostępem do testu")
                 
         except Exception as e:
             logger.error(f"Błąd podczas wysyłania emaila do kandydata: {str(e)}")
