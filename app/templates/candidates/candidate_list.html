@@ -171,6 +171,13 @@
                                         <span class="button-text">Dodaj notatkę</span>
                                     </button>
                                 </li>
+                                <li>
+                                    <button class="dropdown-item" onclick="recalculateScores('{{ candidate.id }}')"
+                                            id="recalculateBtn_{{ candidate.id }}">
+                                        <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                                        <span class="button-text">Przelicz punkty</span>
+                                    </button>
+                                </li>
                                 
                                 <!-- Divider -->
                                 <li><hr class="dropdown-divider"></li>

@@ -1,10 +1,11 @@
-from typing import Optional
+import json
+from typing import List, Optional
 from supabase import Client
 from datetime import datetime, timezone
 from common.logger import Logger
 from common.openai_service import OpenAIService
 
-class TestService:
+class TestScoreService:
     """Serwis do obliczania wyników testów kandydatów"""
     
     def __init__(self, supabase: Client, openai_service: OpenAIService):
@@ -80,14 +81,16 @@ class TestService:
                     return None
             else:
                 # For non-EQ tests, calculate regular score
+                non_eq_questions = [q for q in questions.values() if q['answer_type'] != 'AH_POINTS']
                 self.logger.info(f"[TEST {test_id}] Wykryto standardowy test typu {test_type}")
-                total_score = self.calculate_total_score(answers_response, questions)
+                total_score = self.calculate_total_score(answers_response, non_eq_questions)
                 self.logger.info(f"[TEST {test_id}] Obliczono wynik standardowy dla kandydata {candidate_id}: {total_score}")
                 return total_score or 0  # Test został wykonany, więc zwracamy wynik (nawet 0)
                 
         except Exception as e:
             self.logger.error(f"[TEST {test_id}] Krytyczny błąd podczas obliczania wyniku dla kandydata {candidate_id}: {str(e)}")
             return None
+
 
     def calculate_eq_scores(self, answers, questions) -> dict:
         """
@@ -130,7 +133,7 @@ class TestService:
                 self.logger.warning(f"Pominięto pytanie {question_id} - brak przydzielonych punktów w odpowiedzi")
                 continue
             
-            self.logger.debug(f"Analiza sekcji {section_number + 1}, przydzielone punkty: {points_per_option}")
+            self.logger.debug(f"Analiza sekcji {section_number + 1}, przydzielone punkty: {json.dumps(points_per_option)}")
             
             # Calculate scores for each category
             for category, letters in eq_mapping.items():
@@ -141,10 +144,11 @@ class TestService:
                     eq_scores[score_key] += points
                     self.logger.debug(f"Kategoria {category}: dodano {points} punktów za odpowiedź '{expected_letter}'")
             
-            self.logger.debug(f"Stan wyników po sekcji {section_number + 1}: {eq_scores}")
+            self.logger.debug(f"Stan wyników po sekcji {section_number + 1}: {json.dumps(eq_scores)}")
         
-        self.logger.info(f"Zakończono obliczanie wyników EQ. Wyniki końcowe: {eq_scores}")
+        self.logger.info(f"Zakończono obliczanie wyników EQ. Wyniki końcowe: {json.dumps(eq_scores)}")
         return eq_scores
+
 
     def calculate_score(self, answer: dict, question: dict) -> float:
         """
@@ -160,17 +164,7 @@ class TestService:
         try:
             self.logger.debug(f"Rozpoczęcie obliczania wyniku dla pytania typu {question['answer_type']}")
             
-            # Validate and convert max points
-            try:
-                max_points = float(question.get('points', 0))
-                if max_points < 0:
-                    self.logger.warning(f"Wykryto ujemną wartość punktów: {max_points}, ustawiam na 0")
-                    max_points = 0
-            except (ValueError, TypeError):
-                self.logger.error(f"Nieprawidłowa wartość punktów: {question.get('points')}, ustawiam na 0")
-                max_points = 0
-            
-            # Jeśli pytanie nie ma punktów, nie ma sensu liczyć
+            max_points = question.get('points', 0)
             if max_points == 0:
                 return 0.0
                 
@@ -195,8 +189,7 @@ class TestService:
             final_score = round(float(raw_score), 1)
             
             self.logger.debug(
-                f"Wynik dla pytania {question['id']}: {final_score}/{max_points} "
-                f"({(final_score/max_points * 100):.1f}% maksymalnej wartości)"
+                f"Wynik dla pytania {question['id']}: {final_score}/{max_points} -- ({(final_score/max_points * 100):.1f}% maksymalnej wartości)"
             )
             
             return final_score
@@ -204,6 +197,7 @@ class TestService:
         except Exception as e:
             self.logger.error(f"Błąd podczas obliczania wyniku: {str(e)}")
             return 0.0
+        
             
     def _calculate_raw_score(
         self, 
@@ -412,7 +406,8 @@ class TestService:
                 
         return 0.0
 
-    def calculate_total_score(self, answers_response: dict, questions: dict) -> float:
+
+    def calculate_total_score(self, answers_response: dict, questions: List[dict]) -> float:
         """
         Oblicza łączny wynik dla wszystkich odpowiedzi.
         
@@ -435,14 +430,9 @@ class TestService:
             total_points_possible = 0.0
             
             for answer in answers_response.data:
-                question = questions.get(answer['question_id'])
+                question = next((q for q in questions if q['id'] == answer['question_id']), None)
                 if not question:
                     self.logger.warning(f"Nie znaleziono pytania dla odpowiedzi {answer['id']}")
-                    continue
-                
-                # Skip EQ questions as they're handled separately
-                if question['answer_type'] == 'AH_POINTS':
-                    self.logger.debug(f"Pominięto pytanie EQ {question['id']}")
                     continue
                 
                 try:
@@ -460,10 +450,7 @@ class TestService:
                             })
                             # Aktualizujemy wynik w bazie danych
                             self.update_answer_score(answer['id'], rounded_score)
-                            self.logger.debug(
-                                f"Pytanie {question['id']}: {rounded_score}/{max_points} punktów "
-                                f"({(rounded_score/max_points * 100):.1f}%)"
-                            )
+                            self.logger.debug( f"Pytanie {question['id']}: {rounded_score}/{max_points} punktów -- ({(rounded_score/max_points * 100):.1f}%)" )
                         else:
                             self.logger.warning(f"Otrzymano nieprawidłowy wynik {score} dla odpowiedzi {answer['id']}")
                 except (ValueError, TypeError) as e:
@@ -500,6 +487,7 @@ class TestService:
             self.logger.error(f"Błąd podczas obliczania łącznego wyniku: {str(e)}")
             return 0.0
     
+
     def update_answer_ai_explanation(self, answer_id: int, explanation: str) -> None:
         """
         Aktualizuje wynik dla konkretnej odpowiedzi.
@@ -514,6 +502,7 @@ class TestService:
             }).eq('id', answer_id).execute()
         except Exception as e:
             self.logger.error(f"Błąd podczas aktualizowania wyniku dla odpowiedzi {answer_id}: {str(e)}")
+
 
     def update_answer_score(self, answer_id: int, score: float) -> None:
         """
@@ -532,32 +521,20 @@ class TestService:
         except Exception as e:
             self.logger.error(f"Błąd podczas aktualizowania wyniku dla odpowiedzi {answer_id}: {str(e)}")
         
-    def simulate_eq_evaluation(self, candidate_id: int, campaign_id: int, eq_scores: dict) -> None:
+
+    def create_eq_evaluation_test(self, candidate_id: int, po2_5_test_id: int, eq_scores: dict) -> None:
         """
-        Symuluje odpowiedzi na test EQ_EVALUATION na podstawie wyników testu EQ.
+        Tworzy odpowiedzi na test EQ_EVALUATION na podstawie wyników testu EQ.
         
         Args:
             candidate_id: ID kandydata
-            campaign_id: ID kampanii
+            po2_5_test_id: ID testu PO2_5
             eq_scores: Słownik z wynikami EQ (score_ko, score_re, etc.)
         """
-        self.logger.info(f"Rozpoczęcie symulacji oceny EQ dla kandydata {candidate_id}")
+        self.logger.info(f"Rozpoczęcie tworzenia testu EQ_EVALUATION dla kandydata {candidate_id}")
         self.logger.debug(f"Wyniki EQ do zasymulowania: {eq_scores}")
-        
+
         try:
-            # Get campaign PO2_5 test ID
-            campaign_response = self.supabase.table('campaigns')\
-                .select('po2_5_test_id')\
-                .eq('id', campaign_id)\
-                .single()\
-                .execute()
-            
-            if not campaign_response.data or not campaign_response.data.get('po2_5_test_id'):
-                self.logger.warning(f"Nie znaleziono testu PO2_5 dla kampanii {campaign_id}")
-                return
-            
-            po2_5_test_id = campaign_response.data['po2_5_test_id']
-            
             # Get PO2_5 test questions
             questions_response = self.supabase.table('questions')\
                 .select('id, question_text')\
@@ -615,16 +592,6 @@ class TestService:
                     .insert(answers_to_insert)\
                     .execute()
                 self.logger.info(f"Pomyślnie zapisano {len(answers_to_insert)} symulowanych odpowiedzi")
-
-                # Update candidate status
-                self.supabase.table('candidates')\
-                    .update({
-                        'recruitment_status': 'PO2_5',
-                        'updated_at': datetime.now(timezone.utc).isoformat()
-                    })\
-                    .eq('id', candidate_id)\
-                    .execute()
-                self.logger.info(f"Zaktualizowano status kandydata {candidate_id} na PO2_5")
             else:
                 self.logger.warning("Nie utworzono żadnych odpowiedzi do zapisania")
             

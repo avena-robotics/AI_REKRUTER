@@ -1,13 +1,14 @@
 from openai import OpenAI
 from typing import Optional 
+from common.logger import Logger
 
 class OpenAIService:
     """Serwis do obsługi interakcji z API OpenAI"""
     
-    def __init__(self, config, logger):
+    def __init__(self, config):
         self.config = config
         self.client = OpenAI(api_key=self.config.OPENAI_API_KEY)
-        self.logger = logger
+        self.logger = Logger.instance()
         
     def evaluate_answer(
         self,

@@ -1,3 +1,5 @@
+from common.openai_service import OpenAIService
+from common.test_score_service import TestScoreService
 from database import supabase
 from common.logger import Logger
 from datetime import datetime, timezone, timedelta
@@ -6,6 +8,7 @@ from zoneinfo import ZoneInfo
 import secrets
 from common.config import Config
 from common.email_service import EmailService
+from common.recalculation_score_service import RecalculationScoreService
 
 logger = Logger.instance()
 
@@ -582,6 +585,50 @@ class CandidateService:
             logger.error(f"Błąd podczas przedłużania tokenu dla kandydata {candidate_id}: {str(e)}")
             raise CandidateException(
                 message="Wystąpił błąd podczas przedłużania ważności tokenu",
+                original_error=e
+            )
+
+    @staticmethod
+    def recalculate_candidate_scores(candidate_id: int) -> Dict:
+        """
+        Przelicza punkty kandydata.
+        
+        Args:
+            candidate_id (int): ID kandydata
+            
+        Returns:
+            Dict: Wynik przeliczenia z informacją o zmianach
+            
+        Raises:
+            CandidateException: Gdy wystąpi błąd podczas przeliczania punktów
+        """
+        try:
+            config = Config.instance()
+            email_service = EmailService(config)
+            openai_service = OpenAIService(config)
+            test_score_service = TestScoreService(supabase, openai_service)
+            recalculation_service = RecalculationScoreService(
+                supabase=supabase,
+                config=config,
+                test_score_service=test_score_service,
+                email_service=email_service
+            )
+            
+            result = recalculation_service.recalculate_candidate_scores(candidate_id)
+            
+            if result.get("status") == "error":
+                raise CandidateException(message=result.get("message", "Błąd przeliczania punktów"))
+                
+            return {
+                "success": True,
+                "status_changed": result.get("status_changed", False),
+                "changes": result.get("changes", {})
+            }
+            
+        except Exception as e:
+            logger.error(f"Błąd podczas przeliczania punktów kandydata {candidate_id}: {str(e)}")
+            raise CandidateException(
+                message="Wystąpił błąd podczas przeliczania punktów kandydata",
                 original_error=e
             )
 

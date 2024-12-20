@@ -1,24 +1,30 @@
+import json
 from common.logger import Logger
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List, Optional
 from supabase import Client
-from utils.token_utils import generate_access_token
+from common.token_utils import generate_access_token
 from common.config import Config
 from common.email_service import EmailService
-from services.test_service import TestService
+from common.test_score_service import TestScoreService
 
-class CandidateService:
+class CandidateScoreService:
     """Serwis do zarządzania kandydatami i ich statusami"""
     
-    def __init__(self, supabase: Client, config: Config, 
-                 email_service: EmailService, test_service: TestService):
+    def __init__(self, 
+                 supabase: Client, 
+                 config: Config, 
+                 email_service: EmailService, 
+                 test_score_service: TestScoreService
+    ):
         self.supabase = supabase
         self.config = config
         self.email_service = email_service
-        self.test_service = test_service
+        self.test_score_service = test_score_service
         self.logger = Logger.instance()
 
-    def update_candidate_scores(self, candidate: dict, campaign: dict) -> dict:
+
+    def calculate_candidate_scores(self, candidate: dict):
         """
         Aktualizuje wyniki testów kandydata
         
@@ -31,30 +37,16 @@ class CandidateService:
         """
         try:
             current_time = datetime.now(timezone.utc)
+            campaign = candidate['campaign']
             updates = {}
-            
-            # When updating scores, also ensure timestamps are in UTC
-            if any(key in updates for key in ['po1_score', 'po2_score', 'po2_5_score', 'po3_score']):
-                stage = candidate.get('recruitment_status', '').lower()
-                if stage in ['po1', 'po2', 'po2_5', 'po3']:
-                    updates[f'{stage}_completed_at'] = current_time.isoformat()
             
             self.logger.info(f"Rozpoczęcie aktualizacji wyników dla kandydata {candidate['id']} o statusie {candidate.get('recruitment_status')}")
             
-            # Sprawdź czy kandydat potrzebuje aktualizacji wyników EQ
-            needs_eq_update = all(
-                candidate.get(score_key) is None 
-                for score_key in ['score_ko', 'score_re', 'score_w', 'score_in', 
-                                'score_pz', 'score_kz', 'score_dz', 'score_sw']
-            )
-            
-            self.logger.info(f"Kandydat {candidate['id']} - potrzebuje aktualizacji EQ: {needs_eq_update}")
-
             # Sprawdzenie i obliczenie wyniku PO1
             if (candidate.get('po1_score') is None and campaign.get('po1_test_id')):
                 self.logger.info(f"Obliczanie wyniku PO1 dla kandydata {candidate['id']}, test {campaign['po1_test_id']}")
                 
-                result = self.test_service.calculate_test_score(
+                result = self.test_score_service.calculate_test_score(
                     candidate['id'], 
                     campaign['po1_test_id'],
                     'PO1'
@@ -75,15 +67,16 @@ class CandidateService:
                             updates['recruitment_status'] = 'REJECTED'
                             self.logger.warning(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO1 (wynik: {result})")
                         elif result >= passing_threshold and candidate.get('recruitment_status') == 'PO1':
-                            self._handle_token_generation(candidate, 'PO2')
+                            result = self._generate_token(candidate, campaign, 'PO2')
+                            updates.update(result)
                 else:
                     self.logger.warning(f"Nie otrzymano wyniku dla kandydata {candidate['id']} w teście PO1")
 
             # Sprawdzenie i obliczenie wyniku PO2
-            if (candidate.get('po2_score') is None or needs_eq_update) and campaign.get('po2_test_id'):
+            if (candidate.get('po2_score') is None) and campaign.get('po2_test_id'):
                 self.logger.info(f"Obliczanie wyniku PO2 dla kandydata {candidate['id']}, test {campaign['po2_test_id']}")
                 
-                result = self.test_service.calculate_test_score(
+                result = self.test_score_service.calculate_test_score(
                     candidate['id'], 
                     campaign['po2_test_id'],
                     'PO2'
@@ -94,12 +87,14 @@ class CandidateService:
                     
                     # Simulate EQ_EVALUATION answers if PO2_5 test exists
                     if campaign.get('po2_5_test_id'):
-                        self.test_service.simulate_eq_evaluation(
+                        self.test_score_service.create_eq_evaluation_test(
                             candidate_id=candidate['id'],
-                            campaign_id=campaign['id'],
+                            po2_5_test_id=campaign['po2_5_test_id'],
                             eq_scores=result
                         )
                         updates['po2_score'] = 0
+                        updates['recruitment_status'] = 'PO2_5'
+                        updates['updated_at'] = datetime.now(timezone.utc).isoformat()
                         self.logger.info(f"Ustawiono wynik PO2=0 i zaktualizowano status na PO2_5 dla kandydata {candidate['id']}")
 
                 elif result is not None:  # Regular test score
@@ -117,13 +112,14 @@ class CandidateService:
                             updates['recruitment_status'] = 'REJECTED'
                             self.logger.info(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO2")
                         elif result >= passing_threshold and candidate.get('recruitment_status') == 'PO2':
-                            self._handle_token_generation(candidate, 'PO3')
+                            result = self._generate_token(candidate, campaign, 'PO3')
+                            updates.update(result)
 
             # Sprawdzenie i obliczenie wyniku PO2_5
             if (candidate.get('po2_5_score') is None and campaign.get('po2_5_test_id')):
                 self.logger.info(f"Obliczanie wyniku PO2_5 dla kandydata {candidate['id']}, test {campaign['po2_5_test_id']}")
                 
-                result = self.test_service.calculate_test_score(
+                result = self.test_score_service.calculate_test_score(
                     candidate['id'], 
                     campaign['po2_5_test_id'],
                     'PO2_5'
@@ -144,13 +140,14 @@ class CandidateService:
                             updates['recruitment_status'] = 'REJECTED'
                             self.logger.info(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO2_5")
                         elif result >= passing_threshold and (candidate.get('recruitment_status') == 'PO2' or candidate.get('recruitment_status') == 'PO2_5'):
-                            self._handle_token_generation(candidate, 'PO3')
+                            result = self._generate_token(candidate, campaign, 'PO3')
+                            updates.update(result)
 
             # Sprawdzenie i obliczenie wyniku PO3
             if (candidate.get('po3_score') is None and campaign.get('po3_test_id')):
                 self.logger.info(f"Obliczanie wyniku PO3 dla kandydata {candidate['id']}, test {campaign['po3_test_id']}")
                 
-                result = self.test_service.calculate_test_score(
+                result = self.test_score_service.calculate_test_score(
                     candidate['id'], 
                     campaign['po3_test_id'],
                     'PO3'
@@ -187,6 +184,11 @@ class CandidateService:
                     )
                     updates['total_score'] = total_score
                     self.logger.info(f"Zaktualizowano total_score dla kandydata {candidate['id']}: {total_score}")
+
+                    stage = candidate.get('recruitment_status', '').lower()
+                    if stage in ['po1', 'po2', 'po2_5', 'po3']:
+                        updates[f'{stage}_completed_at'] = current_time.isoformat()
+                        self.logger.info(f"Zaktualizowano {stage}_completed_at dla kandydata {candidate['id']}: {current_time.isoformat()}")
                 
                 updates['updated_at'] = datetime.now(timezone.utc).isoformat()
                 
@@ -198,20 +200,16 @@ class CandidateService:
                 
                 if 'recruitment_status' in updates:
                     self.logger.info(f"Zaktualizowano status kandydata {candidate['id']} na {updates['recruitment_status']}")
-                elif any(key.endswith('_score') for key in updates):
+                if any(key.endswith('_score') for key in updates):
                     self.logger.info(f"Zaktualizowano wyniki kandydata {candidate['id']}: {updates}")
                 
             else:
                 self.logger.info(f"Brak aktualizacji dla kandydata {candidate['id']}")
                 
-            return {**candidate, **updates}
             
         except Exception as e:
-            self.logger.error(
-                f"Błąd podczas aktualizacji wyników kandydata {candidate['id']}: {str(e)}", 
-                exc_info=True
-            )
-            return candidate
+            self.logger.error(f"Błąd podczas aktualizacji wyników kandydata {candidate['id']}: {str(e)}")
+
 
     def _calculate_total_weighted_score(self, po1_score: Optional[float], 
                                       po2_score: Optional[float], 
@@ -241,15 +239,10 @@ class CandidateService:
                 return 0.0
             
             # Get weights from campaign
-            po1_weight = campaign.get('po1_test_weight', 0)
-            po2_weight = campaign.get('po2_test_weight', 0)
-            po2_5_weight = campaign.get('po2_5_test_weight', 0)
-            po3_weight = campaign.get('po3_test_weight', 0)
-            
-            po1_weight = float(po1_weight) if po1_weight is not None else 0
-            po2_weight = float(po2_weight) if po2_weight is not None else 0
-            po2_5_weight = float(po2_5_weight) if po2_5_weight is not None else 0
-            po3_weight = float(po3_weight) if po3_weight is not None else 0
+            po1_weight = float(campaign.get('po1_test_weight', 0) or 0)
+            po2_weight = float(campaign.get('po2_test_weight', 0) or 0)
+            po2_5_weight = float(campaign.get('po2_5_test_weight', 0) or 0)
+            po3_weight = float(campaign.get('po3_test_weight', 0) or 0)
             
             self.logger.debug(f"Wagi testów: PO1={po1_weight}, PO2={po2_weight}, PO2.5={po2_5_weight}, PO3={po3_weight}")
             
@@ -283,68 +276,6 @@ class CandidateService:
             self.logger.error(f"Błąd podczas obliczania całkowitego wyniku: {str(e)}", exc_info=True)
             return 0.0
 
-    def update_candidates(self):
-        """Aktualizuje statusy i wyniki wszystkich aktywnych kandydatów"""
-        try:
-            response = self.supabase.table('candidates')\
-                .select('''
-                    id,
-                    email,
-                    campaign_id,
-                    recruitment_status,
-                    po1_score,
-                    po2_score,
-                    po2_5_score,
-                    po3_score,
-                    access_token_po2,
-                    access_token_po3
-                ''')\
-                .neq('recruitment_status', 'REJECTED')\
-                .neq('recruitment_status', 'ACCEPTED')\
-                .neq('recruitment_status', 'PO4')\
-                .execute()
-            
-            candidates = response.data
-            if not candidates:
-                self.logger.info("Brak kandydatów do aktualizacji")
-                return
-                
-            self.logger.info(f"Rozpoczęto aktualizację {len(candidates)} kandydatów")
-
-            for candidate in candidates:
-                try:
-                    campaign_response = self.supabase.table('campaigns')\
-                        .select('''
-                            id, 
-                            po1_test_id, 
-                            po2_test_id, 
-                            po2_5_test_id, 
-                            po3_test_id, 
-                            po1_test_weight, 
-                            po2_test_weight, 
-                            po2_5_test_weight, 
-                            po3_test_weight
-                        ''')\
-                        .eq('id', candidate['campaign_id'])\
-                        .single()\
-                        .execute()
-                        
-                    campaign = campaign_response.data
-                    if not campaign:
-                        self.logger.warning(f"Nie znaleziono kampanii {candidate['campaign_id']} dla kandydata {candidate['id']}")
-                        continue
-                    
-                    candidate = self.update_candidate_scores(candidate, campaign)
-                    
-                except Exception as e:
-                    self.logger.error(f"Błąd podczas przetwarzania kandydata {candidate['id']}: {str(e)}")
-                    continue
-                    
-            self.logger.info("Zakończono aktualizację kandydatów")
-            
-        except Exception as e:
-            self.logger.error(f"Błąd podczas pobierania listy kandydatów: {str(e)}")
-            raise
 
     def _next_stage(self, candidate: Dict[str, Any]):
         """
@@ -377,108 +308,139 @@ class CandidateService:
             self.logger.info(f"Status nie może być zaktualizowany dla kandydata {candidate['id']}")
 
 
-    def _handle_token_generation(self, candidate: Dict[str, Any], stage: str) -> None:
+    def _generate_token(self, candidate: Dict[str, Any], campaign: dict[str, Any], next_stage: str) -> Dict[str, Any]:
         """
         Generuje token dostępu i wysyła email do kandydata
         
         Args:
             candidate: Dane kandydata
-            stage: Etap rekrutacji (PO2/PO3)
+            campaign: Dane kampanii
+            next_stage: Etap rekrutacji (PO2/PO3)
         """
-        # Get campaign and test data
-        campaign_response = self.supabase.table('campaigns')\
-            .select('title, po2_test_id, po3_test_id, po1_token_expiry_days, po2_token_expiry_days, po3_token_expiry_days')\
-            .eq('id', candidate['campaign_id'])\
-            .single()\
-            .execute()
-        
-        if not campaign_response.data:
-            self.logger.error(f"Nie znaleziono kampanii dla kandydata {candidate['id']}")
-            return
-        
-        # Get test details
-        test_id = None
-        if stage == 'PO2':
-            test_id = campaign_response.data.get('po2_test_id')
-        elif stage == 'PO3':
-            test_id = campaign_response.data.get('po3_test_id')
-        
-        test_details = None
-        if test_id:
-            test_response = self.supabase.table('tests')\
-                .select('title, description, time_limit_minutes')\
-                .eq('id', test_id)\
-                .single()\
-                .execute()
-            if test_response.data:
-                test_details = test_response.data
-        
-        # Get expiry days based on stage
-        expiry_days = {
-            'PO1': campaign_response.data['po1_token_expiry_days'],
-            'PO2': campaign_response.data['po2_token_expiry_days'],
-            'PO3': campaign_response.data['po3_token_expiry_days']
-        }.get(candidate.get('recruitment_status'), 7)
-        
-        token = generate_access_token()
-        test_url = f"{self.config.BASE_URL}/test/candidate/{token}"
-        
-        current_time = datetime.now()
-        token_expiry = (current_time + timedelta(days=expiry_days)).replace(hour=23, minute=59, second=59)
-        formatted_expiry = token_expiry.strftime("%d.%m.%Y, %H:%M")
-        
-        updates = {
-            f'access_token_{stage.lower()}': token,
-            f'access_token_{stage.lower()}_expires_at': token_expiry.isoformat(),
-            f'access_token_{stage.lower()}_is_used': False,
-            'recruitment_status': stage,
-            'updated_at': current_time.isoformat()
-        }
-        
-        self.supabase.table('candidates')\
-            .update(updates)\
-            .eq('id', candidate['id'])\
-            .execute()
 
-        # Prepare stage name for email
-        stage_names = {
-            'PO1': 'Test kwalifikacyjny',
-            'PO2': 'Test kompetencji',
-            'PO3': 'Test końcowy'
-        }
-        stage_name = stage_names.get(stage, f'Test {stage}')
-        
-        if self.email_service.send_test_invitation(
-            to_email=candidate['email'],
-            stage_name=stage_name,
-            campaign_title=campaign_response.data['title'],
-            test_url=test_url,
-            expiry_date=formatted_expiry,
-            test_details=test_details
-        ):
-            self.logger.info(f"Wysłano zaproszenie na {stage_name} do kandydata {candidate['id']}")
-
-    def _get_test_threshold(self, test_id: int) -> int:
-        """
-        Pobiera próg zaliczenia dla testu
-        
-        Args:
-            test_id: ID testu
-            
-        Returns:
-            int: Próg zaliczenia lub 0 jeśli nie znaleziono
-        """
         try:
-            test_response = self.supabase.table('tests')\
-                .select('passing_threshold')\
-                .eq('id', test_id)\
-                .single()\
-                .execute()
-                
-            if test_response.data:
-                return test_response.data['passing_threshold']
-            return 0
-                
+       
+            current_stage = candidate.get('recruitment_status')
+
+            test_id = {
+                'PO2': campaign.get('po2_test_id'),
+                'PO3': campaign.get('po3_test_id')
+            }.get(next_stage, None)
+            
+            test_details = None
+            if test_id:
+                test_response = self.supabase.table('tests')\
+                    .select('title, description, time_limit_minutes')\
+                    .eq('id', test_id)\
+                    .single()\
+                    .execute()
+                if test_response.data:
+                    test_details = test_response.data
+            
+            # Get expiry days based on stage
+            expiry_days = {
+                'PO1': campaign.get('po1_token_expiry_days'),
+                'PO2': campaign.get('po2_token_expiry_days'),
+                'PO2_5': campaign.get('po3_token_expiry_days'),
+                'PO3': campaign.get('po3_token_expiry_days')
+            }.get(current_stage, 7)
+            
+            token = generate_access_token()
+            test_url = f"{self.config.BASE_URL}/test/candidate/{token}"
+            
+            current_time = datetime.now()
+            token_expiry = (current_time + timedelta(days=expiry_days)).replace(hour=23, minute=59, second=59)
+            formatted_expiry = token_expiry.strftime("%d.%m.%Y, %H:%M")
+            
+            updates = {
+                f'access_token_{next_stage.lower()}': token,
+                f'access_token_{next_stage.lower()}_expires_at': token_expiry.isoformat(),
+                f'access_token_{next_stage.lower()}_is_used': False,
+                'recruitment_status': next_stage,
+                'updated_at': current_time.isoformat()
+            }
+            
+            # Prepare stage name for email
+            stage_name = {
+                'PO1': 'Test kwalifikacyjny',
+                'PO2': 'Test kompetencji',
+                'PO3': 'Test końcowy'
+            }.get(next_stage, f'Test {next_stage}')
+            
+            if self.email_service.send_test_invitation(
+                to_email=candidate['email'],
+                stage_name=stage_name,
+                campaign_title=campaign.get('title'),
+                test_url=test_url,
+                expiry_date=formatted_expiry,
+                test_details=test_details
+            ):
+                self.logger.info(f"Wysłano zaproszenie na {stage_name} do kandydata {candidate['id']}")
+
+            return updates
+
         except Exception as e:
-            self.logger.error(f"Błąd podczas pobierania progu zaliczenia dla testu {test_id}: {str(e)}")
-            return 0
+            self.logger.error(f"Błąd podczas generowania tokenu dla kandydata {candidate['id']}: {str(e)}")
+            raise
+
+
+    def get_candidate_to_update(self, candidate_id: int) -> Dict[str, Any]:
+        try:
+            response = self.supabase.table('candidates')\
+                .select('*, campaign:campaigns!campaign_id(*)')\
+                .neq('recruitment_status', 'REJECTED')\
+                .neq('recruitment_status', 'ACCEPTED')\
+                .neq('recruitment_status', 'PO4')\
+                .eq('id', candidate_id)\
+                .execute()
+            
+            if not response.data:
+                self.logger.info(f"Brak kandydata {candidate_id} w bazie danych")
+                return None
+            
+            return response.data[0]
+        except Exception as e:
+            self.logger.error(f"Błąd podczas pobierania kandydata {candidate_id}: {str(e)}")
+            raise
+
+
+    def get_candidates_to_update(self) -> List:
+        try:
+            response = self.supabase.table('candidates')\
+                .select('id')\
+                .neq('recruitment_status', 'REJECTED')\
+                .neq('recruitment_status', 'ACCEPTED')\
+                .neq('recruitment_status', 'PO4')\
+                .execute()
+            
+            candidates = response.data
+
+            if not candidates:
+                self.logger.info("Brak kandydatów do aktualizacji")
+                return []
+            
+            self.logger.info(f"Pobieranie listy kandydatów: {len(candidates)}")
+            return candidates
+        
+        except Exception as e:
+            self.logger.error(f"Błąd podczas pobierania listy kandydatów: {str(e)}")
+            raise
+
+
+    def update_candidates(self):
+        """Aktualizuje statusy i wyniki wszystkich aktywnych kandydatów"""
+        try:
+            candidates = self.get_candidates_to_update()
+
+            for candidate in candidates:
+                candidate_data = self.get_candidate_to_update(candidate['id'])
+                if candidate_data:
+                    self.calculate_candidate_scores(candidate_data)
+                else:
+                    self.logger.warning(f"Brak kandydata {candidate['id']} w bazie danych lub zmienił status")
+                    
+            self.logger.info("Zakończono aktualizację kandydatów")
+            
+        except Exception as e:
+            self.logger.error(f"Błąd podczas pobierania listy kandydatów: {str(e)}")
+            raise

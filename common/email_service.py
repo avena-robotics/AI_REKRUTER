@@ -2,13 +2,13 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import Dict, Optional
-
+from common.logger import Logger
 class EmailService:
     """Serwis do wysyłania wiadomości email"""
     
-    def __init__(self, config, logger):
+    def __init__(self, config):
         self.config = config
-        self.logger = logger
+        self.logger = Logger.instance()
 
     def send_test_invitation(
         self,

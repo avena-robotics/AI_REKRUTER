@@ -4,6 +4,7 @@ from routes.auth_routes import login_required
 from services.candidate_service import CandidateService, CandidateException
 from services.campaign_service import CampaignService, CampaignException
 from common.logger import Logger
+from common.recalculation_score_service import RecalculationScoreService
 
 candidate_bp = Blueprint("candidate", __name__, url_prefix="/candidates")
 logger = Logger.instance()
@@ -206,4 +207,20 @@ def extend_token(id, stage):
         return jsonify({
             "success": False,
             "error": "Wystąpił nieznany błąd podczas przedłużania tokenu"
+        }), 500
+
+
+@candidate_bp.route("/<int:id>/recalculate", methods=["POST"])
+@login_required
+def recalculate_scores(id):
+    try:
+        result = CandidateService.recalculate_candidate_scores(id)
+        return jsonify(result)
+        
+    except CandidateException as e:
+        return jsonify({"success": False, "error": e.message}), 500
+    except Exception as e:
+        return jsonify({
+            "success": False, 
+            "error": "Wystąpił nieznany błąd podczas przeliczania punktów"
         }), 500

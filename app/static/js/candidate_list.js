@@ -530,3 +530,30 @@ window.addNote = async function(candidateId) {
     const modal = new bootstrap.Modal(document.getElementById('addNoteModal'));
     modal.show();
 }; 
+
+window.recalculateScores = async function(candidateId) {
+    if (!confirm('Czy na pewno chcesz przeliczyć punkty tego kandydata?')) return;
+    
+    setButtonLoading(`recalculateBtn_${candidateId}`, true);
+    try {
+        const response = await fetch(`/candidates/${candidateId}/recalculate`, {
+            method: 'POST'
+        });
+        const data = await response.json();
+        
+        if (response.ok) {
+            showToast('Punkty zostały przeliczone', 'success');
+            if (data.status_changed) {
+                showToast('Status kandydata został zmieniony!', 'warning');
+            }
+            location.reload();
+        } else {
+            throw new Error(data.error || 'Network response was not ok');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Błąd podczas przeliczania punktów', 'error');
+    } finally {
+        setButtonLoading(`recalculateBtn_${candidateId}`, false);
+    }
+};

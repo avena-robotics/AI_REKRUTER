@@ -8,11 +8,10 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from common.config import Config
 from common.email_service import EmailService
-from services.test_service import TestService
-from services.candidate_service import CandidateService
+from common.test_score_service import TestScoreService
 from common.openai_service import OpenAIService
-
 from common.logger import Logger
+from cron.services.candidate_score_service import CandidateScoreService
 
 def main():
     """Główna funkcja skryptu sprawdzająca i aktualizująca statusy kandydatów"""
@@ -40,10 +39,10 @@ def main():
         openai_service = OpenAIService(config)
         
         logger.debug("Initializing test service")
-        test_service = TestService(supabase, openai_service)
+        test_service = TestScoreService(supabase, openai_service)
         
         logger.debug("Initializing candidate service")
-        candidate_service = CandidateService(
+        candidate_service = CandidateScoreService(
             supabase,
             config,
             email_service,
