@@ -91,14 +91,6 @@
                 <option value="po3_score" {% if request.args.get('sort_by') == 'po3_score' %}selected{% endif %}>PO3</option>
                 <option value="po4_score" {% if request.args.get('sort_by') == 'po4_score' %}selected{% endif %}>PO4</option>
                 <option value="total_score" {% if request.args.get('sort_by') == 'total_score' %}selected{% endif %}>Wynik ogólny</option>
-                <option value="score_ko" {% if request.args.get('sort_by') == 'score_ko' %}selected{% endif %}>KO</option>
-                <option value="score_re" {% if request.args.get('sort_by') == 'score_re' %}selected{% endif %}>RE</option>
-                <option value="score_w" {% if request.args.get('sort_by') == 'score_w' %}selected{% endif %}>W</option>
-                <option value="score_in" {% if request.args.get('sort_by') == 'score_in' %}selected{% endif %}>IN</option>
-                <option value="score_pz" {% if request.args.get('sort_by') == 'score_pz' %}selected{% endif %}>PZ</option>
-                <option value="score_kz" {% if request.args.get('sort_by') == 'score_kz' %}selected{% endif %}>KZ</option>
-                <option value="score_dz" {% if request.args.get('sort_by') == 'score_dz' %}selected{% endif %}>DZ</option>
-                <option value="score_sw" {% if request.args.get('sort_by') == 'score_sw' %}selected{% endif %}>SW</option>
             </select>
         </div>
         <div class="col-md-3">
@@ -132,14 +124,6 @@
                     <th>PO3</th>
                     <th>PO4</th>
                     <th>Wynik ogólny</th>
-                    <th title="Kompetencje osobiste">KO</th>
-                    <th title="Relacje">RE</th>
-                    <th title="Wiedza">W</th>
-                    <th title="Innowacyjność">IN</th>
-                    <th title="Przedsiębiorczość">PZ</th>
-                    <th title="Komunikatywność">KZ</th>
-                    <th title="Działanie">DZ</th>
-                    <th title="Samoświadomość">SW</th>
                     <th>Data aplikacji</th>
                     <th>Akcje</th>
                 </tr>
@@ -165,14 +149,6 @@
                     <td data-sort="po3_score">{{ candidate.po3_score if candidate.po3_score is not none else '-' }}</td>
                     <td data-sort="po4_score">{{ candidate.po4_score if candidate.po4_score is not none else '-' }}</td>
                     <td data-sort="total_score">{{ candidate.total_score if candidate.total_score is not none else '-' }}</td>
-                    <td data-sort="score_ko">{{ candidate.score_ko if candidate.score_ko is not none else '-' }}</td>
-                    <td data-sort="score_re">{{ candidate.score_re if candidate.score_re is not none else '-' }}</td>
-                    <td data-sort="score_w">{{ candidate.score_w if candidate.score_w is not none else '-' }}</td>
-                    <td data-sort="score_in">{{ candidate.score_in if candidate.score_in is not none else '-' }}</td>
-                    <td data-sort="score_pz">{{ candidate.score_pz if candidate.score_pz is not none else '-' }}</td>
-                    <td data-sort="score_kz">{{ candidate.score_kz if candidate.score_kz is not none else '-' }}</td>
-                    <td data-sort="score_dz">{{ candidate.score_dz if candidate.score_dz is not none else '-' }}</td>
-                    <td data-sort="score_sw">{{ candidate.score_sw if candidate.score_sw is not none else '-' }}</td>
                     <td data-sort="created_at">{{ candidate.created_at|format_datetime }}</td>
                     <td>
                         <div class="dropdown">

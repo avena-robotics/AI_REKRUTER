@@ -404,8 +404,7 @@ function getRowValue(row, sortBy) {
 
     // Handle numeric values
     if (['po1_score', 'po2_score', 'po2_5_score', 'po3_score', 'po4_score', 
-         'total_score', 'score_ko', 'score_re', 'score_w', 'score_in', 
-         'score_pz', 'score_kz', 'score_dz', 'score_sw'].includes(sortBy)) {
+         'total_score'].includes(sortBy)) {
         return value === '-' ? -Infinity : parseFloat(value);
     }
 

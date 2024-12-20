@@ -133,32 +133,6 @@
 .table th:nth-child(11),
 .table td:nth-child(11) { min-width: 120px; } /* Total score */
 
-/* Competency scores */
-.table th:nth-child(12),
-.table td:nth-child(12),
-.table th:nth-child(13),
-.table td:nth-child(13),
-.table th:nth-child(14),
-.table td:nth-child(14),
-.table th:nth-child(15),
-.table td:nth-child(15),
-.table th:nth-child(16),
-.table td:nth-child(16),
-.table th:nth-child(17),
-.table td:nth-child(17),
-.table th:nth-child(18),
-.table td:nth-child(18),
-.table th:nth-child(19),
-.table td:nth-child(19) { 
-    min-width: 80px; 
-}
-
-.table th:nth-child(20),
-.table td:nth-child(20) { 
-    min-width: 250px;
-    padding-right: 1rem;
-} /* Actions */
-
 /* Status badge styling */
 .table .badge {
     padding: 0.35em 0.65em;
