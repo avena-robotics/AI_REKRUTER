@@ -65,8 +65,6 @@ class RecalculationScoreService:
             campaign = candidate['campaign']
             original_status = candidate.get('recruitment_status')
             current_time = datetime.now(timezone.utc)
-
-
             
             self.logger.debug(f"Obecny status kandydata {candidate_id}: {original_status}")
             
@@ -127,9 +125,37 @@ class RecalculationScoreService:
                             updates['recruitment_status'] = 'PO2'
                             result = self._generate_token(candidate, campaign, 'PO2')
                             updates.update(result)
-                                          
+                        elif original_status == 'PO1' and original_scores['po1_score'] is None and result >= passing_threshold:
+                            updates['recruitment_status'] = 'PO2'
+                            result = self._generate_token(candidate, campaign, 'PO2')
+                            updates.update(result)
+                        elif result >= passing_threshold:
+                            updates['recruitment_status'] = 'PO2'
+
+            # zakładam, że tylko po2 to tylko test EQ
+            if campaign.get('po2_test_id') and updates['recruitment_status'] != 'REJECTED':
+                result = self.test_score_service.calculate_test_score(
+                    candidate_id, 
+                    campaign['po2_test_id'],
+                    'PO2'
+                )
+
+                if result is not None:
+                    updates.update(result)
+
+                    if campaign.get('po2_5_test_id') and original_scores['po2_score'] is None:
+                        self.test_score_service.create_eq_evaluation_test(
+                            candidate_id=candidate['id'],
+                            po2_5_test_id=campaign['po2_5_test_id'],
+                            eq_scores=result
+                        )
+                    updates['po2_score'] = 0
+                    updates['recruitment_status'] = 'PO2_5'
+                    updates['updated_at'] = datetime.now(timezone.utc).isoformat()
+                    self.logger.info(f"Ustawiono wynik PO2=0 i zaktualizowano status na PO2_5 dla kandydata {candidate['id']}")
+
             # Recalculate PO2_5
-            if campaign.get('po2_5_test_id'):
+            if campaign.get('po2_5_test_id') and updates['recruitment_status'] != 'REJECTED':
                 result = self.test_score_service.calculate_test_score(
                     candidate_id, 
                     campaign['po2_5_test_id'],
@@ -152,13 +178,19 @@ class RecalculationScoreService:
                         passing_threshold = test_response.data['passing_threshold']
                         if result < passing_threshold:
                             updates['recruitment_status'] = 'REJECTED'
-                        elif original_status == 'REJECTED' and last_stage == 'PO2_5' and result >= passing_threshold:
+                        elif original_status == 'REJECTED' and (last_stage == 'PO2_5' or last_stage == 'PO2') and result >= passing_threshold:
                             updates['recruitment_status'] = 'PO3'
                             result = self._generate_token(candidate, campaign, 'PO3')
                             updates.update(result)
+                        elif (original_status == 'PO2_5' or original_status == 'PO2') and original_scores['po2_5_score'] is None and result >= passing_threshold:
+                            updates['recruitment_status'] = 'PO3'
+                            result = self._generate_token(candidate, campaign, 'PO3')
+                            updates.update(result)
+                        elif result >= passing_threshold:
+                            updates['recruitment_status'] = 'PO3'
                             
             # Recalculate PO3
-            if campaign.get('po3_test_id'):
+            if campaign.get('po3_test_id') and updates['recruitment_status'] != 'REJECTED':
                 result = self.test_score_service.calculate_test_score(
                     candidate_id, 
                     campaign['po3_test_id'],
@@ -182,6 +214,12 @@ class RecalculationScoreService:
                         if result < passing_threshold:
                             updates['recruitment_status'] = 'REJECTED'
                         elif original_status == 'REJECTED' and last_stage == 'PO3' and result >= passing_threshold:
+                            updates['recruitment_status'] = 'PO4'
+                        elif original_status == 'PO3' and original_scores['po3_score'] is None and result >= passing_threshold:
+                            updates['recruitment_status'] = 'PO4'
+                        elif original_status == 'PO4' and original_scores['po3_score'] is not None and result >= passing_threshold:
+                            updates['recruitment_status'] = 'PO4'
+                        elif result >= passing_threshold:
                             updates['recruitment_status'] = 'PO4'
 
             
@@ -319,6 +357,7 @@ class RecalculationScoreService:
             campaign: Dane kampanii
             next_stage: Etap rekrutacji (PO2/PO3)
         """
+        self.logger.info(f"Generowanie tokenu dla kandydata {candidate['id']} na etap {next_stage}")
         try:
             test_id = {
                 'PO2': campaign.get('po2_test_id'),
