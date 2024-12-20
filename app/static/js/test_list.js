@@ -46,21 +46,62 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeFilters() {
-    const filterTestType = document.getElementById('filterTestType');
-    const filterGroup = document.getElementById('filterGroup');
+    const resetFilters = document.getElementById('resetFilters');
     const sortBy = document.getElementById('sortBy');
     const sortOrder = document.getElementById('sortOrder');
-    const applyFilters = document.getElementById('applyFilters');
-    const resetFilters = document.getElementById('resetFilters');
     
-    applyFilters?.addEventListener('click', () => updateTable(true));
+    // Usuń przycisk "Zastosuj" z HTML
+    const applyFilters = document.getElementById('applyFilters');
+    if (applyFilters) {
+        applyFilters.remove();
+    }
+    
+    // Obsługa zmiany checkboxów - natychmiastowe filtrowanie
+    document.querySelectorAll('.filter-test-type, .filter-group').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateSelectedOptionsText(this);
+            updateTable(true);
+        });
+    });
+
+    // Obsługa zmiany sortowania - natychmiastowe sortowanie
+    sortBy?.addEventListener('change', () => updateTable(true));
+    sortOrder?.addEventListener('change', () => updateTable(true));
+
+    // Zatrzymaj zamykanie dropdownu przy kliknięciu wewnątrz
+    document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        menu.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
+    
     resetFilters?.addEventListener('click', function() {
-        filterTestType.value = '';
-        filterGroup.value = '';
+        // Reset checkboxów
+        document.querySelectorAll('.filter-test-type, .filter-group').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        // Reset tekstu w dropdownach
+        document.querySelectorAll('.selected-options').forEach(span => {
+            span.textContent = 'Wszystkie';
+        });
+        // Reset sortowania
         sortBy.value = 'created_at';
         sortOrder.value = 'desc';
         updateTable(false);
     });
+}
+
+function updateSelectedOptionsText(checkbox) {
+    const dropdownButton = checkbox.closest('.dropdown').querySelector('button');
+    const selectedSpan = dropdownButton.querySelector('.selected-options');
+    const checkboxes = checkbox.closest('.dropdown-menu').querySelectorAll('input[type="checkbox"]');
+    const selectedOptions = Array.from(checkboxes)
+        .filter(cb => cb.checked)
+        .map(cb => cb.nextElementSibling.textContent);
+    
+    selectedSpan.textContent = selectedOptions.length > 0 ? 
+        selectedOptions.join(', ') : 
+        'Wszystkie';
 }
 
 function initializeEventListeners() {
@@ -125,8 +166,6 @@ function initializeEventListeners() {
 
 function updateTable(applyFilters) {
     const tbody = document.querySelector('tbody');
-    const filterTestType = document.getElementById('filterTestType');
-    const filterGroup = document.getElementById('filterGroup');
     const sortBy = document.getElementById('sortBy');
     const sortOrder = document.getElementById('sortOrder');
     
@@ -142,20 +181,29 @@ function updateTable(applyFilters) {
     // Clone original rows for filtering
     let rows = originalRows.map(row => row.cloneNode(true));
     
+    // Get selected test types and groups
+    const selectedTestTypes = Array.from(document.querySelectorAll('.filter-test-type:checked'))
+        .map(cb => cb.value);
+    const selectedGroups = Array.from(document.querySelectorAll('.filter-group:checked'))
+        .map(cb => cb.value);
+    
     // Apply filters
-    if (filterTestType.value || filterGroup.value) {
+    if (selectedTestTypes.length > 0 || selectedGroups.length > 0) {
         rows = rows.filter(row => {
             const testType = row.querySelector('td:nth-child(2)').textContent.trim();
             const testGroups = JSON.parse(row.dataset.groups || '[]');
             
-            const testTypeMatch = !filterTestType.value || 
-                (filterTestType.value === 'SURVEY' && testType === 'Ankieta') ||
-                (filterTestType.value === 'EQ' && testType === 'Test EQ') ||
-                (filterTestType.value === 'IQ' && testType === 'Test IQ') ||
-                (filterTestType.value === 'EQ_EVALUATION' && testType === 'Ocena EQ');
+            const testTypeMatch = selectedTestTypes.length === 0 || 
+                selectedTestTypes.some(type => {
+                    if (type === 'SURVEY') return testType === 'Ankieta';
+                    if (type === 'EQ') return testType === 'Test EQ';
+                    if (type === 'IQ') return testType === 'Test IQ';
+                    if (type === 'EQ_EVALUATION') return testType === 'Ocena EQ';
+                    return false;
+                });
                 
-            const groupMatch = !filterGroup.value || 
-                testGroups.some(group => group.id === parseInt(filterGroup.value));
+            const groupMatch = selectedGroups.length === 0 || 
+                testGroups.some(group => selectedGroups.includes(group.id.toString()));
             
             return testTypeMatch && groupMatch;
         });

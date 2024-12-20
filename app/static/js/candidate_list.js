@@ -272,79 +272,119 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeEventListeners() {
-    const form = document.querySelector('form');
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
+    // Store original table rows
+    const tbody = document.querySelector('tbody');
+    originalRows = Array.from(tbody.querySelectorAll('tr'));
+    
+    // Initialize filters with instant update
+    document.querySelectorAll('.filter-campaign, .filter-status').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateSelectedOptionsText(this);
             updateTable(true);
         });
-    }
-
-    // Filter buttons
-    document.getElementById('applyFiltersBtn').addEventListener('click', function() {
-        updateTable(true);
     });
 
+    // Search input with debounce
+    const searchInput = document.getElementById('searchText');
+    let debounceTimer;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            updateTable(true);
+        }, 300);
+    });
+
+    // Sort controls with instant update
+    document.getElementById('sortBy').addEventListener('change', () => updateTable(true));
+    document.getElementById('sortOrder').addEventListener('change', () => updateTable(true));
+
+    // Stop dropdown from closing on click inside
+    document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        menu.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
+
+    // Reset filters
     document.getElementById('resetFiltersBtn').addEventListener('click', function() {
-        resetFilters();
+        document.getElementById('searchText').value = '';
+        document.querySelectorAll('.filter-campaign, .filter-status').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        document.querySelectorAll('.selected-options').forEach(span => {
+            span.textContent = span.closest('.dropdown').querySelector('button').textContent.includes('kampanie') ? 
+                'Wszystkie kampanie' : 'Wszystkie statusy';
+        });
+        document.getElementById('sortBy').value = 'created_at';
+        document.getElementById('sortOrder').value = 'desc';
+        updateTable(false);
     });
+}
+
+function updateSelectedOptionsText(checkbox) {
+    const dropdownButton = checkbox.closest('.dropdown').querySelector('button');
+    const selectedSpan = dropdownButton.querySelector('.selected-options');
+    const checkboxes = checkbox.closest('.dropdown-menu').querySelectorAll('input[type="checkbox"]');
+    const selectedOptions = Array.from(checkboxes)
+        .filter(cb => cb.checked)
+        .map(cb => cb.nextElementSibling.textContent);
+    
+    selectedSpan.textContent = selectedOptions.length > 0 ? 
+        selectedOptions.join(', ') : 
+        checkbox.classList.contains('filter-campaign') ? 'Wszystkie kampanie' : 'Wszystkie statusy';
 }
 
 function updateTable(applyFilters) {
     const tbody = document.querySelector('tbody');
     const searchText = document.getElementById('searchText').value.toLowerCase();
-    const filterCampaign = document.getElementById('filterCampaign').value;
-    const filterStatus = document.getElementById('filterStatus').value;
+    const selectedCampaigns = Array.from(document.querySelectorAll('.filter-campaign:checked'))
+        .map(cb => cb.value);
+    const selectedStatuses = Array.from(document.querySelectorAll('.filter-status:checked'))
+        .map(cb => cb.value);
     const sortBy = document.getElementById('sortBy').value;
     const sortOrder = document.getElementById('sortOrder').value;
     
     if (!applyFilters) {
-        // Reset to original state
         tbody.innerHTML = '';
         originalRows.forEach(row => tbody.appendChild(row.cloneNode(true)));
         return;
     }
 
-    // Filter rows
     let filteredRows = originalRows.filter(row => {
         const text = row.textContent.toLowerCase();
         const campaignCode = row.querySelector('td:nth-child(2)').textContent.trim();
         const status = row.querySelector('.badge').textContent.trim();
         
         const matchesSearch = !searchText || text.includes(searchText);
-        const matchesCampaign = !filterCampaign || campaignCode === filterCampaign;
-        const matchesStatus = !filterStatus || status === filterStatus;
+        const matchesCampaign = selectedCampaigns.length === 0 || selectedCampaigns.includes(campaignCode);
+        const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(status);
         
         return matchesSearch && matchesCampaign && matchesStatus;
     });
 
     // Sort rows
-    filteredRows.sort((a, b) => {
-        let aValue = getRowValue(a, sortBy);
-        let bValue = getRowValue(b, sortBy);
-        
-        if (sortOrder === 'desc') {
-            [aValue, bValue] = [bValue, aValue];
-        }
-        
-        if (typeof aValue === 'number' && typeof bValue === 'number') {
-            return aValue - bValue;
-        }
-        return String(aValue).localeCompare(String(bValue));
-    });
+    if (sortBy) {
+        filteredRows.sort((a, b) => {
+            const aValue = getRowValue(a, sortBy);
+            const bValue = getRowValue(b, sortBy);
+            const order = sortOrder === 'asc' ? 1 : -1;
+            
+            if (typeof aValue === 'string') {
+                return aValue.localeCompare(bValue) * order;
+            }
+            return (aValue - bValue) * order;
+        });
+    }
 
     // Update table
     tbody.innerHTML = '';
-    filteredRows.forEach(row => {
-        const newRow = row.cloneNode(true);
-        tbody.appendChild(newRow);
-    });
+    filteredRows.forEach(row => tbody.appendChild(row.cloneNode(true)));
     
-    // Update URL without page reload
+    // Update URL
     const params = new URLSearchParams({
         search: searchText,
-        campaign_code: filterCampaign,
-        status: filterStatus,
+        campaign_code: selectedCampaigns.join(','),
+        status: selectedStatuses.join(','),
         sort_by: sortBy,
         sort_order: sortOrder
     });
@@ -375,17 +415,6 @@ function getRowValue(row, sortBy) {
     }
 
     return value;
-}
-
-function resetFilters() {
-    document.getElementById('searchText').value = '';
-    document.getElementById('filterCampaign').value = '';
-    document.getElementById('filterStatus').value = '';
-    document.getElementById('sortBy').value = 'created_at';
-    document.getElementById('sortOrder').value = 'desc';
-    
-    updateTable(false);
-    window.history.pushState({}, '', window.location.pathname);
 }
 
 function setupActionButtons() {

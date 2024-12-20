@@ -18,32 +18,65 @@
                    class="form-control" 
                    id="searchText" 
                    name="search" 
-                   placeholder="Wyszukaj w imieniu, nazwisku, emailu lub telefonie"
+                   placeholder="Wyszukaj w imieniu, nazwisku, emailu lub telefonie..."
                    value="{{ request.args.get('search', '') }}">
         </div>
         <div class="col-md-3">
             <label class="form-label">Kod kampanii</label>
-            <select class="form-select" id="filterCampaign" name="campaign_code">
-                <option value="">Wszystkie kampanie</option>
-                {% for campaign in campaigns %}
-                    <option value="{{ campaign.code }}" {% if request.args.get('campaign_code') == campaign.code %}selected{% endif %}>
-                        {{ campaign.code }} - {{ campaign.title }}
-                    </option>
-                {% endfor %}
-            </select>
+            <div class="dropdown">
+                <button class="form-select text-start" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <span class="selected-options">Wszystkie kampanie</span>
+                </button>
+                <div class="dropdown-menu w-100 p-3">
+                    {% for campaign in campaigns %}
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input filter-campaign" 
+                               value="{{ campaign.code }}" id="filterCampaign{{ campaign.code }}">
+                        <label class="form-check-label" for="filterCampaign{{ campaign.code }}">
+                            {{ campaign.code }} - {{ campaign.title }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
         <div class="col-md-3">
             <label class="form-label">Status rekrutacji</label>
-            <select class="form-select" id="filterStatus" name="status">
-                <option value="">Wszystkie statusy</option>
-                <option value="PO1" {% if request.args.get('status') == 'PO1' %}selected{% endif %}>PO1</option>
-                <option value="PO2" {% if request.args.get('status') == 'PO2' %}selected{% endif %}>PO2</option>
-                <option value="PO2_5" {% if request.args.get('status') == 'PO2_5' %}selected{% endif %}>PO2.5</option>
-                <option value="PO3" {% if request.args.get('status') == 'PO3' %}selected{% endif %}>PO3</option>
-                <option value="PO4" {% if request.args.get('status') == 'PO4' %}selected{% endif %}>PO4</option>
-                <option value="REJECTED" {% if request.args.get('status') == 'REJECTED' %}selected{% endif %}>Odrzucony</option>
-                <option value="ACCEPTED" {% if request.args.get('status') == 'ACCEPTED' %}selected{% endif %}>Zaakceptowany</option>
-            </select>
+            <div class="dropdown">
+                <button class="form-select text-start" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <span class="selected-options">Wszystkie statusy</span>
+                </button>
+                <div class="dropdown-menu w-100 p-3">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input filter-status" value="PO1" id="filterPO1">
+                        <label class="form-check-label" for="filterPO1">PO1</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input filter-status" value="PO2" id="filterPO2">
+                        <label class="form-check-label" for="filterPO2">PO2</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input filter-status" value="PO2_5" id="filterPO2_5">
+                        <label class="form-check-label" for="filterPO2_5">PO2.5</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input filter-status" value="PO3" id="filterPO3">
+                        <label class="form-check-label" for="filterPO3">PO3</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input filter-status" value="PO4" id="filterPO4">
+                        <label class="form-check-label" for="filterPO4">PO4</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input filter-status" value="REJECTED" id="filterREJECTED">
+                        <label class="form-check-label" for="filterREJECTED">Odrzucony</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input filter-status" value="ACCEPTED" id="filterACCEPTED">
+                        <label class="form-check-label" for="filterACCEPTED">Zaakceptowany</label>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="col-md-3">
             <label class="form-label">Sortuj według</label>
@@ -78,9 +111,6 @@
         <div class="col-12 text-end mt-3">
             <button type="button" class="btn btn-outline-secondary" id="resetFiltersBtn">
                 Resetuj filtry
-            </button>
-            <button type="button" class="btn btn-primary ms-2" id="applyFiltersBtn">
-                Zastosuj
             </button>
         </div>
     </form>

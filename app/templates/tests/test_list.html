@@ -24,23 +24,46 @@
         <!-- First row -->
         <div class="col-md-6 col-lg-3">
             <label class="form-label">Typ testu</label>
-            <select class="form-select" id="filterTestType">
-                <option value="">Wszystkie</option>
-                <option value="SURVEY">Ankieta</option>
-                <option value="EQ">Test EQ</option>
-                <option value="IQ">Test IQ</option>
-                <option value="EQ_EVALUATION">Ocena EQ</option>
-            </select>
+            <div class="dropdown">
+                <button class="form-select text-start" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <span class="selected-options">Wszystkie</span>
+                </button>
+                <div class="dropdown-menu w-100 p-3">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input filter-test-type" value="SURVEY" id="filterSURVEY">
+                        <label class="form-check-label" for="filterSURVEY">Ankieta</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input filter-test-type" value="EQ" id="filterEQ">
+                        <label class="form-check-label" for="filterEQ">Test EQ</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input filter-test-type" value="IQ" id="filterIQ">
+                        <label class="form-check-label" for="filterIQ">Test IQ</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input filter-test-type" value="EQ_EVALUATION" id="filterEQ_EVALUATION">
+                        <label class="form-check-label" for="filterEQ_EVALUATION">Ocena EQ</label>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <div class="col-md-6 col-lg-3">
             <label class="form-label">Grupa</label>
-            <select class="form-select" id="filterGroup">
-                <option value="">Wszystkie</option>
-                {% for group in user_groups %}
-                    <option value="{{ group.id }}">{{ group.name }}</option>
-                {% endfor %}
-            </select>
+            <div class="dropdown">
+                <button class="form-select text-start" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <span class="selected-options">Wszystkie</span>
+                </button>
+                <div class="dropdown-menu w-100 p-3">
+                    {% for group in user_groups %}
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input filter-group" value="{{ group.id }}" id="filterGroup{{ group.id }}">
+                        <label class="form-check-label" for="filterGroup{{ group.id }}">{{ group.name }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
 
         <div class="col-md-6 col-lg-3">
@@ -64,9 +87,6 @@
         <div class="col-12 d-flex justify-content-end gap-2 mt-3">
             <button type="button" class="btn btn-outline-secondary" id="resetFilters">
                 Resetuj filtry
-            </button>
-            <button type="button" class="btn btn-primary" id="applyFilters">
-                Zastosuj
             </button>
         </div>
     </form>
