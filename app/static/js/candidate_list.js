@@ -353,28 +353,13 @@ function updateTable(applyFilters) {
 }
 
 function getRowValue(row, sortBy) {
-    const cellIndex = {
-        'email': 2,
-        'phone': 3,
-        'recruitment_status': 4,
-        'po1_score': 5,
-        'po2_score': 6,
-        'po2_5_score': 7,
-        'po3_score': 8,
-        'po4_score': 9,
-        'total_score': 10,
-        'score_ko': 11,
-        'score_re': 12,
-        'score_w': 13,
-        'score_in': 14,
-        'score_pz': 15,
-        'score_kz': 16,
-        'score_dz': 17,
-        'score_sw': 18,
-        'created_at': 19
-    }[sortBy] || 19;
+    // First get the cell based on the data attribute instead of fixed indices
+    const cell = row.querySelector(`[data-sort="${sortBy}"]`);
+    if (!cell) {
+        console.warn(`No cell found with data-sort="${sortBy}"`);
+        return null;
+    }
 
-    const cell = row.querySelector(`td:nth-child(${cellIndex})`);
     const value = cell.textContent.trim();
 
     // Handle numeric values

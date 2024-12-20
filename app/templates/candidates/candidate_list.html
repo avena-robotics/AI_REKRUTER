@@ -118,10 +118,10 @@
                 {% for candidate in candidates %}
                 <tr ondblclick="viewCandidate('{{ candidate.id }}')" style="cursor: pointer;">
                     <td>{{ candidate.first_name }} {{ candidate.last_name }}</td>
-                    <td>{{ candidate.campaigns.code }}</td>
-                    <td>{{ candidate.email }}</td>
-                    <td>{{ candidate.phone if candidate.phone else '-' }}</td>
-                    <td>
+                    <td data-sort="campaign_code">{{ candidate.campaigns.code }}</td>
+                    <td data-sort="email">{{ candidate.email }}</td>
+                    <td data-sort="phone">{{ candidate.phone if candidate.phone else '-' }}</td>
+                    <td data-sort="recruitment_status">
                         <span class="badge 
                             {% if candidate.recruitment_status == 'ACCEPTED' %}bg-success
                             {% elif candidate.recruitment_status == 'REJECTED' %}bg-danger
@@ -129,21 +129,21 @@
                             {{ candidate.recruitment_status }}
                         </span>
                     </td>
-                    <td>{{ candidate.po1_score if candidate.po1_score is not none else '-' }}</td>
-                    <td>{{ candidate.po2_score if candidate.po2_score is not none else '-' }}</td>
-                    <td>{{ candidate.po2_5_score if candidate.po2_5_score is not none else '-' }}</td>
-                    <td>{{ candidate.po3_score if candidate.po3_score is not none else '-' }}</td>
-                    <td>{{ candidate.po4_score if candidate.po4_score is not none else '-' }}</td>
-                    <td>{{ candidate.total_score if candidate.total_score is not none else '-' }}</td>
-                    <td>{{ candidate.score_ko if candidate.score_ko is not none else '-' }}</td>
-                    <td>{{ candidate.score_re if candidate.score_re is not none else '-' }}</td>
-                    <td>{{ candidate.score_w if candidate.score_w is not none else '-' }}</td>
-                    <td>{{ candidate.score_in if candidate.score_in is not none else '-' }}</td>
-                    <td>{{ candidate.score_pz if candidate.score_pz is not none else '-' }}</td>
-                    <td>{{ candidate.score_kz if candidate.score_kz is not none else '-' }}</td>
-                    <td>{{ candidate.score_dz if candidate.score_dz is not none else '-' }}</td>
-                    <td>{{ candidate.score_sw if candidate.score_sw is not none else '-' }}</td>
-                    <td>{{ candidate.created_at|format_datetime }}</td>
+                    <td data-sort="po1_score">{{ candidate.po1_score if candidate.po1_score is not none else '-' }}</td>
+                    <td data-sort="po2_score">{{ candidate.po2_score if candidate.po2_score is not none else '-' }}</td>
+                    <td data-sort="po2_5_score">{{ candidate.po2_5_score if candidate.po2_5_score is not none else '-' }}</td>
+                    <td data-sort="po3_score">{{ candidate.po3_score if candidate.po3_score is not none else '-' }}</td>
+                    <td data-sort="po4_score">{{ candidate.po4_score if candidate.po4_score is not none else '-' }}</td>
+                    <td data-sort="total_score">{{ candidate.total_score if candidate.total_score is not none else '-' }}</td>
+                    <td data-sort="score_ko">{{ candidate.score_ko if candidate.score_ko is not none else '-' }}</td>
+                    <td data-sort="score_re">{{ candidate.score_re if candidate.score_re is not none else '-' }}</td>
+                    <td data-sort="score_w">{{ candidate.score_w if candidate.score_w is not none else '-' }}</td>
+                    <td data-sort="score_in">{{ candidate.score_in if candidate.score_in is not none else '-' }}</td>
+                    <td data-sort="score_pz">{{ candidate.score_pz if candidate.score_pz is not none else '-' }}</td>
+                    <td data-sort="score_kz">{{ candidate.score_kz if candidate.score_kz is not none else '-' }}</td>
+                    <td data-sort="score_dz">{{ candidate.score_dz if candidate.score_dz is not none else '-' }}</td>
+                    <td data-sort="score_sw">{{ candidate.score_sw if candidate.score_sw is not none else '-' }}</td>
+                    <td data-sort="created_at">{{ candidate.created_at|format_datetime }}</td>
                     <td>
                         <div class="dropdown">
                             <button class="btn btn-primary btn-sm dropdown-toggle" 
