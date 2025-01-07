@@ -156,3 +156,4 @@ function setButtonLoading(button, isLoading) {
         button.disabled = false;
     }
 }
+

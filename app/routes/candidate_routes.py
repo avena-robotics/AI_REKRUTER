@@ -200,29 +200,6 @@ def update_note(id, note_id):
         return jsonify({"error": "Wystąpił nieznany błąd podczas aktualizowania notatki"}), 500
 
 
-@candidate_bp.route("/<int:id>/extend-token/<stage>", methods=["POST"])
-@login_required
-def extend_token(id, stage):
-    try:
-        new_expiry = CandidateService.extend_token(id, stage)
-        return jsonify({
-            "success": True,
-            "message": "Token został przedłużony",
-            "new_expiry": new_expiry.isoformat()
-        })
-        
-    except CandidateException as e:
-        return jsonify({
-            "success": False,
-            "error": e.message
-        }), 500
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": "Wystąpił nieznany błąd podczas przedłużania tokenu"
-        }), 500
-
-
 @candidate_bp.route("/<int:id>/recalculate", methods=["POST"])
 @login_required
 def recalculate_scores(id):
@@ -236,4 +213,27 @@ def recalculate_scores(id):
         return jsonify({
             "success": False, 
             "error": "Wystąpił nieznany błąd podczas przeliczania punktów"
+        }), 500
+
+
+@candidate_bp.route("/<int:id>/regenerate-token/<stage>", methods=["POST"])
+@login_required
+def regenerate_token(id, stage):
+    try:
+        logger.info(f"Rozpoczęcie regeneracji tokenu dla kandydata {id}, etap {stage}")
+        result = CandidateService.regenerate_token(id, stage)
+        logger.info(f"Token został wygenerowany: {result}")
+        return jsonify(result)
+        
+    except CandidateException as e:
+        logger.error(f"Błąd CandidateException podczas regeneracji tokenu: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": e.message
+        }), 500
+    except Exception as e:
+        logger.error(f"Nieoczekiwany błąd podczas regeneracji tokenu: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": "Wystąpił nieznany błąd podczas generowania nowego tokenu"
         }), 500

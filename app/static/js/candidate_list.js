@@ -6,7 +6,6 @@ window.viewCandidate = async function(candidateId) {
         const html = await response.text();
         document.getElementById('candidateModalBody').innerHTML = html;
         initializeCopyLinks();
-        initializeExtendTokens();
         const modal = new bootstrap.Modal(document.getElementById('candidateModal'));
         document.getElementById('candidateModal').addEventListener('hidden.bs.modal', function () {
             document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
@@ -189,52 +188,6 @@ function initializeCopyLinks() {
                     console.error('Failed to copy:', err);
                     showToast('Nie udało się skopiować linku', 'error');
                 });
-        });
-    });
-}
-
-function initializeExtendTokens() {
-    document.querySelectorAll('.extend-token').forEach(button => {
-        button.addEventListener('click', async function() {
-            const candidateId = this.dataset.candidateId;
-            const stage = this.dataset.stage;
-            
-            if (confirm('Czy na pewno chcesz przedłużyć ważność tokenu o tydzień?')) {
-                try {
-                    const response = await fetch(`/candidates/${candidateId}/extend-token/${stage}`, {
-                        method: 'POST'
-                    });
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        showToast('Token został przedłużony', 'success');
-                        
-                        // Fetch updated candidate data
-                        const candidateResponse = await fetch(`/candidates/${candidateId}`);
-                        const updatedHtml = await candidateResponse.text();
-                        
-                        // Create a temporary container to parse the HTML
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = updatedHtml;
-                        
-                        // Find the specific expiry date element to update
-                        const currentExpiryDate = document.querySelector(
-                            `.token-expiry[data-stage="${stage}"]`
-                        );
-                        const newExpiryDate = tempDiv.querySelector(
-                            `.token-expiry[data-stage="${stage}"]`
-                        );
-                        
-                        if (currentExpiryDate && newExpiryDate) {
-                            currentExpiryDate.innerHTML = newExpiryDate.innerHTML;
-                        }
-                    } else {
-                        throw new Error(data.error || 'Wystąpił błąd');
-                    }
-                } catch (error) {
-                    showToast(error.message, 'error');
-                }
-            }
         });
     });
 }
@@ -584,4 +537,32 @@ window.recalculateScores = async function(candidateId) {
     } finally {
         setButtonLoading(`recalculateBtn_${candidateId}`, false);
     }
+};
+
+
+window.regenerateToken = function(candidateId, stage) {
+    console.log('Regenerating token for:', {candidateId, stage});
+    
+    if (!confirm('Czy na pewno chcesz wygenerować nowy token? Stary token przestanie działać.')) {
+        console.log('User cancelled');
+        return;
+    }
+    
+    fetch(`/candidates/${candidateId}/regenerate-token/${stage}`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Response data:', data);
+        if (data.success) {
+            showToast(data.message, 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            throw new Error(data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast(error.message, 'error');
+    });
 };

@@ -1,5 +1,4 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-<script src="{{ url_for('static', filename='js/toast.js') }}" defer></script>
 
 <div class="candidate-details">
     <!-- Informacje o kandydacie -->
@@ -159,7 +158,7 @@
         <!-- Tokeny dostępu -->
         <div class="tokens-section mb-5">
             <h6 class="mb-4">Tokeny dostępu</h6>
-            {% for stage in ['PO1', 'PO2', 'PO3'] %}
+            {% for stage in ['PO2', 'PO3'] %}
                 {% set token = candidate['access_token_' + stage.lower()] %}
                 {% set is_used = candidate['access_token_' + stage.lower() + '_is_used'] %}
                 {% set expires_at = candidate['access_token_' + stage.lower() + '_expires_at'] %}
@@ -176,9 +175,9 @@
                                         <p class="mb-2">
                                             <strong>Status:</strong>
                                             {% if is_used %}
-                                                <span class="badge bg-success ms-2">Wykorzystany</span>
+                                                <span class="badge bg-danger ms-2">Wykorzystany</span>
                                             {% else %}
-                                                <span class="badge bg-warning ms-2">Niewykorzystany</span>
+                                                <span class="badge bg-success ms-2">Niewykorzystany</span>
                                             {% endif %}
                                         </p>
                                         {% if expires_at %}
@@ -199,14 +198,11 @@
                                             <i class="bi bi-clipboard me-1"></i>
                                             Kopiuj link
                                         </button>
-                                        {% if not is_used and stage in ['PO2', 'PO3'] %}
-                                            <button class="btn btn-outline-secondary btn-sm extend-token"
-                                                    data-candidate-id="{{ candidate.id }}"
-                                                    data-stage="{{ stage }}">
-                                                <i class="bi bi-clock-history me-1"></i>
-                                                Przedłuż ważność
-                                            </button>
-                                        {% endif %}
+                                        <button class="btn btn-outline-secondary btn-sm"
+                                                onclick="regenerateToken('{{ candidate.id }}', '{{ stage }}')">
+                                            <i class="bi bi-arrow-clockwise me-1"></i>
+                                            Wygeneruj nowy token
+                                        </button>
                                     </div>
                                 </div>
                                 <div class="input-group">
@@ -709,6 +705,8 @@
     </div>
 </div>
 
+<script src="{{ url_for('static', filename='js/toast.js') }}"></script>
+<script src="{{ url_for('static', filename='js/candidate_view.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
@@ -727,30 +725,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.error('Failed to copy:', err);
                     showToast('Nie udało się skopiować linku', 'error');
                 });
-        });
-    });
-
-    // Extend token functionality
-    document.querySelectorAll('.extend-token').forEach(button => {
-        button.addEventListener('click', async function() {
-            const candidateId = this.dataset.candidateId;
-            const stage = this.dataset.stage;
-            
-            try {
-                const response = await fetch(`/candidates/${candidateId}/extend-token/${stage}`, {
-                    method: 'POST'
-                });
-                const data = await response.json();
-                
-                if (data.success) {
-                    showToast(data.message, 'success');
-                    setTimeout(() => location.reload(), 1000);
-                } else {
-                    throw new Error(data.error);
-                }
-            } catch (error) {
-                showToast(error.message, 'error');
-            }
         });
     });
 
@@ -776,5 +750,4 @@ document.addEventListener('DOMContentLoaded', function() {
         return timeText.join(' ');
     }
 });
-
 </script>

@@ -318,7 +318,7 @@ class CandidateService:
                 expiry_days = campaign.get(f'po{next_status[-1]}_token_expiry_days', 7)
                 
                 # Generate token and prepare updates
-                current_time = datetime.now(timezone.utc)
+                current_time = datetime.now()
                 token_expiry = (current_time + timedelta(days=expiry_days)).replace(hour=23, minute=59, second=59)
                 token = secrets.token_urlsafe(32)
                 
@@ -546,56 +546,7 @@ class CandidateService:
                 original_error=e
             )
 
-    @staticmethod
-    def extend_token(candidate_id: int, stage: str) -> datetime:
-        """
-        Przedłuża ważność tokenu dostępu do testu.
-        
-        Args:
-            candidate_id (int): ID kandydata
-            stage (str): Etap rekrutacji (np. 'po2', 'po3')
-            
-        Raises:
-            CandidateException: Gdy wystąpi błąd podczas przedłużania tokenu
-        """
-        try:
-            # Get candidate and campaign data
-            candidate = supabase.from_("candidates")\
-                .select("*, campaigns(*)")\
-                .eq("id", candidate_id)\
-                .single()\
-                .execute()
-                
-            if not candidate.data:
-                raise CandidateException(message="Nie znaleziono kandydata")
-                
-            # Get token expiry days from campaign
-            expiry_days = candidate.data['campaigns'].get(f'{stage.lower()}_token_expiry_days', 7)
-            logger.debug(f"Przedłużanie tokenu dla kandydata {candidate_id} do etapu {stage} o {expiry_days} dni")
-            
-            # Calculate new expiry date
-            current_time = datetime.now(timezone.utc)
-            new_expiry = (current_time + timedelta(days=expiry_days)).replace(hour=23, minute=59, second=59)
-            logger.debug(f"Nowa data ważności tokenu: {new_expiry}")
-            
-            # Update token expiry
-            supabase.from_("candidates")\
-                .update({
-                    f'access_token_{stage.lower()}_expires_at': new_expiry.isoformat(),
-                    'updated_at': current_time.isoformat()
-                })\
-                .eq("id", candidate_id)\
-                .execute()
-                
-            return new_expiry
-                
-        except Exception as e:
-            logger.error(f"Błąd podczas przedłużania tokenu dla kandydata {candidate_id}: {str(e)}")
-            raise CandidateException(
-                message="Wystąpił błąd podczas przedłużania ważności tokenu",
-                original_error=e
-            )
-
+ 
     @staticmethod
     def recalculate_candidate_scores(candidate_id: int) -> Dict:
         """
@@ -637,6 +588,80 @@ class CandidateService:
             logger.error(f"Błąd podczas przeliczania punktów kandydata {candidate_id}: {str(e)}")
             raise CandidateException(
                 message="Wystąpił błąd podczas przeliczania punktów kandydata",
+                original_error=e
+            )
+
+    @staticmethod
+    def regenerate_token(candidate_id: int, stage: str) -> Dict[str, Union[bool, str, datetime]]:
+        """
+        Generuje nowy token dostępu do testu.
+        
+        Args:
+            candidate_id (int): ID kandydata
+            stage (str): Etap rekrutacji (np. 'PO2', 'PO3')
+            
+        Returns:
+            Dict: Słownik zawierający nowy token i datę wygaśnięcia
+            
+        Raises:
+            CandidateException: Gdy wystąpi błąd podczas generowania tokenu
+        """
+        try:
+            logger.info(f"Service: Rozpoczęcie regeneracji tokenu dla kandydata {candidate_id}, etap {stage}")
+            
+            # Get candidate and campaign data
+            candidate = supabase.from_("candidates")\
+                .select("*, campaigns(*)")\
+                .eq("id", candidate_id)\
+                .single()\
+                .execute()
+                
+            logger.debug(f"Pobrane dane kandydata: {candidate.data}")
+            
+            if not candidate.data:
+                logger.warning(f"Nie znaleziono kandydata {candidate_id}")
+                raise CandidateException(message="Nie znaleziono kandydata")
+                
+            # Get token expiry days from campaign
+            expiry_days = candidate.data['campaigns'].get(f'{stage.lower()}_token_expiry_days', 7)
+            logger.debug(f"Dni ważności tokenu: {expiry_days}")
+            
+            # Generate new token and calculate expiry date
+            current_time = datetime.now()
+            new_expiry = (current_time + timedelta(days=expiry_days)).replace(hour=23, minute=59, second=59)
+            new_token = secrets.token_urlsafe(32)
+            
+            logger.debug(f"Wygenerowany nowy token: {new_token}, wygasa: {new_expiry}")
+            
+            # Update token and its expiry
+            update_data = {
+                f'access_token_{stage.lower()}': new_token,
+                f'access_token_{stage.lower()}_expires_at': new_expiry.isoformat(),
+                f'access_token_{stage.lower()}_is_used': False,
+                'updated_at': current_time.isoformat()
+            }
+            logger.debug(f"Dane do aktualizacji: {update_data}")
+            
+            result = supabase.from_("candidates")\
+                .update(update_data)\
+                .eq("id", candidate_id)\
+                .execute()
+                
+            logger.debug(f"Wynik aktualizacji: {result.data}")
+            
+            response_data = {
+                "success": True,
+                "token": new_token,
+                "new_expiry": new_expiry.isoformat(),
+                "message": "Token został wygenerowany"
+            }
+            logger.info(f"Token został pomyślnie wygenerowany dla kandydata {candidate_id}")
+            return response_data
+            
+        except Exception as e:
+            logger.error(f"Błąd podczas generowania nowego tokenu dla kandydata {candidate_id}: {str(e)}")
+            raise CandidateException(
+                message="Wystąpił błąd podczas generowania nowego tokenu",
                 original_error=e
             )
 
