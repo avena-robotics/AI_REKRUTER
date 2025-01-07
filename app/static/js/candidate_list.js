@@ -539,6 +539,15 @@ window.recalculateScores = async function(candidateId) {
     }
 };
 
+function formatDateTime(date) {
+    return date.toLocaleDateString('pl-PL', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    }).replace(',', '');
+}
 
 window.regenerateToken = function(candidateId, stage) {
     console.log('Regenerating token for:', {candidateId, stage});
@@ -570,7 +579,7 @@ window.regenerateToken = function(candidateId, stage) {
                 const expirySpan = tokenSection.querySelector(`#expiryTime${stage}`);
                 if (expirySpan) {
                     const expiryDate = new Date(data.new_expiry);
-                    expirySpan.textContent = expiryDate.toLocaleString();
+                    expirySpan.textContent = formatDateTime(expiryDate);
                 }
                 
                 // Aktualizuj status

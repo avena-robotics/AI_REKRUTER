@@ -1,34 +1,22 @@
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
-def format_datetime(dt):
-    """
-    Formatuje datę i czas do czytelnego formatu.
+from flask import app
+
+def format_datetime(value):
+    """Format a datetime to a pretty string."""
+    if not value:
+        return ''
     
-    Args:
-        dt: Data i czas (str lub datetime)
+    if isinstance(value, str):
+        try:
+            dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
+        except ValueError:
+            return value
+    else:
+        dt = value
         
-    Returns:
-        str: Sformatowana data i czas
-    """
-    if not dt:
-        return ""
-        
-    try:
-        # If input is string, convert to datetime
-        if isinstance(dt, str):
-            if '.' in dt:
-                dt = dt.split('.')[0]  # Usuń mikrosekundy
-            dt = datetime.fromisoformat(dt.replace('Z', '+00:00'))
-        
-        # Ensure timezone info
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-            
-        # Convert to local timezone
-        local_dt = dt.astimezone(ZoneInfo("Europe/Warsaw"))
-        return local_dt.strftime('%Y-%m-%d %H:%M')
-        
-    except Exception as e:
-        print(f"Error formatting datetime {dt}: {str(e)}")
-        return str(dt)
+    # Konwersja do strefy czasowej Warsaw
+    local_dt = dt.astimezone(ZoneInfo("Europe/Warsaw"))
+    # Zmiana formatu na dd.mm.yyyy HH:MM
+    return local_dt.strftime('%d.%m.%Y %H:%M')

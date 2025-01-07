@@ -1008,13 +1008,22 @@ async function handleTestFormSubmit(e) {
 
 // Helper function to collect question data
 function collectQuestionData(card, index) {
+    // First verify the card has required elements
+    const questionTextElement = card.querySelector('[name$="[question_text]"]');
+    const answerTypeElement = card.querySelector('[name$="[answer_type]"]');
+    const pointsElement = card.querySelector('[name$="[points]"]');
+    
+    if (!questionTextElement || !answerTypeElement) {
+        throw new Error('Brakuje wymaganych pól w pytaniu ' + (index + 1));
+    }
+
     const questionData = {
         id: card.querySelector('input[name$="[id]"]')?.value,
-        question_text: card.querySelector('[name$="[question_text]"]').value,
-        answer_type: card.querySelector('[name$="[answer_type]"]').value,
-        points: parseInt(card.querySelector('[name$="[points]"]').value || '0'),
+        question_text: questionTextElement.value,
+        answer_type: answerTypeElement.value,
+        points: parseInt(pointsElement?.value || '0'),
         order_number: index + 1,
-        is_required: card.querySelector('[name$="[is_required]"]').checked,
+        is_required: card.querySelector('[name$="[is_required]"]')?.checked ?? true,
         algorithm_type: card.querySelector('[name$="[algorithm_type]"]')?.value || 'NO_ALGORITHM',
         image: card.querySelector('input[name$="[image]"]')?.value
     };
