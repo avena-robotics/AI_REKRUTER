@@ -555,8 +555,33 @@ window.regenerateToken = function(candidateId, stage) {
     .then(data => {
         console.log('Response data:', data);
         if (data.success) {
+            // Aktualizuj wartości w sekcji tokenu
+            const tokenSection = document.querySelector(`.token-section[data-stage="${stage}"]`);
+            if (tokenSection) {
+                // Aktualizuj link
+                const linkInput = tokenSection.querySelector('input[type="text"]');
+                const copyButton = tokenSection.querySelector('.copy-link');
+                const newLink = `${window.location.origin}/test/candidate/${data.token}`;
+                
+                if (linkInput) linkInput.value = newLink;
+                if (copyButton) copyButton.dataset.link = newLink;
+                
+                // Aktualizuj datę wygaśnięcia
+                const expirySpan = tokenSection.querySelector(`#expiryTime${stage}`);
+                if (expirySpan) {
+                    const expiryDate = new Date(data.new_expiry);
+                    expirySpan.textContent = expiryDate.toLocaleString();
+                }
+                
+                // Aktualizuj status
+                const statusBadge = tokenSection.querySelector('.badge');
+                if (statusBadge) {
+                    statusBadge.className = 'badge bg-success ms-2';
+                    statusBadge.textContent = 'Niewykorzystany';
+                }
+            }
+            
             showToast(data.message, 'success');
-            setTimeout(() => location.reload(), 1000);
         } else {
             throw new Error(data.error);
         }
