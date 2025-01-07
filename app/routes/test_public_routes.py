@@ -3,6 +3,7 @@ from common.logger import Logger
 from services.test_public_service import TestPublicService, TestPublicException
 from database import supabase
 from datetime import datetime, timezone
+from filters import format_datetime
 
 test_public_bp = Blueprint('test_public', __name__)
 logger = Logger.instance()
@@ -12,17 +13,17 @@ def landing(token):
     """Landing page for universal test"""
     try:
         # Check token status
-        candidate, is_invalid, stage, completed_at = TestPublicService.check_token_status(token)
+        token_status = TestPublicService.check_token_status(token)
         
         # Handle invalid token
-        if not candidate:
+        if not token_status['candidate']:
             return render_template('tests/error.html',
                                 title="Nieprawidłowy token",
                                 message="Podany link jest nieprawidłowy.",
                                 error_type="token_not_found")
         
         # Handle inactive campaign
-        if stage == 'PO1' and is_invalid:
+        if token_status['stage'] == 'PO1' and token_status['is_inactive']:
             return render_template('tests/inactive.html')
         
         # Get test info
@@ -136,27 +137,33 @@ def candidate_landing(token):
     """Landing page for candidate test"""
     try:
         # Check if token is used or expired
-        candidate, is_invalid, stage, completed_at = TestPublicService.check_token_status(token)
+        token_status = TestPublicService.check_token_status(token)
         
         # Handle invalid token
-        if not candidate:
+        if not token_status['candidate']:
             return render_template('tests/error.html',
                                 title="Nieprawidłowy token",
                                 message="Podany link jest nieprawidłowy.",
                                 error_type="token_not_found")
         
         # Handle PO2/PO3 specific checks
-        if stage in ['PO2', 'PO3']:
+        if token_status['stage'] in ['PO2', 'PO3']:
+            # Check if test was already completed
+            if token_status['completed_at']:
+                return render_template('tests/completed.html',
+                                    completed_at=format_datetime(token_status['completed_at']))
+            
             # Check if token was already used
-            if is_invalid:
+            if token_status['is_used']:
+                return render_template('tests/used.html')
+            
+            # Check if token is expired
+            if token_status['is_expired']:
+                expires_at = format_datetime(token_status['expires_at'])
                 return render_template('tests/error.html',
                                     title="Link wygasł",
-                                    message="Link do testu wygasł i nie jest już aktywny.",
+                                    message=f"Link do testu wygasł {expires_at} i nie jest już aktywny.",
                                     error_type="test_expired")
-            
-            # Check if test was already completed
-            if completed_at:
-                return render_template('tests/used.html')
         
         # Get test info
         test_info = TestPublicService.get_candidate_test_info(token)
@@ -235,40 +242,46 @@ def start_candidate_test(token):
     """Start candidate test"""
     try:
         # Check if token is used or expired
-        candidate, is_invalid, stage, completed_at = TestPublicService.check_token_status(token)
+        token_status = TestPublicService.check_token_status(token)
         
         # Handle invalid token
-        if not candidate:
+        if not token_status['candidate']:
             return render_template('tests/error.html',
                                 title="Nieprawidłowy token",
                                 message="Podany link jest nieprawidłowy.",
                                 error_type="token_not_found")
         
         # Handle PO2/PO3 specific checks
-        if stage in ['PO2', 'PO3']:
+        if token_status['stage'] in ['PO2', 'PO3']:
+            # Check if test was already completed
+            if token_status['completed_at']:
+                return render_template('tests/completed.html',
+                                    completed_at=format_datetime(token_status['completed_at']))
+            
             # Check if token was already used
-            if is_invalid:
+            if token_status['is_used']:
+                return render_template('tests/used.html')
+            
+            # Check if token is expired
+            if token_status['is_expired']:
+                expires_at = format_datetime(token_status['expires_at'])
                 return render_template('tests/error.html',
                                     title="Link wygasł",
-                                    message="Link do testu wygasł i nie jest już aktywny.",
+                                    message=f"Link do testu wygasł {expires_at} i nie jest już aktywny.",
                                     error_type="test_expired")
-            
-            # Check if test was already completed
-            if completed_at:
-                return render_template('tests/used.html')
             
             try:
                 # Mark token as used and record start time
                 current_time = datetime.now(timezone.utc)
                 update_data = {
-                    f'access_token_{stage.lower()}_is_used': True,
-                    f'{stage.lower()}_started_at': current_time.isoformat(),
+                    f'access_token_{token_status["stage"].lower()}_is_used': True,
+                    f'{token_status["stage"].lower()}_started_at': current_time.isoformat(),
                     'updated_at': current_time.isoformat()
                 }
                 
                 supabase.table('candidates')\
                     .update(update_data)\
-                    .eq('id', candidate['id'])\
+                    .eq('id', token_status['candidate']['id'])\
                     .execute()
             except Exception as e:
                 logger.error(f"Error marking token as used: {str(e)}")

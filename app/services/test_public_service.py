@@ -104,7 +104,7 @@ class TestPublicService:
         return None
 
     @staticmethod
-    def check_token_status(token: str) -> Tuple[Optional[Dict], bool, Optional[str], Optional[str]]:
+    def check_token_status(token: str) -> Dict[str, Any]:
         """Check if token is used or expired and get test info"""
         try:
             current_time = datetime.now(timezone.utc)
@@ -125,7 +125,21 @@ class TestPublicService:
                     
                     stage = 'PO2'
                     completed_at = candidate.data.get('po2_completed_at')
-                    return candidate.data, is_used or is_expired, stage, completed_at
+                    
+                    # Ensure dates are in ISO format
+                    if expires_at and not isinstance(expires_at, str):
+                        expires_at = expires_at.isoformat()
+                    if completed_at and not isinstance(completed_at, str):
+                        completed_at = completed_at.isoformat()
+                        
+                    return {
+                        'candidate': candidate.data,
+                        'is_used': is_used,
+                        'is_expired': is_expired,
+                        'stage': stage,
+                        'completed_at': completed_at,
+                        'expires_at': expires_at
+                    }
             except:
                 pass
             
@@ -145,7 +159,21 @@ class TestPublicService:
                     
                     stage = 'PO3'
                     completed_at = candidate.data.get('po3_completed_at')
-                    return candidate.data, is_used or is_expired, stage, completed_at
+                    
+                    # Ensure dates are in ISO format
+                    if expires_at and not isinstance(expires_at, str):
+                        expires_at = expires_at.isoformat()
+                    if completed_at and not isinstance(completed_at, str):
+                        completed_at = completed_at.isoformat()
+                        
+                    return {
+                        'candidate': candidate.data,
+                        'is_used': is_used,
+                        'is_expired': is_expired,
+                        'stage': stage,
+                        'completed_at': completed_at,
+                        'expires_at': expires_at
+                    }
             except:
                 pass
 
@@ -159,7 +187,15 @@ class TestPublicService:
                 
                 if campaign.data:
                     is_active = campaign.data.get('is_active', False)
-                    return campaign.data, not is_active, 'PO1', None
+                    return {
+                        'candidate': campaign.data,
+                        'is_used': False,
+                        'is_expired': False,
+                        'is_inactive': not is_active,
+                        'stage': 'PO1',
+                        'completed_at': None,
+                        'expires_at': None
+                    }
             except:
                 pass
 
@@ -171,7 +207,14 @@ class TestPublicService:
                 original_error=e
             )
         
-        return None, False, None, None
+        return {
+            'candidate': None,
+            'is_used': False,
+            'is_expired': False,
+            'stage': None,
+            'completed_at': None,
+            'expires_at': None
+        }
 
     @staticmethod
     def _check_expiry(expires_at: str, current_time: datetime) -> bool:
