@@ -75,10 +75,24 @@
                                             {{ note.note_type }}
                                         </h6>
                                         <div class="d-flex align-items-center gap-3">
-                                            <small class="text-muted">
-                                                <i class="bi bi-clock me-1"></i>
-                                                {{ note.created_at|format_datetime }}
-                                            </small>
+                                            <div class="note-meta text-muted small">
+                                                <div class="d-flex align-items-center gap-3">
+                                                    <span>
+                                                        <i class="bi bi-person me-1"></i>
+                                                        {{ note.user_email if note.user_email else "-" }}
+                                                    </span>
+                                                    <span>
+                                                        <i class="bi bi-clock me-1"></i>
+                                                        {{ note.created_at|format_datetime }}
+                                                    </span>
+                                                    {% if note.updated_at and note.updated_at != note.created_at %}
+                                                    <span>
+                                                        <i class="bi bi-pencil me-1"></i>
+                                                        Edytowano: {{ note.updated_at|format_datetime }}
+                                                    </span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
                                             <button class="btn btn-outline-primary btn-sm" 
                                                     onclick="editNote('{{ candidate.id }}', '{{ note.id }}', '{{ note.note_type }}', '{{ note.content }}')"
                                                     title="Edytuj notatkę">

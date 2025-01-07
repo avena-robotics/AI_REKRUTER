@@ -11,15 +11,18 @@ document.addEventListener('DOMContentLoaded', function() {
             const noteId = this.dataset.noteId;
             const noteType = this.dataset.noteType;
             const noteContent = this.dataset.noteContent;
-            showEditNoteModal(noteId, noteType, noteContent);
+            const userEmail = this.dataset.userEmail;
+            showEditNoteModal(noteId, noteType, noteContent, userEmail);
         });
     });
 
     // Obsługa usuwania notatek
     document.querySelectorAll('.delete-note').forEach(btn => {
         btn.addEventListener('click', function() {
-            const noteId = this.dataset.noteId;
-            deleteNote(noteId);
+            if (confirm('Czy na pewno chcesz usunąć tę notatkę?')) {
+                const noteId = this.dataset.noteId;
+                deleteNote(noteId);
+            }
         });
     });
 });
@@ -33,14 +36,20 @@ function showAddNoteModal() {
     
     // Reset form
     document.getElementById('noteId').value = '';
-    document.getElementById('noteType').value = 'NEUTRAL';
+    document.getElementById('noteType').value = '';
     document.getElementById('noteContent').value = '';
     document.getElementById('noteModalLabel').textContent = 'Dodaj notatkę';
+    
+    // Clear author info
+    const authorInfo = document.getElementById('noteAuthorInfo');
+    if (authorInfo) {
+        authorInfo.textContent = '';
+    }
     
     noteModal.show();
 }
 
-function showEditNoteModal(noteId, noteType, noteContent) {
+function showEditNoteModal(noteId, noteType, noteContent, userEmail) {
     const modal = document.getElementById('noteModal');
     noteModal = new bootstrap.Modal(modal);
     
@@ -49,6 +58,12 @@ function showEditNoteModal(noteId, noteType, noteContent) {
     document.getElementById('noteType').value = noteType;
     document.getElementById('noteContent').value = noteContent;
     document.getElementById('noteModalLabel').textContent = 'Edytuj notatkę';
+    
+    // Add author information
+    const authorInfo = document.getElementById('noteAuthorInfo');
+    if (authorInfo && userEmail) {
+        authorInfo.innerHTML = `<i class="bi bi-person me-1"></i>Utworzone przez: ${userEmail}`;
+    }
     
     noteModal.show();
 }
@@ -59,10 +74,13 @@ async function saveNote() {
     const content = document.getElementById('noteContent').value;
     const candidateId = document.querySelector('[data-candidate-id]').dataset.candidateId;
 
-    if (!content) {
-        showToast('error', 'Treść notatki jest wymagana');
+    if (!noteType || !content) {
+        showToast('Wypełnij wszystkie pola', 'error');
         return;
     }
+
+    const saveBtn = document.querySelector('#noteModal .btn-primary');
+    setButtonLoading(saveBtn, true);
 
     try {
         let url = `/candidates/${candidateId}/notes`;
@@ -88,21 +106,20 @@ async function saveNote() {
 
         if (data.success) {
             noteModal.hide();
-            showToast('success', noteId ? 'Notatka została zaktualizowana' : 'Notatka została dodana');
+            showToast(noteId ? 'Notatka została zaktualizowana' : 'Notatka została dodana', 'success');
             window.location.reload();
         } else {
-            showToast('error', data.error || 'Wystąpił błąd');
+            showToast(data.error || 'Wystąpił błąd', 'error');
         }
     } catch (error) {
-        showToast('error', 'Wystąpił błąd podczas zapisywania notatki');
+        console.error('Error:', error);
+        showToast('Wystąpił błąd podczas zapisywania notatki', 'error');
+    } finally {
+        setButtonLoading(saveBtn, false);
     }
 }
 
 async function deleteNote(noteId) {
-    if (!confirm('Czy na pewno chcesz usunąć tę notatkę?')) {
-        return;
-    }
-
     const candidateId = document.querySelector('[data-candidate-id]').dataset.candidateId;
 
     try {
@@ -113,12 +130,29 @@ async function deleteNote(noteId) {
         const data = await response.json();
 
         if (data.success) {
-            showToast('success', 'Notatka została usunięta');
+            showToast('Notatka została usunięta', 'success');
             window.location.reload();
         } else {
-            showToast('error', data.error || 'Wystąpił błąd');
+            showToast(data.error || 'Wystąpił błąd', 'error');
         }
     } catch (error) {
-        showToast('error', 'Wystąpił błąd podczas usuwania notatki');
+        console.error('Error:', error);
+        showToast('Wystąpił błąd podczas usuwania notatki', 'error');
+    }
+}
+
+// Helper function to handle button loading state
+function setButtonLoading(button, isLoading) {
+    const spinner = button.querySelector('.spinner-border');
+    const text = button.querySelector('.button-text');
+    
+    if (isLoading) {
+        spinner.classList.remove('d-none');
+        text.classList.add('d-none');
+        button.disabled = true;
+    } else {
+        spinner.classList.add('d-none');
+        text.classList.remove('d-none');
+        button.disabled = false;
     }
 }

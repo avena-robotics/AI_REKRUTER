@@ -409,6 +409,8 @@ BEGIN
                 'id', n.id,
                 'note_type', n.note_type,
                 'content', n.content,
+                'user_id', n.user_id,
+                'user_email', n.user_email,
                 'created_at', n.created_at,
                 'updated_at', n.updated_at
             ) ORDER BY n.created_at DESC

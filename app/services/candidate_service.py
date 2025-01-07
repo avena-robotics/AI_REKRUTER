@@ -429,7 +429,7 @@ class CandidateService:
 
 
     @staticmethod
-    def add_note(candidate_id: int, note_type: str, content: str) -> Dict:
+    def add_note(candidate_id: int, note_type: str, content: str, user_id: int, user_email: str) -> Dict:
         """
         Dodaje notatkę do kandydata.
         
@@ -437,6 +437,8 @@ class CandidateService:
             candidate_id (int): ID kandydata
             note_type (str): Typ notatki
             content (str): Treść notatki
+            user_id (int): ID użytkownika dodającego notatkę
+            user_email (str): Email użytkownika dodającego notatkę
             
         Returns:
             Dict: Dane utworzonej notatki
@@ -450,6 +452,8 @@ class CandidateService:
                     "candidate_id": candidate_id,
                     "note_type": note_type,
                     "content": content,
+                    "user_id": user_id,
+                    "user_email": user_email,
                     "created_at": datetime.now(timezone.utc).isoformat(),
                     "updated_at": datetime.now(timezone.utc).isoformat()
                 })\
@@ -499,7 +503,7 @@ class CandidateService:
 
 
     @staticmethod
-    def update_note(candidate_id: int, note_id: int, note_type: str, content: str) -> Dict:
+    def update_note(candidate_id: int, note_id: int, note_type: str, content: str, user_id: int, user_email: str) -> Dict:
         """
         Aktualizuje notatkę kandydata.
         
@@ -508,6 +512,8 @@ class CandidateService:
             note_id (int): ID notatki
             note_type (str): Nowy typ notatki
             content (str): Nowa treść notatki
+            user_id (int): ID użytkownika aktualizującego notatkę
+            user_email (str): Email użytkownika aktualizującego notatkę
             
         Returns:
             Dict: Zaktualizowane dane notatki
@@ -520,6 +526,8 @@ class CandidateService:
                 .update({
                     "note_type": note_type,
                     "content": content,
+                    "user_id": user_id,
+                    "user_email": user_email,
                     "updated_at": datetime.now(timezone.utc).isoformat()
                 })\
                 .eq("id", note_id)\

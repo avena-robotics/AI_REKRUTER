@@ -1,5 +1,5 @@
 import secrets
-from flask import Blueprint, render_template, request, jsonify, current_app
+from flask import Blueprint, render_template, request, jsonify, current_app, session
 from routes.auth_routes import login_required
 from services.candidate_service import CandidateService, CandidateException
 from services.campaign_service import CampaignService, CampaignException
@@ -145,7 +145,13 @@ def add_note(id):
         if not note_type or not content:
             return jsonify({"error": "Brak wymaganych pól"}), 400
         
-        note = CandidateService.add_note(id, note_type, content)
+        note = CandidateService.add_note(
+            candidate_id=id, 
+            note_type=note_type, 
+            content=content,
+            user_id=session['user_id'],
+            user_email=session['user_email']
+        )
         return jsonify({"success": True, "data": note})
         
     except CandidateException as e:
@@ -178,7 +184,14 @@ def update_note(id, note_id):
         if not note_type or not content:
             return jsonify({"error": "Brak wymaganych pól"}), 400
         
-        note = CandidateService.update_note(id, note_id, note_type, content)
+        note = CandidateService.update_note(
+            candidate_id=id, 
+            note_id=note_id, 
+            note_type=note_type, 
+            content=content,
+            user_id=session['user_id'],
+            user_email=session['user_email']
+        )
         return jsonify({"success": True, "data": note})
         
     except CandidateException as e:
