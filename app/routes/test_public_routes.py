@@ -344,9 +344,16 @@ def start_candidate_test(token):
                             message="Nieoczekiwany błąd podczas rozpoczynania testu.",
                             error_type="unexpected_error")
 
-@test_public_bp.route('/test/candidate/<token>/submit', methods=['POST'])
+@test_public_bp.route('/test/candidate/<token>/submit', methods=['POST', 'GET'])
 def submit_candidate_test(token):
     """Submit the candidate test"""
+    if request.method == 'GET':
+        # Redirect GET requests to error page
+        return render_template('tests/error.html',
+                            title="Nieprawidłowe żądanie",
+                            message="Test został już zapisany lub wystąpił błąd podczas zapisu. Nie można ponownie przesłać odpowiedzi.",
+                            error_type="invalid_request")
+
     try:
         # Get test info
         test_info = TestPublicService.get_candidate_test_info(token)
@@ -360,22 +367,31 @@ def submit_candidate_test(token):
         stage = test_info['stage']
         current_time = datetime.now(timezone.utc)
 
-        # Process answers
-        TestPublicService.process_test_answers(candidate_id, test_info['test']['id'], request.form)
-        
-        # Update candidate with completion time and mark token as used
-        update_data = {
-            f'{stage.lower()}_completed_at': current_time.isoformat(),
-            f'access_token_{stage.lower()}_is_used': True,
-            'updated_at': current_time.isoformat()
-        }
-        
-        supabase.table('candidates')\
-            .update(update_data)\
-            .eq('id', candidate_id)\
-            .execute()
-        
-        return redirect(url_for('test_public.complete'))
+        try:
+            # Process answers
+            TestPublicService.process_test_answers(candidate_id, test_info['test']['id'], request.form)
+            
+            # Update candidate with completion time and mark token as used
+            update_data = {
+                f'{stage.lower()}_completed_at': current_time.isoformat(),
+                f'access_token_{stage.lower()}_is_used': True,
+                'updated_at': current_time.isoformat()
+            }
+            
+            supabase.table('candidates')\
+                .update(update_data)\
+                .eq('id', candidate_id)\
+                .execute()
+            
+            return redirect(url_for('test_public.complete'))
+            
+        except TestPublicException as e:
+            if "duplicate key value violates unique constraint" in str(e.original_error):
+                return render_template('tests/error.html',
+                                    title="Test został już zapisany",
+                                    message="Ten test został już wcześniej zapisany w systemie. Nie można ponownie przesłać odpowiedzi.",
+                                    error_type="duplicate_submission")
+            raise e
         
     except TestPublicException as e:
         logger.error(f"Error submitting candidate test: {str(e)}")
