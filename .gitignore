@@ -163,3 +163,4 @@ cython_debug/
 
 /iq_images
 /logs
+/backup.dump
