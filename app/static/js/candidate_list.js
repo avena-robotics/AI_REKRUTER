@@ -222,6 +222,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Setup action buttons
     setupActionButtons();
+
+    // Bulk recalculation button
+    document.getElementById('bulkRecalculateBtn').addEventListener('click', bulkRecalculateScores);
+
+    // Cancel button in modal
+    document.getElementById('cancelRecalculation').addEventListener('click', function() {
+        isRecalculationCancelled = true;
+        recalculationModal.hide();
+        location.reload();
+    });
 });
 
 function initializeEventListeners() {
@@ -600,3 +610,72 @@ window.regenerateToken = function(candidateId, stage) {
         showToast(error.message, 'error');
     });
 };
+
+let isRecalculationCancelled = false;
+let recalculationModal = null;
+
+async function bulkRecalculateScores() {
+    // Get all visible candidate IDs from the table
+    const visibleRows = document.querySelectorAll('#candidatesTable tbody tr');
+    const candidateIds = Array.from(visibleRows).map(row => {
+        const recalculateBtn = row.querySelector('[id^="recalculateBtn_"]');
+        return recalculateBtn ? recalculateBtn.id.replace('recalculateBtn_', '') : null;
+    }).filter(id => id);
+
+    if (candidateIds.length === 0) {
+        showToast('Brak kandydatów do przeliczenia', 'warning');
+        return;
+    }
+
+    // Reset cancellation flag
+    isRecalculationCancelled = false;
+
+    // Initialize and show modal
+    recalculationModal = new bootstrap.Modal(document.getElementById('bulkRecalculateModal'));
+    document.getElementById('totalCount').textContent = candidateIds.length;
+    document.getElementById('processedCount').textContent = '0';
+    document.querySelector('#bulkRecalculateModal .progress-bar').style.width = '0%';
+    recalculationModal.show();
+
+    // Process candidates sequentially
+    let processedCount = 0;
+    for (const candidateId of candidateIds) {
+        if (isRecalculationCancelled) {
+            showToast('Operacja została przerwana', 'warning');
+            break;
+        }
+
+        try {
+            const response = await fetch(`/candidates/${candidateId}/recalculate`, {
+                method: 'POST'
+            });
+            
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+
+            processedCount++;
+            updateRecalculationProgress(processedCount, candidateIds.length);
+
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('Wystąpił błąd podczas przeliczania punktów', 'error');
+            break;
+        }
+    }
+
+    // After completion
+    if (!isRecalculationCancelled) {
+        showToast('Przeliczanie punktów zakończone', 'success');
+        setTimeout(() => {
+            recalculationModal.hide();
+            location.reload();
+        }, 1000);
+    }
+}
+
+function updateRecalculationProgress(processed, total) {
+    const percentage = (processed / total) * 100;
+    document.querySelector('#bulkRecalculateModal .progress-bar').style.width = `${percentage}%`;
+    document.getElementById('processedCount').textContent = processed;
+}

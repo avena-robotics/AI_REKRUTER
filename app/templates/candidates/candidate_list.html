@@ -100,10 +100,18 @@
                 <option value="asc" {% if request.args.get('sort_order') == 'asc' %}selected{% endif %}>Rosnąco</option>
             </select>
         </div>
-        <div class="col-12 text-end mt-3">
-            <button type="button" class="btn btn-outline-secondary" id="resetFiltersBtn">
-                Resetuj filtry
-            </button>
+        <div class="col-12 d-flex justify-content-between mt-3">
+            <div>
+                <button type="button" class="btn btn-primary" id="bulkRecalculateBtn">
+                    <i class="bi bi-arrow-clockwise me-1"></i>
+                    Przelicz punkty
+                </button>
+            </div>
+            <div>
+                <button type="button" class="btn btn-outline-secondary" id="resetFiltersBtn">
+                    Resetuj filtry
+                </button>
+            </div>
         </div>
     </form>
 </div>
@@ -282,6 +290,31 @@
                     <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
                     <span class="button-text">Zapisz</span>
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for bulk recalculation -->
+<div class="modal fade" id="bulkRecalculateModal" tabindex="-1" aria-labelledby="bulkRecalculateModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkRecalculateModalLabel">Przeliczanie punktów</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+                <p class="text-center" id="recalculationProgress">
+                    Przeliczono: <span id="processedCount">0</span> z <span id="totalCount">0</span>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelRecalculation">Anuluj</button>
             </div>
         </div>
     </div>
