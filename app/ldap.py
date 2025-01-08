@@ -52,7 +52,7 @@ def ldap_authenticate(email, password) -> tuple[bool, dict]:
                 search_base=config.LDAP_BASE_DN,
                 search_filter=search_filter,
                 search_scope=SUBTREE,
-                attributes=['mail', 'userPrincipalName']
+                attributes=['distinguishedName', 'mail', 'userPrincipalName']
             )
             if not conn.entries:
                 logger.warning(f"Użytkownik {email} nie znaleziony w LDAP")
