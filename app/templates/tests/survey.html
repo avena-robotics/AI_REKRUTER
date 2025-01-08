@@ -7,7 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/test.css') }}">
-    <script src="{{ url_for('static', filename='js/test.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/timer.js') }}"></script>
     <style>
         /* Custom styles for ABCDEF text options */
         .abcdef-text-option {
@@ -162,17 +162,23 @@
                 <div class="card-body">
                     <h1 class="text-center mb-3">ANKIETA</h1>
                     <p class="lead text-center mb-3">{{ test.description }}</p>
-                    {% if test.time_limit_minutes %}
+                    {% if test.time_limit_minutes and test.time_limit_minutes > 0 %}
                     <div class="timer-container">
                         <span>Pozostały czas: </span>
-                        <span id="timer">{{ test.time_limit_minutes }}</span>
+                        <span id="timer">--:--</span>
                     </div>
                     {% endif %}
                 </div>
             </div>
 
             <!-- Candidate Form -->
-            <form id="testForm" class="needs-validation" novalidate method="POST" action="{{ url_for('test_public.submit_candidate_test', token=token) if candidate else url_for('test_public.submit_test', token=token) }}">
+            <form id="testForm" 
+                  class="needs-validation" 
+                  novalidate 
+                  method="POST" 
+                  action="{{ url_for('test_public.submit_candidate_test', token=token) if candidate else url_for('test_public.submit_test', token=token) }}"
+                  {% if timer_token %}data-timer-token="{{ timer_token }}"{% endif %}
+                  data-cancel-url="{{ url_for('test_public.cancel_candidate_test', token=token) if candidate else url_for('test_public.cancel_test', token=token) }}">
                 <input type="hidden" name="test_start_time" id="testStartTime">
                 <!-- Personal Information Section -->
                 {% if not candidate %}
@@ -393,34 +399,32 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            let remainingSeconds = parseInt(localStorage.getItem('remainingSeconds')) || 0;
-            let timeoutModalShown = false;
-            let modalTimeoutId = null;
-
-            function updateTimer() {
-                if (remainingSeconds <= 0) {
-                    clearInterval(timerInterval);
-                    if (!timeoutModalShown) {
-                        showTimeoutModal();
-                    }
-                    document.getElementById('timer').textContent = "00:00";
-                    return;
-                }
-
-                const minutes = Math.floor(remainingSeconds / 60);
-                const seconds = remainingSeconds % 60;
-                document.getElementById('timer').textContent = 
-                    `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-
-                localStorage.setItem('remainingSeconds', remainingSeconds);
-                remainingSeconds--;
+            const form = document.getElementById('testForm');
+            
+            // Initialize timer if token exists
+            const timerToken = form.dataset.timerToken;
+            console.log('Timer token:', timerToken); // Debug log
+            
+            if (timerToken) {
+                const timer = new TestTimer(timerToken, function() {
+                    showTimeoutModal();
+                });
+                timer.start().catch(error => {
+                    console.error('Error starting timer:', error);
+                });
             }
 
+            // Modal handling functions
             function showTimeoutModal() {
-                timeoutModalShown = true;
-                const modal = new bootstrap.Modal(document.getElementById('timeoutModal'));
-                modal.show();
-
+                const modal = document.getElementById('timeoutModal');
+                if (!modal) {
+                    console.error('Timeout modal not found');
+                    return;
+                }
+                
+                const bsModal = new bootstrap.Modal(modal);
+                bsModal.show();
+                
                 // Start 5-minute countdown for modal
                 let modalSeconds = 300;
                 const modalInterval = setInterval(() => {
@@ -431,70 +435,64 @@
                     }
                     const min = Math.floor(modalSeconds / 60);
                     const sec = modalSeconds % 60;
-                    document.getElementById('modalCountdown').textContent = 
-                        `${min}:${String(sec).padStart(2, '0')}`;
+                    const countdownElement = document.getElementById('modalCountdown');
+                    if (countdownElement) {
+                        countdownElement.textContent = `${min}:${String(sec).padStart(2, '0')}`;
+                    }
                     modalSeconds--;
                 }, 1000);
 
-                modalTimeoutId = setTimeout(() => {
+                setTimeout(() => {
                     clearInterval(modalInterval);
                     cancelTest();
                 }, 300000); // 5 minutes
             }
 
             function submitTest() {
-                if (modalTimeoutId) clearTimeout(modalTimeoutId);
-                document.getElementById('testForm').submit();
+                form.submit();
             }
 
             function cancelTest() {
-                if (modalTimeoutId) clearTimeout(modalTimeoutId);
-                window.location.href = "{{ url_for('test_public.cancel_candidate_test', token=token) if candidate else url_for('test_public.cancel_test', token=token) }}";
+                window.location.href = form.dataset.cancelUrl;
             }
 
-            // Initial update and start interval
-            updateTimer();
-            const timerInterval = setInterval(updateTimer, 1000);
-
-            // Make functions globally available
-            window.submitTest = submitTest;
-            window.cancelTest = cancelTest;
-
-            document.querySelectorAll('.list-group-item').forEach(item => {
-                item.addEventListener('click', function(e) {
-                    // Ensure radio input is checked even if clicking on label
-                    const radio = this.querySelector('input[type="radio"]');
-                    if (radio) {
-                        radio.checked = true;
-                        
-                        // Remove active class from all items in the same question
-                        const questionCard = this.closest('.card');
-                        questionCard.querySelectorAll('.list-group-item').forEach(i => {
-                            i.classList.remove('active');
-                        });
-                        
-                        // Add active class to clicked item
-                        this.classList.add('active');
-                    }
-                });
-            });
-
-            document.getElementById('testForm').addEventListener('submit', function(e) {
+            // Form validation
+            form.addEventListener('submit', function(e) {
                 e.preventDefault();
-                
-                const form = this;
-                
-                // Check form validity first
-                if (!form.checkValidity()) {
-                    e.stopPropagation();
-                    form.classList.add('was-validated');
-                    return; // Stop here if form is invalid
-                }
                 
                 const submitButton = form.querySelector('button[type="submit"]');
                 const spinner = submitButton.querySelector('.spinner-border');
                 const buttonText = submitButton.querySelector('.button-text');
                 
+                // Reset validation state
+                form.classList.remove('was-validated');
+                let isValid = true;
+                let firstInvalidElement = null;
+
+                // Validate required fields
+                const requiredInputs = form.querySelectorAll('[required]');
+                requiredInputs.forEach(input => {
+                    if (!input.value) {
+                        isValid = false;
+                        input.classList.add('is-invalid');
+                        
+                        if (!firstInvalidElement) {
+                            firstInvalidElement = input;
+                        }
+                    } else {
+                        input.classList.remove('is-invalid');
+                    }
+                });
+
+                if (!isValid) {
+                    // Scroll to first invalid element
+                    if (firstInvalidElement) {
+                        firstInvalidElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    form.classList.add('was-validated');
+                    return;
+                }
+
                 // Show loading state
                 submitButton.disabled = true;
                 spinner.classList.remove('d-none');
@@ -520,42 +518,9 @@
                 });
             });
 
-            // Dodaj czas startu z localStorage do formularza
-            const startTime = localStorage.getItem('testStartTime');
-            if (startTime) {
-                document.getElementById('testStartTime').value = startTime;
-            }
-
-            // Custom email validation
-            const emailInput = document.getElementById('email');
-            if (emailInput) {
-                emailInput.addEventListener('input', function() {
-                    const email = this.value;
-                    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-                    
-                    if (email === '') {
-                        this.setCustomValidity('To pole jest wymagane');
-                    } else if (!emailRegex.test(email)) {
-                        this.setCustomValidity('Proszę podać prawidłowy adres email');
-                    } else {
-                        this.setCustomValidity('');
-                    }
-                });
-            }
-
-            // Fetch all forms that need validation
-            const forms = document.querySelectorAll('.needs-validation');
-
-            // Loop over them and prevent submission
-            Array.prototype.slice.call(forms).forEach(function(form) {
-                form.addEventListener('submit', function(event) {
-                    if (!form.checkValidity()) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                    }
-                    form.classList.add('was-validated');
-                }, false);
-            });
+            // Make functions globally available
+            window.submitTest = submitTest;
+            window.cancelTest = cancelTest;
         });
     </script>
 

@@ -6,18 +6,24 @@
     <title>{{ test.test_type }} - AI Rekruter</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/test.css') }}" rel="stylesheet">
-    <script src="{{ url_for('static', filename='js/test.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/timer.js') }}"></script>
 </head>
 <body>
     <div class="container mt-3">
-        {% if test.time_limit_minutes %}
+        {% if test.time_limit_minutes and test.time_limit_minutes > 0 %}
         <div class="timer-container">
             <span>Pozostały czas: </span>
-            <span id="timer">{{ test.time_limit_minutes }}</span>
+            <span id="timer">--:--</span>
         </div>
         {% endif %}
 
-        <form id="testForm" class="needs-validation" novalidate method="POST" action="{{ url_for('test_public.submit_candidate_test', token=token) if candidate else url_for('test_public.submit_test', token=token) }}">
+        <form id="testForm" 
+              class="needs-validation" 
+              novalidate 
+              method="POST" 
+              action="{{ url_for('test_public.submit_candidate_test', token=token) if candidate else url_for('test_public.submit_test', token=token) }}"
+              {% if timer_token %}data-timer-token="{{ timer_token }}"{% endif %}
+              data-cancel-url="{{ url_for('test_public.cancel_candidate_test', token=token) if candidate else url_for('test_public.cancel_test', token=token) }}">
             {% for question in questions %}
             <div class="card mb-4 question-card" data-question-id="{{ question.id }}">
                 <h5>{{ question.question_text }}</h5>
@@ -176,35 +182,20 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize timer variables
-            let remainingSeconds = parseInt(localStorage.getItem('remainingSeconds')) || 0;
-            let timeoutModalShown = false;
-            let modalTimeoutId = null;
-            let timerInterval = null;
+            const form = document.getElementById('testForm');
+            
+            // Initialize timer if token exists
+            const timerToken = form.dataset.timerToken;
+            if (timerToken) {
+                const timer = new TestTimer(timerToken, showTimeoutModal);
+                timer.start();
+            }
 
-            // Handle radio button clicks
-            document.querySelectorAll('.list-group-item').forEach(item => {
-                item.addEventListener('click', function(e) {
-                    const radio = this.querySelector('input[type="radio"]');
-                    if (radio) {
-                        radio.checked = true;
-                        
-                        const questionCard = this.closest('.question-card');
-                        questionCard.querySelectorAll('.list-group-item').forEach(i => {
-                            i.classList.remove('active');
-                        });
-                        
-                        this.classList.add('active');
-                    }
-                });
-            });
-
-            // Timer functions
+            // Modal handling functions
             function showTimeoutModal() {
-                timeoutModalShown = true;
                 const modal = new bootstrap.Modal(document.getElementById('timeoutModal'));
                 modal.show();
-
+                
                 // Start 5-minute countdown for modal
                 let modalSeconds = 300;
                 const modalInterval = setInterval(() => {
@@ -220,83 +211,24 @@
                     modalSeconds--;
                 }, 1000);
 
-                modalTimeoutId = setTimeout(() => {
+                setTimeout(() => {
                     clearInterval(modalInterval);
                     cancelTest();
                 }, 300000); // 5 minutes
             }
 
-            function updateTimer() {
-                if (remainingSeconds <= 0) {
-                    clearInterval(timerInterval);
-                    if (!timeoutModalShown) {
-                        showTimeoutModal();
-                    }
-                    document.getElementById('timer').textContent = "00:00";
-                    return;
-                }
-
-                const minutes = Math.floor(remainingSeconds / 60);
-                const seconds = remainingSeconds % 60;
-                document.getElementById('timer').textContent = 
-                    `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-
-                localStorage.setItem('remainingSeconds', remainingSeconds);
-                remainingSeconds--;
-            }
-
             function submitTest() {
-                if (modalTimeoutId) clearTimeout(modalTimeoutId);
-                document.getElementById('testForm').submit();
+                form.submit();
             }
 
             function cancelTest() {
-                if (modalTimeoutId) clearTimeout(modalTimeoutId);
-                window.location.href = "{{ url_for('test_public.cancel_candidate_test', token=token) if candidate else url_for('test_public.cancel_test', token=token) }}";
-            }
-
-            function updatePointsTotal(questionId) {
-                const container = document.querySelector(`.ah-points-container [data-question="${questionId}"]`).closest('.ah-points-container');
-                const inputs = container.querySelectorAll('.points-input');
-                const remainingSpan = container.querySelector('.points-remaining');
-                const tooFewError = container.querySelector('.points-too-few');
-                const tooManyError = container.querySelector('.points-too-many');
-                
-                let total = 0;
-                inputs.forEach(input => {
-                    total += parseInt(input.value) || 0;
-                    input.classList.remove('is-valid');
-                });
-                
-                const remaining = 10 - total;
-                remainingSpan.textContent = remaining;
-                
-                // Reset error states
-                container.classList.remove('error-container');
-                tooFewError.style.display = 'none';
-                tooManyError.style.display = 'none';
-                
-                // Show appropriate error message
-                if (remaining < 0) {
-                    container.classList.add('error-container');
-                    tooManyError.style.display = 'block';
-                } else if (remaining > 0) {
-                    container.classList.add('error-container');
-                    tooFewError.style.display = 'block';
-                }
-            }
-
-            // Initialize timer if needed
-            if (document.getElementById('timer')) {
-                updateTimer();
-                timerInterval = setInterval(updateTimer, 1000);
+                window.location.href = form.dataset.cancelUrl;
             }
 
             // Form validation
-            document.getElementById('testForm').addEventListener('submit', function(e) {
+            form.addEventListener('submit', function(e) {
                 e.preventDefault();
                 
-                const form = this;
                 const submitButton = form.querySelector('button[type="submit"]');
                 const spinner = submitButton.querySelector('.spinner-border');
                 const buttonText = submitButton.querySelector('.button-text');
@@ -305,30 +237,6 @@
                 form.classList.remove('was-validated');
                 let isValid = true;
                 let firstInvalidElement = null;
-
-                // Validate AH Points questions
-                const ahPointsQuestions = document.querySelectorAll('.ah-points-container');
-                ahPointsQuestions.forEach(container => {
-                    const inputs = container.querySelectorAll('input');
-                    let total = 0;
-                    
-                    inputs.forEach(input => {
-                        total += parseInt(input.value) || 0;
-                    });
-
-                    if (total !== 10) {
-                        isValid = false;
-                        container.classList.add('error-container');
-                        container.querySelector('.points-error').style.display = 'block';
-                        
-                        if (!firstInvalidElement) {
-                            firstInvalidElement = container;
-                        }
-                    } else {
-                        container.classList.remove('error-container');
-                        container.querySelector('.points-error').style.display = 'none';
-                    }
-                });
 
                 // Validate required fields
                 const requiredInputs = form.querySelectorAll('[required]');
@@ -342,23 +250,6 @@
                         }
                     } else {
                         input.classList.remove('is-invalid');
-                    }
-                });
-
-                // Validate radio button groups
-                const radioGroups = {};
-                form.querySelectorAll('input[type="radio"][required]').forEach(radio => {
-                    const name = radio.getAttribute('name');
-                    if (!radioGroups[name]) {
-                        radioGroups[name] = false;
-                        const checkedRadio = form.querySelector(`input[name="${name}"]:checked`);
-                        if (!checkedRadio) {
-                            isValid = false;
-                            const radioContainer = radio.closest('.question-card');
-                            if (!firstInvalidElement) {
-                                firstInvalidElement = radioContainer;
-                            }
-                        }
                     }
                 });
 
@@ -399,7 +290,6 @@
             // Make functions globally available
             window.submitTest = submitTest;
             window.cancelTest = cancelTest;
-            window.updatePointsTotal = updatePointsTotal;
         });
     </script>
 

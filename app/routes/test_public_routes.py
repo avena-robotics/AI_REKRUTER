@@ -1,6 +1,7 @@
-from flask import Blueprint, render_template, request, redirect, url_for
+from flask import Blueprint, render_template, request, redirect, url_for, jsonify
 from common.logger import Logger
 from services.test_public_service import TestPublicService, TestPublicException
+from services.timer_service import TimerService
 from database import supabase
 from datetime import datetime, timezone
 from filters import format_datetime
@@ -76,6 +77,18 @@ def start_test(token):
             .order('order_number')\
             .execute()
         
+        # Create timer token if test has time limit
+        timer_token = None
+        time_limit = test_info['test'].get('time_limit_minutes', 0)
+        logger.debug(f"Test time limit: {time_limit} minutes")
+        
+        if time_limit > 0:
+            timer_token = TimerService.create_timer_token(
+                test_info['test']['id'],
+                time_limit
+            )
+            logger.debug(f"Created timer token: {timer_token}")
+        
         # Check if test has auto-progression to PO2
         has_next_stage = (test_info['test'].get('passing_threshold', 1) == 0 and 
                         test_info['campaign'].get('po2_test_id'))
@@ -85,6 +98,7 @@ def start_test(token):
                             test=test_info['test'],
                             questions=questions.data,
                             token=token,
+                            timer_token=timer_token,
                             has_next_stage=has_next_stage)
     
     except Exception as e:
@@ -312,6 +326,18 @@ def start_candidate_test(token):
                                     message="Test nie zawiera żadnych pytań.",
                                     error_type="no_questions")
             
+            # Create timer token if test has time limit
+            timer_token = None
+            time_limit = test_info['test'].get('time_limit_minutes', 0)
+            logger.debug(f"Test time limit: {time_limit} minutes")
+            
+            if time_limit > 0:
+                timer_token = TimerService.create_timer_token(
+                    test_info['test']['id'],
+                    time_limit
+                )
+                logger.debug(f"Created timer token: {timer_token}")
+            
             # Choose template based on test type
             template = 'tests/survey.html'
             if test_info['test']['test_type'] in ['IQ', 'EQ']:
@@ -322,6 +348,7 @@ def start_candidate_test(token):
                                 test=test_info['test'],
                                 questions=questions.data,
                                 token=token,
+                                timer_token=timer_token,
                                 candidate=test_info.get('candidate'))
         
         except Exception as e:
@@ -405,4 +432,19 @@ def submit_candidate_test(token):
                             title="Wystąpił błąd",
                             message="Nieoczekiwany błąd podczas zapisywania testu.",
                             error_type="unexpected_error")
+
+@test_public_bp.route('/api/timer/validate', methods=['POST'])
+def validate_timer():
+    """Validate timer token and return remaining time"""
+    try:
+        timer_token = request.json.get('timer_token')
+        if not timer_token:
+            return jsonify({'error': 'No timer token provided'}), 400
+            
+        validation = TimerService.validate_timer_token(timer_token)
+        return jsonify(validation)
+        
+    except Exception as e:
+        logger.error(f"Error validating timer: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
  
