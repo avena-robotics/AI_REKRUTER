@@ -47,14 +47,13 @@ def ldap_authenticate(email, password) -> tuple[bool, dict]:
         # Znajdowanie użytkownika w LDAP
         logger.info(f"LDAP: Autentykacja użytkownika {email}")
         with ldap_connection() as conn:
-            search_filter = f'(userPrincipalName={email})'
+            search_filter = f'(|(mail={email})(userPrincipalName={email}))'
             conn.search(
                 search_base=config.LDAP_BASE_DN,
                 search_filter=search_filter,
                 search_scope=SUBTREE,
-                attributes=['distinguishedName']
+                attributes=['mail', 'userPrincipalName']
             )
-            
             if not conn.entries:
                 logger.warning(f"Użytkownik {email} nie znaleziony w LDAP")
                 return False, { "error": "Użytkownik nie znaleziony"}
