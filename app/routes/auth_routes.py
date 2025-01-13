@@ -3,6 +3,7 @@ from functools import wraps
 from database import supabase
 from ldap import ldap_authenticate
 from routes.user_routes import check_user_by_email_supabase
+from services.auth_service import AuthService
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -23,36 +24,27 @@ def login():
         email = request.form['username']
         password = request.form['password']
         
-        # Autentykacja przez LDAP
-        auth_success, auth_message = ldap_authenticate(email, password)
-        if auth_success:
-            # Sprawdzenie, czy użytkownik istnieje w bazie danych
-            user_success, user_data = check_user_by_email_supabase(email)
-            if user_success:
-                # Logowanie udane, zapisanie w sesji
-                session['user_email'] = email
-                session['user_id'] = user_data['id']
-                
-                # Przekierowanie na stronę docelową
-                next_url = session.pop('next_url', None)
-                return jsonify({
-                    'success': True,
-                    'redirect': next_url or url_for('main.dashboard'),
-                    'message': 'Zalogowano pomyślnie',
-                    'type': 'success'
-                })
-            else:
-                return jsonify({
-                    'success': False,
-                    'message': user_data["error"],
-                    'type': 'error'
-                })
-        else:
+        success, user_id, auth_source = AuthService.authenticate(email, password)
+        
+        if success:
+            # Zapisanie w sesji
+            session['user_email'] = email
+            session['user_id'] = user_id
+            session['auth_source'] = auth_source
+            
+            next_url = session.pop('next_url', None)
             return jsonify({
-                'success': False,
-                'message': auth_message["error"],
-                'type': 'error'
+                'success': True,
+                'redirect': next_url or url_for('main.dashboard'),
+                'message': 'Zalogowano pomyślnie',
+                'type': 'success'
             })
+        
+        return jsonify({
+            'success': False,
+            'message': 'Nieprawidłowy login lub hasło',
+            'type': 'error'
+        })
     
     return render_template('auth/login.html')
 
