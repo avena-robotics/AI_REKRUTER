@@ -238,7 +238,42 @@
                 let isValid = true;
                 let firstInvalidElement = null;
 
-                // Validate required fields
+                // Validate AH_POINTS questions first
+                const ahPointsContainers = form.querySelectorAll('.ah-points-container');
+                ahPointsContainers.forEach(container => {
+                    const questionId = container.querySelector('.points-input').dataset.question;
+                    const inputs = container.querySelectorAll('.points-input');
+                    const tooFewError = container.querySelector('.points-too-few');
+                    const tooManyError = container.querySelector('.points-too-many');
+                    let total = 0;
+                    
+                    inputs.forEach(input => {
+                        total += parseInt(input.value || 0);
+                    });
+
+                    if (total !== 10) {
+                        isValid = false;
+                        inputs.forEach(input => input.classList.add('is-invalid'));
+                        
+                        if (total < 10) {
+                            tooFewError.style.display = 'block';
+                            tooManyError.style.display = 'none';
+                        } else {
+                            tooFewError.style.display = 'none';
+                            tooManyError.style.display = 'block';
+                        }
+                        
+                        if (!firstInvalidElement) {
+                            firstInvalidElement = container;
+                        }
+                    } else {
+                        inputs.forEach(input => input.classList.remove('is-invalid'));
+                        tooFewError.style.display = 'none';
+                        tooManyError.style.display = 'none';
+                    }
+                });
+
+                // Validate other required fields
                 const requiredInputs = form.querySelectorAll('[required]');
                 requiredInputs.forEach(input => {
                     if (!input.value) {
@@ -287,9 +322,49 @@
                 });
             });
 
+            // Add function to update points total
+            function updatePointsTotal(questionId) {
+                const container = document.querySelector(`.ah-points-container [data-question="${questionId}"]`).closest('.ah-points-container');
+                const inputs = container.querySelectorAll('.points-input');
+                const remainingSpan = container.querySelector('.points-remaining');
+                const tooFewError = container.querySelector('.points-too-few');
+                const tooManyError = container.querySelector('.points-too-many');
+                
+                let total = 0;
+                inputs.forEach(input => {
+                    const value = parseInt(input.value || 0);
+                    if (value < 0) {
+                        input.value = 0;
+                    } else {
+                        total += value;
+                    }
+                });
+                
+                const remaining = 10 - total;
+                remainingSpan.textContent = remaining;
+                
+                // Reset error states
+                container.classList.remove('error-container');
+                tooFewError.style.display = 'none';
+                tooManyError.style.display = 'none';
+                inputs.forEach(input => input.classList.remove('is-invalid'));
+                
+                // Show appropriate error message
+                if (total > 10) {
+                    container.classList.add('error-container');
+                    tooManyError.style.display = 'block';
+                    inputs.forEach(input => input.classList.add('is-invalid'));
+                } else if (total < 10) {
+                    container.classList.add('error-container');
+                    tooFewError.style.display = 'block';
+                    inputs.forEach(input => input.classList.add('is-invalid'));
+                }
+            }
+
             // Make functions globally available
             window.submitTest = submitTest;
             window.cancelTest = cancelTest;
+            window.updatePointsTotal = updatePointsTotal;
         });
     </script>
 

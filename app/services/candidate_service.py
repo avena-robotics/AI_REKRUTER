@@ -660,8 +660,43 @@ class CandidateService:
                 f'access_token_{stage.lower()}_is_used': False,
                 'updated_at': current_time.isoformat()
             }
+
+            # Reset test start and completion times based on stage
+            if stage == 'PO2':
+                update_data.update({
+                    'po2_started_at': None,
+                    'po2_completed_at': None,
+                    'po2_score': None,
+                    'po2_5_score': None  # Reset PO2.5 score as well
+                })
+            elif stage == 'PO3':
+                update_data.update({
+                    'po3_started_at': None,
+                    'po3_completed_at': None,
+                    'po3_score': None
+                })
+
             logger.debug(f"Dane do aktualizacji: {update_data}")
             
+            # Delete candidate answers based on stage
+            if stage == 'PO2':
+                # Delete PO2 and PO2.5 answers
+                supabase.from_("candidate_answers")\
+                    .delete()\
+                    .eq("candidate_id", candidate_id)\
+                    .in_("stage", ['PO2', 'PO2_5'])\
+                    .execute()
+                logger.debug("Usunięto odpowiedzi dla testów PO2 i PO2.5")
+            elif stage == 'PO3':
+                # Delete PO3 answers
+                supabase.from_("candidate_answers")\
+                    .delete()\
+                    .eq("candidate_id", candidate_id)\
+                    .eq("stage", 'PO3')\
+                    .execute()
+                logger.debug("Usunięto odpowiedzi dla testu PO3")
+            
+            # Update candidate data
             result = supabase.from_("candidates")\
                 .update(update_data)\
                 .eq("id", candidate_id)\
