@@ -9,16 +9,14 @@ logger = Logger.instance()
 def check_user_by_email_supabase(email):
     """
     Sprawdza, czy użytkownik z podanym emailem istnieje i ma uprawnienia.
-    
-    Args:
-        email (str): Adres email użytkownika.
-
-    Returns:
-        tuple: (bool, dict/str) - True i dane użytkownika, jeśli znaleziony, 
-                                  False i komunikat błędu, jeśli nie znaleziony.
     """
     try:        
-        user = UserService.get_user_by_email(email)
+        # Sprawdź najpierw lokalnego użytkownika
+        user = UserService.get_user_by_email_and_source(email, 'email')
+        if not user:
+            # Jeśli nie ma lokalnego, sprawdź LDAP
+            user = UserService.get_user_by_email_and_source(email, 'ldap')
+            
         if user:
             return True, user
         else:
