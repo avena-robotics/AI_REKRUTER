@@ -184,11 +184,6 @@ class CandidateScoreService:
                     )
                     updates['total_score'] = total_score
                     self.logger.info(f"Zaktualizowano total_score dla kandydata {candidate['id']}: {total_score}")
-
-                    stage = candidate.get('recruitment_status', '').lower()
-                    if stage in ['po1', 'po2', 'po2_5', 'po3']:
-                        updates[f'{stage}_completed_at'] = current_time.isoformat()
-                        self.logger.info(f"Zaktualizowano {stage}_completed_at dla kandydata {candidate['id']}: {current_time.isoformat()}")
                 
                 updates['updated_at'] = datetime.now(timezone.utc).isoformat()
                 
