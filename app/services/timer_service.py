@@ -9,13 +9,13 @@ config = Config.instance()
 
 class TimerService:
     @staticmethod
-    def create_timer_token(test_id: int, time_limit_minutes: int) -> str:
+    def create_timer_token(test_id: int, time_limit_minutes: int, start_time: Optional[datetime] = None) -> str:
         """Create a JWT token containing timer information"""
         # Don't create token if time limit is 0 or None
         if not time_limit_minutes:
             return None
             
-        current_time = datetime.now(timezone.utc)
+        current_time = start_time or datetime.now(timezone.utc)
         payload = {
             'test_id': test_id,
             'start_time': current_time.isoformat(),

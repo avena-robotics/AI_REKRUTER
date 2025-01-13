@@ -179,7 +179,7 @@
                   action="{{ url_for('test_public.submit_candidate_test', token=token) if candidate else url_for('test_public.submit_test', token=token) }}"
                   {% if timer_token %}data-timer-token="{{ timer_token }}"{% endif %}
                   data-cancel-url="{{ url_for('test_public.cancel_candidate_test', token=token) if candidate else url_for('test_public.cancel_test', token=token) }}">
-                <input type="hidden" name="test_start_time" id="testStartTime">
+                <input type="hidden" name="test_start_time" value="{{ start_time }}">
                 <!-- Personal Information Section -->
                 {% if not candidate %}
                 <div class="card mb-4">

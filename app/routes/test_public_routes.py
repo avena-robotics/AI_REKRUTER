@@ -79,13 +79,15 @@ def start_test(token):
         
         # Create timer token if test has time limit
         timer_token = None
+        start_time = datetime.now(timezone.utc)  # Create single source of truth for start time
         time_limit = test_info['test'].get('time_limit_minutes', 0)
         logger.debug(f"Test time limit: {time_limit} minutes")
         
         if time_limit > 0:
             timer_token = TimerService.create_timer_token(
                 test_info['test']['id'],
-                time_limit
+                time_limit,
+                start_time  # Pass the start time to timer service
             )
             logger.debug(f"Created timer token: {timer_token}")
         
@@ -99,6 +101,7 @@ def start_test(token):
                             questions=questions.data,
                             token=token,
                             timer_token=timer_token,
+                            start_time=start_time.isoformat(),  # Pass start time to template
                             has_next_stage=has_next_stage)
     
     except Exception as e:
