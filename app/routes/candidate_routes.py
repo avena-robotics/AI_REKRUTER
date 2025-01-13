@@ -3,6 +3,7 @@ from flask import Blueprint, render_template, request, jsonify, current_app, ses
 from routes.auth_routes import login_required
 from services.candidate_service import CandidateService, CandidateException
 from services.campaign_service import CampaignService, CampaignException
+from services.group_service import get_user_groups
 from common.logger import Logger
 from common.recalculation_score_service import RecalculationScoreService
 
@@ -19,7 +20,13 @@ def list():
         sort_order = request.args.get("sort_order", "desc")
         search = request.args.get("search", "").strip()
         
+        # Get user's groups
+        user_id = session.get('user_id')
+        user_groups = get_user_groups(user_id)
+        user_group_ids = [group['id'] for group in user_groups]
+        
         candidates = CandidateService.get_candidates(
+            user_group_ids=user_group_ids,
             campaign_code=campaign_code,
             status=status,
             sort_by=sort_by,

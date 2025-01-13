@@ -24,6 +24,7 @@ class CandidateException(Exception):
 class CandidateService:
     @staticmethod
     def get_candidates(
+        user_group_ids: List[int],
         campaign_code: Optional[str] = None,
         status: Optional[str] = None,
         sort_by: str = "created_at",
@@ -34,6 +35,7 @@ class CandidateService:
         Pobiera listę kandydatów z możliwością filtrowania i sortowania.
         
         Args:
+            user_group_ids (List[int]): Lista ID grup do których należy użytkownik (wymagane)
             campaign_code (Optional[str]): Kod kampanii do filtrowania
             status (Optional[str]): Status rekrutacji do filtrowania
             sort_by (str): Pole po którym sortować
@@ -47,8 +49,26 @@ class CandidateService:
             CandidateException: Gdy wystąpi błąd podczas pobierania kandydatów
         """
         try:
+            # If no groups assigned, return empty list
+            if not user_group_ids:
+                return []
+
+            # Get campaign IDs that user has access to
+            campaign_access = supabase.from_("link_groups_campaigns")\
+                .select("campaign_id")\
+                .in_("group_id", user_group_ids)\
+                .execute()
+            campaign_ids = [item['campaign_id'] for item in campaign_access.data]
+            
+            # If no campaigns accessible, return empty list
+            if not campaign_ids:
+                return []
+
             # Build query for candidates with campaign data
             query = supabase.from_("candidates").select("*, campaigns!inner(*)")
+
+            # Filter by user's campaign access
+            query = query.in_("campaign_id", campaign_ids)
 
             # Apply search if provided
             if search:
