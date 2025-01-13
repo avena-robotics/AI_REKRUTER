@@ -239,6 +239,7 @@ class TestPublicService:
     def submit_universal_test(token: str, form_data: Dict[str, Any]) -> Tuple[bool, Optional[str], Optional[str]]:
         """Submit universal test and handle PO2 token generation"""
         try:
+            logger.debug(f"Submitting universal test with token: {token}")
             test_info = TestPublicService.get_universal_test_info(token)
             if not test_info:
                 raise TestPublicException(
@@ -357,126 +358,148 @@ class TestPublicService:
     def process_test_answers(candidate_id: int, test_id: int, form_data: Dict[str, Any], stage: Optional[str] = None) -> None:
         """Process test answers"""
         try:
-            if stage is None:
-                # Determine stage based on test_id instead of recruitment_status
-                result = supabase.table('candidates')\
-                    .select('*, campaign:campaigns(*)')\
-                    .eq('id', candidate_id)\
-                    .single()\
-                    .execute()
+            logger.debug(f"Processing test answers for candidate {candidate_id}, test {test_id}, stage {stage}")
+            logger.debug(f"Form data received: {form_data}")
+            
+
+            result = supabase.table('candidates')\
+                .select('*, campaign:campaigns(*)')\
+                .eq('id', candidate_id)\
+                .single()\
+                .execute()
+            
+            if not result.data:
+                raise TestPublicException(
+                    message="Could not find candidate",
+                    error_type="unexpected_error"
+                )
                 
-                if not result.data:
-                    raise TestPublicException(
-                        message="Could not find candidate",
-                        error_type="unexpected_error"
-                    )
+            # Determine stage based on which test_id matches
+            campaign = result.data['campaign']
+            if test_id == campaign['po1_test_id']:
+                stage = 'PO1'
+            elif test_id == campaign['po2_test_id']:
+                stage = 'PO2'
+            elif test_id == campaign['po2_5_test_id']:
+                stage = 'PO2_5'
+            elif test_id == campaign['po3_test_id']:
+                stage = 'PO3'
+            
+            logger.debug(f"Determined stage: {stage}")
+            
+            if not stage:
+                raise TestPublicException(
+                    message="Could not determine stage for test",
+                    error_type="unexpected_error"
+                )
+
+            # Get all questions for this test
+            questions = supabase.table('questions')\
+                .select('*')\
+                .eq('test_id', test_id)\
+                .execute()
+            
+            logger.debug(f"Found {len(questions.data)} questions for test {test_id}")
+            
+            questions_lookup = {str(q['id']): q for q in questions.data}
+            
+            # Process answers
+            answers_to_insert = []
+            regular_answers = {}
+            ah_points_answers = {}
+            
+            # First pass - organize the data
+            logger.debug("Processing form data:")
+            for key, value in form_data.items():
+                if not key.startswith('answer_'):
+                    continue
                     
-                # Determine stage based on which test_id matches
-                campaign = result.data['campaign']
-                if test_id == campaign['po1_test_id']:
-                    stage = 'PO1'
-                elif test_id == campaign['po2_test_id']:
-                    stage = 'PO2'
-                elif test_id == campaign['po2_5_test_id']:
-                    stage = 'PO2_5'
-                elif test_id == campaign['po3_test_id']:
-                    stage = 'PO3'
+                logger.debug(f"Processing form field: {key} = {value}")
                 
-                if not stage:
-                    raise TestPublicException(
-                        message="Could not determine stage for test",
-                        error_type="unexpected_error"
-                    )
-
-                # Get all questions for this test
-                questions = supabase.table('questions')\
-                    .select('*')\
-                    .eq('test_id', test_id)\
-                    .execute()
-                
-                questions_lookup = {str(q['id']): q for q in questions.data}
-                
-                # Process answers
-                answers_to_insert = []
-                regular_answers = {}
-                ah_points_answers = {}
-                
-                # First pass - organize the data
-                for key, value in form_data.items():
-                    if not key.startswith('answer_'):
-                        continue
-                        
-                    if '_min' in key or '_max' in key:
-                        continue
-                        
-                    # Handle AH_POINTS type answers
-                    if any(suffix in key for suffix in ['_a', '_b', '_c', '_d', '_e', '_f', '_g', '_h']):
-                        question_id = key.split('_')[1]
-                        letter = key.split('_')[2]
-                        
-                        if question_id not in ah_points_answers:
-                            ah_points_answers[question_id] = {}
-                        
-                        if value:  # Only store non-empty values
-                            ah_points_answers[question_id][letter] = int(value or 0)
-                    else:
-                        question_id = key.split('_')[1]
-                        regular_answers[question_id] = value
-
-                # Process AH_POINTS answers
-                for question_id, points in ah_points_answers.items():
-                    if not points:  # Skip if no points recorded
-                        continue
-                        
-                    question = questions_lookup.get(question_id)
-                    if not question or question['test_id'] != test_id:
-                        continue
-                        
-                    answer_data = {
-                        'candidate_id': candidate_id,
-                        'question_id': int(question_id),
-                        'stage': stage,
-                        'points_per_option': points,
-                        'created_at': datetime.now(timezone.utc).isoformat()
-                    }
-                    answers_to_insert.append(answer_data)
-
-                # Process regular answers
-                for question_id, value in regular_answers.items():
-                    question = questions_lookup.get(question_id)
-                    if not question or question['test_id'] != test_id:
-                        continue
-                        
-                    answer_data = {
-                        'candidate_id': candidate_id,
-                        'question_id': int(question_id),
-                        'stage': stage,
-                        'created_at': datetime.now(timezone.utc).isoformat()
-                    }
+                if '_min' in key or '_max' in key:
+                    continue
                     
-                    answer_type = question['answer_type']
+                # Handle AH_POINTS type answers
+                if any(suffix in key for suffix in ['_a', '_b', '_c', '_d', '_e', '_f', '_g', '_h']):
+                    question_id = key.split('_')[1]
+                    letter = key.split('_')[2]
                     
-                    # Set the appropriate answer field based on type
-                    if answer_type == 'TEXT':
-                        answer_data['answer'] = str(value)
-                    elif answer_type == 'BOOLEAN':
-                        answer_data['answer'] = str(value.lower() == 'true')
-                    elif answer_type == 'SCALE':
-                        answer_data['answer'] = str(value)
-                    elif answer_type == 'SALARY':
-                        answer_data['answer'] = str(float(value) if value else 0)
-                    elif answer_type == 'DATE':
-                        answer_data['answer'] = str(value)
-                    elif answer_type == 'ABCDEF':
-                        answer_data['answer'] = str(value)
-                    elif answer_type == 'NUMERIC':
-                        answer_data['answer'] = str(float(value) if value else 0)
-                        
-                    answers_to_insert.append(answer_data)
+                    if question_id not in ah_points_answers:
+                        ah_points_answers[question_id] = {}
+                    
+                    if value:  # Only store non-empty values
+                        ah_points_answers[question_id][letter] = int(value or 0)
+                        logger.debug(f"Stored AH_POINTS answer for question {question_id}, letter {letter}: {value}")
+                else:
+                    question_id = key.split('_')[1]
+                    regular_answers[question_id] = value
+                    logger.debug(f"Stored regular answer for question {question_id}: {value}")
 
-                # Batch insert all answers
-                if answers_to_insert:
-                    supabase.table('candidate_answers').insert(answers_to_insert).execute()
+            # Process AH_POINTS answers
+            logger.debug("Processing AH_POINTS answers:")
+            for question_id, points in ah_points_answers.items():
+                if not points:  # Skip if no points recorded
+                    continue
+                    
+                question = questions_lookup.get(question_id)
+                if not question or question['test_id'] != test_id:
+                    logger.debug(f"Skipping invalid question {question_id}")
+                    continue
+                    
+                answer_data = {
+                    'candidate_id': candidate_id,
+                    'question_id': int(question_id),
+                    'stage': stage,
+                    'points_per_option': points,
+                    'created_at': datetime.now(timezone.utc).isoformat()
+                }
+                answers_to_insert.append(answer_data)
+                logger.debug(f"Prepared AH_POINTS answer for insertion: {answer_data}")
+
+            # Process regular answers
+            logger.debug("Processing regular answers:")
+            for question_id, value in regular_answers.items():
+                question = questions_lookup.get(question_id)
+                if not question or question['test_id'] != test_id:
+                    logger.debug(f"Skipping invalid question {question_id}")
+                    continue
+                    
+                answer_data = {
+                    'candidate_id': candidate_id,
+                    'question_id': int(question_id),
+                    'stage': stage,
+                    'created_at': datetime.now(timezone.utc).isoformat()
+                }
+                
+                answer_type = question['answer_type']
+                logger.debug(f"Processing answer type {answer_type} for question {question_id}")
+                
+                # Set the appropriate answer field based on type
+                if answer_type == 'TEXT':
+                    answer_data['answer'] = str(value)
+                elif answer_type == 'BOOLEAN':
+                    answer_data['answer'] = str(value.lower() == 'true')
+                elif answer_type == 'SCALE':
+                    answer_data['answer'] = str(value)
+                elif answer_type == 'SALARY':
+                    answer_data['answer'] = str(float(value) if value else 0)
+                elif answer_type == 'DATE':
+                    answer_data['answer'] = str(value)
+                elif answer_type == 'ABCDEF':
+                    answer_data['answer'] = str(value)
+                elif answer_type == 'NUMERIC':
+                    answer_data['answer'] = str(float(value) if value else 0)
+                    
+                answers_to_insert.append(answer_data)
+                logger.debug(f"Prepared regular answer for insertion: {answer_data}")
+
+            # Batch insert all answers
+            if answers_to_insert:
+                logger.debug(f"Inserting {len(answers_to_insert)} answers into database")
+                result = supabase.table('candidate_answers').insert(answers_to_insert).execute()
+                logger.debug(f"Successfully inserted answers: {result.data}")
+            else:
+                logger.warning("No answers to insert!")
 
         except Exception as e:
             logger.error(f"Error processing test answers: {str(e)}")
