@@ -389,9 +389,12 @@
                         <div class="d-flex align-items-center justify-content-between w-100">
                             <div class="d-flex align-items-center" style="min-width: 300px;">
                                 <span class="badge bg-primary" style="min-width: 100px;">
-                                    Etap {{ stage|replace('_', '.') }}
+                                    {% if stage == 'PO1' %}ANKIETA
+                                    {% elif stage == 'PO2' %}TEST EQ
+                                    {% elif stage == 'PO2_5' %}OCENA EQ
+                                    {% elif stage == 'PO3' %}TEST IQ
+                                    {% else %}{{ stage }}{% endif %}
                                 </span>
-                                <span class="fw-medium ms-3">{{ tests[stage].test.test_type }}</span>
                             </div>
                             {% if tests[stage].scored_points is defined %}
                                 <div class="d-flex align-items-center" style="min-width: 120px;">
