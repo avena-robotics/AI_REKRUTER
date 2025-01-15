@@ -256,7 +256,7 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td>PO1</td>
+                                    <td>Ankieta</td>
                                     <td>{{ candidate.po1_score if candidate.po1_score is not none else '-' }}</td>
                                     <td>{{ candidate.campaign.po1_test_weight if candidate.campaign.po1_test_weight is not none else '-' }}%</td>
                                     <td>
@@ -269,7 +269,7 @@
                                     <td>{{ candidate.po1_completed_at|format_datetime if candidate.po1_completed_at else '-' }}</td>
                                 </tr>
                                 <tr>
-                                    <td>PO2</td>
+                                    <td>Test EQ</td>
                                     <td>{{ candidate.po2_score if candidate.po2_score is not none else '-' }}</td>
                                     <td>{{ candidate.campaign.po2_test_weight if candidate.campaign.po2_test_weight is not none else '-' }}%</td>
                                     <td>
@@ -282,7 +282,7 @@
                                     <td>{{ candidate.po2_completed_at|format_datetime if candidate.po2_completed_at else '-' }}</td>
                                 </tr>
                                 <tr>
-                                    <td>PO2.5</td>
+                                    <td>Ocena EQ</td>
                                     <td>{{ candidate.po2_5_score if candidate.po2_5_score is not none else '-' }}</td>
                                     <td>{{ candidate.campaign.po2_5_test_weight if candidate.campaign.po2_5_test_weight is not none else '-' }}%</td>
                                     <td>
@@ -295,7 +295,7 @@
                                     <td>{{ '-' }}</td>
                                 </tr>
                                 <tr>
-                                    <td>PO3</td>
+                                    <td>Test IQ</td>
                                     <td>{{ candidate.po3_score if candidate.po3_score is not none else '-' }}</td>
                                     <td>{{ candidate.campaign.po3_test_weight if candidate.campaign.po3_test_weight is not none else '-' }}%</td>
                                     <td>
@@ -308,7 +308,7 @@
                                     <td>{{ candidate.po3_completed_at|format_datetime if candidate.po3_completed_at else '-' }}</td>
                                 </tr>
                                 <tr>
-                                    <td>PO4</td>
+                                    <td>Ocena rozmowy</td>
                                     <td>{{ candidate.po4_score if candidate.po4_score is not none else '-' }}</td>
                                     <td>-</td>
                                     <td>-</td>
