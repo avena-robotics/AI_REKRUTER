@@ -232,6 +232,12 @@ document.addEventListener('DOMContentLoaded', function() {
         recalculationModal.hide();
         location.reload();
     });
+
+    // Save note button in modal
+    const saveNoteBtn = document.getElementById('saveNoteBtn');
+    if (saveNoteBtn) {
+        saveNoteBtn.addEventListener('click', saveNoteFromList);
+    }
 });
 
 function initializeEventListeners() {
@@ -678,4 +684,59 @@ function updateRecalculationProgress(processed, total) {
     const percentage = (processed / total) * 100;
     document.querySelector('#bulkRecalculateModal .progress-bar').style.width = `${percentage}%`;
     document.getElementById('processedCount').textContent = processed;
+}
+
+async function saveNoteFromList() {
+    const noteType = document.getElementById('noteType').value.trim();
+    const noteContent = document.getElementById('noteContent').value.trim();
+    const candidateId = document.getElementById('saveNoteBtn').getAttribute('data-candidate-id');
+    
+    if (!noteType || !noteContent) {
+        showToast('Wypełnij wszystkie pola', 'error');
+        return;
+    }
+    
+    const saveButton = document.getElementById('saveNoteBtn');
+    setButtonLoading(saveButton, true);
+    
+    try {
+        const response = await fetch(`/candidates/${candidateId}/notes`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                note_type: noteType,
+                content: noteContent
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addNoteModal'));
+            modal.hide();
+            
+            // Clear the form
+            document.getElementById('noteType').value = '';
+            document.getElementById('noteContent').value = '';
+            
+            showToast('Notatka została zapisana', 'success');
+            
+            // If we're in candidate view, update the notes list
+            const notesList = document.querySelector('.notes-list');
+            if (notesList) {
+                await updateNotesList(candidateId);
+            }
+        } else {
+            throw new Error(data.error || 'Network response was not ok');
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Błąd podczas zapisywania notatki', 'error');
+    } finally {
+        setButtonLoading(saveButton, false);
+    }
 }

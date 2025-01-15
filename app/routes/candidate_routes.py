@@ -244,3 +244,19 @@ def regenerate_token(id, stage):
             "success": False,
             "error": "Wystąpił nieznany błąd podczas generowania nowego tokenu"
         }), 500
+
+
+@candidate_bp.route("/<int:id>/notes/list")
+@login_required
+def get_notes_list(id):
+    try:
+        candidate_data = CandidateService.get_candidate_details(id)
+        return render_template(
+            "candidates/notes_list.html",
+            notes_data=candidate_data['notes_data']
+        )
+        
+    except CandidateException as e:
+        return jsonify({"error": e.message}), 500
+    except Exception as e:
+        return jsonify({"error": "Wystąpił nieznany błąd podczas pobierania notatek"}), 500

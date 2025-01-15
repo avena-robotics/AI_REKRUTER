@@ -68,6 +68,37 @@ function showEditNoteModal(noteId, noteType, noteContent, userEmail) {
     noteModal.show();
 }
 
+async function updateNotesList(candidateId) {
+    try {
+        const response = await fetch(`/candidates/${candidateId}/notes/list`);
+        const html = await response.text();
+        document.querySelector('.notes-list').innerHTML = html;
+        
+        // Reattach event listeners to new elements
+        document.querySelectorAll('.edit-note').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const noteId = this.dataset.noteId;
+                const noteType = this.dataset.noteType;
+                const noteContent = this.dataset.noteContent;
+                const userEmail = this.dataset.userEmail;
+                showEditNoteModal(noteId, noteType, noteContent, userEmail);
+            });
+        });
+
+        document.querySelectorAll('.delete-note').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (confirm('Czy na pewno chcesz usunąć tę notatkę?')) {
+                    const noteId = this.dataset.noteId;
+                    deleteNote(noteId);
+                }
+            });
+        });
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Błąd podczas aktualizacji listy notatek', 'error');
+    }
+}
+
 async function saveNote() {
     const noteId = document.getElementById('noteId').value;
     const noteType = document.getElementById('noteType').value;
@@ -107,7 +138,7 @@ async function saveNote() {
         if (data.success) {
             noteModal.hide();
             showToast(noteId ? 'Notatka została zaktualizowana' : 'Notatka została dodana', 'success');
-            window.location.reload();
+            await updateNotesList(candidateId);
         } else {
             showToast(data.error || 'Wystąpił błąd', 'error');
         }
@@ -131,7 +162,7 @@ async function deleteNote(noteId) {
 
         if (data.success) {
             showToast('Notatka została usunięta', 'success');
-            window.location.reload();
+            await updateNotesList(candidateId);
         } else {
             showToast(data.error || 'Wystąpił błąd', 'error');
         }
