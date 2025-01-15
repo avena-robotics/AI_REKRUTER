@@ -22,8 +22,20 @@
                         <span class="badge 
                             {% if candidate.recruitment_status == 'ACCEPTED' %}bg-success
                             {% elif candidate.recruitment_status == 'REJECTED' %}bg-danger
+                            {% elif candidate.recruitment_status == 'INVITED_TO_INTERVIEW' %}bg-info
+                            {% elif candidate.recruitment_status == 'AWAITING_DECISION' %}bg-warning
+                            {% elif candidate.recruitment_status == 'PO4' %}bg-success-subtle
                             {% else %}bg-primary{% endif %}">
-                            {{ candidate.recruitment_status }}
+                            {% if candidate.recruitment_status == 'PO1' %}Ankieta
+                            {% elif candidate.recruitment_status == 'PO2' %}Test EQ
+                            {% elif candidate.recruitment_status == 'PO2_5' %}Ocena EQ
+                            {% elif candidate.recruitment_status == 'PO3' %}Test IQ
+                            {% elif candidate.recruitment_status == 'PO4' %}Potencjał
+                            {% elif candidate.recruitment_status == 'INVITED_TO_INTERVIEW' %}Zaproszono na rozmowę
+                            {% elif candidate.recruitment_status == 'AWAITING_DECISION' %}Oczekuje na decyzję
+                            {% elif candidate.recruitment_status == 'REJECTED' %}Odrzucony
+                            {% elif candidate.recruitment_status == 'ACCEPTED' %}Zaakceptowany
+                            {% else %}{{ candidate.recruitment_status }}{% endif %}
                         </span>
                     </p>
                     <p class="mb-3"><strong>Data aplikacji:</strong> {{ candidate.created_at|format_datetime }}</p>

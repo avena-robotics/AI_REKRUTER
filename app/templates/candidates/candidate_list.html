@@ -49,23 +49,31 @@
                 <div class="dropdown-menu w-100 p-3">
                     <div class="form-check">
                         <input type="checkbox" class="form-check-input filter-status" value="PO1" id="filterPO1">
-                        <label class="form-check-label" for="filterPO1">PO1</label>
+                        <label class="form-check-label" for="filterPO1">Ankieta</label>
                     </div>
                     <div class="form-check">
                         <input type="checkbox" class="form-check-input filter-status" value="PO2" id="filterPO2">
-                        <label class="form-check-label" for="filterPO2">PO2</label>
+                        <label class="form-check-label" for="filterPO2">Test EQ</label>
                     </div>
                     <div class="form-check">
                         <input type="checkbox" class="form-check-input filter-status" value="PO2_5" id="filterPO2_5">
-                        <label class="form-check-label" for="filterPO2_5">PO2.5</label>
+                        <label class="form-check-label" for="filterPO2_5">Ocena EQ</label>
                     </div>
                     <div class="form-check">
                         <input type="checkbox" class="form-check-input filter-status" value="PO3" id="filterPO3">
-                        <label class="form-check-label" for="filterPO3">PO3</label>
+                        <label class="form-check-label" for="filterPO3">Test IQ</label>
                     </div>
                     <div class="form-check">
                         <input type="checkbox" class="form-check-input filter-status" value="PO4" id="filterPO4">
-                        <label class="form-check-label" for="filterPO4">PO4</label>
+                        <label class="form-check-label" for="filterPO4">Potencjał</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input filter-status" value="INVITED_TO_INTERVIEW" id="filterINVITED">
+                        <label class="form-check-label" for="filterINVITED">Zaproszono na rozmowę</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input filter-status" value="AWAITING_DECISION" id="filterAWAITING">
+                        <label class="form-check-label" for="filterAWAITING">Oczekuje na decyzję</label>
                     </div>
                     <div class="form-check">
                         <input type="checkbox" class="form-check-input filter-status" value="REJECTED" id="filterREJECTED">
@@ -85,11 +93,11 @@
                 <option value="email" {% if request.args.get('sort_by') == 'email' %}selected{% endif %}>Email</option>
                 <option value="phone" {% if request.args.get('sort_by') == 'phone' %}selected{% endif %}>Telefon</option>
                 <option value="recruitment_status" {% if request.args.get('sort_by') == 'recruitment_status' %}selected{% endif %}>Status rekrutacji</option>
-                <option value="po1_score" {% if request.args.get('sort_by') == 'po1_score' %}selected{% endif %}>PO1</option>
-                <option value="po2_score" {% if request.args.get('sort_by') == 'po2_score' %}selected{% endif %}>PO2</option>
-                <option value="po2_5_score" {% if request.args.get('sort_by') == 'po2_5_score' %}selected{% endif %}>PO2.5</option>
-                <option value="po3_score" {% if request.args.get('sort_by') == 'po3_score' %}selected{% endif %}>PO3</option>
-                <option value="po4_score" {% if request.args.get('sort_by') == 'po4_score' %}selected{% endif %}>PO4</option>
+                <option value="po1_score" {% if request.args.get('sort_by') == 'po1_score' %}selected{% endif %}>Wynik ankiety</option>
+                <option value="po2_score" {% if request.args.get('sort_by') == 'po2_score' %}selected{% endif %}>Wynik testu EQ</option>
+                <option value="po2_5_score" {% if request.args.get('sort_by') == 'po2_5_score' %}selected{% endif %}>Wynik oceny EQ</option>
+                <option value="po3_score" {% if request.args.get('sort_by') == 'po3_score' %}selected{% endif %}>Wynik testu IQ</option>
+                <option value="po4_score" {% if request.args.get('sort_by') == 'po4_score' %}selected{% endif %}>Ocena potencjału</option>
                 <option value="total_score" {% if request.args.get('sort_by') == 'total_score' %}selected{% endif %}>Wynik ogólny</option>
             </select>
         </div>
@@ -147,8 +155,20 @@
                         <span class="badge 
                             {% if candidate.recruitment_status == 'ACCEPTED' %}bg-success
                             {% elif candidate.recruitment_status == 'REJECTED' %}bg-danger
+                            {% elif candidate.recruitment_status == 'INVITED_TO_INTERVIEW' %}bg-info
+                            {% elif candidate.recruitment_status == 'AWAITING_DECISION' %}bg-warning
+                            {% elif candidate.recruitment_status == 'PO4' %}bg-success-subtle
                             {% else %}bg-primary{% endif %}">
-                            {{ candidate.recruitment_status }}
+                            {% if candidate.recruitment_status == 'PO1' %}Ankieta
+                            {% elif candidate.recruitment_status == 'PO2' %}Test EQ
+                            {% elif candidate.recruitment_status == 'PO2_5' %}Ocena EQ
+                            {% elif candidate.recruitment_status == 'PO3' %}Test IQ
+                            {% elif candidate.recruitment_status == 'PO4' %}Potencjał
+                            {% elif candidate.recruitment_status == 'INVITED_TO_INTERVIEW' %}Zaproszono na rozmowę
+                            {% elif candidate.recruitment_status == 'AWAITING_DECISION' %}Oczekuje na decyzję
+                            {% elif candidate.recruitment_status == 'REJECTED' %}Odrzucony
+                            {% elif candidate.recruitment_status == 'ACCEPTED' %}Zaakceptowany
+                            {% else %}{{ candidate.recruitment_status }}{% endif %}
                         </span>
                     </td>
                     <td data-sort="po1_score">{{ candidate.po1_score if candidate.po1_score is not none else '-' }}</td>

@@ -566,7 +566,7 @@ class CandidateService:
                 original_error=e
             )
 
- 
+
     @staticmethod
     def recalculate_candidate_scores(candidate_id: int) -> Dict:
         """
@@ -717,6 +717,62 @@ class CandidateService:
             logger.error(f"Błąd podczas generowania nowego tokenu dla kandydata {candidate_id}: {str(e)}")
             raise CandidateException(
                 message="Wystąpił błąd podczas generowania nowego tokenu",
+                original_error=e
+            )
+
+
+    @staticmethod
+    def invite_to_interview(candidate_id: int) -> None:
+        """
+        Zmienia status kandydata na 'zaproszono na rozmowę'.
+        
+        Args:
+            candidate_id (int): ID kandydata
+            
+        Raises:
+            CandidateException: Gdy wystąpi błąd podczas zmiany statusu kandydata
+        """
+        try:
+            supabase.from_("candidates")\
+                .update({
+                    'recruitment_status': 'INVITED_TO_INTERVIEW',
+                    'updated_at': datetime.now(timezone.utc).isoformat()
+                })\
+                .eq("id", candidate_id)\
+                .execute()
+                
+        except Exception as e:
+            logger.error(f"Błąd podczas zmiany statusu kandydata {candidate_id} na 'zaproszono na rozmowę': {str(e)}")
+            raise CandidateException(
+                message="Wystąpił błąd podczas zmiany statusu na 'zaproszono na rozmowę'",
+                original_error=e
+            )
+
+
+    @staticmethod
+    def set_awaiting_decision(candidate_id: int) -> None:
+        """
+        Zmienia status kandydata na 'oczekuje na decyzję'.
+        
+        Args:
+            candidate_id (int): ID kandydata
+            
+        Raises:
+            CandidateException: Gdy wystąpi błąd podczas zmiany statusu kandydata
+        """
+        try:
+            supabase.from_("candidates")\
+                .update({
+                    'recruitment_status': 'AWAITING_DECISION',
+                    'updated_at': datetime.now(timezone.utc).isoformat()
+                })\
+                .eq("id", candidate_id)\
+                .execute()
+                
+        except Exception as e:
+            logger.error(f"Błąd podczas zmiany statusu kandydata {candidate_id} na 'oczekuje na decyzję': {str(e)}")
+            raise CandidateException(
+                message="Wystąpił błąd podczas zmiany statusu na 'oczekuje na decyzję'",
                 original_error=e
             )
 

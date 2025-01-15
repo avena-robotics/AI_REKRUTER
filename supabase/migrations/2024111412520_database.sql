@@ -25,7 +25,7 @@ DROP FUNCTION IF EXISTS get_candidate_with_tests(bigint);
 -- Create types first
 create type test_type as enum ('SURVEY', 'EQ', 'IQ', 'EQ_EVALUATION');
 create type answer_type as enum ('TEXT', 'BOOLEAN', 'SCALE', 'SALARY', 'DATE', 'ABCDEF', 'AH_POINTS');
-create type recruitment_status as enum ('PO1', 'PO2', 'PO2_5', 'PO3', 'PO4', 'REJECTED', 'ACCEPTED');
+create type recruitment_status as enum ('PO1', 'PO2', 'PO2_5', 'PO3', 'PO4', 'REJECTED', 'ACCEPTED', 'INVITED_TO_INTERVIEW', 'AWAITING_DECISION');
 create type algorithm_type AS ENUM (
     'NO_ALGORITHM',
     'RIGHT_SIDED',
