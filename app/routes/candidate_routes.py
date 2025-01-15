@@ -128,6 +128,32 @@ def accept(id):
         return jsonify({"success": False, "error": "Wystąpił nieznany błąd podczas akceptowania kandydata"}), 500
 
 
+@candidate_bp.route("/<int:id>/invite-to-interview", methods=["POST"])
+@login_required
+def invite_to_interview(id):
+    try:
+        CandidateService.invite_to_interview(id)
+        return jsonify({"success": True})
+        
+    except CandidateException as e:
+        return jsonify({"success": False, "error": e.message})
+    except Exception as e:
+        return jsonify({"success": False, "error": "Wystąpił nieznany błąd podczas zapraszania kandydata na rozmowę"}), 500
+
+
+@candidate_bp.route("/<int:id>/set-awaiting-decision", methods=["POST"])
+@login_required
+def set_awaiting_decision(id):
+    try:
+        CandidateService.set_awaiting_decision(id)
+        return jsonify({"success": True})
+        
+    except CandidateException as e:
+        return jsonify({"success": False, "error": e.message})
+    except Exception as e:
+        return jsonify({"success": False, "error": "Wystąpił nieznany błąd podczas ustawiania statusu oczekiwania na decyzję"}), 500
+
+
 @candidate_bp.route("/<int:id>/delete", methods=["POST"])
 @login_required
 def delete(id):

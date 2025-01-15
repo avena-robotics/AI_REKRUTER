@@ -242,6 +242,20 @@
                                         <span class="button-text">Zaakceptuj</span>
                                     </button>
                                 </li>
+                                <li>
+                                    <button class="dropdown-item text-info" onclick="inviteToInterview('{{ candidate.id }}')"
+                                            id="inviteBtn_{{ candidate.id }}">
+                                        <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                                        <span class="button-text">Zaproś na rozmowę</span>
+                                    </button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item text-warning" onclick="setAwaitingDecision('{{ candidate.id }}')"
+                                            id="awaitingBtn_{{ candidate.id }}">
+                                        <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                                        <span class="button-text">Oczekuje na decyzję</span>
+                                    </button>
+                                </li>
 
                                 <!-- Divider -->
                                 <li><hr class="dropdown-divider"></li>

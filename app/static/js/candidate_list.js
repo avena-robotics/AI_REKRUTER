@@ -740,3 +740,40 @@ async function saveNoteFromList() {
         setButtonLoading(saveButton, false);
     }
 }
+
+async function handleCandidateAction(candidateId, action, buttonPrefix, actionName, progressName) {
+    if (!confirm(`Czy na pewno chcesz ${actionName.toLowerCase()} tego kandydata?`)) return;
+    
+    setButtonLoading(`${buttonPrefix}${candidateId}`, true);
+    try {
+        const response = await fetch(`/candidates/${candidateId}/${action}`, {
+            method: 'POST'
+        });
+        if (response.ok) {
+            location.reload();
+        } else {
+            const data = await response.json();
+            throw new Error(data.error || 'Network response was not ok');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast(`Błąd podczas operacji: ${progressName.toLowerCase()} kandydata`, 'error');
+        setButtonLoading(`${buttonPrefix}${candidateId}`, false);
+    }
+}
+
+function acceptCandidate(candidateId) {
+    handleCandidateAction(candidateId, 'accept', 'acceptBtn_', 'Zaakceptować', 'Akceptowanie');
+}
+
+function inviteToInterview(candidateId) {
+    handleCandidateAction(candidateId, 'invite-to-interview', 'inviteBtn_', 'Zaprosić na rozmowę', 'Zapraszanie');
+}
+
+function setAwaitingDecision(candidateId) {
+    handleCandidateAction(candidateId, 'set-awaiting-decision', 'awaitingBtn_', 'Ustawić status oczekiwania', 'Ustawianie');
+}
+
+function rejectCandidate(candidateId) {
+    handleCandidateAction(candidateId, 'reject', 'rejectBtn_', 'Odrzucić', 'Odrzucanie');
+}
