@@ -555,14 +555,11 @@ td {
 /* First column styling with proper z-index */
 .table th:first-child,
 .table td:first-child {
-    position: sticky;
-    left: 0;
-    z-index: 1;
     background-color: inherit;
 }
 
 .table thead th:first-child {
-    z-index: 3;
+    z-index: 2;
 }
 
 /* Scrollbar styling */
@@ -960,4 +957,29 @@ td {
     align-items: center;
     justify-content: center;
     color: #ffffff;
+}
+
+/* Table cell styles */
+.table td {
+    padding: 1rem 0.75rem;
+    color: #1f2937;
+    border-bottom: 1px solid #e5e7eb;
+    background-color: white;
+}
+
+/* Vertical lines between columns */
+.table th:not(:last-child),
+.table td:not(:last-child) {
+    border-right: 1px solid #e5e7eb;
+}
+
+/* Alternating row colors */
+.table tbody tr:nth-child(even) td {
+    background-color: #f8fafc;
+}
+
+/* Hover effect */
+.table tbody tr:hover td {
+    background-color: #f1f5f9;
+    transition: background-color 0.15s ease-in-out;
 }
