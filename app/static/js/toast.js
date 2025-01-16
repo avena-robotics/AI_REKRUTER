@@ -82,8 +82,17 @@ function showToast(message, type = 'success') {
     // Set message
     toastMessage.textContent = message;
     
-    // Show toast
-    const bsToast = new bootstrap.Toast(toast);
+    // Hide any existing toast
+    const existingToast = bootstrap.Toast.getInstance(toast);
+    if (existingToast) {
+        existingToast.dispose();
+    }
+    
+    // Show toast with consistent delay
+    const bsToast = new bootstrap.Toast(toast, {
+        delay: 3000,  // 3 seconds
+        autohide: true
+    });
     bsToast.show();
 }
 

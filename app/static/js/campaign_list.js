@@ -189,6 +189,9 @@ function updateTable() {
     // Update table
     tbody.innerHTML = '';
     rows.forEach(row => tbody.appendChild(row));
+
+    // Reattach event listeners after table update
+    reattachEventListeners();
 }
 
 function getRowValue(row, sortField) {
@@ -434,13 +437,38 @@ function confirmDelete(campaignId) {
 }
 
 function generateLink(campaignId) {
+    // Get the button that was clicked
+    const button = document.querySelector(`[data-campaign-id="${campaignId}"].generate-link-list`);
+    const originalText = button.textContent;
+    
+    // Show loading state
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generowanie...';
+
     fetch(`/campaigns/${campaignId}/generate-link`, {
         method: 'POST'
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            window.location.reload();
+            // Fetch updated campaign data and refresh table
+            fetch('/campaigns/')
+                .then(response => response.text())
+                .then(html => {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+                    
+                    const newTbody = tempDiv.querySelector('tbody');
+                    if (newTbody) {
+                        originalRows = Array.from(newTbody.querySelectorAll('tr'));
+                        updateTable();
+                        showToast('Link został wygenerowany', 'success');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching updated campaign data:', error);
+                    showToast('Wystąpił błąd podczas odświeżania listy kampanii', 'error');
+                });
         } else {
             throw new Error(data.error || 'Wystąpił błąd podczas generowania linku');
         }
@@ -448,6 +476,10 @@ function generateLink(campaignId) {
     .catch(error => {
         console.error('Error:', error);
         showToast(error.message, 'error');
+        
+        // Reset button state
+        button.disabled = false;
+        button.textContent = originalText;
     });
 } 
 
@@ -920,4 +952,69 @@ function resetAddCampaignForm() {
     
     // Reset the form action to the add endpoint
     form.action = '/campaigns/add';
+} 
+
+// Add new function to handle event listener reattachment
+function reattachEventListeners() {
+    // Reattach generate link button listeners
+    document.querySelectorAll('.generate-link-list').forEach(button => {
+        // Remove existing listeners to prevent duplicates
+        button.replaceWith(button.cloneNode(true));
+        // Get the fresh button reference after cloning
+        const freshButton = document.querySelector(`[data-campaign-id="${button.dataset.campaignId}"].generate-link-list`);
+        if (freshButton) {
+            freshButton.addEventListener('click', function() {
+                const campaignId = this.dataset.campaignId;
+                generateLink(campaignId);
+            });
+        }
+    });
+
+    // Reattach copy link button listeners
+    document.querySelectorAll('.copy-link').forEach(button => {
+        // Remove existing listeners to prevent duplicates
+        button.replaceWith(button.cloneNode(true));
+        // Get the fresh button reference after cloning
+        const freshButton = document.querySelector(`[data-link="${button.dataset.link}"].copy-link`);
+        if (freshButton) {
+            freshButton.addEventListener('click', async function() {
+                const link = this.dataset.link;
+                try {
+                    if (navigator.clipboard && window.isSecureContext) {
+                        await navigator.clipboard.writeText(link);
+                        showToast('Link został skopiowany do schowka', 'success');
+                    } else {
+                        const textArea = document.createElement('textarea');
+                        textArea.value = link;
+                        textArea.style.position = 'fixed';
+                        textArea.style.left = '-999999px';
+                        textArea.style.top = '-999999px';
+                        document.body.appendChild(textArea);
+                        textArea.focus();
+                        textArea.select();
+                        
+                        try {
+                            document.execCommand('copy');
+                            textArea.remove();
+                            showToast('Link został skopiowany do schowka', 'success');
+                        } catch (err) {
+                            console.error('Failed to copy text: ', err);
+                            showToast('Nie udało się skopiować linku. Spróbuj ponownie.', 'error');
+                            textArea.remove();
+                        }
+                    }
+                } catch (err) {
+                    console.error('Failed to copy text: ', err);
+                    showToast('Nie udało się skopiować linku. Spróbuj ponownie.', 'error');
+                }
+            });
+        }
+    });
+
+    // Reattach action button listeners
+    document.querySelectorAll('.btn-group button').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
 } 
