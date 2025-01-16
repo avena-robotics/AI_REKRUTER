@@ -916,3 +916,48 @@ td {
 .form-check:last-child {
     margin-bottom: 0;
 }
+
+/* Sortable header styles */
+.table th.sortable {
+    cursor: pointer;
+    padding-right: 1.5rem;
+    position: relative;
+}
+
+.table th.sortable::after {
+    content: '↕';
+    position: absolute;
+    right: 0.5rem;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.8rem;
+}
+
+.table th.sortable.asc::after {
+    content: '↑';
+    color: #ffffff;
+}
+
+.table th.sortable.desc::after {
+    content: '↓';
+    color: #ffffff;
+}
+
+.table th.sortable:hover::after {
+    color: #ffffff;
+}
+
+/* Sort order indicator */
+.table th.sortable .sort-order {
+    position: absolute;
+    top: 0.2rem;
+    right: 0.2rem;
+    font-size: 0.6rem;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    width: 1rem;
+    height: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+}

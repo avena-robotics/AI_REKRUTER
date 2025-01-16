@@ -1,3 +1,5 @@
+let currentSorts = [];
+
 document.addEventListener('DOMContentLoaded', function() {
     // Store original table rows
     const tbody = document.querySelector('tbody');
@@ -78,6 +80,8 @@ document.addEventListener('DOMContentLoaded', function() {
             initializeImagePreviews();
         });
     });
+
+    initializeSortableHeaders();
 });
 
 function initializeFilters() {
@@ -264,8 +268,6 @@ function initializeEventListeners() {
 
 function updateTable(applyFilters) {
     const tbody = document.querySelector('tbody');
-    const sortBy = document.getElementById('sortBy');
-    const sortOrder = document.getElementById('sortOrder');
     
     if (!applyFilters) {
         // Reset to original state
@@ -290,7 +292,6 @@ function updateTable(applyFilters) {
         const testType = row.querySelector('td:nth-child(2)').textContent.trim();
         const testGroups = JSON.parse(row.dataset.groups || '[]');
         
-        // Jeśli nie wybrano żadnego typu testu, pokaż tylko testy bez typu
         const testTypeMatch = selectedTestTypes.length === 0 ? 
             testType === '' : 
             selectedTestTypes.some(type => {
@@ -301,7 +302,6 @@ function updateTable(applyFilters) {
                 return false;
             });
             
-        // Jeśli nie wybrano żadnej grupy, pokaż tylko testy bez grup
         const groupMatch = selectedGroups.length === 0 ? 
             testGroups.length === 0 : 
             testGroups.some(group => selectedGroups.includes(group.id.toString()));
@@ -309,20 +309,18 @@ function updateTable(applyFilters) {
         return testTypeMatch && groupMatch;
     });
     
-    // Apply sorting
-    if (sortBy.value) {
+    // Apply multiple sorts
+    if (currentSorts.length > 0) {
         rows.sort((a, b) => {
-            const aValue = getRowValue(a, sortBy.value);
-            const bValue = getRowValue(b, sortBy.value);
-            
-            const order = sortOrder.value === 'asc' ? 1 : -1;
-            
-            if (typeof aValue === 'string') {
-                return aValue.localeCompare(bValue) * order;
+            for (const sort of currentSorts) {
+                const aValue = getRowValue(a, sort.field);
+                const bValue = getRowValue(b, sort.field);
+                
+                const order = sort.direction === 'asc' ? 1 : -1;
+                
+                if (aValue < bValue) return -1 * order;
+                if (aValue > bValue) return 1 * order;
             }
-            
-            if (aValue < bValue) return -1 * order;
-            if (aValue > bValue) return 1 * order;
             return 0;
         });
     }
@@ -334,14 +332,21 @@ function updateTable(applyFilters) {
 
 function getRowValue(row, sortField) {
     switch (sortField) {
+        case 'title':
+            return row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+        case 'test_type':
+            return row.querySelector('td:nth-child(2)').textContent;
         case 'time_limit':
             const timeText = row.querySelector('td:nth-child(3)').textContent;
             return parseInt(timeText.replace(' min', '')) || 0;
         case 'questions':
             return parseInt(row.querySelector('td:nth-child(4)').textContent) || 0;
+        case 'points':
+            return parseInt(row.querySelector('td:nth-child(5)').textContent) || 0;
+        case 'threshold':
+            return parseInt(row.querySelector('td:nth-child(6)').textContent) || 0;
         case 'created_at':
             const dateText = row.querySelector('td:nth-child(8)').textContent;
-            // Parse date in format DD.MM.YYYY HH:mm
             const [datePart, timePart] = dateText.split(' ');
             const [day, month, year] = datePart.split('.');
             const [hours, minutes] = timePart.split(':');
@@ -1855,5 +1860,68 @@ function handleTestTypeChange(select) {
     } else {
         thresholdContainer.style.display = 'block';
     }
+}
+
+function initializeSortableHeaders() {
+    const headers = document.querySelectorAll('th.sortable');
+    headers.forEach(header => {
+        header.addEventListener('click', function() {
+            const sortField = this.dataset.sort;
+            const currentDirection = this.classList.contains('asc') ? 'asc' : 
+                                   this.classList.contains('desc') ? 'desc' : null;
+            
+            // Aktualizuj kierunek sortowania
+            let newDirection;
+            if (!currentDirection) {
+                newDirection = 'asc';
+            } else if (currentDirection === 'asc') {
+                newDirection = 'desc';
+            } else {
+                // Usuń sortowanie dla tej kolumny
+                this.classList.remove('desc');
+                // Usuń wskaźnik kolejności
+                const orderIndicator = this.querySelector('.sort-order');
+                if (orderIndicator) {
+                    orderIndicator.remove();
+                }
+                currentSorts = currentSorts.filter(sort => sort.field !== sortField);
+                // Zaktualizuj numerację pozostałych sortowań
+                currentSorts.forEach((sort, index) => {
+                    const header = document.querySelector(`th[data-sort="${sort.field}"]`);
+                    const indicator = header.querySelector('.sort-order');
+                    if (indicator) {
+                        indicator.textContent = index + 1;
+                    }
+                });
+                updateTable(true);
+                return;
+            }
+
+            // Usuń istniejące sortowanie dla tego pola
+            currentSorts = currentSorts.filter(sort => sort.field !== sortField);
+            
+            // Dodaj nowe sortowanie
+            currentSorts.push({
+                field: sortField,
+                direction: newDirection,
+                order: currentSorts.length + 1
+            });
+
+            // Aktualizuj klasy i wskaźniki
+            this.classList.remove('asc', 'desc');
+            this.classList.add(newDirection);
+
+            // Aktualizuj lub dodaj wskaźnik kolejności
+            let orderIndicator = this.querySelector('.sort-order');
+            if (!orderIndicator) {
+                orderIndicator = document.createElement('span');
+                orderIndicator.className = 'sort-order';
+                this.appendChild(orderIndicator);
+            }
+            orderIndicator.textContent = currentSorts.length;
+
+            updateTable(true);
+        });
+    });
 }
  
