@@ -86,8 +86,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function initializeFilters() {
     const resetFilters = document.getElementById('resetFilters');
-    const sortBy = document.getElementById('sortBy');
-    const sortOrder = document.getElementById('sortOrder');
     
     // Usuń przycisk "Zastosuj" z HTML
     const applyFilters = document.getElementById('applyFilters');
@@ -151,10 +149,6 @@ function initializeFilters() {
         updateTable(true);
     });
 
-    // Obsługa zmiany sortowania - natychmiastowe sortowanie
-    sortBy?.addEventListener('change', () => updateTable(true));
-    sortOrder?.addEventListener('change', () => updateTable(true));
-
     // Zatrzymaj zamykanie dropdownu przy kliknięciu wewnątrz
     document.querySelectorAll('.dropdown-menu').forEach(menu => {
         menu.addEventListener('click', function(e) {
@@ -173,9 +167,15 @@ function initializeFilters() {
             const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]');
             updateSelectedOptionsText(checkboxes[0]); // Przekaż dowolny checkbox z grupy
         });
-        // Reset sortowania
-        sortBy.value = 'created_at';
-        sortOrder.value = 'desc';
+        // Usuń wszystkie sortowania
+        document.querySelectorAll('th.sortable').forEach(header => {
+            header.classList.remove('asc', 'desc');
+            const orderIndicator = header.querySelector('.sort-order');
+            if (orderIndicator) {
+                orderIndicator.remove();
+            }
+        });
+        currentSorts = [];
         updateTable(true);
     });
 }

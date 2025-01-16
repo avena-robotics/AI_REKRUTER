@@ -22,7 +22,7 @@
 <div class="filter-wrapper mb-4 border rounded p-4 bg-body-tertiary shadow-sm">
     <form class="row g-3">
         <!-- First row -->
-        <div class="col-md-6 col-lg-3">
+        <div class="col-md-6 col-lg-4">
             <label class="form-label">Typ testu</label>
             <div class="dropdown">
                 <button class="form-select text-start" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -54,7 +54,7 @@
             </div>
         </div>
         
-        <div class="col-md-6 col-lg-3">
+        <div class="col-md-6 col-lg-4">
             <label class="form-label">Grupa</label>
             <div class="dropdown">
                 <button class="form-select text-start" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -76,25 +76,7 @@
             </div>
         </div>
 
-        <div class="col-md-6 col-lg-3">
-            <label class="form-label">Sortuj według</label>
-            <select class="form-select" id="sortBy">
-                <option value="created_at">Data utworzenia</option>
-                <option value="time_limit">Limit czasu</option>
-                <option value="questions">Liczba pytań</option>
-            </select>
-        </div>
-
-        <div class="col-md-6 col-lg-3">
-            <label class="form-label">Kolejność</label>
-            <select class="form-select" id="sortOrder">
-                <option value="desc">Malejąco</option>
-                <option value="asc">Rosnąco</option>
-            </select>
-        </div>
-
-        <!-- Second row - buttons -->
-        <div class="col-12 d-flex justify-content-end gap-2 mt-3">
+        <div class="col-md-12 col-lg-4 d-flex align-items-end justify-content-end">
             <button type="button" class="btn btn-outline-secondary" id="resetFilters">
                 Resetuj filtry
             </button>
