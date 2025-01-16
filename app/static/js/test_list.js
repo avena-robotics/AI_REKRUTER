@@ -96,6 +96,11 @@ function initializeFilters() {
         checkbox.checked = true;
     });
     
+    // Zaznacz checkboxy "Zaznacz wszystkie" na starcie
+    document.querySelectorAll('.select-all-test-types, .select-all-groups').forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    
     // Zaktualizuj tekst w dropdownach na starcie
     document.querySelectorAll('.dropdown').forEach(dropdown => {
         const selectedSpan = dropdown.querySelector('.selected-options');
@@ -106,9 +111,40 @@ function initializeFilters() {
     // Obsługa zmiany checkboxów - natychmiastowe filtrowanie
     document.querySelectorAll('.filter-test-type, .filter-group').forEach(checkbox => {
         checkbox.addEventListener('change', function() {
+            // Aktualizuj stan checkboxa "Zaznacz wszystkie"
+            const isTestType = checkbox.classList.contains('filter-test-type');
+            const selectAllCheckbox = isTestType ? 
+                document.querySelector('.select-all-test-types') : 
+                document.querySelector('.select-all-groups');
+            const relatedCheckboxes = isTestType ? 
+                document.querySelectorAll('.filter-test-type') : 
+                document.querySelectorAll('.filter-group');
+            
+            const allChecked = Array.from(relatedCheckboxes).every(cb => cb.checked);
+            selectAllCheckbox.checked = allChecked;
+            
             updateSelectedOptionsText(this);
             updateTable(true);
         });
+    });
+
+    // Obsługa checkboxów "Zaznacz wszystkie"
+    document.querySelector('.select-all-test-types').addEventListener('change', function() {
+        const testTypeCheckboxes = document.querySelectorAll('.filter-test-type');
+        testTypeCheckboxes.forEach(cb => {
+            cb.checked = this.checked;
+        });
+        updateSelectedOptionsText(testTypeCheckboxes[0]);
+        updateTable(true);
+    });
+
+    document.querySelector('.select-all-groups').addEventListener('change', function() {
+        const groupCheckboxes = document.querySelectorAll('.filter-group');
+        groupCheckboxes.forEach(cb => {
+            cb.checked = this.checked;
+        });
+        updateSelectedOptionsText(groupCheckboxes[0]);
+        updateTable(true);
     });
 
     // Obsługa zmiany sortowania - natychmiastowe sortowanie
@@ -124,7 +160,7 @@ function initializeFilters() {
     
     resetFilters?.addEventListener('click', function() {
         // Zaznacz wszystkie checkboxy
-        document.querySelectorAll('.filter-test-type, .filter-group').forEach(checkbox => {
+        document.querySelectorAll('.filter-test-type, .filter-group, .select-all-test-types, .select-all-groups').forEach(checkbox => {
             checkbox.checked = true;
         });
         // Zaktualizuj tekst w dropdownach
