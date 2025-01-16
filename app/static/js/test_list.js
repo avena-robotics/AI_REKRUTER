@@ -8,10 +8,45 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeEventListeners();
     checkPendingToast();
     
-    // Initialize Sortable after modals are shown
+    // Initialize Sortable and modal styles after modals are shown
     document.querySelectorAll('.modal').forEach(modal => {
         modal.addEventListener('shown.bs.modal', function() {
             initializeSortable();
+            
+            // Set modal styles for fixed footer
+            const modalDialog = this.querySelector('.modal-dialog');
+            const modalContent = this.querySelector('.modal-content');
+            const modalBody = this.querySelector('.modal-body');
+            const modalFooter = this.querySelector('.modal-footer');
+            const modalHeader = this.querySelector('.modal-header');
+            
+            // Reset any previously set styles
+            modalDialog.style = '';
+            modalContent.style = '';
+            modalBody.style = '';
+            modalFooter.style = '';
+            modalHeader.style = '';
+            
+            // Set new styles
+            modalDialog.style.height = '90vh';
+            modalDialog.style.maxHeight = '90vh';
+            modalDialog.style.margin = '20px auto';
+            
+            modalContent.style.height = '100%';
+            modalContent.style.display = 'flex';
+            modalContent.style.flexDirection = 'column';
+            
+            modalHeader.style.flex = '0 0 auto';
+            
+            modalBody.style.flex = '1 1 auto';
+            modalBody.style.overflowY = 'auto';
+            modalBody.style.overflowX = 'hidden';
+            modalBody.style.position = 'relative';
+            
+            modalFooter.style.flex = '0 0 auto';
+            modalFooter.style.padding = '1rem';
+            modalFooter.style.borderTop = '1px solid #dee2e6';
+            modalFooter.style.backgroundColor = '#fff';
         });
     });
 

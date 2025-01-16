@@ -156,104 +156,105 @@
 <div class="modal fade" id="addTestModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Dodaj nowy szablon testu</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="addTestForm" method="POST" action="{{ url_for('test.add') }}">
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label">Tytuł testu* <span class="text-muted">(Wewnętrzna identyfikacja testu)</span></label>
-                            <input type="text" class="form-control" name="title" required>
+            <form id="addTestForm" method="POST" action="{{ url_for('test.add') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Dodaj nowy szablon testu</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="modal-body-scroll p-3">
+                        <!-- Form content -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label">Tytuł testu* <span class="text-muted">(Wewnętrzna identyfikacja testu)</span></label>
+                                <input type="text" class="form-control" name="title" required>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label">Typ testu*</label>
-                            <select class="form-select" name="test_type" required>
-                                <option value="SURVEY">Ankieta</option>
-                                <option value="EQ">Test EQ</option>
-                                <option value="IQ">Test IQ</option>
-                                <option value="EQ_EVALUATION">Ocena EQ</option>
-                            </select>
+                        
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label">Typ testu*</label>
+                                <select class="form-select" name="test_type" required>
+                                    <option value="SURVEY">Ankieta</option>
+                                    <option value="EQ">Test EQ</option>
+                                    <option value="IQ">Test IQ</option>
+                                    <option value="EQ_EVALUATION">Ocena EQ</option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">Opis testu <span class="text-muted">(Opis wyświetlany na stronie testu dla kandydata)</span></label>
-                            <textarea class="form-control" name="description" rows="2"></textarea>
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">Opis testu <span class="text-muted">(Opis wyświetlany na stronie testu dla kandydata)</span></label>
+                                <textarea class="form-control" name="description" rows="2"></textarea>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">Próg zaliczenia* <span class="text-muted">(Ustaw wartość 0, aby test był traktowany jako bez progu)</span></label>
-                            <input type="number" class="form-control" name="passing_threshold" required min="0">
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">Próg zaliczenia* <span class="text-muted">(Ustaw wartość 0, aby test był traktowany jako bez progu)</span></label>
+                                <input type="number" class="form-control" name="passing_threshold" required min="0">
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">Limit czasu (minuty)</label>
+                                <input type="number" class="form-control" name="time_limit_minutes" min="0">
+                            </div>
                         </div>
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">Limit czasu (minuty)</label>
-                            <input type="number" class="form-control" name="time_limit_minutes" min="0">
-                        </div>
-                    </div>
 
-                    <!-- Add this section in the Add Test Modal, right after the time_limit_minutes input -->
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label">Grupy*</label>
-                            <div class="form-group">
-                                <div class="border rounded p-3" id="addGroupsContainer">
-                                    {% for group in groups %}
-                                    <div class="form-check">
-                                        <input type="checkbox" class="form-check-input group-checkbox" 
-                                               name="groups[]" value="{{ group.id }}" 
-                                               id="add_group_{{ group.id }}">
-                                        <label class="form-check-label" for="add_group_{{ group.id }}">
-                                            {{ group.name }}
-                                        </label>
+                        <!-- Add this section in the Add Test Modal, right after the time_limit_minutes input -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label">Grupy*</label>
+                                <div class="form-group">
+                                    <div class="border rounded p-3" id="addGroupsContainer">
+                                        {% for group in groups %}
+                                        <div class="form-check">
+                                            <input type="checkbox" class="form-check-input group-checkbox" 
+                                                   name="groups[]" value="{{ group.id }}" 
+                                                   id="add_group_{{ group.id }}">
+                                            <label class="form-check-label" for="add_group_{{ group.id }}">
+                                                {{ group.name }}
+                                            </label>
+                                        </div>
+                                        {% endfor %}
                                     </div>
-                                    {% endfor %}
-                                </div>
-                                <div class="invalid-feedback" style="display: none;">
-                                    Aby zapisać test, musisz wybrać przynajmniej jedną grupę
+                                    <div class="invalid-feedback" style="display: none;">
+                                        Aby zapisać test, musisz wybrać przynajmniej jedną grupę
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Questions Section -->
-                    <div class="questions-section mt-4">
-                        <h6 class="mb-3">Pytania</h6>
-                        <div class="questions-container"></div>
-                        <div class="text-end mt-3">
-                            <button type="button" class="btn btn-secondary add-question">
-                                Dodaj pytanie
-                            </button>
+                        <!-- Questions Section -->
+                        <div class="questions-section">
+                            <h6 class="mb-3">Pytania</h6>
+                            <div class="questions-container"></div>
+                            <div class="text-end mt-3">
+                                <button type="button" class="btn btn-secondary add-question">
+                                    Dodaj pytanie
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="save-progress d-none">
+                            <div class="progress mb-3">
+                                <div class="progress-bar" role="progressbar" style="width: 0%" 
+                                     aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <p class="text-center mb-3">
+                                Zapisywanie pytania <span class="current-question">0</span> z <span class="total-questions">0</span>
+                            </p>
                         </div>
                     </div>
-
-                    <!-- Add this right after the questions section in both add and edit forms -->
-                    <div class="save-progress d-none">
-                        <div class="progress mb-3">
-                            <div class="progress-bar" role="progressbar" style="width: 0%" 
-                                 aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
-                        <p class="text-center mb-3">
-                            Zapisywanie pytania <span class="current-question">0</span> z <span class="total-questions">0</span>
-                        </p>
-                    </div>
-
-                    <div class="text-end mt-4">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                        <button type="submit" class="btn btn-primary ms-2" id="addTestSubmit">
-                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                            <span class="button-text">Zapisz test</span>
-                        </button>
-                    </div>
-                </form>
-            </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="submit" class="btn btn-primary ms-2" id="addTestSubmit">
+                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                        <span class="button-text">Zapisz test</span>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -262,104 +263,105 @@
 <div class="modal fade" id="editTestModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Edytuj szablon testu</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="editTestForm" method="POST">
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label">Tytuł testu*</label>
-                            <input type="text" class="form-control" name="title" required>
+            <form id="editTestForm" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edytuj szablon testu</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="modal-body-scroll p-3">
+                        <!-- Form content -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label">Tytuł testu*</label>
+                                <input type="text" class="form-control" name="title" required>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label">Typ testu*</label>
-                            <select class="form-select" name="test_type" required>
-                                <option value="SURVEY">Ankieta</option>
-                                <option value="EQ">Test EQ</option>
-                                <option value="IQ">Test IQ</option>
-                                <option value="EQ_EVALUATION">Ocena EQ</option>
-                            </select>
+                        
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label">Typ testu*</label>
+                                <select class="form-select" name="test_type" required>
+                                    <option value="SURVEY">Ankieta</option>
+                                    <option value="EQ">Test EQ</option>
+                                    <option value="IQ">Test IQ</option>
+                                    <option value="EQ_EVALUATION">Ocena EQ</option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">Opis testu <span class="text-muted">(Opis wyświetlany na stronie testu dla kandydata)</span></label>
-                            <textarea class="form-control" name="description" rows="2"></textarea>
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">Opis testu <span class="text-muted">(Opis wyświetlany na stronie testu dla kandydata)</span></label>
+                                <textarea class="form-control" name="description" rows="2"></textarea>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">Próg zaliczenia* <span class="text-muted">(Ustaw wartość 0, aby test był traktowany jak bez progu)</span></label>
-                            <input type="number" class="form-control" name="passing_threshold" required min="0">
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">Próg zaliczenia* <span class="text-muted">(Ustaw wartość 0, aby test był traktowany jak bez progu)</span></label>
+                                <input type="number" class="form-control" name="passing_threshold" required min="0">
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">Limit czasu (minuty)</label>
+                                <input type="number" class="form-control" name="time_limit_minutes" min="0">
+                            </div>
                         </div>
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">Limit czasu (minuty)</label>
-                            <input type="number" class="form-control" name="time_limit_minutes" min="0">
-                        </div>
-                    </div>
 
-                    <!-- Add groups section -->
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label">Grupy*</label>
-                            <div class="form-group">
-                                <div class="border rounded p-3" id="editGroupsContainer">
-                                    {% for group in groups %}
-                                    <div class="form-check">
-                                        <input type="checkbox" class="form-check-input group-checkbox" 
-                                               name="groups[]" value="{{ group.id }}" 
-                                               id="edit_group_{{ group.id }}">
-                                        <label class="form-check-label" for="edit_group_{{ group.id }}">
-                                            {{ group.name }}
-                                        </label>
+                        <!-- Add groups section -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label">Grupy*</label>
+                                <div class="form-group">
+                                    <div class="border rounded p-3" id="editGroupsContainer">
+                                        {% for group in groups %}
+                                        <div class="form-check">
+                                            <input type="checkbox" class="form-check-input group-checkbox" 
+                                                   name="groups[]" value="{{ group.id }}" 
+                                                   id="edit_group_{{ group.id }}">
+                                            <label class="form-check-label" for="edit_group_{{ group.id }}">
+                                                {{ group.name }}
+                                            </label>
+                                        </div>
+                                        {% endfor %}
                                     </div>
-                                    {% endfor %}
-                                </div>
-                                <div class="invalid-feedback" style="display: none;">
-                                    Aby zapisać test, musisz wybrać przynajmniej jedną grupę
+                                    <div class="invalid-feedback" style="display: none;">
+                                        Aby zapisać test, musisz wybrać przynajmniej jedną grupę
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Questions Section -->
-                    <div class="questions-section mt-4">
-                        <h6 class="mb-3">Pytania</h6>
-                        <div class="questions-container"></div>
-                        <div class="text-end mt-3">
-                            <button type="button" class="btn btn-secondary add-question">
-                                Dodaj pytanie
-                            </button>
+                        <!-- Questions Section -->
+                        <div class="questions-section">
+                            <h6 class="mb-3">Pytania</h6>
+                            <div class="questions-container"></div>
+                            <div class="text-end mt-3">
+                                <button type="button" class="btn btn-secondary add-question">
+                                    Dodaj pytanie
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="save-progress d-none">
+                            <div class="progress mb-3">
+                                <div class="progress-bar" role="progressbar" style="width: 0%" 
+                                     aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <p class="text-center mb-3">
+                                Zapisywanie pytania <span class="current-question">0</span> z <span class="total-questions">0</span>
+                            </p>
                         </div>
                     </div>
-
-                    <!-- Add this right after the questions section in both add and edit forms -->
-                    <div class="save-progress d-none">
-                        <div class="progress mb-3">
-                            <div class="progress-bar" role="progressbar" style="width: 0%" 
-                                 aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
-                        <p class="text-center mb-3">
-                            Zapisywanie pytania <span class="current-question">0</span> z <span class="total-questions">0</span>
-                        </p>
-                    </div>
-
-                    <div class="text-end mt-4">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                        <button type="submit" class="btn btn-primary ms-2" id="editTestSubmit">
-                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                            <span class="button-text">Zapisz zmiany</span>
-                        </button>
-                    </div>
-                </form>
-            </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="submit" class="btn btn-primary ms-2" id="editTestSubmit">
+                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                        <span class="button-text">Zapisz zmiany</span>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -385,5 +387,52 @@
         </div>
     </div>
 </div>
+
+<style>
+.modal-content {
+    height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-content form {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-body {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+.modal-body-scroll {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 1rem;
+}
+
+.modal-footer {
+    flex-shrink: 0;
+    background-color: #fff;
+    border-top: 1px solid #dee2e6;
+    padding: 1rem;
+    z-index: 1030;
+}
+
+/* Add shadow to footer when content is scrolled */
+.modal-footer::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 0;
+    right: 0;
+    height: 10px;
+    background: linear-gradient(to top, rgba(0,0,0,0.1), transparent);
+    pointer-events: none;
+}
+</style>
 
 {% endblock %} 
