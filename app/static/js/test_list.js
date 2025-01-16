@@ -90,6 +90,18 @@ function initializeFilters() {
     if (applyFilters) {
         applyFilters.remove();
     }
+
+    // Zaznacz wszystkie checkboxy na starcie
+    document.querySelectorAll('.filter-test-type, .filter-group').forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    
+    // Zaktualizuj tekst w dropdownach na starcie
+    document.querySelectorAll('.dropdown').forEach(dropdown => {
+        const selectedSpan = dropdown.querySelector('.selected-options');
+        const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]');
+        updateSelectedOptionsText(checkboxes[0]); // Przekaż dowolny checkbox z grupy
+    });
     
     // Obsługa zmiany checkboxów - natychmiastowe filtrowanie
     document.querySelectorAll('.filter-test-type, .filter-group').forEach(checkbox => {
@@ -111,18 +123,20 @@ function initializeFilters() {
     });
     
     resetFilters?.addEventListener('click', function() {
-        // Reset checkboxów
+        // Zaznacz wszystkie checkboxy
         document.querySelectorAll('.filter-test-type, .filter-group').forEach(checkbox => {
-            checkbox.checked = false;
+            checkbox.checked = true;
         });
-        // Reset tekstu w dropdownach
-        document.querySelectorAll('.selected-options').forEach(span => {
-            span.textContent = 'Wszystkie';
+        // Zaktualizuj tekst w dropdownach
+        document.querySelectorAll('.dropdown').forEach(dropdown => {
+            const selectedSpan = dropdown.querySelector('.selected-options');
+            const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]');
+            updateSelectedOptionsText(checkboxes[0]); // Przekaż dowolny checkbox z grupy
         });
         // Reset sortowania
         sortBy.value = 'created_at';
         sortOrder.value = 'desc';
-        updateTable(false);
+        updateTable(true);
     });
 }
 
@@ -134,9 +148,13 @@ function updateSelectedOptionsText(checkbox) {
         .filter(cb => cb.checked)
         .map(cb => cb.nextElementSibling.textContent);
     
-    selectedSpan.textContent = selectedOptions.length > 0 ? 
-        selectedOptions.join(', ') : 
-        'Wszystkie';
+    if (selectedOptions.length === 0) {
+        selectedSpan.textContent = '-';
+    } else if (selectedOptions.length === checkboxes.length) {
+        selectedSpan.textContent = 'Wszystkie';
+    } else {
+        selectedSpan.textContent = selectedOptions.join(', ');
+    }
 }
 
 function initializeEventListeners() {
@@ -232,26 +250,28 @@ function updateTable(applyFilters) {
         .map(cb => cb.value);
     
     // Apply filters
-    if (selectedTestTypes.length > 0 || selectedGroups.length > 0) {
-        rows = rows.filter(row => {
-            const testType = row.querySelector('td:nth-child(2)').textContent.trim();
-            const testGroups = JSON.parse(row.dataset.groups || '[]');
+    rows = rows.filter(row => {
+        const testType = row.querySelector('td:nth-child(2)').textContent.trim();
+        const testGroups = JSON.parse(row.dataset.groups || '[]');
+        
+        // Jeśli nie wybrano żadnego typu testu, pokaż tylko testy bez typu
+        const testTypeMatch = selectedTestTypes.length === 0 ? 
+            testType === '' : 
+            selectedTestTypes.some(type => {
+                if (type === 'SURVEY') return testType === 'Ankieta';
+                if (type === 'EQ') return testType === 'Test EQ';
+                if (type === 'IQ') return testType === 'Test IQ';
+                if (type === 'EQ_EVALUATION') return testType === 'Ocena EQ';
+                return false;
+            });
             
-            const testTypeMatch = selectedTestTypes.length === 0 || 
-                selectedTestTypes.some(type => {
-                    if (type === 'SURVEY') return testType === 'Ankieta';
-                    if (type === 'EQ') return testType === 'Test EQ';
-                    if (type === 'IQ') return testType === 'Test IQ';
-                    if (type === 'EQ_EVALUATION') return testType === 'Ocena EQ';
-                    return false;
-                });
-                
-            const groupMatch = selectedGroups.length === 0 || 
-                testGroups.some(group => selectedGroups.includes(group.id.toString()));
-            
-            return testTypeMatch && groupMatch;
-        });
-    }
+        // Jeśli nie wybrano żadnej grupy, pokaż tylko testy bez grup
+        const groupMatch = selectedGroups.length === 0 ? 
+            testGroups.length === 0 : 
+            testGroups.some(group => selectedGroups.includes(group.id.toString()));
+        
+        return testTypeMatch && groupMatch;
+    });
     
     // Apply sorting
     if (sortBy.value) {
