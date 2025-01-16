@@ -178,6 +178,9 @@ textarea.form-control {
     padding: 1.5rem;
     width: 100%;
     margin: 0 auto;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .table-scroll {
@@ -187,6 +190,9 @@ textarea.form-control {
     margin: 0 auto;
     width: 100%;
     padding: 0 5px;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f1f5f9;
+    position: relative;
 }
 
 .table {
@@ -236,16 +242,16 @@ td {
 .table thead th {
     position: sticky;
     top: 0;
-    background: #f8fafc;
-    z-index: 1;
+    background: #495057;
+    z-index: 2;
     padding: 1rem 0.75rem;
     font-weight: 600;
-    color: #475569;
-    border-bottom: 2px solid #e5e7eb;
+    color: #ffffff;
+    border-bottom: 2px solid #6c757d;
     text-transform: uppercase;
     font-size: 0.75rem;
     letter-spacing: 0.05em;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .text-muted {
@@ -479,96 +485,84 @@ td {
 }
 
 /* Update table header styles */
+.table thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #495057;
+}
+
 .table thead th {
     position: sticky;
     top: 0;
-    background: #f8fafc;
-    z-index: 1;
+    background: #495057;
+    z-index: 2;
     padding: 1rem 0.75rem;
     font-weight: 600;
-    color: #475569;
-    border-bottom: 2px solid #e5e7eb;
+    color: #ffffff;
+    border-bottom: 2px solid #6c757d;
     text-transform: uppercase;
     font-size: 0.75rem;
     letter-spacing: 0.05em;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Table cell styles */
-.table td {
-    padding: 1rem 0.75rem;
-    color: #1f2937;
-    border-bottom: 1px solid #e5e7eb;
-    background-color: white;
+/* First column header styling */
+.table thead th:first-child {
+    z-index: 3;
+    background: #495057;
+    border-top-left-radius: 8px;
 }
 
-/* Alternating row colors */
-.table tbody tr:nth-child(even) td {
-    background-color: #f8fafc;
+.table thead th:last-child {
+    border-top-right-radius: 8px;
 }
 
-/* Hover effect */
-.table tbody tr:hover td {
-    background-color: #f1f5f9;
-    transition: background-color 0.15s ease-in-out;
-}
-
-/* Vertical lines between columns */
-.table th:not(:last-child),
-.table td:not(:last-child) {
-    border-right: 1px solid #e5e7eb;
-}
-
-/* First column styling */
-.table th:first-child,
-.table td:first-child {
-    font-weight: 500;
-    color: #1f2937;
-}
-
-/* Status badge styling */
-.table .badge {
-    padding: 0.35em 0.65em;
-    font-size: 0.75em;
-    font-weight: 600;
-    border-radius: 9999px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-/* Action buttons styling */
-.table .btn-group .btn {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.875rem;
-    border-radius: 0.375rem;
-    font-weight: 500;
+/* Hover effect for header cells */
+.table thead th:hover {
+    background: #6c757d;
+    color: #ffffff;
     transition: all 0.15s ease-in-out;
 }
 
-/* Table wrapper updates */
-.table-wrapper {
-    height: calc(100vh - 380px);
-    position: relative;
-    display: flex;
-    justify-content: center;
-    overflow: hidden;
-    padding: 1.5rem;
-    width: 100%;
-    margin: 0 auto;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+/* Add subtle grid lines between header cells */
+.table thead th:not(:last-child) {
+    border-right: 1px solid #6c757d;
 }
 
-.table-scroll {
-    height: 100%;
-    overflow-y: auto;
-    overflow-x: auto;
-    margin: 0 auto;
-    width: 100%;
-    padding: 0.75rem;
-    scrollbar-width: thin;
-    scrollbar-color: #cbd5e1 #f1f5f9;
+/* Add subtle shadow under header */
+.table thead::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -3px;
+    height: 3px;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.15), transparent);
+    z-index: 1;
+}
+
+/* Ensure table body content stays below headers */
+.table tbody {
+    position: relative;
+    z-index: 1;
+}
+
+.table tbody td {
+    background-color: inherit;
+}
+
+/* First column styling with proper z-index */
+.table th:first-child,
+.table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background-color: inherit;
+}
+
+.table thead th:first-child {
+    z-index: 3;
 }
 
 /* Scrollbar styling */
