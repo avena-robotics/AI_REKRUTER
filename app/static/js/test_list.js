@@ -117,6 +117,15 @@ function initializeEventListeners() {
     const addTestBtn = document.querySelector('[data-bs-target="#addTestModal"]');
     if (addTestBtn) {
         addTestBtn.addEventListener('click', () => {
+            // Reset submit button state
+            const submitButton = document.querySelector('#addTestSubmit');
+            const spinner = submitButton.querySelector('.spinner-border');
+            const buttonText = submitButton.querySelector('.button-text');
+            
+            submitButton.disabled = false;
+            spinner.classList.add('d-none');
+            buttonText.textContent = 'Zapisz test';
+
             document.querySelector('#addTestModal .modal-title').textContent = 'Dodaj nowy szablon testu';
             resetAddTestForm();
         });
@@ -241,7 +250,11 @@ function getRowValue(row, sortField) {
             return parseInt(row.querySelector('td:nth-child(4)').textContent) || 0;
         case 'created_at':
             const dateText = row.querySelector('td:nth-child(8)').textContent;
-            return new Date(dateText).getTime() || 0;
+            // Parse date in format DD.MM.YYYY HH:mm
+            const [datePart, timePart] = dateText.split(' ');
+            const [day, month, year] = datePart.split('.');
+            const [hours, minutes] = timePart.split(':');
+            return new Date(year, month - 1, day, hours, minutes).getTime();
         default:
             return 0;
     }
@@ -577,8 +590,24 @@ function confirmDeleteTest(testId) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showToast('Test został usunięty', 'success');
-                document.querySelector(`tr[data-test-id="${testId}"]`).remove();
+                // Fetch updated test data and refresh table
+                fetch('/tests/')
+                    .then(response => response.text())
+                    .then(html => {
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = html;
+                        
+                        const newTbody = tempDiv.querySelector('tbody');
+                        if (newTbody) {
+                            originalRows = Array.from(newTbody.querySelectorAll('tr'));
+                            updateTable(true);
+                            showToast('Test został usunięty', 'success');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching updated test data:', error);
+                        showToast('Wystąpił błąd podczas odświeżania listy testów', 'error');
+                    });
             } else {
                 throw new Error(data.error || 'Wystąpił błąd podczas usuwania testu');
             }
@@ -592,6 +621,68 @@ function confirmDeleteTest(testId) {
             deleteButton.textContent = originalText;
         });
     }
+}
+
+function duplicateTest(testId) {
+    // Reset submit button state
+    const submitButton = document.querySelector('#addTestSubmit');
+    const spinner = submitButton.querySelector('.spinner-border');
+    const buttonText = submitButton.querySelector('.button-text');
+    
+    submitButton.disabled = false;
+    spinner.classList.add('d-none');
+    buttonText.textContent = 'Zapisz test';
+
+    fetch(`/tests/${testId}/data`)
+        .then(response => response.json())
+        .then(test => {
+            const form = document.getElementById('addTestForm');
+            
+            // Populate form fields except unique identifiers
+            form.querySelector('[name="title"]').value = test.title ? `${test.title} - kopia` : '';
+            form.querySelector('[name="test_type"]').value = test.test_type || '';
+            form.querySelector('[name="description"]').value = test.description || '';
+            form.querySelector('[name="passing_threshold"]').value = test.passing_threshold || 0;
+            form.querySelector('[name="time_limit_minutes"]').value = test.time_limit_minutes || '';
+            
+            // Set groups
+            if (test.groups) {
+                test.groups.forEach(group => {
+                    const checkbox = form.querySelector(`input[name="groups[]"][value="${group.id}"]`);
+                    if (checkbox) checkbox.checked = true;
+                });
+            }
+            
+            // Clear existing questions container
+            const questionsContainer = form.querySelector('.questions-container');
+            questionsContainer.innerHTML = '';
+            
+            // Add questions
+            if (test.questions && test.questions.length > 0) {
+                test.questions
+                    .sort((a, b) => a.order_number - b.order_number)
+                    .forEach(question => {
+                        // Remove ID from question to create new one
+                        delete question.id;
+                        const questionHtml = createQuestionHtml(question);
+                        questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
+
+                        // Set answer type specific fields
+                        const questionCard = questionsContainer.lastElementChild;
+                        setAnswerFields(questionCard, question);
+                    });
+            }
+            
+            // Update modal title to indicate duplication
+            document.querySelector('#addTestModal .modal-title').textContent = 'Duplikuj szablon testu';
+            
+            // Show the modal
+            new bootstrap.Modal(document.getElementById('addTestModal')).show();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Błąd podczas ładowania danych testu', 'error');
+        });
 }
 
 function showToast(message, type = 'success') {
@@ -797,14 +888,10 @@ async function handleTestFormSubmit(e) {
     
     const isEdit = form.id === 'editTestForm';
     
-    // Get button and progress elements
+    // Get button elements
     const submitButton = form.querySelector('button[type="submit"]');
     const spinner = submitButton.querySelector('.spinner-border');
     const buttonText = submitButton.querySelector('.button-text');
-    const progressSection = form.querySelector('.save-progress');
-    const progressBar = progressSection.querySelector('.progress-bar');
-    const currentQuestionSpan = progressSection.querySelector('.current-question');
-    const totalQuestionsSpan = progressSection.querySelector('.total-questions');
     
     try {
         // Show loading state
@@ -886,18 +973,10 @@ async function handleTestFormSubmit(e) {
                 }
             }
             
-            // Show progress section for remaining operations
+            // Handle added and modified questions
             if (added.length > 0 || modified.length > 0) {
-                progressSection.classList.remove('d-none');
-                totalQuestionsSpan.textContent = added.length + modified.length;
-                let currentQuestion = 0;
-                
                 // Handle added questions
                 for (const question of added) {
-                    currentQuestion++;
-                    currentQuestionSpan.textContent = currentQuestion;
-                    progressBar.style.width = `${(currentQuestion / (added.length + modified.length)) * 100}%`;
-                    
                     const questionFormData = new FormData();
                     questionFormData.append('test_id', originalData.id);
                     questionFormData.append('question', JSON.stringify(question));
@@ -909,16 +988,12 @@ async function handleTestFormSubmit(e) {
                     
                     const result = await response.json();
                     if (!result.success) {
-                        throw new Error(`Błąd podczas dodawania pytania ${currentQuestion}: ${result.error}`);
+                        throw new Error(`Błąd podczas dodawania pytania: ${result.error}`);
                     }
                 }
                 
                 // Handle modified questions
                 for (const mod of modified) {
-                    currentQuestion++;
-                    currentQuestionSpan.textContent = currentQuestion;
-                    progressBar.style.width = `${(currentQuestion / (added.length + modified.length)) * 100}%`;
-                    
                     const questionFormData = new FormData();
                     // Add all changes as separate fields
                     for (const [key, value] of Object.entries(mod.changes)) {
@@ -936,7 +1011,7 @@ async function handleTestFormSubmit(e) {
                     
                     const result = await response.json();
                     if (!result.success) {
-                        throw new Error(`Błąd podczas aktualizacji pytania ${currentQuestion}: ${result.error}`);
+                        throw new Error(`Błąd podczas aktualizacji pytania: ${result.error}`);
                     }
                 }
             }
@@ -955,18 +1030,12 @@ async function handleTestFormSubmit(e) {
             
             const testId = result.test_id;
             
-            // Then save questions one by one with progress
+            // Then save questions
             if (questions.length > 0) {
-                progressSection.classList.remove('d-none');
-                totalQuestionsSpan.textContent = questions.length;
-                
-                for (let i = 0; i < questions.length; i++) {
-                    currentQuestionSpan.textContent = i + 1;
-                    progressBar.style.width = `${((i + 1) / questions.length) * 100}%`;
-                    
+                for (const question of questions) {
                     const questionFormData = new FormData();
                     questionFormData.append('test_id', testId);
-                    questionFormData.append('question', JSON.stringify(questions[i]));
+                    questionFormData.append('question', JSON.stringify(question));
                     
                     const response = await fetch('/tests/add/question', {
                         method: 'POST',
@@ -975,7 +1044,7 @@ async function handleTestFormSubmit(e) {
                     
                     const result = await response.json();
                     if (!result.success) {
-                        throw new Error(`Błąd podczas dodawania pytania ${i + 1}: ${result.error}`);
+                        throw new Error(`Błąd podczas dodawania pytania: ${result.error}`);
                     }
                 }
             }
@@ -991,18 +1060,49 @@ async function handleTestFormSubmit(e) {
         modal.hide();
         
         modal._element.addEventListener('hidden.bs.modal', function () {
-            window.location.reload();
+            // Fetch updated test data and refresh table
+            fetch('/tests/')
+                .then(response => response.text())
+                .then(html => {
+                    // Create a temporary div to parse the HTML
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+                    
+                    // Get the new tbody content
+                    const newTbody = tempDiv.querySelector('tbody');
+                    if (newTbody) {
+                        // Update originalRows with new data
+                        originalRows = Array.from(newTbody.querySelectorAll('tr'));
+                        
+                        // Apply current filters and sorting
+                        updateTable(true);
+                        
+                        // Show the toast
+                        const pendingToast = sessionStorage.getItem('pendingToast');
+                        if (pendingToast) {
+                            try {
+                                const toastData = JSON.parse(pendingToast);
+                                showToast(toastData.message, toastData.type);
+                            } finally {
+                                sessionStorage.removeItem('pendingToast');
+                            }
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching updated test data:', error);
+                    showToast('Wystąpił błąd podczas odświeżania listy testów', 'error');
+                });
         }, { once: true });
 
     } catch (error) {
         console.error('Error submitting form:', error);
         showToast(error.message, 'error');
         
-        // Reset button state and hide progress
+        // Reset button state
         submitButton.disabled = false;
         spinner.classList.add('d-none');
         buttonText.textContent = isEdit ? 'Zapisz zmiany' : 'Zapisz test';
-        progressSection.classList.add('d-none');
     }
 }
 
@@ -1176,59 +1276,6 @@ function updateQuestionOrders(container) {
             field.name = field.name.replace(/questions\[\d+\]/, `questions[${index}]`);
         });
     });
-}
-
-function duplicateTest(testId) {
-    fetch(`/tests/${testId}/data`)
-        .then(response => response.json())
-        .then(test => {
-            const form = document.getElementById('addTestForm');
-            
-            // Populate form fields except unique identifiers
-            form.querySelector('[name="title"]').value = test.title ? `${test.title} - kopia` : '';
-            form.querySelector('[name="test_type"]').value = test.test_type || '';
-            form.querySelector('[name="description"]').value = test.description || '';
-            form.querySelector('[name="passing_threshold"]').value = test.passing_threshold || 0;
-            form.querySelector('[name="time_limit_minutes"]').value = test.time_limit_minutes || '';
-            
-            // Set groups
-            if (test.groups) {
-                test.groups.forEach(group => {
-                    const checkbox = form.querySelector(`input[name="groups[]"][value="${group.id}"]`);
-                    if (checkbox) checkbox.checked = true;
-                });
-            }
-            
-            // Clear existing questions container
-            const questionsContainer = form.querySelector('.questions-container');
-            questionsContainer.innerHTML = '';
-            
-            // Add questions
-            if (test.questions && test.questions.length > 0) {
-                test.questions
-                    .sort((a, b) => a.order_number - b.order_number)
-                    .forEach(question => {
-                        // Remove ID from question to create new one
-                        delete question.id;
-                        const questionHtml = createQuestionHtml(question);
-                        questionsContainer.insertAdjacentHTML('beforeend', questionHtml);
-
-                        // Set answer type specific fields
-                        const questionCard = questionsContainer.lastElementChild;
-                        setAnswerFields(questionCard, question);
-                    });
-            }
-            
-            // Update modal title to indicate duplication
-            document.querySelector('#addTestModal .modal-title').textContent = 'Duplikuj szablon testu';
-            
-            // Show the modal
-            new bootstrap.Modal(document.getElementById('addTestModal')).show();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showToast('Błąd podczas ładowania danych testu', 'error');
-        });
 }
 
 function createAnswerFieldsHtml(questionCounter, question) {
