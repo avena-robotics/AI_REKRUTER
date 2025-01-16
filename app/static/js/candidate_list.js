@@ -21,7 +21,106 @@ window.viewCandidate = async function(candidateId) {
     }
 };
 
-window.moveToNextStage = async function(candidateId) {
+async function refreshTable(fetchNewData = false) {
+    const tbody = document.querySelector('tbody');
+    
+    // Fetch new data if requested
+    if (fetchNewData) {
+        try {
+            const response = await fetch('/candidates/');
+            const html = await response.text();
+            
+            // Create a temporary div to parse the HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            
+            // Get the new tbody content
+            const newTbody = tempDiv.querySelector('tbody');
+            if (newTbody) {
+                // Update originalRows with new data
+                originalRows = Array.from(newTbody.querySelectorAll('tr'));
+            }
+        } catch (error) {
+            console.error('Error fetching updated candidate data:', error);
+            showToast('Błąd podczas odświeżania listy kandydatów', 'error');
+            return;
+        }
+    }
+    
+    // Get current filters
+    const searchText = document.getElementById('searchText').value.toLowerCase();
+    const selectedCampaigns = Array.from(document.querySelectorAll('.filter-campaign:checked'))
+        .map(cb => cb.value);
+    const selectedStatuses = Array.from(document.querySelectorAll('.filter-status:checked'))
+        .map(cb => cb.value);
+    
+    // Clone original rows for filtering
+    let rows = originalRows.map(row => row.cloneNode(true));
+    
+    // Apply filters
+    rows = rows.filter(row => {
+        const text = row.textContent.toLowerCase();
+        const campaignCode = row.querySelector('td:nth-child(2)').textContent.trim();
+        const statusBadge = row.querySelector('.badge');
+        const status = statusBadge ? statusBadge.textContent.trim() : '';
+        
+        const matchesSearch = !searchText || text.includes(searchText);
+        
+        // Nowa logika dla kampanii:
+        // - Jeśli nic nie jest zaznaczone, pokaż tylko elementy bez kodu kampanii
+        // - Jeśli coś jest zaznaczone, pokaż elementy z zaznaczonymi kodami kampanii
+        const matchesCampaign = selectedCampaigns.length === 0 ? 
+            !campaignCode : // pokaż tylko gdy nie ma kodu kampanii
+            selectedCampaigns.includes(campaignCode); // pokaż gdy kod jest w zaznaczonych
+
+        // Nowa logika dla statusów:
+        // - Jeśli nic nie jest zaznaczone, pokaż tylko elementy bez statusu
+        // - Jeśli coś jest zaznaczone, pokaż elementy z zaznaczonymi statusami
+        const matchesStatus = selectedStatuses.length === 0 ?
+            !status : // pokaż tylko gdy nie ma statusu
+            selectedStatuses.some(s => {
+                switch(s) {
+                    case 'PO1': return status === 'Ankieta';
+                    case 'PO2': return status === 'Test EQ';
+                    case 'PO2_5': return status === 'Ocena EQ';
+                    case 'PO3': return status === 'Test IQ';
+                    case 'PO4': return status === 'Potencjał';
+                    case 'INVITED_TO_INTERVIEW': return status === 'Zaproszono na rozmowę';
+                    case 'AWAITING_DECISION': return status === 'Oczekuje na decyzję';
+                    case 'REJECTED': return status === 'Odrzucony';
+                    case 'ACCEPTED': return status === 'Zaakceptowany';
+                    default: return false;
+                }
+            });
+        
+        return matchesSearch && matchesCampaign && matchesStatus;
+    });
+
+    // Apply multiple sorts
+    if (currentSorts.length > 0) {
+        rows.sort((a, b) => {
+            for (const sort of currentSorts) {
+                const aValue = getRowValue(a, sort.field);
+                const bValue = getRowValue(b, sort.field);
+                
+                const order = sort.direction === 'asc' ? 1 : -1;
+                
+                if (aValue < bValue) return -1 * order;
+                if (aValue > bValue) return 1 * order;
+            }
+            return 0;
+        });
+    }
+
+    // Update table
+    tbody.innerHTML = '';
+    rows.forEach(row => tbody.appendChild(row));
+    
+    // Reattach event listeners
+    setupActionButtons();
+}
+
+async function moveToNextStage(candidateId) {
     if (!confirm('Czy na pewno chcesz przepchnąć kandydata do kolejnego etapu?')) return;
     
     setButtonLoading(`nextStageBtn_${candidateId}`, true);
@@ -29,19 +128,23 @@ window.moveToNextStage = async function(candidateId) {
         const response = await fetch(`/candidates/${candidateId}/next-stage`, {
             method: 'POST'
         });
-        if (response.ok) {
-            location.reload();
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            showToast('Kandydat został przeniesiony do następnego etapu', 'success');
+            await refreshTable(true);
         } else {
-            throw new Error('Network response was not ok');
+            throw new Error(data.error || 'Network response was not ok');
         }
     } catch (error) {
         console.error('Error:', error);
         showToast('Błąd podczas zmiany etapu', 'error');
+    } finally {
         setButtonLoading(`nextStageBtn_${candidateId}`, false);
     }
-};
+}
 
-window.rejectCandidate = async function(candidateId) {
+async function rejectCandidate(candidateId) {
     if (!confirm('Czy na pewno chcesz odrzucić kandydata?')) return;
     
     setButtonLoading(`rejectBtn_${candidateId}`, true);
@@ -50,18 +153,20 @@ window.rejectCandidate = async function(candidateId) {
             method: 'POST'
         });
         if (response.ok) {
-            location.reload();
+            showToast('Kandydat został odrzucony', 'success');
+            await refreshTable(true);
         } else {
             throw new Error('Network response was not ok');
         }
     } catch (error) {
         console.error('Error:', error);
         showToast('Błąd podczas odrzucania kandydata', 'error');
+    } finally {
         setButtonLoading(`rejectBtn_${candidateId}`, false);
     }
-};
+}
 
-window.acceptCandidate = async function(candidateId) {
+async function acceptCandidate(candidateId) {
     if (!confirm('Czy na pewno chcesz zaakceptować kandydata?')) return;
     
     setButtonLoading(`acceptBtn_${candidateId}`, true);
@@ -70,18 +175,20 @@ window.acceptCandidate = async function(candidateId) {
             method: 'POST'
         });
         if (response.ok) {
-            location.reload();
+            showToast('Kandydat został zaakceptowany', 'success');
+            await refreshTable(true);
         } else {
             throw new Error('Network response was not ok');
         }
     } catch (error) {
         console.error('Error:', error);
         showToast('Błąd podczas akceptowania kandydata', 'error');
+    } finally {
         setButtonLoading(`acceptBtn_${candidateId}`, false);
     }
-};
+}
 
-window.deleteCandidate = async function(candidateId) {
+async function deleteCandidate(candidateId) {
     if (!confirm('Czy na pewno chcesz usunąć tę aplikację? Ta operacja jest nieodwracalna.')) return;
     
     setButtonLoading(`deleteBtn_${candidateId}`, true);
@@ -90,14 +197,43 @@ window.deleteCandidate = async function(candidateId) {
             method: 'POST'
         });
         if (response.ok) {
-            location.reload();
+            showToast('Aplikacja została usunięta', 'success');
+            await refreshTable(true);
         } else {
             throw new Error('Network response was not ok');
         }
     } catch (error) {
         console.error('Error:', error);
         showToast('Błąd podczas usuwania aplikacji', 'error');
+    } finally {
         setButtonLoading(`deleteBtn_${candidateId}`, false);
+    }
+}
+
+window.recalculateScores = async function(candidateId) {
+    if (!confirm('Czy na pewno chcesz przeliczyć punkty tego kandydata?')) return;
+    
+    setButtonLoading(`recalculateBtn_${candidateId}`, true);
+    try {
+        const response = await fetch(`/candidates/${candidateId}/recalculate`, {
+            method: 'POST'
+        });
+        const data = await response.json();
+        
+        if (response.ok) {
+            showToast('Punkty zostały przeliczone', 'success');
+            if (data.status_changed) {
+                showToast('Status kandydata został zmieniony!', 'warning');
+            }
+            await refreshTable(true);
+        } else {
+            throw new Error(data.error || 'Network response was not ok');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Błąd podczas przeliczania punktów', 'error');
+    } finally {
+        setButtonLoading(`recalculateBtn_${candidateId}`, false);
     }
 };
 
@@ -217,43 +353,80 @@ document.addEventListener('DOMContentLoaded', function() {
     const tbody = document.querySelector('tbody');
     originalRows = Array.from(tbody.querySelectorAll('tr'));
     
-    // Initialize event listeners
+    // Initialize filters and event listeners
+    initializeFilters();
     initializeEventListeners();
     
-    // Setup action buttons
-    setupActionButtons();
-
     // Initialize sortable headers
     initializeSortableHeaders();
 
     // Bulk recalculation button
     document.getElementById('bulkRecalculateBtn').addEventListener('click', bulkRecalculateScores);
-
-    // Cancel button in modal
-    document.getElementById('cancelRecalculation').addEventListener('click', function() {
-        isRecalculationCancelled = true;
-        recalculationModal.hide();
-        location.reload();
-    });
-
-    // Save note button in modal
-    const saveNoteBtn = document.getElementById('saveNoteBtn');
-    if (saveNoteBtn) {
-        saveNoteBtn.addEventListener('click', saveNoteFromList);
-    }
 });
 
-function initializeEventListeners() {
-    // Store original table rows
-    const tbody = document.querySelector('tbody');
-    originalRows = Array.from(tbody.querySelectorAll('tr'));
+function initializeFilters() {
+    // Zaznacz wszystkie checkboxy na starcie
+    document.querySelectorAll('.filter-campaign, .filter-status').forEach(checkbox => {
+        checkbox.checked = true;
+    });
     
+    // Zaznacz checkboxy "Zaznacz wszystkie" na starcie
+    document.querySelectorAll('.select-all-campaigns, .select-all-statuses').forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    
+    // Zaktualizuj tekst w dropdownach na starcie
+    document.querySelectorAll('.dropdown').forEach(dropdown => {
+        const selectedSpan = dropdown.querySelector('.selected-options');
+        const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]:not([class*="select-all"])');
+        if (checkboxes.length > 0) {
+            updateSelectedOptionsText(checkboxes[0]);
+        }
+    });
+}
+
+function initializeEventListeners() {
     // Initialize filters with instant update
     document.querySelectorAll('.filter-campaign, .filter-status').forEach(checkbox => {
         checkbox.addEventListener('change', function() {
+            // Aktualizuj stan checkboxa "Zaznacz wszystkie"
+            const isFilterCampaign = checkbox.classList.contains('filter-campaign');
+            const selectAllCheckbox = isFilterCampaign ? 
+                document.querySelector('.select-all-campaigns') : 
+                document.querySelector('.select-all-statuses');
+            const relatedCheckboxes = isFilterCampaign ? 
+                document.querySelectorAll('.filter-campaign') : 
+                document.querySelectorAll('.filter-status');
+            
+            const allChecked = Array.from(relatedCheckboxes).every(cb => cb.checked);
+            selectAllCheckbox.checked = allChecked;
+            
             updateSelectedOptionsText(this);
-            updateTable(true);
+            refreshTable(false);
         });
+    });
+
+    // Obsługa checkboxów "Zaznacz wszystkie"
+    document.querySelector('.select-all-campaigns').addEventListener('change', function() {
+        const campaignCheckboxes = document.querySelectorAll('.filter-campaign');
+        campaignCheckboxes.forEach(cb => {
+            cb.checked = this.checked;
+        });
+        if (campaignCheckboxes.length > 0) {
+            updateSelectedOptionsText(campaignCheckboxes[0]);
+        }
+        refreshTable(false);
+    });
+
+    document.querySelector('.select-all-statuses').addEventListener('change', function() {
+        const statusCheckboxes = document.querySelectorAll('.filter-status');
+        statusCheckboxes.forEach(cb => {
+            cb.checked = this.checked;
+        });
+        if (statusCheckboxes.length > 0) {
+            updateSelectedOptionsText(statusCheckboxes[0]);
+        }
+        refreshTable(false);
     });
 
     // Search input with debounce
@@ -262,7 +435,7 @@ function initializeEventListeners() {
     searchInput.addEventListener('input', function() {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
-            updateTable(true);
+            refreshTable(false);
         }, 300);
     });
 
@@ -276,12 +449,19 @@ function initializeEventListeners() {
     // Reset filters
     document.getElementById('resetFiltersBtn').addEventListener('click', function() {
         document.getElementById('searchText').value = '';
-        document.querySelectorAll('.filter-campaign, .filter-status').forEach(checkbox => {
-            checkbox.checked = false;
+        
+        // Zaznacz wszystkie checkboxy
+        document.querySelectorAll('.filter-campaign, .filter-status, .select-all-campaigns, .select-all-statuses').forEach(checkbox => {
+            checkbox.checked = true;
         });
-        document.querySelectorAll('.selected-options').forEach(span => {
-            span.textContent = span.closest('.dropdown').querySelector('button').textContent.includes('kampanie') ? 
-                'Wszystkie kampanie' : 'Wszystkie statusy';
+        
+        // Zaktualizuj tekst w dropdownach
+        document.querySelectorAll('.dropdown').forEach(dropdown => {
+            const selectedSpan = dropdown.querySelector('.selected-options');
+            const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]:not([class*="select-all"])');
+            if (checkboxes.length > 0) {
+                updateSelectedOptionsText(checkboxes[0]);
+            }
         });
         
         // Reset sorting
@@ -294,129 +474,24 @@ function initializeEventListeners() {
         });
         currentSorts = [];
         
-        updateTable(false);
+        refreshTable(false);
     });
 }
 
 function updateSelectedOptionsText(checkbox) {
     const dropdownButton = checkbox.closest('.dropdown').querySelector('button');
     const selectedSpan = dropdownButton.querySelector('.selected-options');
-    const checkboxes = checkbox.closest('.dropdown-menu').querySelectorAll('input[type="checkbox"]');
+    const checkboxes = checkbox.closest('.dropdown-menu').querySelectorAll('input[type="checkbox"]:not([class*="select-all"])');
     const selectedOptions = Array.from(checkboxes)
         .filter(cb => cb.checked)
-        .map(cb => cb.nextElementSibling.textContent);
+        .map(cb => cb.nextElementSibling.textContent.trim());
     
-    selectedSpan.textContent = selectedOptions.length > 0 ? 
-        selectedOptions.join(', ') : 
-        checkbox.classList.contains('filter-campaign') ? 'Wszystkie kampanie' : 'Wszystkie statusy';
-}
-
-function updateTable(applyFilters) {
-    const tbody = document.querySelector('tbody');
-    const searchText = document.getElementById('searchText').value.toLowerCase();
-    const selectedCampaigns = Array.from(document.querySelectorAll('.filter-campaign:checked'))
-        .map(cb => cb.value);
-    const selectedStatuses = Array.from(document.querySelectorAll('.filter-status:checked'))
-        .map(cb => cb.value);
-    
-    if (!applyFilters) {
-        tbody.innerHTML = '';
-        originalRows.forEach(row => tbody.appendChild(row.cloneNode(true)));
-        return;
-    }
-
-    let filteredRows = originalRows.filter(row => {
-        const text = row.textContent.toLowerCase();
-        const campaignCode = row.querySelector('td:nth-child(2)').textContent.trim();
-        const status = row.querySelector('.badge').textContent.trim();
-        
-        const matchesSearch = !searchText || text.includes(searchText);
-        const matchesCampaign = selectedCampaigns.length === 0 || selectedCampaigns.includes(campaignCode);
-        const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(status);
-        
-        return matchesSearch && matchesCampaign && matchesStatus;
-    });
-
-    // Apply multiple sorts
-    if (currentSorts.length > 0) {
-        filteredRows.sort((a, b) => {
-            for (const sort of currentSorts) {
-                const aValue = getRowValue(a, sort.field);
-                const bValue = getRowValue(b, sort.field);
-                
-                const order = sort.direction === 'asc' ? 1 : -1;
-                
-                if (aValue < bValue) return -1 * order;
-                if (aValue > bValue) return 1 * order;
-            }
-            return 0;
-        });
-    }
-
-    // Reattach event listeners
-    setupActionButtons();
-    
-    // Update table
-    tbody.innerHTML = '';
-    filteredRows.forEach(row => tbody.appendChild(row.cloneNode(true)));
-
-    // Update URL
-    const params = new URLSearchParams({
-        search: searchText,
-        campaign_code: selectedCampaigns.join(','),
-        status: selectedStatuses.join(','),
-        sort_by: sortBy,
-        sort_order: sortOrder
-    });
-    
-    window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`);
-
-}
-
-function getRowValue(row, sortField) {
-    switch (sortField) {
-        case 'name':
-            return row.querySelector('td:nth-child(1)').textContent.toLowerCase();
-        case 'campaign_code':
-            return row.querySelector('td:nth-child(2)').textContent.toLowerCase();
-        case 'email':
-            return row.querySelector('td:nth-child(3)').textContent.toLowerCase();
-        case 'phone':
-            return row.querySelector('td:nth-child(4)').textContent.toLowerCase();
-        case 'recruitment_status':
-            const status = row.querySelector('td:nth-child(5) .badge').textContent.trim();
-            const statusOrder = {
-                'Odrzucony': 1,
-                'Ankieta': 2,
-                'Test EQ': 3,
-                'Ocena EQ': 4,
-                'Test IQ': 5,
-                'Potencjał': 6,
-                'Zaproszono na rozmowę': 7,
-                'Oczekuje na decyzję': 8,
-                'Zaakceptowany': 9
-            };
-            return statusOrder[status] || 0;
-        case 'po1_score':
-            return parseFloat(row.querySelector('td:nth-child(6)').textContent) || -Infinity;
-        case 'po2_score':
-            return parseFloat(row.querySelector('td:nth-child(7)').textContent) || -Infinity;
-        case 'po2_5_score':
-            return parseFloat(row.querySelector('td:nth-child(8)').textContent) || -Infinity;
-        case 'po3_score':
-            return parseFloat(row.querySelector('td:nth-child(9)').textContent) || -Infinity;
-        case 'po4_score':
-            return parseFloat(row.querySelector('td:nth-child(10)').textContent) || -Infinity;
-        case 'total_score':
-            return parseFloat(row.querySelector('td:nth-child(11)').textContent) || -Infinity;
-        case 'created_at':
-            const dateText = row.querySelector('td:nth-child(12)').textContent;
-            const [datePart, timePart] = dateText.split(' ');
-            const [day, month, year] = datePart.split('.');
-            const [hours, minutes] = timePart.split(':');
-            return new Date(year, month - 1, day, hours, minutes).getTime();
-        default:
-            return 0;
+    if (selectedOptions.length === checkboxes.length) {
+        selectedSpan.textContent = checkbox.classList.contains('filter-campaign') ? 'Wszystkie kampanie' : 'Wszystkie statusy';
+    } else if (selectedOptions.length === 0) {
+        selectedSpan.textContent = '-';
+    } else {
+        selectedSpan.textContent = selectedOptions.join(', ');
     }
 }
 
@@ -451,7 +526,7 @@ function initializeSortableHeaders() {
                         indicator.textContent = index + 1;
                     }
                 });
-                updateTable(true);
+                refreshTable(false);
                 return;
             }
 
@@ -478,66 +553,21 @@ function initializeSortableHeaders() {
             }
             orderIndicator.textContent = currentSorts.length;
 
-            updateTable(true);
+            refreshTable(false);
         });
     });
 }
 
 function setupActionButtons() {
-    // Przycisk następnego etapu
-    document.querySelectorAll('.next-stage-btn').forEach(btn => {
+    // Przyciski kopiowania linków
+    document.querySelectorAll('.copy-link').forEach(btn => {
         btn.addEventListener('click', function() {
-            const candidateId = this.dataset.candidateId;
-            moveToNextStage(candidateId);
+            const link = this.dataset.link;
+            navigator.clipboard.writeText(link)
+                .then(() => showToast('Link został skopiowany do schowka', 'success'))
+                .catch(() => showToast('Nie udało się skopiować linku', 'error'));
         });
     });
-
-    // Przycisk odrzucenia
-    document.querySelectorAll('.reject-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const candidateId = this.dataset.candidateId;
-            rejectCandidate(candidateId);
-        });
-    });
-
-    // Przycisk akceptacji
-    document.querySelectorAll('.accept-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const candidateId = this.dataset.candidateId;
-            acceptCandidate(candidateId);
-        });
-    });
-
-    // Przycisk usuwania
-    document.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const candidateId = this.dataset.candidateId;
-            deleteCandidate(candidateId);
-        });
-    });
-}
-
-// Funkcje obsługi akcji
-async function moveToNextStage(candidateId) {
-    if (!confirm('Czy na pewno chcesz przenieść kandydata do następnego etapu?')) {
-        return;
-    }
-
-    try {
-        const response = await fetch(`/candidates/${candidateId}/next-stage`, {
-            method: 'POST'
-        });
-        const data = await response.json();
-
-        if (data.success) {
-            showToast('success', 'Kandydat został przeniesiony do następnego etapu');
-            window.location.reload();
-        } else {
-            showToast('error', data.error || 'Wystąpił błąd');
-        }
-    } catch (error) {
-        showToast('error', 'Wystąpił błąd podczas przenoszenia do następnego etapu');
-    }
 }
 
 function applyFilters() {
@@ -625,33 +655,6 @@ window.addNote = async function(candidateId) {
     const modal = new bootstrap.Modal(document.getElementById('addNoteModal'));
     modal.show();
 }; 
-
-window.recalculateScores = async function(candidateId) {
-    if (!confirm('Czy na pewno chcesz przeliczyć punkty tego kandydata?')) return;
-    
-    setButtonLoading(`recalculateBtn_${candidateId}`, true);
-    try {
-        const response = await fetch(`/candidates/${candidateId}/recalculate`, {
-            method: 'POST'
-        });
-        const data = await response.json();
-        
-        if (response.ok) {
-            showToast('Punkty zostały przeliczone', 'success');
-            if (data.status_changed) {
-                showToast('Status kandydata został zmieniony!', 'warning');
-            }
-            location.reload();
-        } else {
-            throw new Error(data.error || 'Network response was not ok');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showToast('Błąd podczas przeliczania punktów', 'error');
-    } finally {
-        setButtonLoading(`recalculateBtn_${candidateId}`, false);
-    }
-};
 
 function formatDateTime(date) {
     return date.toLocaleDateString('pl-PL', {
@@ -839,39 +842,93 @@ async function saveNoteFromList() {
     }
 }
 
-async function handleCandidateAction(candidateId, action, buttonPrefix, actionName, progressName) {
-    if (!confirm(`Czy na pewno chcesz ${actionName.toLowerCase()} tego kandydata?`)) return;
-    
-    setButtonLoading(`${buttonPrefix}${candidateId}`, true);
-    try {
-        const response = await fetch(`/candidates/${candidateId}/${action}`, {
-            method: 'POST'
-        });
-        if (response.ok) {
-            location.reload();
-        } else {
-            const data = await response.json();
-            throw new Error(data.error || 'Network response was not ok');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showToast(`Błąd podczas operacji: ${progressName.toLowerCase()} kandydata`, 'error');
-        setButtonLoading(`${buttonPrefix}${candidateId}`, false);
+function getRowValue(row, sortField) {
+    switch (sortField) {
+        case 'name':
+            return row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+        case 'campaign_code':
+            return row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+        case 'email':
+            return row.querySelector('td:nth-child(3)').textContent.toLowerCase();
+        case 'phone':
+            return row.querySelector('td:nth-child(4)').textContent.toLowerCase();
+        case 'recruitment_status':
+            const status = row.querySelector('td:nth-child(5) .badge').textContent.trim();
+            const statusOrder = {
+                'Odrzucony': 1,
+                'Ankieta': 2,
+                'Test EQ': 3,
+                'Ocena EQ': 4,
+                'Test IQ': 5,
+                'Potencjał': 6,
+                'Zaproszono na rozmowę': 7,
+                'Oczekuje na decyzję': 8,
+                'Zaakceptowany': 9
+            };
+            return statusOrder[status] || 0;
+        case 'po1_score':
+            return parseFloat(row.querySelector('td:nth-child(6)').textContent) || -Infinity;
+        case 'po2_score':
+            return parseFloat(row.querySelector('td:nth-child(7)').textContent) || -Infinity;
+        case 'po2_5_score':
+            return parseFloat(row.querySelector('td:nth-child(8)').textContent) || -Infinity;
+        case 'po3_score':
+            return parseFloat(row.querySelector('td:nth-child(9)').textContent) || -Infinity;
+        case 'po4_score':
+            return parseFloat(row.querySelector('td:nth-child(10)').textContent) || -Infinity;
+        case 'total_score':
+            return parseFloat(row.querySelector('td:nth-child(11)').textContent) || -Infinity;
+        case 'created_at':
+            const dateText = row.querySelector('td:nth-child(12)').textContent;
+            const [datePart, timePart] = dateText.split(' ');
+            const [day, month, year] = datePart.split('.');
+            const [hours, minutes] = timePart.split(':');
+            return new Date(year, month - 1, day, hours, minutes).getTime();
+        default:
+            return 0;
     }
 }
 
-function acceptCandidate(candidateId) {
-    handleCandidateAction(candidateId, 'accept', 'acceptBtn_', 'Zaakceptować', 'Akceptowanie');
+async function inviteToInterview(candidateId) {
+    if (!confirm('Czy na pewno chcesz zaprosić kandydata na rozmowę?')) return;
+    
+    setButtonLoading(`inviteBtn_${candidateId}`, true);
+    try {
+        const response = await fetch(`/candidates/${candidateId}/invite-to-interview`, {
+            method: 'POST'
+        });
+        if (response.ok) {
+            showToast('Kandydat został zaproszony na rozmowę', 'success');
+            await refreshTable(true);
+        } else {
+            throw new Error('Network response was not ok');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Błąd podczas zapraszania kandydata na rozmowę', 'error');
+    } finally {
+        setButtonLoading(`inviteBtn_${candidateId}`, false);
+    }
 }
 
-function inviteToInterview(candidateId) {
-    handleCandidateAction(candidateId, 'invite-to-interview', 'inviteBtn_', 'Zaprosić na rozmowę', 'Zapraszanie');
-}
-
-function setAwaitingDecision(candidateId) {
-    handleCandidateAction(candidateId, 'set-awaiting-decision', 'awaitingBtn_', 'Ustawić status oczekiwania', 'Ustawianie');
-}
-
-function rejectCandidate(candidateId) {
-    handleCandidateAction(candidateId, 'reject', 'rejectBtn_', 'Odrzucić', 'Odrzucanie');
+async function setAwaitingDecision(candidateId) {
+    if (!confirm('Czy na pewno chcesz ustawić status oczekiwania na decyzję?')) return;
+    
+    setButtonLoading(`awaitingBtn_${candidateId}`, true);
+    try {
+        const response = await fetch(`/candidates/${candidateId}/set-awaiting-decision`, {
+            method: 'POST'
+        });
+        if (response.ok) {
+            showToast('Status kandydata został zmieniony na oczekujący', 'success');
+            await refreshTable(true);
+        } else {
+            throw new Error('Network response was not ok');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Błąd podczas zmiany statusu kandydata', 'error');
+    } finally {
+        setButtonLoading(`awaitingBtn_${candidateId}`, false);
+    }
 }
