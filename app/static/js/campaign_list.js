@@ -15,7 +15,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add this new event listener for the Add Campaign button
     const addCampaignButton = document.querySelector('[data-bs-target="#addCampaignModal"]');
     if (addCampaignButton) {
-        addCampaignButton.addEventListener('click', resetAddCampaignForm);
+        addCampaignButton.addEventListener('click', function() {
+            // Reset submit button state
+            const submitButton = document.querySelector('#addCampaignSubmit');
+            const spinner = submitButton.querySelector('.spinner-border');
+            const buttonText = submitButton.querySelector('.button-text');
+            
+            submitButton.disabled = false;
+            spinner.classList.add('d-none');
+            buttonText.textContent = 'Zapisz kampanię';
+            
+            resetAddCampaignForm();
+        });
     }
     
     // Handle form submissions
@@ -265,6 +276,15 @@ function initializeSortableHeaders() {
 }
 
 function editCampaign(campaignId) {
+    // Reset submit button state before fetching data
+    const submitButton = document.querySelector('#editCampaignSubmit');
+    const spinner = submitButton.querySelector('.spinner-border');
+    const buttonText = submitButton.querySelector('.button-text');
+    
+    submitButton.disabled = false;
+    spinner.classList.add('d-none');
+    buttonText.textContent = 'Zapisz zmiany';
+
     fetch(`/campaigns/${campaignId}/data`)
         .then(response => {
             if (!response.ok) {
@@ -364,14 +384,40 @@ function editCampaign(campaignId) {
 
 function confirmDelete(campaignId) {
     if (confirm('Czy na pewno chcesz usunąć tę kampanię?')) {
+        const deleteButton = document.querySelector(`tr[data-campaign-id="${campaignId}"] .btn-danger`);
+        const originalText = deleteButton.textContent;
+        
+        // Show loading state
+        deleteButton.disabled = true;
+        deleteButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Usuwanie...';
+        
         fetch(`/campaigns/${campaignId}/delete`, {
-            method: 'POST'
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                document.querySelector(`tr[data-campaign-id="${campaignId}"]`).remove();
-                showToast('Kampania została usunięta', 'success');
+                // Fetch updated campaign data and refresh table
+                fetch('/campaigns/')
+                    .then(response => response.text())
+                    .then(html => {
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = html;
+                        
+                        const newTbody = tempDiv.querySelector('tbody');
+                        if (newTbody) {
+                            originalRows = Array.from(newTbody.querySelectorAll('tr'));
+                            updateTable();
+                            showToast('Kampania została usunięta', 'success');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching updated campaign data:', error);
+                        showToast('Wystąpił błąd podczas odświeżania listy kampanii', 'error');
+                    });
             } else {
                 throw new Error(data.error || 'Wystąpił błąd podczas usuwania kampanii');
             }
@@ -379,6 +425,10 @@ function confirmDelete(campaignId) {
         .catch(error => {
             console.error('Error:', error);
             showToast(error.message, 'error');
+            
+            // Reset button state
+            deleteButton.disabled = false;
+            deleteButton.textContent = originalText;
         });
     }
 }
@@ -403,81 +453,88 @@ function generateLink(campaignId) {
 
 function handleCampaignFormSubmit(e) {
     e.preventDefault();
-    const form = e.target;
     
-    // Get elements
+    const form = this;
+    const campaignId = form.action.match(/\/campaigns\/(\d+)\/edit/)?.[1];
     const formData = new FormData(form);
-    const code = formData.get('code');
-    const campaignId = form.action.includes('/edit') ? form.action.split('/').slice(-2)[0] : null;
-    const codeInput = form.querySelector('[name="code"]');
-    const feedbackDiv = codeInput.nextElementSibling;
     
-    // Get submit button and show loading state
+    // Get button elements
     const submitButton = form.querySelector('button[type="submit"]');
     const spinner = submitButton.querySelector('.spinner-border');
     const buttonText = submitButton.querySelector('.button-text');
-    
-    // Add validation class only on submit
-    form.classList.add('was-validated');
-    
-    // Check basic form validity first
-    if (!form.checkValidity()) {
-        return;
-    }
+    const codeInput = form.querySelector('[name="code"]');
     
     // Show loading state
     submitButton.disabled = true;
     spinner.classList.remove('d-none');
     buttonText.textContent = 'Zapisywanie...';
     
-    // First check if code exists
-    fetch('/campaigns/check-code', {
+    // Reset code validation state
+    resetCodeValidation(form);
+    
+    fetch(form.action, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            code: code,
-            campaign_id: campaignId
-        })
+        body: formData
     })
-    .then(response => response.json())
-    .then(data => {
-        if (!data.valid) {
-            // Add Bootstrap validation classes for code error
-            codeInput.classList.remove('is-valid');
-            codeInput.classList.add('is-invalid');
-            feedbackDiv.classList.remove('valid-feedback');
-            feedbackDiv.classList.add('invalid-feedback');
-            feedbackDiv.style.display = 'block';
-            feedbackDiv.textContent = 'Kampania o takim kodzie już istnieje';
-            
-            // Force invalid state for code input
-            codeInput.setCustomValidity('Kampania o takim kodzie już istnieje');
-            
-            submitButton.disabled = false;
-            spinner.classList.add('d-none');
-            buttonText.textContent = campaignId ? 'Zapisz zmiany' : 'Zapisz kampanię';
-            
-            throw new Error(data.error);
-        } else {
-            // Clear custom validity if code is valid
-            codeInput.setCustomValidity('');
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => {
+                if (err.error === 'CODE_EXISTS') {
+                    codeInput.classList.add('is-invalid');
+                    codeInput.nextElementSibling.style.display = 'block';
+                    throw new Error('Kampania o takim kodzie już istnieje');
+                }
+                throw new Error(err.error || 'Wystąpił błąd podczas zapisywania kampanii');
+            });
         }
-        
-        return fetch(form.action, {
-            method: 'POST',
-            body: formData
-        });
+        return response.json();
     })
-    .then(response => response.json())
     .then(data => {
         if (data.success) {
+            // Store success message for after refresh
             sessionStorage.setItem('pendingToast', JSON.stringify({
                 message: campaignId ? 'Kampania została zaktualizowana' : 'Kampania została dodana',
                 type: 'success'
             }));
-            window.location.reload();
+
+            const modal = bootstrap.Modal.getInstance(form.closest('.modal'));
+            modal.hide();
+            
+            modal._element.addEventListener('hidden.bs.modal', function () {
+                // Fetch updated campaign data and refresh table
+                fetch('/campaigns/')
+                    .then(response => response.text())
+                    .then(html => {
+                        // Create a temporary div to parse the HTML
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = html;
+                        
+                        // Get the new tbody content
+                        const newTbody = tempDiv.querySelector('tbody');
+                        if (newTbody) {
+                            // Update originalRows with new data
+                            originalRows = Array.from(newTbody.querySelectorAll('tr'));
+                            
+                            // Apply current filters and sorting
+                            updateTable();
+                            
+                            // Show the toast
+                            const pendingToast = sessionStorage.getItem('pendingToast');
+                            if (pendingToast) {
+                                try {
+                                    const toastData = JSON.parse(pendingToast);
+                                    showToast(toastData.message, toastData.type);
+                                } finally {
+                                    sessionStorage.removeItem('pendingToast');
+                                }
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching updated campaign data:', error);
+                        showToast('Wystąpił błąd podczas odświeżania listy kampanii', 'error');
+                    });
+            }, { once: true });
         } else {
             throw new Error(data.error || 'Wystąpił błąd podczas zapisywania kampanii');
         }
@@ -663,6 +720,15 @@ function updateMaxWeights(form) {
 }
 
 function cloneCampaign(campaignId) {
+    // Reset submit button state before fetching data
+    const submitButton = document.querySelector('#addCampaignSubmit');
+    const spinner = submitButton.querySelector('.spinner-border');
+    const buttonText = submitButton.querySelector('.button-text');
+    
+    submitButton.disabled = false;
+    spinner.classList.add('d-none');
+    buttonText.textContent = 'Zapisz kampanię';
+
     fetch(`/campaigns/${campaignId}/data`)
         .then(response => {
             if (!response.ok) {
