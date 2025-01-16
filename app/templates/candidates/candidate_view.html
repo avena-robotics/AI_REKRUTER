@@ -53,27 +53,27 @@
                         <i class="bi bi-journal-text me-2"></i>
                         Notatki
                     </h6>
-                    <button class="btn btn-sm btn-outline-primary" onclick="toggleNewNoteForm()">
+                    <button class="btn btn-sm btn-outline-primary" onclick="showAddNoteModal('{{ candidate.id }}')">
                         <i class="bi bi-plus-lg"></i>
                         Dodaj notatkę
                     </button>
                 </div>
                 <!-- Formularz nowej notatki -->
-                <div id="newNoteForm" class="card shadow-sm mb-3 d-none">
+                <div id="viewNoteForm" class="card shadow-sm mb-3 d-none">
                     <div class="card-body">
                         <div class="mb-3">
-                            <label for="noteType" class="form-label">Tytuł notatki</label>
-                            <input type="text" class="form-control" id="noteType" required>
+                            <label for="viewNoteType" class="form-label">Tytuł notatki</label>
+                            <input type="text" class="form-control" id="viewNoteType" required>
                         </div>
                         <div class="mb-3">
-                            <label for="noteContent" class="form-label">Treść notatki</label>
-                            <textarea class="form-control" id="noteContent" rows="3" required></textarea>
+                            <label for="viewNoteContent" class="form-label">Treść notatki</label>
+                            <textarea class="form-control" id="viewNoteContent" rows="3" required></textarea>
                         </div>
                         <div class="d-flex justify-content-end gap-2">
-                            <button class="btn btn-outline-secondary btn-sm" onclick="toggleNewNoteForm()">
+                            <button class="btn btn-outline-secondary btn-sm" onclick="hideAddNoteModal()">
                                 Anuluj
                             </button>
-                            <button class="btn btn-primary btn-sm" onclick="saveNote('{{ candidate.id }}')">
+                            <button class="btn btn-primary btn-sm" id="viewSaveNoteBtn">
                                 <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
                                 <span class="button-text">Zapisz</span>
                             </button>
@@ -81,58 +81,7 @@
                     </div>
                 </div>
                 <div class="notes-list">
-                    {% if notes_data %}
-                        {% for note in notes_data %}
-                            <div class="card shadow-sm mb-3">
-                                <div class="card-header bg-light py-2">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <h6 class="mb-0 text-primary d-flex align-items-center">
-                                            <i class="bi bi-bookmark me-2"></i>
-                                            {{ note.note_type }}
-                                        </h6>
-                                        <div class="d-flex align-items-center gap-3">
-                                            <div class="note-meta text-muted small">
-                                                <div class="d-flex align-items-center gap-3">
-                                                    <span>
-                                                        <i class="bi bi-person me-1"></i>
-                                                        {{ note.user_email if note.user_email else "-" }}
-                                                    </span>
-                                                    <span>
-                                                        <i class="bi bi-clock me-1"></i>
-                                                        {{ note.created_at|format_datetime }}
-                                                    </span>
-                                                    {% if note.updated_at and note.updated_at != note.created_at %}
-                                                    <span>
-                                                        <i class="bi bi-pencil me-1"></i>
-                                                        Edytowano: {{ note.updated_at|format_datetime }}
-                                                    </span>
-                                                    {% endif %}
-                                                </div>
-                                            </div>
-                                            <button class="btn btn-outline-primary btn-sm" 
-                                                    onclick="editNote('{{ candidate.id }}', '{{ note.id }}', '{{ note.note_type }}', '{{ note.content }}')"
-                                                    title="Edytuj notatkę">
-                                                <i class="bi bi-pencil"></i>
-                                            </button>
-                                            <button class="btn btn-outline-danger btn-sm" 
-                                                    onclick="deleteNote('{{ candidate.id }}', '{{ note.id }}')"
-                                                    title="Usuń notatkę">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="card-body py-3">
-                                    <p class="mb-0 text-body">{{ note.content }}</p>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="text-center py-4 bg-light rounded border">
-                            <i class="bi bi-journal-x fs-4 text-muted mb-2 d-block"></i>
-                            <p class="text-muted mb-0">Brak notatek</p>
-                        </div>
-                    {% endif %}
+                    {% include 'candidates/notes_list.html' %}
                 </div>
             </div>
         </div>
@@ -716,6 +665,7 @@
 </div>
 
 <script src="{{ url_for('static', filename='js/toast.js') }}"></script>
+<script src="{{ url_for('static', filename='js/candidate_notes.js') }}"></script>
 <script src="{{ url_for('static', filename='js/candidate_view.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 

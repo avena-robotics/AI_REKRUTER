@@ -279,7 +279,8 @@ def get_notes_list(id):
         candidate_data = CandidateService.get_candidate_details(id)
         return render_template(
             "candidates/notes_list.html",
-            notes_data=candidate_data['notes_data']
+            notes_data=candidate_data['notes_data'],
+            candidate={'id': id}
         )
         
     except CandidateException as e:
