@@ -651,6 +651,9 @@ window.addNote = async function(candidateId) {
     // Store candidateId for later use
     document.getElementById('saveNoteBtn').setAttribute('data-candidate-id', candidateId);
     
+    // Set up click handler for save button
+    document.getElementById('saveNoteBtn').onclick = () => saveNoteFromList();
+    
     // Show modal
     const modal = new bootstrap.Modal(document.getElementById('addNoteModal'));
     modal.show();
