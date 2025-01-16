@@ -209,7 +209,7 @@ function setButtonLoading(buttonId, isLoading) {
     }
 }
 
-// Store original rows globally
+let currentSorts = [];
 let originalRows = [];
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -222,6 +222,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Setup action buttons
     setupActionButtons();
+
+    // Initialize sortable headers
+    initializeSortableHeaders();
 
     // Bulk recalculation button
     document.getElementById('bulkRecalculateBtn').addEventListener('click', bulkRecalculateScores);
@@ -263,10 +266,6 @@ function initializeEventListeners() {
         }, 300);
     });
 
-    // Sort controls with instant update
-    document.getElementById('sortBy').addEventListener('change', () => updateTable(true));
-    document.getElementById('sortOrder').addEventListener('change', () => updateTable(true));
-
     // Stop dropdown from closing on click inside
     document.querySelectorAll('.dropdown-menu').forEach(menu => {
         menu.addEventListener('click', function(e) {
@@ -284,8 +283,17 @@ function initializeEventListeners() {
             span.textContent = span.closest('.dropdown').querySelector('button').textContent.includes('kampanie') ? 
                 'Wszystkie kampanie' : 'Wszystkie statusy';
         });
-        document.getElementById('sortBy').value = 'created_at';
-        document.getElementById('sortOrder').value = 'desc';
+        
+        // Reset sorting
+        document.querySelectorAll('th.sortable').forEach(header => {
+            header.classList.remove('asc', 'desc');
+            const orderIndicator = header.querySelector('.sort-order');
+            if (orderIndicator) {
+                orderIndicator.remove();
+            }
+        });
+        currentSorts = [];
+        
         updateTable(false);
     });
 }
@@ -310,8 +318,6 @@ function updateTable(applyFilters) {
         .map(cb => cb.value);
     const selectedStatuses = Array.from(document.querySelectorAll('.filter-status:checked'))
         .map(cb => cb.value);
-    const sortBy = document.getElementById('sortBy').value;
-    const sortOrder = document.getElementById('sortOrder').value;
     
     if (!applyFilters) {
         tbody.innerHTML = '';
@@ -331,24 +337,29 @@ function updateTable(applyFilters) {
         return matchesSearch && matchesCampaign && matchesStatus;
     });
 
-    // Sort rows
-    if (sortBy) {
+    // Apply multiple sorts
+    if (currentSorts.length > 0) {
         filteredRows.sort((a, b) => {
-            const aValue = getRowValue(a, sortBy);
-            const bValue = getRowValue(b, sortBy);
-            const order = sortOrder === 'asc' ? 1 : -1;
-            
-            if (typeof aValue === 'string') {
-                return aValue.localeCompare(bValue) * order;
+            for (const sort of currentSorts) {
+                const aValue = getRowValue(a, sort.field);
+                const bValue = getRowValue(b, sort.field);
+                
+                const order = sort.direction === 'asc' ? 1 : -1;
+                
+                if (aValue < bValue) return -1 * order;
+                if (aValue > bValue) return 1 * order;
             }
-            return (aValue - bValue) * order;
+            return 0;
         });
     }
 
+    // Reattach event listeners
+    setupActionButtons();
+    
     // Update table
     tbody.innerHTML = '';
     filteredRows.forEach(row => tbody.appendChild(row.cloneNode(true)));
-    
+
     // Update URL
     const params = new URLSearchParams({
         search: searchText,
@@ -359,30 +370,117 @@ function updateTable(applyFilters) {
     });
     
     window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`);
+
 }
 
-function getRowValue(row, sortBy) {
-    // First get the cell based on the data attribute instead of fixed indices
-    const cell = row.querySelector(`[data-sort="${sortBy}"]`);
-    if (!cell) {
-        console.warn(`No cell found with data-sort="${sortBy}"`);
-        return null;
+function getRowValue(row, sortField) {
+    switch (sortField) {
+        case 'name':
+            return row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+        case 'campaign_code':
+            return row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+        case 'email':
+            return row.querySelector('td:nth-child(3)').textContent.toLowerCase();
+        case 'phone':
+            return row.querySelector('td:nth-child(4)').textContent.toLowerCase();
+        case 'recruitment_status':
+            const status = row.querySelector('td:nth-child(5) .badge').textContent.trim();
+            const statusOrder = {
+                'Odrzucony': 1,
+                'Ankieta': 2,
+                'Test EQ': 3,
+                'Ocena EQ': 4,
+                'Test IQ': 5,
+                'Potencjał': 6,
+                'Zaproszono na rozmowę': 7,
+                'Oczekuje na decyzję': 8,
+                'Zaakceptowany': 9
+            };
+            return statusOrder[status] || 0;
+        case 'po1_score':
+            return parseFloat(row.querySelector('td:nth-child(6)').textContent) || -Infinity;
+        case 'po2_score':
+            return parseFloat(row.querySelector('td:nth-child(7)').textContent) || -Infinity;
+        case 'po2_5_score':
+            return parseFloat(row.querySelector('td:nth-child(8)').textContent) || -Infinity;
+        case 'po3_score':
+            return parseFloat(row.querySelector('td:nth-child(9)').textContent) || -Infinity;
+        case 'po4_score':
+            return parseFloat(row.querySelector('td:nth-child(10)').textContent) || -Infinity;
+        case 'total_score':
+            return parseFloat(row.querySelector('td:nth-child(11)').textContent) || -Infinity;
+        case 'created_at':
+            const dateText = row.querySelector('td:nth-child(12)').textContent;
+            const [datePart, timePart] = dateText.split(' ');
+            const [day, month, year] = datePart.split('.');
+            const [hours, minutes] = timePart.split(':');
+            return new Date(year, month - 1, day, hours, minutes).getTime();
+        default:
+            return 0;
     }
+}
 
-    const value = cell.textContent.trim();
+function initializeSortableHeaders() {
+    const headers = document.querySelectorAll('th.sortable');
+    headers.forEach(header => {
+        header.addEventListener('click', function() {
+            const sortField = this.dataset.sort;
+            const currentDirection = this.classList.contains('asc') ? 'asc' : 
+                                   this.classList.contains('desc') ? 'desc' : null;
+            
+            // Update sort direction
+            let newDirection;
+            if (!currentDirection) {
+                newDirection = 'asc';
+            } else if (currentDirection === 'asc') {
+                newDirection = 'desc';
+            } else {
+                // Remove sorting for this column
+                this.classList.remove('desc');
+                // Remove order indicator
+                const orderIndicator = this.querySelector('.sort-order');
+                if (orderIndicator) {
+                    orderIndicator.remove();
+                }
+                currentSorts = currentSorts.filter(sort => sort.field !== sortField);
+                // Update numbering of remaining sorts
+                currentSorts.forEach((sort, index) => {
+                    const header = document.querySelector(`th[data-sort="${sort.field}"]`);
+                    const indicator = header.querySelector('.sort-order');
+                    if (indicator) {
+                        indicator.textContent = index + 1;
+                    }
+                });
+                updateTable(true);
+                return;
+            }
 
-    // Handle numeric values
-    if (['po1_score', 'po2_score', 'po2_5_score', 'po3_score', 'po4_score', 
-         'total_score'].includes(sortBy)) {
-        return value === '-' ? -Infinity : parseFloat(value);
-    }
+            // Remove existing sort for this field
+            currentSorts = currentSorts.filter(sort => sort.field !== sortField);
+            
+            // Add new sort
+            currentSorts.push({
+                field: sortField,
+                direction: newDirection,
+                order: currentSorts.length + 1
+            });
 
-    // Handle dates
-    if (sortBy === 'created_at') {
-        return new Date(value).getTime();
-    }
+            // Update classes and indicators
+            this.classList.remove('asc', 'desc');
+            this.classList.add(newDirection);
 
-    return value;
+            // Update or add order indicator
+            let orderIndicator = this.querySelector('.sort-order');
+            if (!orderIndicator) {
+                orderIndicator = document.createElement('span');
+                orderIndicator.className = 'sort-order';
+                this.appendChild(orderIndicator);
+            }
+            orderIndicator.textContent = currentSorts.length;
+
+            updateTable(true);
+        });
+    });
 }
 
 function setupActionButtons() {

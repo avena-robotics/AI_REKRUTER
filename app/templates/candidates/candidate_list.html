@@ -86,28 +86,6 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <label class="form-label">Sortuj według</label>
-            <select class="form-select" id="sortBy" name="sort_by">
-                <option value="created_at" {% if request.args.get('sort_by', 'created_at') == 'created_at' %}selected{% endif %}>Data aplikacji</option>
-                <option value="email" {% if request.args.get('sort_by') == 'email' %}selected{% endif %}>Email</option>
-                <option value="phone" {% if request.args.get('sort_by') == 'phone' %}selected{% endif %}>Telefon</option>
-                <option value="recruitment_status" {% if request.args.get('sort_by') == 'recruitment_status' %}selected{% endif %}>Status rekrutacji</option>
-                <option value="po1_score" {% if request.args.get('sort_by') == 'po1_score' %}selected{% endif %}>Wynik ankiety</option>
-                <option value="po2_score" {% if request.args.get('sort_by') == 'po2_score' %}selected{% endif %}>Wynik testu EQ</option>
-                <option value="po2_5_score" {% if request.args.get('sort_by') == 'po2_5_score' %}selected{% endif %}>Wynik oceny EQ</option>
-                <option value="po3_score" {% if request.args.get('sort_by') == 'po3_score' %}selected{% endif %}>Wynik testu IQ</option>
-                <option value="po4_score" {% if request.args.get('sort_by') == 'po4_score' %}selected{% endif %}>Ocena potencjału</option>
-                <option value="total_score" {% if request.args.get('sort_by') == 'total_score' %}selected{% endif %}>Wynik ogólny</option>
-            </select>
-        </div>
-        <div class="col-md-3">
-            <label class="form-label">Kolejność</label>
-            <select class="form-select" id="sortOrder" name="sort_order">
-                <option value="desc" {% if request.args.get('sort_order', 'desc') == 'desc' %}selected{% endif %}>Malejąco</option>
-                <option value="asc" {% if request.args.get('sort_order') == 'asc' %}selected{% endif %}>Rosnąco</option>
-            </select>
-        </div>
         <div class="col-12 d-flex justify-content-between mt-3">
             <div>
                 <button type="button" class="btn btn-primary" id="bulkRecalculateBtn">
@@ -157,7 +135,11 @@
                             {% elif candidate.recruitment_status == 'REJECTED' %}bg-danger
                             {% elif candidate.recruitment_status == 'INVITED_TO_INTERVIEW' %}bg-info
                             {% elif candidate.recruitment_status == 'AWAITING_DECISION' %}bg-warning
-                            {% elif candidate.recruitment_status == 'PO4' %}bg-success-subtle
+                            {% elif candidate.recruitment_status == 'PO4' %}bg-potential
+                            {% elif candidate.recruitment_status == 'PO1' %}bg-survey
+                            {% elif candidate.recruitment_status == 'PO2' %}bg-eq-test
+                            {% elif candidate.recruitment_status == 'PO2_5' %}bg-eq-eval
+                            {% elif candidate.recruitment_status == 'PO3' %}bg-iq-test
                             {% else %}bg-primary{% endif %}">
                             {% if candidate.recruitment_status == 'PO1' %}Ankieta
                             {% elif candidate.recruitment_status == 'PO2' %}Test EQ

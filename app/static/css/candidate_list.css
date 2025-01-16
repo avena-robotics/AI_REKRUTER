@@ -129,7 +129,7 @@
 .table thead th.sortable {
     cursor: pointer;
     position: relative;
-    padding-right: 1.5rem;
+    padding-right: 2rem;
 }
 
 .table thead th.sortable:hover {
@@ -139,7 +139,7 @@
 .table thead th.sortable::after {
     content: "↕";
     position: absolute;
-    right: 0.5rem;
+    right: 0.75rem;
     top: 50%;
     transform: translateY(-50%);
     opacity: 0.5;
@@ -153,6 +153,15 @@
 .table thead th.sortable.desc::after {
     content: "↓";
     opacity: 1;
+}
+
+.table thead th .sort-order {
+    position: absolute;
+    right: 0.25rem;
+    top: 0.25rem;
+    font-size: 0.75rem;
+    color: #ffffff;
+    opacity: 0.8;
 }
 
 /* Table cell styles */
@@ -219,6 +228,32 @@
     border-radius: 9999px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+}
+
+/* Custom badge colors */
+.badge.bg-potential {
+    background-color: #e879f9 !important;
+    color: white;
+}
+
+.badge.bg-survey {
+    background-color: #818cf8 !important;
+    color: white;
+}
+
+.badge.bg-eq-test {
+    background-color: #38bdf8 !important;
+    color: white;
+}
+
+.badge.bg-eq-eval {
+    background-color: #2dd4bf !important;
+    color: white;
+}
+
+.badge.bg-iq-test {
+    background-color: #4ade80 !important;
+    color: white;
 }
 
 /* Dropdown menu styling */

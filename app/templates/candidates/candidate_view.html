@@ -25,7 +25,11 @@
                             {% elif candidate.recruitment_status == 'REJECTED' %}bg-danger
                             {% elif candidate.recruitment_status == 'INVITED_TO_INTERVIEW' %}bg-info
                             {% elif candidate.recruitment_status == 'AWAITING_DECISION' %}bg-warning
-                            {% elif candidate.recruitment_status == 'PO4' %}bg-success-subtle
+                            {% elif candidate.recruitment_status == 'PO4' %}bg-potential
+                            {% elif candidate.recruitment_status == 'PO1' %}bg-survey
+                            {% elif candidate.recruitment_status == 'PO2' %}bg-eq-test
+                            {% elif candidate.recruitment_status == 'PO2_5' %}bg-eq-eval
+                            {% elif candidate.recruitment_status == 'PO3' %}bg-iq-test
                             {% else %}bg-primary{% endif %}">
                             {% if candidate.recruitment_status == 'PO1' %}Ankieta
                             {% elif candidate.recruitment_status == 'PO2' %}Test EQ
