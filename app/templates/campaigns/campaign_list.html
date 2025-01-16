@@ -80,261 +80,262 @@
 <div class="modal fade" id="addCampaignModal" tabindex="-1">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Dodaj nową kampanię</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="addCampaignForm" method="POST" action="{{ url_for('campaign.add') }}" class="needs-validation" novalidate>
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <div class="form-check form-switch">
-                                <input type="checkbox" class="form-check-input" name="is_active" checked>
-                                <label class="form-check-label">Kampania aktywna</label>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Kod kampanii*</label>
-                            <input type="text" class="form-control" name="code" required>
-                            <div class="invalid-feedback">
-                                Proszę podać kod kampanii.
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Tytuł*</label>
-                            <input type="text" class="form-control" name="title" required>
-                            <div class="invalid-feedback">
-                                Proszę podać tytuł kampanii.
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Lokalizacja*</label>
-                            <input type="text" class="form-control" name="workplace_location" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Data rozpoczęcia pracy*</label>
-                            <input type="date" class="form-control" name="work_start_date" required 
-                                   onclick="this.showPicker()">
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Typ umowy*</label>
-                            <input type="text" class="form-control" name="contract_type" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Wymiar pracy*</label>
-                            <input type="text" class="form-control" name="employment_type" required>
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Wynagrodzenie od (Netto PLN)</label>
-                            <input type="number" class="form-control" name="salary_range_min">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Wynagrodzenie do (Netto PLN)</label>
-                            <input type="number" class="form-control" name="salary_range_max">
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label">Obowiązki*</label>
-                            <textarea class="form-control" name="duties" rows="3" required></textarea>
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label">Wymagania*</label>
-                            <textarea class="form-control" name="requirements" rows="3" required></textarea>
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label">Oferujemy*</label>
-                            <textarea class="form-control" name="employer_offerings" rows="3" required></textarea>
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label">Opis stanowiska*</label>
-                            <textarea class="form-control" name="job_description" rows="3" required></textarea>
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-12 mb-3">
-                            <label class="form-label">Grupa*</label>
-                            <select class="form-select" name="group_id" required onchange="updateTestOptions(this)">
-                                <option value="">Wybierz grupę</option>
-                                {% for group in groups %}
-                                    <option value="{{ group.id }}">{{ group.name }}</option>
-                                {% endfor %}
-                            </select>
-                            <div class="invalid-feedback">
-                                Należy wybrać grupę
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <div class="row">
-                                <div class="col-1">
-                                    <label class="form-label fw-bold">Etap</label>
-                                </div>
-                                <div class="col-7">
-                                    <label class="form-label fw-bold">Test</label>
-                                </div>
-                                <div class="col-2">
-                                    <label class="form-label fw-bold">Waga (%)</label>
-                                </div>
-                                <div class="col-2">
-                                    <label class="form-label fw-bold">Dni ważności</label>
+            <form id="addCampaignForm" method="POST" action="{{ url_for('campaign.add') }}" class="needs-validation" novalidate>
+                <div class="modal-header">
+                    <h5 class="modal-title">Dodaj nową kampanię</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="modal-body-scroll p-3">
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="form-check form-switch">
+                                    <input type="checkbox" class="form-check-input" name="is_active" checked>
+                                    <label class="form-check-label">Kampania aktywna</label>
                                 </div>
                             </div>
-
-                            <!-- PO1 -->
-                            <div class="row mb-2">
-                                <div class="col-1">
-                                    <div class="form-control-plaintext">PO1</div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Kod kampanii*</label>
+                                <input type="text" class="form-control" name="code" required>
+                                <div class="invalid-feedback">
+                                    Proszę podać kod kampanii.
                                 </div>
-                                <div class="col-7">
-                                    <select class="form-select" name="po1_test_id">
-                                        <option value="">Brak</option>
-                                        {% for test in tests %}
-                                            {% if test.test_type == 'SURVEY' %}
-                                                <option value="{{ test.id }}">
-                                                    {{ test.title }} - {{ test.test_type }}
-                                                </option>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tytuł*</label>
+                                <input type="text" class="form-control" name="title" required>
+                                <div class="invalid-feedback">
+                                    Proszę podać tytuł kampanii.
                                 </div>
-                                <div class="col-2">
-                                    <input type="number" class="form-control" name="po1_test_weight" 
-                                           min="0" max="100" value="100">
-                                    <div class="invalid-feedback">
-                                        Nieprawidłowa waga
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Lokalizacja*</label>
+                                <input type="text" class="form-control" name="workplace_location" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Data rozpoczęcia pracy*</label>
+                                <input type="date" class="form-control" name="work_start_date" required 
+                                       onclick="this.showPicker()">
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Typ umowy*</label>
+                                <input type="text" class="form-control" name="contract_type" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Wymiar pracy*</label>
+                                <input type="text" class="form-control" name="employment_type" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Wynagrodzenie od (Netto PLN)</label>
+                                <input type="number" class="form-control" name="salary_range_min">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Wynagrodzenie do (Netto PLN)</label>
+                                <input type="number" class="form-control" name="salary_range_max">
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label">Obowiązki*</label>
+                                <textarea class="form-control" name="duties" rows="3" required></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label">Wymagania*</label>
+                                <textarea class="form-control" name="requirements" rows="3" required></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label">Oferujemy*</label>
+                                <textarea class="form-control" name="employer_offerings" rows="3" required></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label">Opis stanowiska*</label>
+                                <textarea class="form-control" name="job_description" rows="3" required></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Grupa*</label>
+                                <select class="form-select" name="group_id" required onchange="updateTestOptions(this)">
+                                    <option value="">Wybierz grupę</option>
+                                    {% for group in groups %}
+                                        <option value="{{ group.id }}">{{ group.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="invalid-feedback">
+                                    Należy wybrać grupę
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="row">
+                                    <div class="col-1">
+                                        <label class="form-label fw-bold">Etap</label>
+                                    </div>
+                                    <div class="col-7">
+                                        <label class="form-label fw-bold">Test</label>
+                                    </div>
+                                    <div class="col-2">
+                                        <label class="form-label fw-bold">Waga (%)</label>
+                                    </div>
+                                    <div class="col-2">
+                                        <label class="form-label fw-bold">Dni ważności</label>
                                     </div>
                                 </div>
-                                <div class="col-2">
-                                </div>
-                            </div>
 
-                            <!-- PO2 -->
-                            <div class="row mb-2">
-                                <div class="col-1">
-                                    <div class="form-control-plaintext">PO2</div>
-                                </div>
-                                <div class="col-7">
-                                    <select class="form-select" name="po2_test_id" onchange="updateWeightValidation()">
-                                        <option value="">Brak</option>
-                                        {% for test in tests %}
-                                            {% if test.test_type == 'EQ' %}
-                                                <option value="{{ test.id }}">
-                                                    {{ test.title }} - {{ test.test_type }}
-                                                </option>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-2">
-                                    <!-- Puste miejsce dla zachowania układu -->
-                                </div>
-                                <div class="col-2">
-                                    <input type="number" class="form-control" name="po2_token_expiry_days" 
-                                           min="1" max="365" value="7">
-                                </div>
-                            </div>
-
-                            <!-- PO2.5 -->
-                            <div class="row mb-2">
-                                <div class="col-1">
-                                    <div class="form-control-plaintext">PO2.5</div>
-                                </div>
-                                <div class="col-7">
-                                    <select class="form-select" name="po2_5_test_id" onchange="updateWeightValidation()">
-                                        <option value="">Brak</option>
-                                        {% for test in tests %}
-                                            {% if test.test_type == 'EQ_EVALUATION' %}
-                                                <option value="{{ test.id }}">
-                                                    {{ test.title }} - {{ test.test_type }}
-                                                </option>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-2">
-                                    <input type="number" class="form-control" name="po2_5_test_weight" 
-                                           min="0" max="100" value="0">
-                                    <div class="invalid-feedback">
-                                        Nieprawidłowa waga
+                                <!-- PO1 -->
+                                <div class="row mb-2">
+                                    <div class="col-1">
+                                        <div class="form-control-plaintext">PO1</div>
+                                    </div>
+                                    <div class="col-7">
+                                        <select class="form-select" name="po1_test_id">
+                                            <option value="">Brak</option>
+                                            {% for test in tests %}
+                                                {% if test.test_type == 'SURVEY' %}
+                                                    <option value="{{ test.id }}">
+                                                        {{ test.title }} - {{ test.test_type }}
+                                                    </option>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-2">
+                                        <input type="number" class="form-control" name="po1_test_weight" 
+                                               min="0" max="100" value="100">
+                                        <div class="invalid-feedback">
+                                            Nieprawidłowa waga
+                                        </div>
+                                    </div>
+                                    <div class="col-2">
                                     </div>
                                 </div>
-                                <div class="col-2">
-                                    <!-- Puste miejsce dla zachowania układu -->
-                                </div>
-                            </div>
 
-                            <!-- PO3 -->
-                            <div class="row mb-2">
-                                <div class="col-1">
-                                    <div class="form-control-plaintext">PO3</div>
-                                </div>
-                                <div class="col-7">
-                                    <select class="form-select" name="po3_test_id" onchange="updateWeightValidation()">
-                                        <option value="">Brak</option>
-                                        {% for test in tests %}
-                                            {% if test.test_type == 'IQ' %}
-                                                <option value="{{ test.id }}">
-                                                    {{ test.title }} - {{ test.test_type }}
-                                                </option>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-2">
-                                    <input type="number" class="form-control" name="po3_test_weight" 
-                                           min="0" max="100" value="0">
-                                    <div class="invalid-feedback">
-                                        Nieprawidłowa waga
+                                <!-- PO2 -->
+                                <div class="row mb-2">
+                                    <div class="col-1">
+                                        <div class="form-control-plaintext">PO2</div>
+                                    </div>
+                                    <div class="col-7">
+                                        <select class="form-select" name="po2_test_id" onchange="updateWeightValidation()">
+                                            <option value="">Brak</option>
+                                            {% for test in tests %}
+                                                {% if test.test_type == 'EQ' %}
+                                                    <option value="{{ test.id }}">
+                                                        {{ test.title }} - {{ test.test_type }}
+                                                    </option>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-2">
+                                        <!-- Puste miejsce dla zachowania układu -->
+                                    </div>
+                                    <div class="col-2">
+                                        <input type="number" class="form-control" name="po2_token_expiry_days" 
+                                               min="1" max="365" value="7">
                                     </div>
                                 </div>
-                                <div class="col-2">
-                                    <input type="number" class="form-control" name="po3_token_expiry_days" 
-                                           min="1" max="365" value="7">
-                                </div>
-                            </div>
 
-                            <div class="row mt-2">
-                                <div class="col-12">
-                                    <div class="alert alert-danger d-none" id="weightValidationAlert">
-                                        Suma wag dla wybranych testów musi wynosić 100%
+                                <!-- PO2.5 -->
+                                <div class="row mb-2">
+                                    <div class="col-1">
+                                        <div class="form-control-plaintext">PO2.5</div>
+                                    </div>
+                                    <div class="col-7">
+                                        <select class="form-select" name="po2_5_test_id" onchange="updateWeightValidation()">
+                                            <option value="">Brak</option>
+                                            {% for test in tests %}
+                                                {% if test.test_type == 'EQ_EVALUATION' %}
+                                                    <option value="{{ test.id }}">
+                                                        {{ test.title }} - {{ test.test_type }}
+                                                    </option>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-2">
+                                        <input type="number" class="form-control" name="po2_5_test_weight" 
+                                               min="0" max="100" value="0">
+                                        <div class="invalid-feedback">
+                                            Nieprawidłowa waga
+                                        </div>
+                                    </div>
+                                    <div class="col-2">
+                                        <!-- Puste miejsce dla zachowania układu -->
+                                    </div>
+                                </div>
+
+                                <!-- PO3 -->
+                                <div class="row mb-2">
+                                    <div class="col-1">
+                                        <div class="form-control-plaintext">PO3</div>
+                                    </div>
+                                    <div class="col-7">
+                                        <select class="form-select" name="po3_test_id" onchange="updateWeightValidation()">
+                                            <option value="">Brak</option>
+                                            {% for test in tests %}
+                                                {% if test.test_type == 'IQ' %}
+                                                    <option value="{{ test.id }}">
+                                                        {{ test.title }} - {{ test.test_type }}
+                                                    </option>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-2">
+                                        <input type="number" class="form-control" name="po3_test_weight" 
+                                               min="0" max="100" value="0">
+                                        <div class="invalid-feedback">
+                                            Nieprawidłowa waga
+                                        </div>
+                                    </div>
+                                    <div class="col-2">
+                                        <input type="number" class="form-control" name="po3_token_expiry_days" 
+                                               min="1" max="365" value="7">
+                                    </div>
+                                </div>
+
+                                <div class="row mt-2">
+                                    <div class="col-12">
+                                        <div class="alert alert-danger d-none" id="weightValidationAlert">
+                                            Suma wag dla wybranych testów musi wynosić 100%
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="text-end">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                        <button type="submit" class="btn btn-primary ms-2" id="addCampaignSubmit">
-                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                            <span class="button-text">Zapisz kampanię</span>
-                        </button>
-                    </div>
-                </form>
-            </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="submit" class="btn btn-primary ms-2" id="addCampaignSubmit">
+                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                        <span class="button-text">Zapisz kampanię</span>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -343,261 +344,309 @@
 <div class="modal fade" id="editCampaignModal" tabindex="-1">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Edytuj kampanię</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="editCampaignForm" method="POST" class="needs-validation" novalidate>
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <div class="form-check form-switch">
-                                <input type="checkbox" class="form-check-input" name="is_active">
-                                <label class="form-check-label">Kampania aktywna</label>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Kod kampanii*</label>
-                            <input type="text" class="form-control" name="code" required>
-                            <div class="invalid-feedback" style="display: none;">
-                                Kampania o takim kodzie już istnieje
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Tytuł*</label>
-                            <input type="text" class="form-control" name="title" required>
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Lokalizacja*</label>
-                            <input type="text" class="form-control" name="workplace_location" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Data rozpoczęcia pracy*</label>
-                            <input type="date" class="form-control" name="work_start_date" required 
-                                   onclick="this.showPicker()">
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Typ umowy*</label>
-                            <input type="text" class="form-control" name="contract_type" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Wymiar pracy*</label>
-                            <input type="text" class="form-control" name="employment_type" required>
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Wynagrodzenie od</label>
-                            <input type="number" class="form-control" name="salary_range_min">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Wynagrodzenie do</label>
-                            <input type="number" class="form-control" name="salary_range_max">
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label">Obowiązki*</label>
-                            <textarea class="form-control" name="duties" rows="3" required></textarea>
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label">Wymagania*</label>
-                            <textarea class="form-control" name="requirements" rows="3" required></textarea>
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label">Oferujemy*</label>
-                            <textarea class="form-control" name="employer_offerings" rows="3" required></textarea>
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label">Opis stanowiska*</label>
-                            <textarea class="form-control" name="job_description" rows="3" required></textarea>
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-12 mb-3">
-                            <label class="form-label">Grupa*</label>
-                            <select class="form-select" name="group_id" required onchange="updateTestOptions(this)">
-                                <option value="">Wybierz grupę</option>
-                                {% for group in groups %}
-                                    <option value="{{ group.id }}">{{ group.name }}</option>
-                                {% endfor %}
-                            </select>
-                            <div class="invalid-feedback">
-                                Należy wybrać grupę
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <div class="row">
-                                <div class="col-1">
-                                    <label class="form-label fw-bold">Etap</label>
-                                </div>
-                                <div class="col-7">
-                                    <label class="form-label fw-bold">Test</label>
-                                </div>
-                                <div class="col-2">
-                                    <label class="form-label fw-bold">Waga (%)</label>
-                                </div>
-                                <div class="col-2">
-                                    <label class="form-label fw-bold">Dni ważności</label>
+            <form id="editCampaignForm" method="POST" class="needs-validation" novalidate>
+                <div class="modal-header">
+                    <h5 class="modal-title">Edytuj kampanię</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="modal-body-scroll p-3">
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="form-check form-switch">
+                                    <input type="checkbox" class="form-check-input" name="is_active">
+                                    <label class="form-check-label">Kampania aktywna</label>
                                 </div>
                             </div>
-
-                            <!-- PO1 -->
-                            <div class="row mb-2">
-                                <div class="col-1">
-                                    <div class="form-control-plaintext">PO1</div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Kod kampanii*</label>
+                                <input type="text" class="form-control" name="code" required>
+                                <div class="invalid-feedback" style="display: none;">
+                                    Kampania o takim kodzie już istnieje
                                 </div>
-                                <div class="col-7">
-                                    <select class="form-select" name="po1_test_id">
-                                        <option value="">Brak</option>
-                                        {% for test in tests %}
-                                            {% if test.test_type == 'SURVEY' %}
-                                                <option value="{{ test.id }}">
-                                                    {{ test.title }} - {{ test.test_type }}
-                                                </option>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tytuł*</label>
+                                <input type="text" class="form-control" name="title" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Lokalizacja*</label>
+                                <input type="text" class="form-control" name="workplace_location" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Data rozpoczęcia pracy*</label>
+                                <input type="date" class="form-control" name="work_start_date" required 
+                                       onclick="this.showPicker()">
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Typ umowy*</label>
+                                <input type="text" class="form-control" name="contract_type" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Wymiar pracy*</label>
+                                <input type="text" class="form-control" name="employment_type" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Wynagrodzenie od</label>
+                                <input type="number" class="form-control" name="salary_range_min">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Wynagrodzenie do</label>
+                                <input type="number" class="form-control" name="salary_range_max">
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label">Obowiązki*</label>
+                                <textarea class="form-control" name="duties" rows="3" required></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label">Wymagania*</label>
+                                <textarea class="form-control" name="requirements" rows="3" required></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label">Oferujemy*</label>
+                                <textarea class="form-control" name="employer_offerings" rows="3" required></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label">Opis stanowiska*</label>
+                                <textarea class="form-control" name="job_description" rows="3" required></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Grupa*</label>
+                                <select class="form-select" name="group_id" required onchange="updateTestOptions(this)">
+                                    <option value="">Wybierz grupę</option>
+                                    {% for group in groups %}
+                                        <option value="{{ group.id }}">{{ group.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="invalid-feedback">
+                                    Należy wybrać grupę
                                 </div>
-                                <div class="col-2">
-                                    <input type="number" class="form-control" name="po1_test_weight" 
-                                           min="0" max="100" value="100">
-                                    <div class="invalid-feedback">
-                                        Nieprawidłowa waga
+                            </div>
+                            <div class="col-12">
+                                <div class="row">
+                                    <div class="col-1">
+                                        <label class="form-label fw-bold">Etap</label>
+                                    </div>
+                                    <div class="col-7">
+                                        <label class="form-label fw-bold">Test</label>
+                                    </div>
+                                    <div class="col-2">
+                                        <label class="form-label fw-bold">Waga (%)</label>
+                                    </div>
+                                    <div class="col-2">
+                                        <label class="form-label fw-bold">Dni ważności</label>
                                     </div>
                                 </div>
-                                <div class="col-2">
-                                </div>
-                            </div>
 
-                            <!-- PO2 -->
-                            <div class="row mb-2">
-                                <div class="col-1">
-                                    <div class="form-control-plaintext">PO2</div>
-                                </div>
-                                <div class="col-7">
-                                    <select class="form-select" name="po2_test_id" onchange="updateWeightValidation()">
-                                        <option value="">Brak</option>
-                                        {% for test in tests %}
-                                            {% if test.test_type == 'EQ' %}
-                                                <option value="{{ test.id }}">
-                                                    {{ test.title }} - {{ test.test_type }}
-                                                </option>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-2">
-                                    <!-- Puste miejsce dla zachowania układu -->
-                                </div>
-                                <div class="col-2">
-                                    <input type="number" class="form-control" name="po2_token_expiry_days" 
-                                           min="1" max="365" value="7">
-                                </div>
-                            </div>
-
-                            <!-- PO2.5 -->
-                            <div class="row mb-2">
-                                <div class="col-1">
-                                    <div class="form-control-plaintext">PO2.5</div>
-                                </div>
-                                <div class="col-7">
-                                    <select class="form-select" name="po2_5_test_id" onchange="updateWeightValidation()">
-                                        <option value="">Brak</option>
-                                        {% for test in tests %}
-                                            {% if test.test_type == 'EQ_EVALUATION' %}
-                                                <option value="{{ test.id }}">
-                                                    {{ test.title }} - {{ test.test_type }}
-                                                </option>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-2">
-                                    <input type="number" class="form-control" name="po2_5_test_weight" 
-                                           min="0" max="100" value="0">
-                                    <div class="invalid-feedback">
-                                        Nieprawidłowa waga
+                                <!-- PO1 -->
+                                <div class="row mb-2">
+                                    <div class="col-1">
+                                        <div class="form-control-plaintext">PO1</div>
+                                    </div>
+                                    <div class="col-7">
+                                        <select class="form-select" name="po1_test_id">
+                                            <option value="">Brak</option>
+                                            {% for test in tests %}
+                                                {% if test.test_type == 'SURVEY' %}
+                                                    <option value="{{ test.id }}">
+                                                        {{ test.title }} - {{ test.test_type }}
+                                                    </option>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-2">
+                                        <input type="number" class="form-control" name="po1_test_weight" 
+                                               min="0" max="100" value="100">
+                                        <div class="invalid-feedback">
+                                            Nieprawidłowa waga
+                                        </div>
+                                    </div>
+                                    <div class="col-2">
                                     </div>
                                 </div>
-                                <div class="col-2">
-                                    <!-- Puste miejsce dla zachowania układu -->
-                                </div>
-                            </div>
 
-                            <!-- PO3 -->
-                            <div class="row mb-2">
-                                <div class="col-1">
-                                    <div class="form-control-plaintext">PO3</div>
-                                </div>
-                                <div class="col-7">
-                                    <select class="form-select" name="po3_test_id" onchange="updateWeightValidation()">
-                                        <option value="">Brak</option>
-                                        {% for test in tests %}
-                                            {% if test.test_type == 'IQ' %}
-                                                <option value="{{ test.id }}">
-                                                    {{ test.title }} - {{ test.test_type }}
-                                                </option>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-2">
-                                    <input type="number" class="form-control" name="po3_test_weight" 
-                                           min="0" max="100" value="0">
-                                    <div class="invalid-feedback">
-                                        Nieprawidłowa waga
+                                <!-- PO2 -->
+                                <div class="row mb-2">
+                                    <div class="col-1">
+                                        <div class="form-control-plaintext">PO2</div>
+                                    </div>
+                                    <div class="col-7">
+                                        <select class="form-select" name="po2_test_id" onchange="updateWeightValidation()">
+                                            <option value="">Brak</option>
+                                            {% for test in tests %}
+                                                {% if test.test_type == 'EQ' %}
+                                                    <option value="{{ test.id }}">
+                                                        {{ test.title }} - {{ test.test_type }}
+                                                    </option>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-2">
+                                        <!-- Puste miejsce dla zachowania układu -->
+                                    </div>
+                                    <div class="col-2">
+                                        <input type="number" class="form-control" name="po2_token_expiry_days" 
+                                               min="1" max="365" value="7">
                                     </div>
                                 </div>
-                                <div class="col-2">
-                                    <input type="number" class="form-control" name="po3_token_expiry_days" 
-                                           min="1" max="365" value="7">
-                                </div>
-                            </div>
 
-                            <div class="row mt-2">
-                                <div class="col-12">
-                                    <div class="alert alert-danger d-none" id="weightValidationAlert">
-                                        Suma wag dla wybranych testów musi wynosić 100%
+                                <!-- PO2.5 -->
+                                <div class="row mb-2">
+                                    <div class="col-1">
+                                        <div class="form-control-plaintext">PO2.5</div>
+                                    </div>
+                                    <div class="col-7">
+                                        <select class="form-select" name="po2_5_test_id" onchange="updateWeightValidation()">
+                                            <option value="">Brak</option>
+                                            {% for test in tests %}
+                                                {% if test.test_type == 'EQ_EVALUATION' %}
+                                                    <option value="{{ test.id }}">
+                                                        {{ test.title }} - {{ test.test_type }}
+                                                    </option>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-2">
+                                        <input type="number" class="form-control" name="po2_5_test_weight" 
+                                               min="0" max="100" value="0">
+                                        <div class="invalid-feedback">
+                                            Nieprawidłowa waga
+                                        </div>
+                                    </div>
+                                    <div class="col-2">
+                                        <!-- Puste miejsce dla zachowania układu -->
+                                    </div>
+                                </div>
+
+                                <!-- PO3 -->
+                                <div class="row mb-2">
+                                    <div class="col-1">
+                                        <div class="form-control-plaintext">PO3</div>
+                                    </div>
+                                    <div class="col-7">
+                                        <select class="form-select" name="po3_test_id" onchange="updateWeightValidation()">
+                                            <option value="">Brak</option>
+                                            {% for test in tests %}
+                                                {% if test.test_type == 'IQ' %}
+                                                    <option value="{{ test.id }}">
+                                                        {{ test.title }} - {{ test.test_type }}
+                                                    </option>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-2">
+                                        <input type="number" class="form-control" name="po3_test_weight" 
+                                               min="0" max="100" value="0">
+                                        <div class="invalid-feedback">
+                                            Nieprawidłowa waga
+                                        </div>
+                                    </div>
+                                    <div class="col-2">
+                                        <input type="number" class="form-control" name="po3_token_expiry_days" 
+                                               min="1" max="365" value="7">
+                                    </div>
+                                </div>
+
+                                <div class="row mt-2">
+                                    <div class="col-12">
+                                        <div class="alert alert-danger d-none" id="weightValidationAlert">
+                                            Suma wag dla wybranych testów musi wynosić 100%
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="text-end">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                        <button type="submit" class="btn btn-primary ms-2" id="editCampaignSubmit">
-                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                            <span class="button-text">Zapisz zmiany</span>
-                        </button>
-                    </div>
-                </form>
-            </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="submit" class="btn btn-primary ms-2" id="editCampaignSubmit">
+                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                        <span class="button-text">Zapisz zmiany</span>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
+
+<style>
+.modal-content {
+    height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-content form {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-body {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+.modal-body-scroll {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 1rem;
+}
+
+.modal-footer {
+    flex-shrink: 0;
+    background-color: #fff;
+    border-top: 1px solid #dee2e6;
+    padding: 1rem;
+    z-index: 1030;
+}
+
+/* Add shadow to footer when content is scrolled */
+.modal-footer::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 0;
+    right: 0;
+    height: 10px;
+    background: linear-gradient(to top, rgba(0,0,0,0.1), transparent);
+    pointer-events: none;
+}
+</style>
 
 {% endblock %}
 
