@@ -1,4 +1,11 @@
+let currentSorts = [];
+let originalRows = [];
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Store original table rows
+    const tbody = document.querySelector('tbody');
+    originalRows = Array.from(tbody.querySelectorAll('tr'));
+
     // Add this near the beginning of your DOMContentLoaded handler
     const addCampaignModal = document.getElementById('addCampaignModal');
     if (addCampaignModal) {
@@ -22,6 +29,9 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+
+    // Initialize sortable headers
+    initializeSortableHeaders();
 
     // Handle copy link buttons
     document.querySelectorAll('.copy-link').forEach(button => {
@@ -115,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function() {
             resetAddCampaignForm();
         });
     }
-    
+
     // Dla modalu edycji
     const editModal = document.getElementById('editCampaignModal');
     if (editModal) {
@@ -142,6 +152,117 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 }); 
+
+function updateTable() {
+    const tbody = document.querySelector('tbody');
+    
+    // Clone original rows for sorting
+    let rows = originalRows.map(row => row.cloneNode(true));
+    
+    // Apply multiple sorts
+    if (currentSorts.length > 0) {
+        rows.sort((a, b) => {
+            for (const sort of currentSorts) {
+                const aValue = getRowValue(a, sort.field);
+                const bValue = getRowValue(b, sort.field);
+                
+                const order = sort.direction === 'asc' ? 1 : -1;
+                
+                if (aValue < bValue) return -1 * order;
+                if (aValue > bValue) return 1 * order;
+            }
+            return 0;
+        });
+    }
+    
+    // Update table
+    tbody.innerHTML = '';
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+function getRowValue(row, sortField) {
+    switch (sortField) {
+        case 'code':
+            return row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+        case 'title':
+            return row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+        case 'location':
+            return row.querySelector('td:nth-child(3)').textContent.toLowerCase();
+        case 'status':
+            return row.querySelector('td:nth-child(4) .badge').textContent.toLowerCase();
+        case 'created_at':
+            const dateText = row.querySelector('td:nth-child(6)').textContent;
+            const [datePart, timePart] = dateText.split(' ');
+            const [day, month, year] = datePart.split('.');
+            const [hours, minutes] = timePart.split(':');
+            return new Date(year, month - 1, day, hours, minutes).getTime();
+        default:
+            return 0;
+    }
+}
+
+function initializeSortableHeaders() {
+    const headers = document.querySelectorAll('th.sortable');
+    headers.forEach(header => {
+        header.addEventListener('click', function() {
+            const sortField = this.dataset.sort;
+            const currentDirection = this.classList.contains('asc') ? 'asc' : 
+                                   this.classList.contains('desc') ? 'desc' : null;
+            
+            // Update sort direction
+            let newDirection;
+            if (!currentDirection) {
+                newDirection = 'asc';
+            } else if (currentDirection === 'asc') {
+                newDirection = 'desc';
+            } else {
+                // Remove sorting for this column
+                this.classList.remove('desc');
+                // Remove order indicator
+                const orderIndicator = this.querySelector('.sort-order');
+                if (orderIndicator) {
+                    orderIndicator.remove();
+                }
+                currentSorts = currentSorts.filter(sort => sort.field !== sortField);
+                // Update numbering of remaining sorts
+                currentSorts.forEach((sort, index) => {
+                    const header = document.querySelector(`th[data-sort="${sort.field}"]`);
+                    const indicator = header.querySelector('.sort-order');
+                    if (indicator) {
+                        indicator.textContent = index + 1;
+                    }
+                });
+                updateTable();
+                return;
+            }
+
+            // Remove existing sort for this field
+            currentSorts = currentSorts.filter(sort => sort.field !== sortField);
+            
+            // Add new sort
+            currentSorts.push({
+                field: sortField,
+                direction: newDirection,
+                order: currentSorts.length + 1
+            });
+
+            // Update classes and indicators
+            this.classList.remove('asc', 'desc');
+            this.classList.add(newDirection);
+
+            // Update or add order indicator
+            let orderIndicator = this.querySelector('.sort-order');
+            if (!orderIndicator) {
+                orderIndicator = document.createElement('span');
+                orderIndicator.className = 'sort-order';
+                this.appendChild(orderIndicator);
+            }
+            orderIndicator.textContent = currentSorts.length;
+
+            updateTable();
+        });
+    });
+}
 
 function editCampaign(campaignId) {
     fetch(`/campaigns/${campaignId}/data`)
