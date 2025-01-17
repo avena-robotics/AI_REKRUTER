@@ -1,0 +1,132 @@
+<!-- Campaign Form Component -->
+{% macro campaign_form(form_id, title, submit_text, groups) %}
+<form id="{{ form_id }}" method="POST" class="needs-validation" novalidate>
+    <div class="modal-header">
+        <h5 class="modal-title">{{ title }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body p-0">
+        <div class="modal-body-scroll p-3">
+            <!-- Status Switch -->
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="form-check form-switch">
+                        <input type="checkbox" class="form-check-input" name="is_active" checked>
+                        <label class="form-check-label">Kampania aktywna</label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Basic Info -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Kod kampanii*</label>
+                    <input type="text" class="form-control" name="code" required>
+                    <div class="invalid-feedback">
+                        Proszę podać kod kampanii.
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Tytuł*</label>
+                    <input type="text" class="form-control" name="title" required>
+                    <div class="invalid-feedback">
+                        Proszę podać tytuł kampanii.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Location and Date -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Lokalizacja*</label>
+                    <input type="text" class="form-control" name="workplace_location" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Data rozpoczęcia pracy*</label>
+                    <input type="date" class="form-control" name="work_start_date" required 
+                           onclick="this.showPicker()">
+                </div>
+            </div>
+            
+            <!-- Contract Details -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Typ umowy*</label>
+                    <input type="text" class="form-control" name="contract_type" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Wymiar pracy*</label>
+                    <input type="text" class="form-control" name="employment_type" required>
+                </div>
+            </div>
+            
+            <!-- Salary Range -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Wynagrodzenie od (Netto PLN)</label>
+                    <input type="number" class="form-control" name="salary_range_min">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Wynagrodzenie do (Netto PLN)</label>
+                    <input type="number" class="form-control" name="salary_range_max">
+                </div>
+            </div>
+            
+            <!-- Job Details -->
+            <div class="row mb-3">
+                <div class="col-12">
+                    <label class="form-label">Obowiązki*</label>
+                    <textarea class="form-control" name="duties" rows="3" required></textarea>
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-12">
+                    <label class="form-label">Wymagania*</label>
+                    <textarea class="form-control" name="requirements" rows="3" required></textarea>
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-12">
+                    <label class="form-label">Oferujemy*</label>
+                    <textarea class="form-control" name="employer_offerings" rows="3" required></textarea>
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-12">
+                    <label class="form-label">Opis stanowiska*</label>
+                    <textarea class="form-control" name="job_description" rows="3" required></textarea>
+                </div>
+            </div>
+
+            <!-- Email Template -->
+            <div class="row mb-3">
+                <div class="col-12">
+                    <h5 class="mb-3">Szablon zaproszenia na rozmowę</h5>
+                    <div class="mb-3">
+                        <label class="form-label">Tytuł wiadomości</label>
+                        <input type="text" class="form-control" name="interview_email_subject">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Treść wiadomości</label>
+                        <div id="{{ 'addEmailContent' if form_id == 'addCampaignForm' else 'editEmailContent' }}" style="height: 200px;"></div>
+                        <textarea name="interview_email_content" style="display: none;"></textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tests Section -->
+            {% include 'campaigns/components/campaign_tests.html' %}
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+        <button type="submit" class="btn btn-primary ms-2" id="{{ form_id }}Submit">
+            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+            <span class="button-text">{{ submit_text }}</span>
+        </button>
+    </div>
+</form>
+{% endmacro %} 

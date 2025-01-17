@@ -1,0 +1,68 @@
+<!-- Campaign Table Component -->
+<div class="table-wrapper w-100">
+    <div class="table-scroll">
+        <table class="table table-striped campaign-table w-100">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th class="sortable" data-sort="code">Kod</th>
+                    <th class="sortable" data-sort="title">Tytuł</th>
+                    <th class="sortable" data-sort="location">Lokalizacja</th>
+                    <th class="sortable" data-sort="status">Status</th>
+                    <th>Testy</th>
+                    <th class="sortable" data-sort="created_at">Data utworzenia</th>
+                    <th>Akcje</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for campaign in campaigns %}
+                <tr data-campaign-id="{{ campaign.id }}" style="cursor: pointer;">
+                    <td class="row-number"></td>
+                    <td>{{ campaign.code }}</td>
+                    <td>{{ campaign.title }}</td>
+                    <td>{{ campaign.workplace_location }}</td>
+                    <td>
+                        <span class="badge {% if campaign.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                            {{ 'Aktywna' if campaign.is_active else 'Nieaktywna' }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if campaign.universal_access_token %}
+                            <button class="btn btn-sm btn-secondary copy-link" 
+                                    data-link="{{ request.host_url }}test/{{ campaign.universal_access_token }}"
+                                    title="Kliknij aby skopiować link">
+                                Kopiuj link
+                            </button>
+                        {% else %}
+                            <button type="button" class="btn btn-sm btn-primary generate-link-list" 
+                                    data-campaign-id="{{ campaign.id }}" 
+                                    data-campaign-code="{{ campaign.code }}">
+                                Generuj link
+                            </button>
+                        {% endif %}
+                    </td>
+                    <td>{{ campaign.created_at|format_datetime }}</td>
+                    <td>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-sm btn-warning" 
+                                    data-campaign-id="{{ campaign.id }}"
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#editCampaignModal">
+                                Edytuj
+                            </button>
+                            <button type="button" class="btn btn-sm btn-info" 
+                                    data-campaign-id="{{ campaign.id }}">
+                                Duplikuj
+                            </button>
+                            <button type="button" class="btn btn-sm btn-danger" 
+                                    data-campaign-id="{{ campaign.id }}">
+                                Usuń
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div> 

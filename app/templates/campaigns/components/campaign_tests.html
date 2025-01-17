@@ -1,0 +1,152 @@
+<!-- Campaign Tests Component -->
+<div class="row mb-3">
+    <div class="col-12 mb-3">
+        <label class="form-label">Grupa*</label>
+        <select class="form-select" name="group_id" required>
+            <option value="">Wybierz grupę</option>
+            {% for group in groups %}
+                <option value="{{ group.id }}">{{ group.name }}</option>
+            {% endfor %}
+        </select>
+        <div class="invalid-feedback">
+            Należy wybrać grupę
+        </div>
+    </div>
+    <div class="col-12">
+        <div class="row">
+            <div class="col-1">
+                <label class="form-label fw-bold">Etap</label>
+            </div>
+            <div class="col-7">
+                <label class="form-label fw-bold">Test</label>
+            </div>
+            <div class="col-2">
+                <label class="form-label fw-bold">Waga (%)</label>
+            </div>
+            <div class="col-2">
+                <label class="form-label fw-bold">Dni ważności</label>
+            </div>
+        </div>
+
+        <!-- PO1 -->
+        <div class="row mb-2">
+            <div class="col-1">
+                <div class="form-control-plaintext">PO1</div>
+            </div>
+            <div class="col-7">
+                <select class="form-select" name="po1_test_id">
+                    <option value="">Brak</option>
+                    {% for test in tests %}
+                        {% if test.test_type == 'SURVEY' %}
+                            <option value="{{ test.id }}">
+                                {{ test.title }} - {{ test.test_type }}
+                            </option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-2">
+                <input type="number" class="form-control" name="po1_test_weight" 
+                       min="0" max="100" value="100">
+                <div class="invalid-feedback">
+                    Nieprawidłowa waga
+                </div>
+            </div>
+            <div class="col-2">
+            </div>
+        </div>
+
+        <!-- PO2 -->
+        <div class="row mb-2">
+            <div class="col-1">
+                <div class="form-control-plaintext">PO2</div>
+            </div>
+            <div class="col-7">
+                <select class="form-select" name="po2_test_id">
+                    <option value="">Brak</option>
+                    {% for test in tests %}
+                        {% if test.test_type == 'EQ' %}
+                            <option value="{{ test.id }}">
+                                {{ test.title }} - {{ test.test_type }}
+                            </option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-2">
+                <!-- Puste miejsce dla zachowania układu -->
+            </div>
+            <div class="col-2">
+                <input type="number" class="form-control" name="po2_token_expiry_days" 
+                       min="1" max="365" value="7">
+            </div>
+        </div>
+
+        <!-- PO2.5 -->
+        <div class="row mb-2">
+            <div class="col-1">
+                <div class="form-control-plaintext">PO2.5</div>
+            </div>
+            <div class="col-7">
+                <select class="form-select" name="po2_5_test_id">
+                    <option value="">Brak</option>
+                    {% for test in tests %}
+                        {% if test.test_type == 'EQ_EVALUATION' %}
+                            <option value="{{ test.id }}">
+                                {{ test.title }} - {{ test.test_type }}
+                            </option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-2">
+                <input type="number" class="form-control" name="po2_5_test_weight" 
+                       min="0" max="100" value="0">
+                <div class="invalid-feedback">
+                    Nieprawidłowa waga
+                </div>
+            </div>
+            <div class="col-2">
+                <!-- Puste miejsce dla zachowania układu -->
+            </div>
+        </div>
+
+        <!-- PO3 -->
+        <div class="row mb-2">
+            <div class="col-1">
+                <div class="form-control-plaintext">PO3</div>
+            </div>
+            <div class="col-7">
+                <select class="form-select" name="po3_test_id">
+                    <option value="">Brak</option>
+                    {% for test in tests %}
+                        {% if test.test_type == 'IQ' %}
+                            <option value="{{ test.id }}">
+                                {{ test.title }} - {{ test.test_type }}
+                            </option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-2">
+                <input type="number" class="form-control" name="po3_test_weight" 
+                       min="0" max="100" value="0">
+                <div class="invalid-feedback">
+                    Nieprawidłowa waga
+                </div>
+            </div>
+            <div class="col-2">
+                <input type="number" class="form-control" name="po3_token_expiry_days" 
+                       min="1" max="365" value="7">
+            </div>
+        </div>
+
+        <div class="row mt-2">
+            <div class="col-12">
+                <div class="alert alert-danger d-none" id="weightValidationAlert">
+                    Suma wag dla wybranych testów musi wynosić 100%
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

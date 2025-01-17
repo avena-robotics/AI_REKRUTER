@@ -1,0 +1,20 @@
+<!-- Campaign Modals Component -->
+{% from 'campaigns/components/campaign_form.html' import campaign_form %}
+
+<!-- Add Campaign Modal -->
+<div class="modal fade" id="addCampaignModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            {{ campaign_form('addCampaignForm', 'Dodaj nową kampanię', 'Zapisz kampanię', groups=groups) }}
+        </div>
+    </div>
+</div>
+
+<!-- Edit Campaign Modal -->
+<div class="modal fade" id="editCampaignModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            {{ campaign_form('editCampaignForm', 'Edytuj kampanię', 'Zapisz zmiany', groups=groups) }}
+        </div>
+    </div>
+</div> 
