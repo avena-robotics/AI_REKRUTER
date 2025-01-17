@@ -5,6 +5,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Store original table rows
     const tbody = document.querySelector('tbody');
     originalRows = Array.from(tbody.querySelectorAll('tr'));
+    
+    // Initialize row numbers
+    originalRows.forEach((row, index) => {
+        row.querySelector('.row-number').textContent = index + 1;
+    });
 
     // Add this near the beginning of your DOMContentLoaded handler
     const addCampaignModal = document.getElementById('addCampaignModal');
@@ -188,7 +193,10 @@ function updateTable() {
     
     // Update table
     tbody.innerHTML = '';
-    rows.forEach(row => tbody.appendChild(row));
+    rows.forEach((row, index) => {
+        row.querySelector('.row-number').textContent = index + 1;
+        tbody.appendChild(row);
+    });
 
     // Reattach event listeners after table update
     reattachEventListeners();
@@ -197,15 +205,15 @@ function updateTable() {
 function getRowValue(row, sortField) {
     switch (sortField) {
         case 'code':
-            return row.querySelector('td:nth-child(1)').textContent.toLowerCase();
-        case 'title':
             return row.querySelector('td:nth-child(2)').textContent.toLowerCase();
-        case 'location':
+        case 'title':
             return row.querySelector('td:nth-child(3)').textContent.toLowerCase();
+        case 'location':
+            return row.querySelector('td:nth-child(4)').textContent.toLowerCase();
         case 'status':
-            return row.querySelector('td:nth-child(4) .badge').textContent.toLowerCase();
+            return row.querySelector('td:nth-child(5) .badge').textContent.toLowerCase();
         case 'created_at':
-            const dateText = row.querySelector('td:nth-child(6)').textContent;
+            const dateText = row.querySelector('td:nth-child(7)').textContent;
             const [datePart, timePart] = dateText.split(' ');
             const [day, month, year] = datePart.split('.');
             const [hours, minutes] = timePart.split(':');

@@ -23,6 +23,7 @@
         <table class="table table-striped campaign-table w-100">
             <thead>
                 <tr>
+                    <th>#</th>
                     <th class="sortable" data-sort="code">Kod</th>
                     <th class="sortable" data-sort="title">Tytuł</th>
                     <th class="sortable" data-sort="location">Lokalizacja</th>
@@ -35,6 +36,7 @@
             <tbody>
                 {% for campaign in campaigns %}
                 <tr data-campaign-id="{{ campaign.id }}" ondblclick="editCampaign('{{ campaign.id }}')" style="cursor: pointer;">
+                    <td class="row-number"></td>
                     <td>{{ campaign.code }}</td>
                     <td>{{ campaign.title }}</td>
                     <td>{{ campaign.workplace_location }}</td>
