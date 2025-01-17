@@ -1,0 +1,1008 @@
+/* Timer styles */
+.timer-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #fff;
+    padding: 10px 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    z-index: 1000;
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+.timer-container.warning {
+    background-color: #ffc107;
+    color: #000;
+}
+
+.timer-container.danger {
+    background-color: #dc3545;
+    color: #fff;
+    animation: pulse 1s infinite;
+}
+
+/* Question card styles */
+.question-card {
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+}
+
+.question-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.question-card.border-danger {
+    border-color: #dc3545;
+    background-color: #fff8f8;
+}
+
+/* Range input styles */
+.range-container {
+    padding: 10px 0;
+}
+
+.range-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 5px;
+    padding: 0 10px;
+}
+
+.range-labels span {
+    font-size: 0.9em;
+    color: #6c757d;
+}
+
+/* ABCDEF options styles */
+.abcdef-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.abcdef-options .form-check {
+    padding: 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    transition: all 0.2s ease;
+}
+
+.abcdef-options .form-check:hover {
+    background-color: #f8f9fa;
+}
+
+.abcdef-options .form-check-input:checked + .form-check-label {
+    font-weight: bold;
+}
+
+/* Image styles */
+.question-card img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+/* Form control styles */
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+
+textarea.form-control {
+    min-height: 100px;
+}
+
+/* Submit button styles */
+.btn-lg {
+    padding: 15px 30px;
+    font-size: 1.2em;
+    border-radius: 8px;
+}
+
+/* Animations */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .timer-container {
+        top: 10px;
+        right: 10px;
+        padding: 8px 15px;
+        font-size: 1em;
+    }
+    
+    .question-card {
+        padding: 15px;
+    }
+    
+    .abcdef-options {
+        grid-template-columns: 1fr;
+    }
+}
+
+.needs-validation.is-invalid {
+    border-color: #dc3545;
+}
+
+.needs-validation.is-invalid ~ .invalid-feedback {
+    display: block;
+}
+
+.form-group .invalid-feedback {
+    display: none;
+    margin-top: 0.25rem;
+}
+
+/* Dodaj te style na końcu pliku */
+.invalid-feedback {
+    display: none;
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.875em;
+    color: #dc3545;
+}
+
+#groupsContainer.border-danger {
+    border-color: #dc3545 !important;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(0,0,0,.075);
+}
+
+.table-wrapper {
+    height: calc(100vh - 380px);
+    position: relative;
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+    padding: 1.5rem;
+    width: 100%;
+    margin: 0 auto;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.table-scroll {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: auto;
+    margin: 0 auto;
+    width: 100%;
+    padding: 0 5px;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f1f5f9;
+    position: relative;
+}
+
+/* Table styles */
+.table {
+    width: max-content;
+    min-width: 100%;
+    margin-bottom: 0;
+    background: white;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+}
+
+.table.table-striped {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+}
+
+/* Table header styles */
+.table thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #495057;
+}
+
+.table thead th {
+    position: sticky;
+    top: 0;
+    background: #495057;
+    z-index: 2;
+    padding: 1rem 0.75rem;
+    font-weight: 600;
+    color: #ffffff;
+    border-bottom: 2px solid #6c757d;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* First column header styling */
+.table thead th:first-child {
+    z-index: 3;
+    background: #495057;
+    border-top-left-radius: 8px;
+    border-right: 1px solid #6c757d;
+}
+
+.table thead th:last-child {
+    border-top-right-radius: 8px;
+}
+
+/* Table cell base styles */
+.table th,
+.table td {
+    white-space: nowrap;
+    padding: 0.75rem;
+    vertical-align: middle;
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+}
+
+/* Column specific styles */
+.table th:nth-child(1),
+.table td:nth-child(1) {
+    min-width: 50px;
+    width: 50px;
+    text-align: center; 
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-right: 1px solid #6c757d;
+}
+
+.table th:nth-child(2),
+.table td:nth-child(2) { 
+    min-width: 250px;
+    max-width: none;
+    width: auto;
+    white-space: normal;
+    word-wrap: break-word; 
+    font-weight: 500;
+}
+
+.table th:nth-child(3),
+.table td:nth-child(3) { min-width: 120px; }
+
+.table th:nth-child(4),
+.table td:nth-child(4) { min-width: 100px; }
+
+.table th:nth-child(5),
+.table td:nth-child(5) { min-width: 120px; }
+
+.table th:nth-child(6),
+.table td:nth-child(6) { min-width: 120px; }
+
+.table th:nth-child(7),
+.table td:nth-child(7) { min-width: 130px; }
+
+.table th:nth-child(8),
+.table td:nth-child(8) { 
+    min-width: 200px;
+    white-space: normal;
+    line-height: 1.2;
+}
+
+.table th:nth-child(9),
+.table td:nth-child(9) { min-width: 180px; }
+
+.table th:nth-child(10),
+.table td:nth-child(10) { 
+    min-width: 250px;
+    padding-right: 1rem;
+}
+
+/* Row hover effect */
+.table tbody tr:hover {
+    background-color: rgba(0,0,0,.075);
+}
+
+/* Table wrapper styles */
+.table-wrapper {
+    height: calc(100vh - 380px);
+    position: relative;
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+    padding: 1.5rem;
+    width: 100%;
+    margin: 0 auto;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.table-scroll {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: auto;
+    margin: 0 auto;
+    width: 100%;
+    padding: 0 5px;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f1f5f9;
+    position: relative;
+}
+
+/* Scrollbar styling */
+.table-scroll::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.table-scroll::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1500px) {
+    .table-wrapper {
+        max-width: 100%;
+        padding: 0.75rem;
+    }
+    
+    .container {
+        padding: 0 0.75rem;
+    }
+    
+    .table {
+        width: 100%;
+    }
+}
+
+/* Image preview styles */
+.preview-image-container {
+    position: relative;
+    display: inline-block;
+}
+
+.preview-image-container img {
+    cursor: zoom-in;
+}
+
+#imagePreviewModal .modal-dialog {
+    max-width: 90vw;
+    margin: 1.75rem auto;
+}
+
+#imagePreviewModal .modal-content {
+    background-color: white;
+    border-radius: 8px;
+}
+
+#imagePreviewModal .modal-backdrop {
+    opacity: 0.85;
+}
+
+#imagePreviewModal .modal-body {
+    padding: 2.5rem;
+}
+
+#previewImage {
+    max-height: 85vh;
+    object-fit: contain;
+    border-radius: 4px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+#imagePreviewModal .btn-close-white {
+    position: absolute;
+    right: 1rem;
+    top: 1rem;
+    z-index: 1050;
+    filter: brightness(0) invert(0);
+    opacity: 0.5;
+    background-color: rgba(0, 0, 0, 0.1);
+    padding: 0.75rem;
+    border-radius: 50%;
+}
+
+#imagePreviewModal .btn-close-white:hover {
+    opacity: 0.75;
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+/* Dodaj animację fade dla modala */
+#imagePreviewModal.fade .modal-dialog {
+    transition: transform .2s ease-out;
+}
+
+#imagePreviewModal.show .modal-dialog {
+    transform: none;
+}
+
+/* Add these styles at the end of the file */
+.form-switch {
+    padding-left: 2.5em;
+}
+
+.form-switch .form-check-input {
+    width: 2em;
+    margin-left: -2.5em;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%280, 0, 0, 0.25%29'/%3e%3c/svg%3e");
+    background-position: left center;
+    border-radius: 2em;
+    transition: background-position .15s ease-in-out;
+}
+
+.form-switch .form-check-input:checked {
+    background-position: right center;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+}
+
+.form-check-label {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.sortable-ghost {
+    opacity: 0.4;
+    background: #f8f9fa;
+}
+
+.sortable-drag {
+    opacity: 0.9;
+    background: white;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.drag-handle {
+    color: #6c757d;
+    padding: 0.25rem;
+    margin: -0.25rem;
+    border-radius: 0.25rem;
+}
+
+.drag-handle:hover {
+    background: #f8f9fa;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+/* Add new styles for filter section */
+.filter-wrapper {
+    width: 100%;
+}
+
+/* Update table styles */
+.table {
+    width: max-content;
+    min-width: 100%;
+    margin-bottom: 0;
+    background: white;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+}
+
+/* Update table header styles */
+.table thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #495057;
+}
+
+.table thead th {
+    position: sticky;
+    top: 0;
+    background: #495057;
+    z-index: 2;
+    padding: 1rem 0.75rem;
+    font-weight: 600;
+    color: #ffffff;
+    border-bottom: 2px solid #6c757d;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* First column header styling */
+.table thead th:first-child {
+    z-index: 3;
+    background: #495057;
+    border-top-left-radius: 8px;
+}
+
+.table thead th:last-child {
+    border-top-right-radius: 8px;
+}
+
+/* Hover effect for header cells */
+.table thead th:hover {
+    background: #6c757d;
+    color: #ffffff;
+    transition: all 0.15s ease-in-out;
+}
+
+/* Add subtle grid lines between header cells */
+.table thead th:not(:last-child) {
+    border-right: 1px solid #6c757d;
+}
+
+/* Add subtle shadow under header */
+.table thead::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -3px;
+    height: 3px;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.15), transparent);
+    z-index: 1;
+}
+
+/* Ensure table body content stays below headers */
+.table tbody {
+    position: relative;
+    z-index: 1;
+}
+
+.table tbody td {
+    background-color: inherit;
+}
+
+/* First column styling with proper z-index */
+.table th:first-child,
+.table td:first-child {
+    background-color: inherit;
+}
+
+.table thead th:first-child {
+    z-index: 2;
+}
+
+/* Scrollbar styling */
+.table-scroll::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.table-scroll::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Keep existing column width definitions but update their styling */
+.table th:nth-child(1),
+.table td:nth-child(1) { 
+    min-width: 50px;
+    max-width: none;
+    width: auto;
+    white-space: normal;
+    word-wrap: break-word;
+    background-color: #f8fafc;
+}
+
+/* Update dropdown menu styling */
+.dropdown-menu {
+    z-index: 1021 !important;
+    position: absolute;
+    right: 0;
+    left: auto !important;
+    padding: 0.5rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    color: #374151;
+}
+
+.dropdown-item:hover {
+    background-color: #f3f4f6;
+    color: #111827;
+}
+
+/* Update badge styling for groups column */
+.table td .badge {
+    margin: 0.25rem 0.25rem;  /* Add margin around badges */
+    padding: 0.35rem 0.65rem;  /* Keep existing padding or adjust if needed */
+    display: inline-block;     /* Ensure margins work properly */
+}
+
+/* Specific styling for group column to handle multiple badges */
+.table td:nth-child(7) {  /* Column for 'Grupy' */
+    padding: 0.5rem 0.75rem;  /* Adjust cell padding to accommodate badge margins */
+    line-height: 1.8;         /* Give more vertical space between lines */
+}
+
+/* Scale input styling */
+.scale-input-container {
+    padding: 1rem 0.5rem;
+    position: relative;
+}
+
+.scale-value-display {
+    text-align: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: #475569;
+}
+
+.scale-value-display span {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.scale-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+    padding: 0 0.25rem;
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+/* Custom range input styling */
+.form-range {
+    height: 1.5rem;
+    padding: 0;
+    background: transparent;
+    appearance: none;
+    width: 100%;
+}
+
+.form-range::-webkit-slider-thumb {
+    appearance: none;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 50%;
+    background: #3b82f6;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    cursor: pointer;
+    margin-top: -0.5rem;
+    transition: all 0.2s ease;
+}
+
+.form-range::-webkit-slider-thumb:hover {
+    background: #2563eb;
+    transform: scale(1.1);
+}
+
+.form-range::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 0.25rem;
+    background: #e5e7eb;
+    border-radius: 0.25rem;
+    cursor: pointer;
+}
+
+.form-range:focus {
+    outline: none;
+}
+
+.form-range:focus::-webkit-slider-thumb {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+/* Firefox styles */
+.form-range::-moz-range-thumb {
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 50%;
+    background: #3b82f6;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.form-range::-moz-range-thumb:hover {
+    background: #2563eb;
+    transform: scale(1.1);
+}
+
+.form-range::-moz-range-track {
+    width: 100%;
+    height: 0.25rem;
+    background: #e5e7eb;
+    border-radius: 0.25rem;
+    cursor: pointer;
+}
+
+.form-range:focus::-moz-range-thumb {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+/* Dodaj na końcu pliku */
+.dropdown .form-select {
+    cursor: pointer;
+}
+
+.dropdown .form-select:after {
+    margin-left: 0.5em;
+}
+
+.dropdown-menu {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.dropdown-menu.show {
+    display: block;
+}
+
+/* Zapobiegaj zamykaniu przy kliknięciu wewnątrz */
+.dropdown-menu label {
+    display: block;
+    width: 100%;
+}
+
+/* Popraw styl checkboxów i labelów */
+.dropdown-menu .form-check {
+    padding: 0.5rem;
+    margin: 0;
+    border-radius: 0.25rem;
+}
+
+.dropdown-menu .form-check:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.dropdown-menu .form-check-label {
+    cursor: pointer;
+    user-select: none;
+    padding-left: 0.5rem;
+}
+
+.dropdown-menu .form-check-input {
+    cursor: pointer;
+}
+
+.selected-options {
+    display: inline-block;
+    max-width: calc(100% - 20px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.form-check {
+    margin-bottom: 0.5rem;
+}
+
+.form-check:last-child {
+    margin-bottom: 0;
+}
+
+.dropdown-menu .form-check-label {
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Dropdown styles */
+.dropdown .form-select {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-right: 0.75rem;
+}
+
+.dropdown .form-select::after {
+    margin-left: 0.5em;
+    border-top: 0.4em solid;
+    border-right: 0.4em solid transparent;
+    border-left: 0.4em solid transparent;
+}
+
+.dropdown-menu {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 0.5rem;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border-radius: 0.5rem;
+}
+
+.dropdown-menu::-webkit-scrollbar {
+    width: 6px;
+}
+
+.dropdown-menu::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Checkbox styles */
+.dropdown-menu .form-check {
+    padding: 0.5rem 0.75rem;
+    margin: 0;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+}
+
+.dropdown-menu .form-check:hover {
+    background-color: #f8fafc;
+}
+
+.dropdown-menu .form-check-input {
+    cursor: pointer;
+    margin-top: 0.3em;
+}
+
+.dropdown-menu .form-check-label {
+    cursor: pointer;
+    user-select: none;
+    padding-left: 0.5rem;
+    color: #1f2937;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* Selected options display */
+.selected-options {
+    display: inline-block;
+    max-width: calc(100% - 24px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #1f2937;
+    font-size: 0.875rem;
+}
+
+/* Active state */
+.dropdown-menu .form-check-input:checked + .form-check-label {
+    color: #2563eb;
+}
+
+.dropdown-menu .form-check-input:checked {
+    background-color: #2563eb;
+    border-color: #2563eb;
+}
+
+/* Hover effects */
+.dropdown-menu .form-check:hover .form-check-label {
+    color: #1e40af;
+}
+
+/* Custom checkbox design */
+.dropdown-menu .form-check-input {
+    width: 1.1em;
+    height: 1.1em;
+    border: 2px solid #cbd5e1;
+    border-radius: 0.25em;
+}
+
+.dropdown-menu .form-check-input:focus {
+    box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.25);
+    border-color: #2563eb;
+}
+
+/* Dropdown button styles */
+.dropdown .form-select:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.25);
+}
+
+/* Remove duplicate styles */
+.form-check:last-child {
+    margin-bottom: 0;
+}
+
+/* Sortable header styles */
+.table th.sortable {
+    cursor: pointer;
+    padding-right: 1.5rem;
+    position: relative;
+}
+
+.table th.sortable::after {
+    content: '↕';
+    position: absolute;
+    right: 0.5rem;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.8rem;
+}
+
+.table th.sortable.asc::after {
+    content: '↑';
+    color: #ffffff;
+}
+
+.table th.sortable.desc::after {
+    content: '↓';
+    color: #ffffff;
+}
+
+.table th.sortable:hover::after {
+    color: #ffffff;
+}
+
+/* Sort order indicator */
+.table th.sortable .sort-order {
+    position: absolute;
+    top: 0.2rem;
+    right: 0.2rem;
+    font-size: 0.6rem;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    width: 1rem;
+    height: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+}
+
+/* Table cell styles */
+.table td {
+    padding: 1rem 0.75rem;
+    color: #1f2937;
+    border-bottom: 1px solid #e5e7eb;
+    background-color: white;
+}
+
+/* Vertical lines between columns */
+.table th:not(:last-child),
+.table td:not(:last-child) {
+    border-right: 1px solid #e5e7eb;
+}
+
+/* Alternating row colors */
+.table tbody tr:nth-child(even) td {
+    background-color: #f8fafc;
+}
+
+/* Hover effect */
+.table tbody tr:hover td {
+    background-color: #f1f5f9;
+    transition: background-color 0.15s ease-in-out;
+}

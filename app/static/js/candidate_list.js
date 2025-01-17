@@ -223,7 +223,7 @@ window.recalculateScores = async function(candidateId) {
         if (response.ok) {
             showToast('Punkty zostały przeliczone', 'success');
             if (data.status_changed) {
-                showToast('Status kandydata został zmieniony!', 'warning');
+                showToast('Status kandydata został zmieniony!', 'success');
             }
             await refreshTable(true);
         } else {

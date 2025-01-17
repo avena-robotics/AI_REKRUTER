@@ -5,6 +5,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const tbody = document.querySelector('tbody');
     originalRows = Array.from(tbody.querySelectorAll('tr'));
     
+    // Initialize row numbers
+    updateRowNumbers(tbody);
+    
     // Initialize filters and buttons
     initializeFilters();
     initializeEventListeners();
@@ -275,6 +278,7 @@ function updateTable(applyFilters) {
         originalRows.forEach(row => {
             tbody.appendChild(row.cloneNode(true));
         });
+        updateRowNumbers(tbody);
         return;
     }
     
@@ -289,7 +293,7 @@ function updateTable(applyFilters) {
     
     // Apply filters
     rows = rows.filter(row => {
-        const testType = row.querySelector('td:nth-child(2)').textContent.trim();
+        const testType = row.querySelector('td:nth-child(3)').textContent.trim();
         const testGroups = JSON.parse(row.dataset.groups || '[]');
         
         const testTypeMatch = selectedTestTypes.length === 0 ? 
@@ -328,25 +332,39 @@ function updateTable(applyFilters) {
     // Update table
     tbody.innerHTML = '';
     rows.forEach(row => tbody.appendChild(row));
+    
+    // Update row numbers
+    updateRowNumbers(tbody);
+}
+
+// Add new function for row numbering
+function updateRowNumbers(tbody) {
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach((row, index) => {
+        const numberCell = row.querySelector('.row-number');
+        if (numberCell) {
+            numberCell.textContent = (index + 1).toString();
+        }
+    });
 }
 
 function getRowValue(row, sortField) {
     switch (sortField) {
         case 'title':
-            return row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+            return row.querySelector('td:nth-child(2)').textContent.toLowerCase();
         case 'test_type':
-            return row.querySelector('td:nth-child(2)').textContent;
+            return row.querySelector('td:nth-child(3)').textContent;
         case 'time_limit':
-            const timeText = row.querySelector('td:nth-child(3)').textContent;
+            const timeText = row.querySelector('td:nth-child(4)').textContent;
             return parseInt(timeText.replace(' min', '')) || 0;
         case 'questions':
-            return parseInt(row.querySelector('td:nth-child(4)').textContent) || 0;
-        case 'points':
             return parseInt(row.querySelector('td:nth-child(5)').textContent) || 0;
-        case 'threshold':
+        case 'points':
             return parseInt(row.querySelector('td:nth-child(6)').textContent) || 0;
+        case 'threshold':
+            return parseInt(row.querySelector('td:nth-child(7)').textContent) || 0;
         case 'created_at':
-            const dateText = row.querySelector('td:nth-child(8)').textContent;
+            const dateText = row.querySelector('td:nth-child(9)').textContent;
             const [datePart, timePart] = dateText.split(' ');
             const [day, month, year] = datePart.split('.');
             const [hours, minutes] = timePart.split(':');

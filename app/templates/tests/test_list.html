@@ -4,7 +4,7 @@
 
 {% block head %}
 {{ super() }}
-<link href="{{ url_for('static', filename='css/test.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/test_list.css') }}" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
 <script src="{{ url_for('static', filename='js/toast.js') }}" defer></script>
@@ -89,6 +89,7 @@
         <table class="table table-striped">
             <thead>
                 <tr>
+                    <th>#</th>
                     <th class="sortable" data-sort="title">Tytuł</th>
                     <th class="sortable" data-sort="test_type">Typ testu</th>
                     <th class="sortable" data-sort="time_limit">Limit czasu</th>
@@ -104,6 +105,7 @@
                 {% for test in tests %}
                 <tr data-test-id="{{ test.id }}" 
                     data-groups='{{ test.groups|tojson|safe }}'>
+                    <td class="row-number"></td>
                     <td>{{ test.title }}</td>
                     <td>
                         {% if test.test_type == 'SURVEY' %}
