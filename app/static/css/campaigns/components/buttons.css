@@ -4,14 +4,13 @@
     align-items: center;
     justify-content: center;
     font-weight: 500;
-    line-height: 1.25;
-    text-align: center;
-    vertical-align: middle;
-    border: 1px solid transparent;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    border-radius: 6px;
     padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-    border-radius: 0.375rem;
-    transition: all 0.15s ease-in-out;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
 }
 
 .btn:disabled {
@@ -21,21 +20,22 @@
 
 /* Button sizes */
 .btn-sm {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
-    border-radius: 0.25rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 4px;
 }
 
 /* Button variants */
 .btn-primary {
     color: #ffffff;
-    background-color: #3b82f6;
-    border-color: #3b82f6;
+    background-color: #4f46e5;
+    border-color: #4f46e5;
 }
 
 .btn-primary:hover {
-    background-color: #2563eb;
-    border-color: #2563eb;
+    color: #ffffff;
+    background-color: #4338ca;
+    border-color: #4338ca;
 }
 
 .btn-secondary {
@@ -45,6 +45,7 @@
 }
 
 .btn-secondary:hover {
+    color: #ffffff;
     background-color: #4b5563;
     border-color: #4b5563;
 }
@@ -56,6 +57,7 @@
 }
 
 .btn-warning:hover {
+    color: #ffffff;
     background-color: #d97706;
     border-color: #d97706;
 }
@@ -67,19 +69,21 @@
 }
 
 .btn-info:hover {
+    color: #ffffff;
     background-color: #2563eb;
     border-color: #2563eb;
 }
 
 .btn-danger {
     color: #ffffff;
-    background-color: #dc2626;
-    border-color: #dc2626;
+    background-color: #ef4444;
+    border-color: #ef4444;
 }
 
 .btn-danger:hover {
-    background-color: #b91c1c;
-    border-color: #b91c1c;
+    color: #ffffff;
+    background-color: #dc2626;
+    border-color: #dc2626;
 }
 
 /* Button group */
@@ -90,7 +94,7 @@
 
 .btn-group > .btn {
     position: relative;
-    flex: 1 1 auto;
+    flex: 0 1 auto;
 }
 
 .btn-group > .btn:not(:first-child) {
@@ -109,42 +113,35 @@
     display: inline-block;
     width: 1rem;
     height: 1rem;
-    vertical-align: text-bottom;
     border: 0.2em solid currentColor;
     border-right-color: transparent;
     border-radius: 50%;
     animation: spinner-border .75s linear infinite;
 }
 
-.spinner-border-sm {
-    width: 1rem;
-    height: 1rem;
-    border-width: 0.2em;
-}
-
 @keyframes spinner-border {
     to { transform: rotate(360deg); }
 }
 
-/* Badge */
+/* Badge styles */
 .badge {
     display: inline-block;
     padding: 0.35em 0.65em;
     font-size: 0.75em;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1;
     text-align: center;
     white-space: nowrap;
     vertical-align: baseline;
-    border-radius: 9999px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    border-radius: 0.375rem;
 }
 
-.bg-success {
-    background-color: #10b981;
+.badge-success {
+    color: #ffffff;
+    background-color: #22c55e;
 }
 
-.bg-danger {
-    background-color: #dc2626;
+.badge-danger {
+    color: #ffffff;
+    background-color: #ef4444;
 } 
