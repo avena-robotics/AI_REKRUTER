@@ -24,7 +24,7 @@ DROP FUNCTION IF EXISTS get_candidate_with_tests(bigint);
 
 -- Create types first
 create type test_type as enum ('SURVEY', 'EQ', 'IQ', 'EQ_EVALUATION');
-create type answer_type as enum ('TEXT', 'BOOLEAN', 'SCALE', 'SALARY', 'DATE', 'ABCDEF', 'AH_POINTS');
+create type answer_type as enum ('TEXT', 'BOOLEAN', 'SCALE', 'SALARY', 'DATE', 'ABCDEF', 'AH_POINTS', 'NUMERIC');
 create type recruitment_status as enum ('PO1', 'PO2', 'PO2_5', 'PO3', 'PO4', 'REJECTED', 'ACCEPTED', 'INVITED_TO_INTERVIEW', 'AWAITING_DECISION');
 create type algorithm_type AS ENUM (
     'NO_ALGORITHM',
@@ -73,6 +73,9 @@ create table campaigns (
     po2_test_weight integer,
     po2_5_test_weight integer,                     -- New column for EQ_EVALUATION weight
     po3_test_weight integer,
+    po1_token_expiry_days integer not null default 7 CHECK (po1_token_expiry_days > 0),
+    po2_token_expiry_days integer not null default 7 CHECK (po2_token_expiry_days > 0),
+    po3_token_expiry_days integer not null default 7 CHECK (po3_token_expiry_days > 0),
     created_at timestamp with time zone default now(),
     updated_at timestamp with time zone default now()
 );
@@ -137,17 +140,14 @@ create table candidate_answers (
     candidate_id bigint references candidates(id) ON DELETE CASCADE,
     question_id integer references questions(id),
     stage text not null check (stage in ('PO1', 'PO2', 'PO2_5', 'PO3', 'PO4')),
-    text_answer text,                              -- Odpowiedź tekstowa    
-    boolean_answer boolean,                        -- Odpowiedź typu boolean
-    salary_answer numeric,                         -- Odpowiedź typu numeric
-    scale_answer int,                              -- Odpowiedź typu scale
-    date_answer date,                              -- Odpowiedź typu date
-    abcdef_answer text,                            -- Odpowiedź typu ABCDEF
+    answer text,
     points_per_option jsonb,                       -- Format JSON, np. {"a": 3, "b": 5, "c": 0}
     score float CHECK (score >= 0),                -- Punkty za odpowiedź
     ai_explanation text,                           -- Wyjaśnienie odpowiedzi AI
-    created_at timestamp with time zone default now()
+    created_at timestamp with time zone default now(),
+    unique (candidate_id, question_id, stage)
 );
+
 
 -- Users table
 create table users (
@@ -156,9 +156,13 @@ create table users (
     last_name text not null,
     email text not null unique,
     phone text,
+    password text,
+    auth_source text CHECK (auth_source IN ('email', 'ldap')) NOT NULL DEFAULT 'ldap',
+    is_active boolean NOT NULL DEFAULT true,
     can_edit_tests boolean default false,
     created_at timestamp with time zone default now(),
-    updated_at timestamp with time zone default now()
+    updated_at timestamp with time zone default now(),
+    unique (email, auth_source)
 );
 
 -- Groups table
@@ -194,8 +198,19 @@ create table link_groups_tests (
 CREATE INDEX idx_campaigns_is_active ON campaigns(is_active);
 CREATE INDEX idx_link_groups_campaigns_campaign_id ON link_groups_campaigns(campaign_id);
 CREATE INDEX idx_link_groups_users_user_id ON link_groups_users(user_id);
+CREATE INDEX idx_users_email_auth ON users(email, auth_source);
 
 
+create table candidate_notes (
+    id bigserial primary key,
+    candidate_id bigint not null references candidates(id) on delete cascade, -- Powiązanie z tabelą kandydatów
+    note_type text not null, -- Typ notatki (np. "Rozmowa telefoniczna", "Ocena", "Uwagi")
+    content text not null,   -- Treść notatki
+    user_id bigint references users(id),
+    user_email text,
+    created_at timestamp with time zone default now(), -- Data utworzenia notatki
+    updated_at timestamp with time zone default now()  -- Data ostatniej aktualizacji
+);
 
 -- Function to get tests for groups
 CREATE OR REPLACE FUNCTION get_group_tests(
