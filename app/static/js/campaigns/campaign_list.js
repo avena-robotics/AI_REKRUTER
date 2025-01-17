@@ -1,8 +1,7 @@
 // Import components
 import { CampaignTable } from './components/table.js';
 import { CampaignForm } from './components/form.js';
-import { CampaignAPI } from './components/api.js';
-import { CampaignTests } from './components/tests.js';
+import { CampaignAPI } from './components/api.js'; 
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize error message toast if exists
