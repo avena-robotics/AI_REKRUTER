@@ -158,14 +158,42 @@ export class CampaignTable {
         this.tbody.querySelectorAll('.copy-link').forEach(button => {
             button.addEventListener('click', async (e) => {
                 e.stopPropagation();
-                const campaignId = button.closest('tr').dataset.campaignId;
+                const campaignId = button.dataset.campaignId;
+                const link = button.dataset.link;
+                
                 try {
-                    const link = await CampaignAPI.copyLink(campaignId);
-                    await navigator.clipboard.writeText(link);
-                    showToast('Link został skopiowany do schowka', 'success');
+                    if (!link) {
+                        throw new Error('Brak linku do skopiowania. Najpierw wygeneruj link.');
+                    }
+
+                    // Try using the modern Clipboard API
+                    if (navigator.clipboard && window.isSecureContext) {
+                        await navigator.clipboard.writeText(link);
+                        showToast('Link został skopiowany do schowka', 'success');
+                    } else {
+                        // Fallback for older browsers or non-HTTPS
+                        const textArea = document.createElement('textarea');
+                        textArea.value = link;
+                        textArea.style.position = 'fixed';
+                        textArea.style.left = '-999999px';
+                        textArea.style.top = '-999999px';
+                        document.body.appendChild(textArea);
+                        textArea.focus();
+                        textArea.select();
+                        
+                        try {
+                            document.execCommand('copy');
+                            textArea.remove();
+                            showToast('Link został skopiowany do schowka', 'success');
+                        } catch (err) {
+                            console.error('Failed to copy text: ', err);
+                            showToast('Nie udało się skopiować linku. Spróbuj ponownie.', 'error');
+                            textArea.remove();
+                        }
+                    }
                 } catch (err) {
                     console.error('Failed to copy link:', err);
-                    showToast('Nie udało się skopiować linku. Spróbuj ponownie.', 'error');
+                    showToast(err.message || 'Nie udało się skopiować linku. Spróbuj ponownie.', 'error');
                 }
             });
         });
