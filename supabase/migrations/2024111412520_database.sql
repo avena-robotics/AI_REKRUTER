@@ -76,6 +76,8 @@ create table campaigns (
     po1_token_expiry_days integer not null default 7 CHECK (po1_token_expiry_days > 0),
     po2_token_expiry_days integer not null default 7 CHECK (po2_token_expiry_days > 0),
     po3_token_expiry_days integer not null default 7 CHECK (po3_token_expiry_days > 0),
+    interview_email_subject text,                  -- Subject for interview invitation email
+    interview_email_content text,                  -- HTML content for interview invitation email
     created_at timestamp with time zone default now(),
     updated_at timestamp with time zone default now()
 );
@@ -263,6 +265,8 @@ CREATE OR REPLACE FUNCTION get_campaigns_with_groups(
     po1_token_expiry_days integer,
     po2_token_expiry_days integer,
     po3_token_expiry_days integer,
+    interview_email_subject text,
+    interview_email_content text,
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
     groups jsonb,
@@ -314,6 +318,8 @@ BEGIN
         cg.po1_token_expiry_days,
         cg.po2_token_expiry_days,
         cg.po3_token_expiry_days,
+        cg.interview_email_subject,
+        cg.interview_email_content,
         cg.created_at,
         cg.updated_at,
         cg.groups,

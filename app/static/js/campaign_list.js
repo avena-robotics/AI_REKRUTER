@@ -167,6 +167,51 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+
+    // Initialize Quill editors with enhanced options
+    const quillConfig = {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                ['bold', 'italic', 'underline'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                ['clean']
+            ]
+        },
+        placeholder: 'Wprowadź treść wiadomości...'
+    };
+
+    // Initialize add form editor
+    const addEmailContainer = document.querySelector('#addEmailContent');
+    if (addEmailContainer) {
+        const addQuill = new Quill(addEmailContainer, quillConfig);
+        // Add change handler
+        addQuill.on('text-change', function() {
+            const form = document.getElementById('addCampaignForm');
+            const textarea = form.querySelector('textarea[name="interview_email_content"]');
+            textarea.value = addQuill.root.innerHTML;
+        });
+    }
+
+    // Initialize edit form editor
+    const editEmailContainer = document.querySelector('#editEmailContent');
+    if (editEmailContainer) {
+        const editQuill = new Quill(editEmailContainer, quillConfig);
+        // Add change handler
+        editQuill.on('text-change', function() {
+            const form = document.getElementById('editCampaignForm');
+            const textarea = form.querySelector('textarea[name="interview_email_content"]');
+            textarea.value = editQuill.root.innerHTML;
+        });
+    }
+
+    // Update Quill content when editing campaign
+    window.updateEmailContent = function(content) {
+        const editQuill = Quill.find(document.querySelector('#editEmailContent'));
+        if (editQuill) {
+            editQuill.root.innerHTML = content || '';
+        }
+    };
 }); 
 
 function updateTable() {
@@ -328,6 +373,10 @@ function editCampaign(campaignId) {
             form.querySelector('[name="employer_offerings"]').value = campaign.employer_offerings || '';
             form.querySelector('[name="job_description"]').value = campaign.job_description || '';
             form.querySelector('[name="is_active"]').checked = campaign.is_active;
+            
+            // Populate email template fields
+            form.querySelector('[name="interview_email_subject"]').value = campaign.interview_email_subject || '';
+            updateQuillContent(form, campaign.interview_email_content);
             
             // Add these lines to populate token expiry days
             form.querySelector('[name="po2_token_expiry_days"]').value = campaign.po2_token_expiry_days || 7;
@@ -503,6 +552,19 @@ function handleCampaignFormSubmit(e) {
     const spinner = submitButton.querySelector('.spinner-border');
     const buttonText = submitButton.querySelector('.button-text');
     const codeInput = form.querySelector('[name="code"]');
+    
+    // Update email content from Quill editor
+    const isEditForm = form.id === 'editCampaignForm';
+    const editorId = isEditForm ? '#editEmailContent' : '#addEmailContent';
+    const quillEditor = Quill.find(document.querySelector(editorId));
+    
+    if (quillEditor) {
+        const emailContentTextarea = form.querySelector('textarea[name="interview_email_content"]');
+        const content = quillEditor.root.innerHTML;
+        emailContentTextarea.value = content;
+        formData.set('interview_email_content', content);
+        console.log('Updating email content:', content); // Debug log
+    }
     
     // Show loading state
     submitButton.disabled = true;
@@ -801,6 +863,15 @@ function cloneCampaign(campaignId) {
             form.querySelector('[name="job_description"]').value = campaign.job_description || '';
             form.querySelector('[name="is_active"]').checked = campaign.is_active;
             
+            // Populate email template fields
+            form.querySelector('[name="interview_email_subject"]').value = campaign.interview_email_subject || '';
+            const addQuill = Quill.find(document.querySelector('#addEmailContent'));
+            if (addQuill) {
+                addQuill.root.innerHTML = campaign.interview_email_content || '';
+                // Ensure the hidden textarea is updated immediately
+                form.querySelector('textarea[name="interview_email_content"]').value = campaign.interview_email_content || '';
+            }
+            
             // Add these lines to populate token expiry days
             form.querySelector('[name="po2_token_expiry_days"]').value = campaign.po2_token_expiry_days || 7;
             form.querySelector('[name="po3_token_expiry_days"]').value = campaign.po3_token_expiry_days || 7;
@@ -952,6 +1023,13 @@ function resetAddCampaignForm() {
         input.value = index === 0 ? '100' : '0'; // PO1 weight defaults to 100, others to 0
     });
     
+    // Reset email template fields
+    const addQuill = Quill.find(document.querySelector('#addEmailContent'));
+    if (addQuill) {
+        addQuill.root.innerHTML = '';
+        form.querySelector('textarea[name="interview_email_content"]').value = '';
+    }
+    
     // Hide validation messages
     form.querySelector('#weightValidationAlert').classList.add('d-none');
     
@@ -1025,4 +1103,18 @@ function reattachEventListeners() {
             e.stopPropagation();
         });
     });
+} 
+
+// Add this function after the DOMContentLoaded event handler
+function updateQuillContent(form, content) {
+    const isEditForm = form.id === 'editCampaignForm';
+    const editorId = isEditForm ? '#editEmailContent' : '#addEmailContent';
+    const quillEditor = Quill.find(document.querySelector(editorId));
+    
+    if (quillEditor) {
+        quillEditor.root.innerHTML = content || '';
+        // Update hidden textarea
+        const textarea = form.querySelector('textarea[name="interview_email_content"]');
+        textarea.value = content || '';
+    }
 } 

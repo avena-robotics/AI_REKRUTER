@@ -333,4 +333,20 @@
 
 .table th:nth-child(8),
 .table td:nth-child(8) { min-width: 250px; }
+
+/* Quill editor styles */
+.editor-container {
+    height: 300px;
+    margin-bottom: 1rem;
+}
+
+.ql-editor {
+    min-height: 200px;
+    font-family: inherit;
+    font-size: 1rem;
+}
+
+.hidden-textarea {
+    display: none;
+}
   

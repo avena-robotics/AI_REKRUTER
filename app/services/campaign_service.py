@@ -93,7 +93,7 @@ class CampaignService:
         try:
             response = (
                 supabase.from_('campaigns')
-                .select('*, link_groups_campaigns(groups(id, name)), po1_test:tests!po1_test_id (test_type, title, description), po2_test:tests!po2_test_id (test_type, title, description), po2_5_test:tests!po2_5_test_id (test_type, title, description), po3_test:tests!po3_test_id (test_type, title, description)')
+                .select('*, link_groups_campaigns(groups(id, name)), po1_test:tests!po1_test_id (test_type, title, description), po2_test:tests!po2_test_id (test_type, title, description), po2_5_test:tests!po2_5_test_id (test_type, title, description), po3_test:tests!po3_test_id (test_type, title, description), interview_email_subject, interview_email_content')
                 .eq('id', campaign_id)
                 .execute()
             )
@@ -152,6 +152,8 @@ class CampaignService:
                 'po1_token_expiry_days': 36500,  # ~100 years as "infinite"
                 'po2_token_expiry_days': int(data.get('po2_token_expiry_days', 7)),
                 'po3_token_expiry_days': int(data.get('po3_token_expiry_days', 7)),
+                'interview_email_subject': data.get('interview_email_subject'),
+                'interview_email_content': data.get('interview_email_content'),
                 'created_at': current_time.isoformat(),
                 'updated_at': current_time.isoformat()
             }
@@ -216,6 +218,8 @@ class CampaignService:
                 'po1_token_expiry_days': 36500,  # ~100 years as "infinite"
                 'po2_token_expiry_days': int(data.get('po2_token_expiry_days', 7)),
                 'po3_token_expiry_days': int(data.get('po3_token_expiry_days', 7)),
+                'interview_email_subject': data.get('interview_email_subject'),
+                'interview_email_content': data.get('interview_email_content'),
                 'updated_at': current_time.isoformat()
             }
 
