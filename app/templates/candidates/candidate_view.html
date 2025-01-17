@@ -487,9 +487,9 @@
                                             </div>
                                             <div class="card-body">
                                                 {% if question.answer_type == 'TEXT' %}
-                                                    <p class="mb-0">{{ question.algorithm_params.correct_answer }}</p>
+                                                    <p class="mb-0">{{ question.algorithm_params.correct_answer|safe }}</p>
                                                 {% elif question.answer_type == 'BOOLEAN' %}
-                                                    <p class="mb-0">{{ 'Tak' if question.algorithm_params.correct_answer else 'Nie' }}</p>
+                                                    <p class="mb-0">{{ 'Tak' if question.algorithm_params.correct_answer|lower == 'true' else 'Nie' }}</p>
                                                 {% elif question.answer_type == 'SCALE' %}
                                                     <p class="mb-0">{{ question.algorithm_params.correct_answer }}/5</p>
                                                 {% elif question.answer_type == 'SALARY' %}
@@ -544,7 +544,7 @@
                                                     </div>
                                                 {% elif question.answer.answer %}
                                                     {% if question.answer_type == 'TEXT' %}
-                                                        <p class="mb-0">{{ question.answer.answer }}</p>
+                                                        <p class="mb-0">{{ question.answer.answer|safe }}</p>
                                                     {% elif question.answer_type == 'BOOLEAN' %}
                                                         <p class="mb-0">{{ 'Tak' if question.answer.answer|lower == 'true' else 'Nie' }}</p>
                                                     {% elif question.answer_type == 'SCALE' %}

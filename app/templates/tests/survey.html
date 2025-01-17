@@ -8,6 +8,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/test.css') }}">
     <script src="{{ url_for('static', filename='js/timer.js') }}"></script>
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
     <style>
         /* Custom styles for ABCDEF text options */
         .abcdef-text-option {
@@ -152,6 +154,23 @@
         .list-group-item input[type="radio"] {
             cursor: pointer;
         }
+
+        /* Add Quill editor styles */
+        .editor-container {
+            height: 300px;
+            margin-bottom: 1rem;
+        }
+        
+        .ql-editor {
+            min-height: 200px;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+        
+        /* Hide the original textarea */
+        .hidden-textarea {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -260,7 +279,7 @@
                         <div class="form-group">
                             <textarea class="form-control" 
                                       name="answer_{{ question.id }}" 
-                                      rows="3"
+                                      data-answer-type="TEXT"
                                       {% if question.is_required %}required{% endif %}></textarea>
                             <div class="invalid-feedback">
                                 To pole jest wymagane.
@@ -456,7 +475,40 @@
                 window.location.href = form.dataset.cancelUrl;
             }
 
-            // Form validation
+            // Initialize Quill for all text answers
+            const textAnswers = document.querySelectorAll('textarea[data-answer-type="TEXT"]');
+            const quillInstances = {};
+            
+            textAnswers.forEach(textarea => {
+                // Create container for Quill
+                const container = document.createElement('div');
+                container.className = 'editor-container';
+                textarea.parentNode.insertBefore(container, textarea);
+                textarea.classList.add('hidden-textarea');
+                
+                // Initialize Quill
+                const quill = new Quill(container, {
+                    theme: 'snow',
+                    modules: {
+                        toolbar: [
+                            ['bold', 'italic', 'underline'],
+                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                            ['clean']
+                        ]
+                    },
+                    placeholder: 'Wpisz swoją odpowiedź...'
+                });
+                
+                // Store Quill instance
+                quillInstances[textarea.name] = quill;
+                
+                // Update textarea on change
+                quill.on('text-change', function() {
+                    textarea.value = quill.root.innerHTML;
+                });
+            });
+
+            // Modify form submission
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
                 
@@ -469,13 +521,29 @@
                 let isValid = true;
                 let firstInvalidElement = null;
 
-                // Validate required fields
-                const requiredInputs = form.querySelectorAll('[required]');
+                // Update textareas with Quill content before validation
+                Object.entries(quillInstances).forEach(([name, quill]) => {
+                    const textarea = form.querySelector(`textarea[name="${name}"]`);
+                    const content = quill.root.innerHTML.trim();
+                    textarea.value = content;
+                    
+                    if (textarea.hasAttribute('required') && !content.replace(/<[^>]*>/g, '').trim()) {
+                        isValid = false;
+                        quill.container.classList.add('is-invalid');
+                        if (!firstInvalidElement) {
+                            firstInvalidElement = quill.container;
+                        }
+                    } else {
+                        quill.container.classList.remove('is-invalid');
+                    }
+                });
+
+                // Validate other required fields
+                const requiredInputs = form.querySelectorAll('[required]:not(textarea[data-answer-type="TEXT"])');
                 requiredInputs.forEach(input => {
                     if (!input.value) {
                         isValid = false;
                         input.classList.add('is-invalid');
-                        
                         if (!firstInvalidElement) {
                             firstInvalidElement = input;
                         }
@@ -485,7 +553,6 @@
                 });
 
                 if (!isValid) {
-                    // Scroll to first invalid element
                     if (firstInvalidElement) {
                         firstInvalidElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }
