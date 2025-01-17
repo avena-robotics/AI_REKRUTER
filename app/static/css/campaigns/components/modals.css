@@ -3,7 +3,7 @@
     height: 90vh;
     display: flex;
     flex-direction: column;
-    border-radius: 0.5rem;
+    border-radius: 12px;
     border: none;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
@@ -15,11 +15,11 @@
 }
 
 .modal-header {
-    padding: 1rem;
+    padding: 1.5rem;
     border-bottom: 1px solid #e5e7eb;
     background-color: #f8fafc;
-    border-top-left-radius: 0.5rem;
-    border-top-right-radius: 0.5rem;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
 }
 
 .modal-title {
@@ -34,17 +34,19 @@
     overflow: hidden;
     position: relative;
     padding: 0;
+    max-height: calc(100vh - 210px);
 }
 
 .modal-body-scroll {
     height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 1rem;
+    padding: 1.5rem;
     scrollbar-width: thin;
     scrollbar-color: #cbd5e1 #f1f5f9;
 }
 
+/* Scrollbar styling */
 .modal-body-scroll::-webkit-scrollbar {
     width: 8px;
 }
@@ -65,12 +67,12 @@
 
 .modal-footer {
     flex-shrink: 0;
-    background-color: #fff;
+    background-color: #f8fafc;
     border-top: 1px solid #e5e7eb;
-    padding: 1rem;
+    padding: 1.25rem 1.5rem;
     z-index: 1030;
-    border-bottom-left-radius: 0.5rem;
-    border-bottom-right-radius: 0.5rem;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
 }
 
 /* Add shadow to footer when content is scrolled */
