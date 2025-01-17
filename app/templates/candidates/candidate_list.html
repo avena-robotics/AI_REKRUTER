@@ -118,6 +118,7 @@
         <table class="table table-striped w-100" id="candidatesTable">
             <thead>
                 <tr>
+                    <th>#</th>
                     <th class="sortable" data-sort="name">Imię i nazwisko</th>
                     <th class="sortable" data-sort="campaign_code">Kod kampanii</th>
                     <th class="sortable" data-sort="email">Email</th>
@@ -136,6 +137,7 @@
             <tbody>
                 {% for candidate in candidates %}
                 <tr ondblclick="viewCandidate('{{ candidate.id }}')" style="cursor: pointer;">
+                    <td class="row-number"></td>
                     <td>{{ candidate.first_name }} {{ candidate.last_name }}</td>
                     <td data-sort="campaign_code">{{ candidate.campaigns.code }}</td>
                     <td data-sort="email">{{ candidate.email }}</td>

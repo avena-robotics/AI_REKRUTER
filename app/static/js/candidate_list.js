@@ -39,6 +39,10 @@ async function refreshTable(fetchNewData = false) {
             if (newTbody) {
                 // Update originalRows with new data
                 originalRows = Array.from(newTbody.querySelectorAll('tr'));
+                // Initialize row numbers for new data
+                originalRows.forEach((row, index) => {
+                    row.querySelector('.row-number').textContent = index + 1;
+                });
             }
         } catch (error) {
             console.error('Error fetching updated candidate data:', error);
@@ -55,29 +59,30 @@ async function refreshTable(fetchNewData = false) {
         .map(cb => cb.value);
     
     // Clone original rows for filtering
-    let rows = originalRows.map(row => row.cloneNode(true));
+    let rows = originalRows.map(row => {
+        const clone = row.cloneNode(true);
+        // Preserve the row number during cloning
+        clone.querySelector('.row-number').textContent = row.querySelector('.row-number').textContent;
+        return clone;
+    });
     
     // Apply filters
     rows = rows.filter(row => {
-        const text = row.textContent.toLowerCase();
-        const campaignCode = row.querySelector('td:nth-child(2)').textContent.trim();
+        // Get text content excluding the row number
+        const cells = Array.from(row.cells).slice(1); // Skip the first cell (row number)
+        const text = cells.map(cell => cell.textContent).join(' ').toLowerCase();
+        
+        const campaignCode = row.querySelector('td:nth-child(3)').textContent.trim(); // Adjusted index
         const statusBadge = row.querySelector('.badge');
         const status = statusBadge ? statusBadge.textContent.trim() : '';
         
         const matchesSearch = !searchText || text.includes(searchText);
-        
-        // Nowa logika dla kampanii:
-        // - Jeśli nic nie jest zaznaczone, pokaż tylko elementy bez kodu kampanii
-        // - Jeśli coś jest zaznaczone, pokaż elementy z zaznaczonymi kodami kampanii
         const matchesCampaign = selectedCampaigns.length === 0 ? 
-            !campaignCode : // pokaż tylko gdy nie ma kodu kampanii
-            selectedCampaigns.includes(campaignCode); // pokaż gdy kod jest w zaznaczonych
+            !campaignCode : 
+            selectedCampaigns.includes(campaignCode);
 
-        // Nowa logika dla statusów:
-        // - Jeśli nic nie jest zaznaczone, pokaż tylko elementy bez statusu
-        // - Jeśli coś jest zaznaczone, pokaż elementy z zaznaczonymi statusami
         const matchesStatus = selectedStatuses.length === 0 ?
-            !status : // pokaż tylko gdy nie ma statusu
+            !status : 
             selectedStatuses.some(s => {
                 switch(s) {
                     case 'PO1': return status === 'Ankieta';
@@ -112,9 +117,12 @@ async function refreshTable(fetchNewData = false) {
         });
     }
 
-    // Update table
+    // Update table and row numbers
     tbody.innerHTML = '';
-    rows.forEach(row => tbody.appendChild(row));
+    rows.forEach((row, index) => {
+        row.querySelector('.row-number').textContent = index + 1;
+        tbody.appendChild(row);
+    });
     
     // Reattach event listeners
     setupActionButtons();
@@ -262,6 +270,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Store original table rows
     const tbody = document.querySelector('tbody');
     originalRows = Array.from(tbody.querySelectorAll('tr'));
+    
+    // Initialize row numbers
+    originalRows.forEach((row, index) => {
+        row.querySelector('.row-number').textContent = index + 1;
+    });
     
     // Initialize filters and event listeners
     initializeFilters();
@@ -632,15 +645,15 @@ function updateRecalculationProgress(processed, total) {
 function getRowValue(row, sortField) {
     switch (sortField) {
         case 'name':
-            return row.querySelector('td:nth-child(1)').textContent.toLowerCase();
-        case 'campaign_code':
             return row.querySelector('td:nth-child(2)').textContent.toLowerCase();
-        case 'email':
+        case 'campaign_code':
             return row.querySelector('td:nth-child(3)').textContent.toLowerCase();
-        case 'phone':
+        case 'email':
             return row.querySelector('td:nth-child(4)').textContent.toLowerCase();
+        case 'phone':
+            return row.querySelector('td:nth-child(5)').textContent.toLowerCase();
         case 'recruitment_status':
-            const status = row.querySelector('td:nth-child(5) .badge').textContent.trim();
+            const status = row.querySelector('td:nth-child(6) .badge').textContent.trim();
             const statusOrder = {
                 'Odrzucony': 1,
                 'Ankieta': 2,
@@ -654,19 +667,19 @@ function getRowValue(row, sortField) {
             };
             return statusOrder[status] || 0;
         case 'po1_score':
-            return parseFloat(row.querySelector('td:nth-child(6)').textContent) || -Infinity;
-        case 'po2_score':
             return parseFloat(row.querySelector('td:nth-child(7)').textContent) || -Infinity;
-        case 'po2_5_score':
+        case 'po2_score':
             return parseFloat(row.querySelector('td:nth-child(8)').textContent) || -Infinity;
-        case 'po3_score':
+        case 'po2_5_score':
             return parseFloat(row.querySelector('td:nth-child(9)').textContent) || -Infinity;
-        case 'po4_score':
+        case 'po3_score':
             return parseFloat(row.querySelector('td:nth-child(10)').textContent) || -Infinity;
-        case 'total_score':
+        case 'po4_score':
             return parseFloat(row.querySelector('td:nth-child(11)').textContent) || -Infinity;
+        case 'total_score':
+            return parseFloat(row.querySelector('td:nth-child(12)').textContent) || -Infinity;
         case 'created_at':
-            const dateText = row.querySelector('td:nth-child(12)').textContent;
+            const dateText = row.querySelector('td:nth-child(13)').textContent;
             const [datePart, timePart] = dateText.split(' ');
             const [day, month, year] = datePart.split('.');
             const [hours, minutes] = timePart.split(':');

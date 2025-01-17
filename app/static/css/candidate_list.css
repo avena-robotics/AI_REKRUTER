@@ -119,11 +119,64 @@
 }
 
 /* First column styles */
-.table th:nth-child(1),
-.table td:nth-child(1) { 
+.table th:first-child,
+.table td:first-child { 
+    min-width: 50px;
+    width: 50px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    background-color: inherit;
+}
+
+.table thead th:first-child {
+    background: #495057;
+    border-right: 1px solid #6c757d;
+}
+
+/* Name column styles */
+.table th:nth-child(2),
+.table td:nth-child(2) { 
     min-width: 200px; /* Name */
     background-color: inherit;
 }
+
+/* Column widths - adjusted for the new first column */
+.table th:nth-child(3),
+.table td:nth-child(3) { min-width: 150px; } /* Campaign code */
+
+.table th:nth-child(4),
+.table td:nth-child(4) { min-width: 200px; } /* Email */
+
+.table th:nth-child(5),
+.table td:nth-child(5) { min-width: 150px; } /* Phone */
+
+.table th:nth-child(6),
+.table td:nth-child(6) { min-width: 120px; } /* Status */
+
+.table th:nth-child(7),
+.table td:nth-child(7) { min-width: 100px; } /* PO1 */
+
+.table th:nth-child(8),
+.table td:nth-child(8) { min-width: 100px; } /* PO2 */
+
+.table th:nth-child(9),
+.table td:nth-child(9) { min-width: 100px; } /* PO2.5 */
+
+.table th:nth-child(10),
+.table td:nth-child(10) { min-width: 100px; } /* PO3 */
+
+.table th:nth-child(11),
+.table td:nth-child(11) { min-width: 100px; } /* PO4 */
+
+.table th:nth-child(12),
+.table td:nth-child(12) { min-width: 120px; } /* Total score */
+
+.table th:nth-child(13),
+.table td:nth-child(13) { min-width: 120px; } /* Created at */
+
+.table th:nth-child(14),
+.table td:nth-child(14) { min-width: 100px; } /* Actions */
 
 /* Sortable header styles */
 .table thead th.sortable {
@@ -188,37 +241,6 @@
 .table td:not(:last-child) {
     border-right: 1px solid #e5e7eb;
 }
-
-/* Column widths */
-.table th:nth-child(2),
-.table td:nth-child(2) { min-width: 150px; } /* Campaign code */
-
-.table th:nth-child(3),
-.table td:nth-child(3) { min-width: 200px; } /* Email */
-
-.table th:nth-child(4),
-.table td:nth-child(4) { min-width: 150px; } /* Phone */
-
-.table th:nth-child(5),
-.table td:nth-child(5) { min-width: 120px; } /* Status */
-
-.table th:nth-child(6),
-.table td:nth-child(6) { min-width: 100px; } /* PO1 */
-
-.table th:nth-child(7),
-.table td:nth-child(7) { min-width: 100px; } /* PO2 */
-
-.table th:nth-child(8),
-.table td:nth-child(8) { min-width: 100px; } /* PO2.5 */
-
-.table th:nth-child(9),
-.table td:nth-child(9) { min-width: 100px; } /* PO3 */
-
-.table th:nth-child(10),
-.table td:nth-child(10) { min-width: 100px; } /* PO4 */
-
-.table th:nth-child(11),
-.table td:nth-child(11) { min-width: 120px; } /* Total score */
 
 /* Status badge styling */
 .table .badge {
