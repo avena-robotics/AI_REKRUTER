@@ -1,0 +1,32 @@
+{% raw %}
+<div class="modal fade" id="interviewEmailModal" tabindex="-1" aria-labelledby="interviewEmailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="interviewEmailModalLabel">Zaproszenie na rozmowę kwalifikacyjną</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="interviewEmailForm">
+                    <div class="mb-3">
+                        <label for="emailSubject" class="form-label">Temat wiadomości</label>
+                        <input type="text" class="form-control" id="emailSubject" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="emailContent" class="form-label">Treść wiadomości</label>
+                        <div id="emailContentEditor" style="height: 200px;"></div>
+                        <textarea id="emailContent" style="display: none;"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                <button type="button" class="btn btn-primary" id="sendInterviewEmailBtn">
+                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    <span class="button-text">Wyślij zaproszenie</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endraw %} 

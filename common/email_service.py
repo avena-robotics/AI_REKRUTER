@@ -3,12 +3,65 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from typing import Dict, Optional
 from common.logger import Logger
+
 class EmailService:
     """Serwis do wysyłania wiadomości email"""
     
     def __init__(self, config):
         self.config = config
         self.logger = Logger.instance()
+
+    def send_interview_invitation(
+        self,
+        to_email: str,
+        subject: str,
+        content: str,
+        campaign_title: str
+    ) -> bool:
+        """
+        Wysyła zaproszenie na rozmowę kwalifikacyjną
+        
+        Args:
+            to_email: Adres email kandydata
+            subject: Temat wiadomości
+            content: Treść wiadomości HTML
+            campaign_title: Tytuł kampanii rekrutacyjnej
+            
+        Returns:
+            bool: True jeśli wysłano pomyślnie, False w przypadku błędu
+        """
+        try:
+            msg = MIMEMultipart()
+            msg['From'] = self.config.SENDER_EMAIL
+            msg['To'] = to_email
+            msg['Subject'] = subject or f"Zaproszenie na rozmowę kwalifikacyjną - {campaign_title}"
+
+            # If content is empty, use default template
+            if not content:
+                content = f"""
+                Szanowna Pani / Szanowny Panie,
+
+                Z przyjemnością zapraszamy na rozmowę kwalifikacyjną w ramach rekrutacji na stanowisko {campaign_title}.
+
+                Prosimy o kontakt w celu ustalenia dogodnego terminu spotkania.
+
+                Z poważaniem,
+                Zespół Rekrutacji
+                """
+
+            msg.attach(MIMEText(content, 'html'))
+
+            with smtplib.SMTP(self.config.SMTP_SERVER, self.config.SMTP_PORT) as server:
+                server.starttls()
+                server.login(self.config.SMTP_USERNAME, self.config.SMTP_PASSWORD)
+                server.send_message(msg)
+                
+            self.logger.info(f"Pomyślnie wysłano zaproszenie na rozmowę do {to_email}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Błąd podczas wysyłania zaproszenia na rozmowę do {to_email}: {str(e)}")
+            return False
 
     def send_test_invitation(
         self,

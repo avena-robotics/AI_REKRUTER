@@ -6,9 +6,18 @@ from services.campaign_service import CampaignService, CampaignException
 from services.group_service import get_user_groups
 from common.logger import Logger
 from common.recalculation_score_service import RecalculationScoreService
+from common.email_service import EmailService
+import json
+from datetime import datetime
 
 candidate_bp = Blueprint("candidate", __name__, url_prefix="/candidates")
 logger = Logger.instance()
+
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
 
 @candidate_bp.route("/")
 @login_required
@@ -82,6 +91,53 @@ def view(id):
         }), 500
 
 
+@candidate_bp.route("/<int:id>/interview-email-template")
+@login_required
+def get_interview_email_template(id):
+    try:
+        logger.info(f"Pobieranie szablonu email dla kandydata {id}")
+        
+        # Get candidate details
+        candidate = CandidateService.get_candidate_email_data(id)
+        logger.debug(f"Pobrano dane kandydata: {json.dumps(candidate, indent=2, cls=DateTimeEncoder)}")
+        
+        if not candidate:
+            logger.error(f"Brak danych kandydata {id}")
+            return jsonify({"error": "Nie znaleziono kandydata"}), 404
+            
+        campaign = candidate.get('campaign')
+        if not campaign:
+            logger.error(f"Brak danych kampanii dla kandydata {id}")
+            return jsonify({"error": "Nie znaleziono kampanii dla kandydata"}), 404
+            
+        campaign_id = campaign.get('id')
+        if not campaign_id:
+            logger.error(f"Brak ID kampanii dla kandydata {id}")
+            return jsonify({"error": "Nieprawidłowe dane kampanii"}), 404
+        
+        logger.info(f"Pobieranie szablonu email dla kampanii {campaign_id}")
+        template = CampaignService.get_interview_email_template(campaign_id)
+        logger.debug(f"Pobrany szablon: {json.dumps(template, indent=2, cls=DateTimeEncoder)}")
+        
+        return jsonify(template)
+        
+    except CandidateException as e:
+        logger.error(f"Błąd podczas pobierania szablonu dla kandydata {id}: {str(e)}")
+        if hasattr(e, 'original_error'):
+            logger.error(f"Oryginalny błąd: {str(e.original_error)}")
+        return jsonify({"error": str(e)}), 404
+    except CampaignException as e:
+        logger.error(f"Błąd podczas pobierania szablonu dla kandydata {id}: {str(e)}")
+        if hasattr(e, 'original_error'):
+            logger.error(f"Oryginalny błąd: {str(e.original_error)}")
+        return jsonify({"error": str(e)}), 404
+    except Exception as e:
+        logger.error(f"Nieznany błąd podczas pobierania szablonu email dla kandydata {id}: {str(e)}")
+        import traceback
+        logger.error(f"Stack trace: {traceback.format_exc()}")
+        return jsonify({"error": "Wystąpił błąd podczas pobierania szablonu email"}), 500
+
+
 @candidate_bp.route("/<int:id>/next-stage", methods=["POST"])
 @login_required
 def next_stage(id):
@@ -126,6 +182,81 @@ def accept(id):
         return jsonify({"success": False, "error": e.message})
     except Exception as e:
         return jsonify({"success": False, "error": "Wystąpił nieznany błąd podczas akceptowania kandydata"}), 500
+
+
+@candidate_bp.route("/<int:id>/send-interview-email", methods=["POST"])
+@login_required
+def send_interview_email(id):
+    try:
+        logger.info(f"Wysyłanie zaproszenia na rozmowę dla kandydata {id}")
+        
+        data = request.get_json()
+        subject = data.get('subject')
+        content = data.get('content')
+        
+        logger.debug(f"Dane żądania dla kandydata {id}: {json.dumps(data, indent=2)}")
+        
+        if not subject or not content:
+            logger.error(f"Brak wymaganych pól dla kandydata {id}. Subject: {bool(subject)}, Content: {bool(content)}")
+            return jsonify({"error": "Brak wymaganych pól"}), 400
+            
+        # Get candidate and campaign details
+        candidate = CandidateService.get_candidate_email_data(id)
+        logger.debug(f"Pobrano dane kandydata: {json.dumps(candidate, indent=2, cls=DateTimeEncoder)}")
+        
+        if not candidate:
+            logger.error(f"Brak danych kandydata {id}")
+            return jsonify({"error": "Nie znaleziono kandydata"}), 404
+            
+        campaign = candidate.get('campaign')
+        if not campaign:
+            logger.error(f"Brak danych kampanii dla kandydata {id}")
+            return jsonify({"error": "Nie znaleziono kampanii dla kandydata"}), 404
+            
+        candidate_email = candidate.get('email')
+        if not candidate_email:
+            logger.error(f"Brak adresu email dla kandydata {id}")
+            return jsonify({"error": "Brak adresu email kandydata"}), 400
+        
+        # Save template for future use
+        logger.info(f"Aktualizacja szablonu email dla kampanii {campaign['id']}")
+        CampaignService.update_interview_email_template(
+            campaign['id'], 
+            subject, 
+            content
+        )
+        
+        # Send email
+        logger.info(f"Wysyłanie emaila do kandydata {id} na adres {candidate_email}")
+        email_service = EmailService(current_app.config)
+        success = email_service.send_interview_invitation(
+            to_email=candidate_email,
+            subject=subject,
+            content=content,
+            campaign_title=campaign['title']
+        )
+        
+        if not success:
+            logger.error(f"Nie udało się wysłać emaila do kandydata {id}")
+            raise CandidateException("Nie udało się wysłać emaila")
+            
+        # Update candidate status
+        logger.info(f"Aktualizacja statusu kandydata {id} na INVITED_TO_INTERVIEW")
+        CandidateService.invite_to_interview(id)
+        
+        logger.info(f"Pomyślnie wysłano zaproszenie do kandydata {id}")
+        return jsonify({"success": True})
+        
+    except (CandidateException, CampaignException) as e:
+        logger.error(f"Błąd podczas wysyłania zaproszenia dla kandydata {id}: {str(e)}")
+        if hasattr(e, 'original_error'):
+            logger.error(f"Oryginalny błąd: {str(e.original_error)}")
+        return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        logger.error(f"Nieznany błąd podczas wysyłania zaproszenia dla kandydata {id}: {str(e)}")
+        import traceback
+        logger.error(f"Stack trace: {traceback.format_exc()}")
+        return jsonify({"error": "Wystąpił błąd podczas wysyłania zaproszenia"}), 500
 
 
 @candidate_bp.route("/<int:id>/invite-to-interview", methods=["POST"])

@@ -336,3 +336,92 @@ class CampaignService:
                 message="Wystąpił błąd podczas pobierania listy kampanii",
                 original_error=e
             )
+
+    @staticmethod
+    def get_interview_email_template(campaign_id: int) -> Dict[str, str]:
+        """
+        Pobiera szablon emaila z zaproszeniem na rozmowę dla danej kampanii.
+        
+        Args:
+            campaign_id (int): ID kampanii
+            
+        Returns:
+            Dict[str, str]: Słownik z subject i content
+            
+        Raises:
+            CampaignException: Gdy wystąpi błąd podczas pobierania szablonu
+        """
+        try:
+            logger.info(f"Pobieranie szablonu email dla kampanii {campaign_id}")
+            
+            result = supabase.from_('campaigns')\
+                .select('interview_email_subject, interview_email_content')\
+                .eq('id', campaign_id)\
+                .execute()
+                
+            logger.debug(f"Wynik zapytania dla kampanii {campaign_id}: {json.dumps(result.data, indent=2)}")
+                
+            if not result.data:
+                logger.warning(f"Nie znaleziono szablonu dla kampanii {campaign_id}")
+                return {
+                    'subject': '',
+                    'content': ''
+                }
+                
+            template = result.data[0]
+            logger.info(f"Pobrano szablon dla kampanii {campaign_id}")
+            logger.debug(f"Zawartość szablonu: {json.dumps(template, indent=2)}")
+            
+            return {
+                'subject': template.get('interview_email_subject', ''),
+                'content': template.get('interview_email_content', '')
+            }
+                
+        except Exception as e:
+            logger.error(f"Błąd podczas pobierania szablonu email dla kampanii {campaign_id}: {str(e)}")
+            import traceback
+            logger.error(f"Stacktrace: {traceback.format_exc()}")
+            raise CampaignException(
+                message="Wystąpił błąd podczas pobierania szablonu email",
+                original_error=e
+            )
+
+    @staticmethod
+    def update_interview_email_template(campaign_id: int, subject: str, content: str) -> None:
+        """
+        Aktualizuje szablon emaila z zaproszeniem na rozmowę dla danej kampanii.
+        
+        Args:
+            campaign_id (int): ID kampanii
+            subject (str): Temat emaila
+            content (str): Treść emaila
+            
+        Raises:
+            CampaignException: Gdy wystąpi błąd podczas aktualizacji szablonu
+        """
+        try:
+            logger.info(f"Aktualizacja szablonu email dla kampanii {campaign_id}")
+            logger.debug(f"Nowa treść szablonu: Subject: {subject}, Content length: {len(content)}")
+            
+            update_data = {
+                'interview_email_subject': subject,
+                'interview_email_content': content,
+                'updated_at': datetime.now(timezone.utc).isoformat()
+            }
+            
+            result = supabase.from_('campaigns')\
+                .update(update_data)\
+                .eq('id', campaign_id)\
+                .execute()
+                
+            logger.debug(f"Wynik aktualizacji dla kampanii {campaign_id}: {json.dumps(result.data, indent=2)}")
+            logger.info(f"Pomyślnie zaktualizowano szablon dla kampanii {campaign_id}")
+                
+        except Exception as e:
+            logger.error(f"Błąd podczas aktualizacji szablonu email dla kampanii {campaign_id}: {str(e)}")
+            import traceback
+            logger.error(f"Stacktrace: {traceback.format_exc()}")
+            raise CampaignException(
+                message="Wystąpił błąd podczas aktualizacji szablonu email",
+                original_error=e
+            )

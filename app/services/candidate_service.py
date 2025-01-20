@@ -776,3 +776,38 @@ class CandidateService:
                 original_error=e
             )
 
+
+    @staticmethod
+    def get_candidate_email_data(candidate_id: int) -> Dict:
+        """
+        Pobiera tylko dane kandydata potrzebne do wysłania emaila z zaproszeniem na rozmowę.
+        
+        Args:
+            candidate_id (int): ID kandydata
+            
+        Returns:
+            Dict: Słownik zawierający email kandydata i dane kampanii
+            
+        Raises:
+            CandidateException: Gdy wystąpi błąd podczas pobierania danych
+        """
+        try:
+            result = supabase.from_("candidates")\
+                .select("id, email, campaign:campaigns (id, title)")\
+                .eq("id", candidate_id)\
+                .single()\
+                .execute()
+                
+            if not result.data:
+                logger.warning(f"Nie znaleziono kandydata {candidate_id}")
+                raise CandidateException(message="Nie znaleziono kandydata")
+                
+            return result.data
+            
+        except Exception as e:
+            logger.error(f"Błąd podczas pobierania danych email kandydata {candidate_id}: {str(e)}")
+            raise CandidateException(
+                message="Wystąpił błąd podczas pobierania danych kandydata",
+                original_error=e
+            )
+
