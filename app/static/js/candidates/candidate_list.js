@@ -524,7 +524,7 @@ function formatDateTime(date) {
 window.regenerateToken = function(candidateId, stage) {
     console.log('Regenerating token for:', {candidateId, stage});
     
-    if (!confirm('Czy na pewno chcesz wygenerować nowy token? Stary token przestanie działać.')) {
+    if (!confirm('Czy na pewno chcesz wygenerować nowy token? Stary token przestanie działać, a już wykonany test zostanie usunięty.')) {
         console.log('User cancelled');
         return;
     }
