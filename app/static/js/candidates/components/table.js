@@ -118,6 +118,89 @@ function initializeSortableHeaders() {
     });
 }
 
+// Function to apply filters
+function applyFilters() {
+    const searchText = document.getElementById('searchText')?.value.toLowerCase() || '';
+    const selectedCampaigns = Array.from(document.querySelectorAll('.filter-campaign:checked'))
+        .map(cb => cb.value);
+    const selectedStatuses = Array.from(document.querySelectorAll('.filter-status:checked'))
+        .map(cb => cb.value);
+    
+    document.querySelectorAll('#candidatesTable tbody tr').forEach(row => {
+        const name = row.children[1].textContent.toLowerCase();
+        const email = row.children[3].textContent.toLowerCase();
+        const phone = row.children[4].textContent.toLowerCase();
+        const campaign = row.children[2].textContent.trim();
+        const statusBadge = row.querySelector('.badge');
+        const status = statusBadge ? statusBadge.textContent.trim() : '';
+        
+        const matchesSearch = !searchText || 
+            name.includes(searchText) || 
+            email.includes(searchText) || 
+            phone.includes(searchText);
+            
+        const matchesCampaign = selectedCampaigns.length === 0 ? 
+            !campaign : // jeśli nie wybrano żadnej kampanii, pokaż tylko wiersze bez kampanii
+            selectedCampaigns.includes(campaign);
+            
+        const matchesStatus = selectedStatuses.length === 0 ?
+            !status : // jeśli nie wybrano żadnego statusu, pokaż tylko wiersze bez statusu
+            selectedStatuses.some(s => {
+                switch(s) {
+                    case 'PO1': return status === 'Ankieta';
+                    case 'PO2': return status === 'Test EQ';
+                    case 'PO2_5': return status === 'Ocena EQ';
+                    case 'PO3': return status === 'Test IQ';
+                    case 'PO4': return status === 'Potencjał';
+                    case 'INVITED_TO_INTERVIEW': return status === 'Zaproszono na rozmowę';
+                    case 'AWAITING_DECISION': return status === 'Oczekuje na decyzję';
+                    case 'REJECTED': return status === 'Odrzucony';
+                    case 'ACCEPTED': return status === 'Zaakceptowany';
+                    default: return false;
+                }
+            });
+        
+        row.style.display = matchesSearch && matchesCampaign && matchesStatus ? '' : 'none';
+    });
+    
+    // Update row numbers for visible rows
+    let visibleRowNumber = 1;
+    document.querySelectorAll('#candidatesTable tbody tr').forEach(row => {
+        if (row.style.display !== 'none') {
+            const numberCell = row.querySelector('td.row-number');
+            if (numberCell) {
+                numberCell.textContent = visibleRowNumber++;
+            }
+        }
+    });
+}
+
+// Function to update selected options text
+function updateSelectedOptionsText(checkbox) {
+    const dropdown = checkbox.closest('.dropdown');
+    const selectedOptionsSpan = dropdown.querySelector('.selected-options');
+    const checkboxes = dropdown.querySelectorAll('.form-check-input:not(.select-all-campaigns):not(.select-all-statuses)');
+    const selectAllCheckbox = dropdown.querySelector('.select-all-campaigns, .select-all-statuses');
+    
+    const selectedOptions = Array.from(checkboxes)
+        .filter(cb => cb.checked)
+        .map(cb => cb.nextElementSibling.textContent.trim());
+    
+    const isCampaignFilter = checkbox.classList.contains('filter-campaign') || 
+                            checkbox.classList.contains('select-all-campaigns');
+    
+    if (selectedOptions.length === 0) {
+        selectedOptionsSpan.textContent = isCampaignFilter ? 'Brak kampanii' : 'Brak statusów';
+        if (selectAllCheckbox) selectAllCheckbox.checked = false;
+    } else if (selectedOptions.length === checkboxes.length) {
+        selectedOptionsSpan.textContent = isCampaignFilter ? 'Wszystkie kampanie' : 'Wszystkie statusy';
+        if (selectAllCheckbox) selectAllCheckbox.checked = true;
+    } else {
+        selectedOptionsSpan.textContent = selectedOptions.join(', ');
+        if (selectAllCheckbox) selectAllCheckbox.checked = false;
+    }
+}
+
 // Function to initialize filters
 function initializeFilters() {
     const searchInput = document.getElementById('searchText');
@@ -126,11 +209,26 @@ function initializeFilters() {
     const selectAllCampaigns = document.querySelector('.select-all-campaigns');
     const selectAllStatuses = document.querySelector('.select-all-statuses');
     
+    // Set initial state - all checkboxes checked
+    if (selectAllCampaigns) {
+        selectAllCampaigns.checked = true;
+    }
+    if (selectAllStatuses) {
+        selectAllStatuses.checked = true;
+    }
+    campaignCheckboxes.forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    statusCheckboxes.forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    
     // Initialize select all checkboxes
     if (selectAllCampaigns) {
         selectAllCampaigns.addEventListener('change', function() {
+            const isChecked = this.checked;
             campaignCheckboxes.forEach(checkbox => {
-                checkbox.checked = this.checked;
+                checkbox.checked = isChecked;
             });
             updateSelectedOptionsText(this);
             applyFilters();
@@ -139,8 +237,9 @@ function initializeFilters() {
     
     if (selectAllStatuses) {
         selectAllStatuses.addEventListener('change', function() {
+            const isChecked = this.checked;
             statusCheckboxes.forEach(checkbox => {
-                checkbox.checked = this.checked;
+                checkbox.checked = isChecked;
             });
             updateSelectedOptionsText(this);
             applyFilters();
@@ -150,31 +249,34 @@ function initializeFilters() {
     // Initialize individual checkboxes
     campaignCheckboxes.forEach(checkbox => {
         checkbox.addEventListener('change', function() {
+            const allChecked = Array.from(campaignCheckboxes).every(cb => cb.checked);
+            if (selectAllCampaigns) {
+                selectAllCampaigns.checked = allChecked;
+            }
             updateSelectedOptionsText(this);
             applyFilters();
-            
-            // Update select all checkbox
-            if (selectAllCampaigns) {
-                selectAllCampaigns.checked = Array.from(campaignCheckboxes)
-                    .every(cb => cb.checked);
-            }
         });
     });
     
     statusCheckboxes.forEach(checkbox => {
         checkbox.addEventListener('change', function() {
+            const allChecked = Array.from(statusCheckboxes).every(cb => cb.checked);
+            if (selectAllStatuses) {
+                selectAllStatuses.checked = allChecked;
+            }
             updateSelectedOptionsText(this);
             applyFilters();
-            
-            // Update select all checkbox
-            if (selectAllStatuses) {
-                selectAllStatuses.checked = Array.from(statusCheckboxes)
-                    .every(cb => cb.checked);
-            }
         });
     });
     
-    // Initialize search input
+    // Stop dropdown from closing on click inside
+    document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        menu.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
+    
+    // Initialize search input with immediate filtering
     if (searchInput) {
         let debounceTimeout;
         searchInput.addEventListener('input', function() {
@@ -223,65 +325,6 @@ function initializeFilters() {
             applyFilters();
         });
     }
-}
-
-// Function to update selected options text
-function updateSelectedOptionsText(checkbox) {
-    const dropdown = checkbox.closest('.dropdown');
-    const selectedOptionsSpan = dropdown.querySelector('.selected-options');
-    const checkboxes = dropdown.querySelectorAll('.form-check-input:not(.select-all-campaigns):not(.select-all-statuses)');
-    
-    const selectedOptions = Array.from(checkboxes)
-        .filter(cb => cb.checked)
-        .map(cb => cb.nextElementSibling.textContent.trim());
-    
-    if (selectedOptions.length === 0) {
-        selectedOptionsSpan.textContent = checkbox.classList.contains('filter-campaign') ? 
-            'Brak wybranych kampanii' : 'Brak wybranych statusów';
-    } else if (selectedOptions.length === checkboxes.length) {
-        selectedOptionsSpan.textContent = checkbox.classList.contains('filter-campaign') ? 
-            'Wszystkie kampanie' : 'Wszystkie statusy';
-    } else {
-        selectedOptionsSpan.textContent = `Wybrano ${selectedOptions.length}`;
-    }
-}
-
-// Function to apply filters
-function applyFilters() {
-    const searchText = document.getElementById('searchText')?.value.toLowerCase() || '';
-    const selectedCampaigns = Array.from(document.querySelectorAll('.filter-campaign:checked'))
-        .map(cb => cb.value);
-    const selectedStatuses = Array.from(document.querySelectorAll('.filter-status:checked'))
-        .map(cb => cb.value);
-    
-    document.querySelectorAll('#candidatesTable tbody tr').forEach(row => {
-        const name = row.children[1].textContent.toLowerCase();
-        const email = row.children[3].textContent.toLowerCase();
-        const phone = row.children[4].textContent.toLowerCase();
-        const campaign = row.children[2].textContent;
-        const status = row.querySelector('td[data-sort="recruitment_status"] .badge').textContent.trim();
-        
-        const matchesSearch = !searchText || 
-            name.includes(searchText) || 
-            email.includes(searchText) || 
-            phone.includes(searchText);
-            
-        const matchesCampaign = selectedCampaigns.length === 0 || selectedCampaigns.includes(campaign);
-        const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(status);
-        
-        row.style.display = matchesSearch && matchesCampaign && matchesStatus ? '' : 'none';
-    });
-    
-    // Update row numbers for visible rows
-    let visibleRowNumber = 1;
-    document.querySelectorAll('#candidatesTable tbody tr').forEach(row => {
-        if (row.style.display !== 'none') {
-            const numberCell = row.querySelector('td.row-number');
-            if (numberCell) {
-                numberCell.textContent = visibleRowNumber++;
-            }
-        }
-    });
 }
 
 // Initialize table functionality
