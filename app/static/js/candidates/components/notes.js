@@ -226,4 +226,6 @@ window.addNoteFromList = addNoteFromList;
 window.showAddNoteModal = showAddNoteModal;
 window.hideAddNoteModal = hideAddNoteModal;
 window.editNote = editNote;
-window.deleteNote = deleteNote; 
+window.deleteNote = deleteNote;
+window.saveNote = saveNote;
+window.refreshNotesList = refreshNotesList; 

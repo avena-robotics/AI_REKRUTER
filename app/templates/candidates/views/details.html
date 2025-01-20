@@ -83,6 +83,37 @@
                             Dodaj notatkę
                         </button>
                     </div>
+                    
+                    <!-- Form for adding/editing notes -->
+                    <div id="viewNoteForm" class="card shadow-sm mb-3 d-none">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Dodaj notatkę</h5>
+                                <button type="button" class="btn-close" onclick="hideAddNoteModal()"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label for="viewNoteType" class="form-label">Tytuł notatki</label>
+                                    <input type="text" class="form-control" id="viewNoteType" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="viewNoteContent" class="form-label">Treść notatki</label>
+                                    <textarea class="form-control" id="viewNoteContent" rows="3" required></textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" onclick="hideAddNoteModal()">
+                                    Anuluj
+                                </button>
+                                <button type="button" class="btn btn-primary" id="viewSaveNoteBtn">
+                                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                    <span class="button-text">Zapisz</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Notes list -->
                     <div class="notes-list">
                         {% include 'candidates/components/notes/list.html' %}
                     </div>
