@@ -75,7 +75,7 @@ def view(id):
     try:
         candidate_data = CandidateService.get_candidate_details(id)
         return render_template(
-            "candidates/candidate_view.html",
+            "candidates/components/candidate_view.html",
             **candidate_data
         )
         
@@ -410,7 +410,7 @@ def get_notes_list(id):
     try:
         candidate_data = CandidateService.get_candidate_details(id)
         return render_template(
-            "candidates/notes_list.html",
+            "candidates/components/notes_list.html",
             notes_data=candidate_data['notes_data'],
             candidate={'id': id}
         )
