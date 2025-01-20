@@ -1,0 +1,97 @@
+.modal-content {
+    display: flex;
+    flex-direction: column;
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    background-color: #ffffff;
+    min-height: 400px;
+    max-height: 90vh;
+}
+
+.modal-content form {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    background-color: #f8fafc;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    flex-shrink: 0;
+}
+
+.modal-title {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+}
+
+.modal-body {
+    flex: 1;
+    position: relative;
+    padding: 1.5rem;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #94a3b8 #f1f5f9;
+}
+
+/* Scrollbar styling */
+.modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+.modal-footer {
+    flex-shrink: 0;
+    background-color: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    padding: 1.25rem 1.5rem;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+/* Add shadow to footer when content is scrolled */
+.modal-footer::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 0;
+    right: 0;
+    height: 10px;
+    background: linear-gradient(to top, rgba(0,0,0,0.05), transparent);
+    pointer-events: none;
+}
+
+/* Modal animation */
+.modal.fade .modal-dialog {
+    transform: scale(0.95);
+    transition: transform 0.2s ease-out;
+}
+
+.modal.show .modal-dialog {
+    transform: none;
+}
+
+/* Styles for note form specifically */
+#viewNoteForm .modal-content {
+    min-height: 400px;
+    height: auto;
+} 

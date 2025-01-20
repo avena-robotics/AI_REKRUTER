@@ -1,3 +1,6 @@
+/* Import components */
+@import 'candidates/components/modals.css';
+
 .eq-results-table {
     width: 100%;
     table-layout: fixed;
