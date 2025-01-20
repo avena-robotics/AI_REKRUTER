@@ -1,0 +1,38 @@
+/* Import components */
+@import '../components/modals.css';
+@import '../components/badges.css';
+
+/* EQ Results Table */
+.eq-results-table {
+    width: 100%;
+    table-layout: fixed;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.eq-results-table th,
+.eq-results-table td {
+    text-align: center;
+    padding: 1rem;
+    border: 1px solid #e5e7eb;
+    width: 12.5%;
+}
+
+.eq-results-table th {
+    background-color: #f8fafc;
+    font-weight: 600;
+    color: #475569;
+    font-size: 1rem;
+}
+
+.eq-results-table td {
+    background-color: white;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #1f2937;
+}
+
+.eq-results-table tr:hover td {
+    background-color: #f8fafc;
+} 

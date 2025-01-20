@@ -1,0 +1,99 @@
+<form class="row g-3 align-items-end" onsubmit="return false;">
+    <div class="col-md-12 mb-3">
+        <label class="form-label">Wyszukaj</label>
+        <input type="text" 
+               class="form-control" 
+               id="searchText" 
+               name="search" 
+               placeholder="Wyszukaj w imieniu, nazwisku, emailu lub telefonie..."
+               value="{{ request.args.get('search', '') }}">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Kod kampanii</label>
+        <div class="dropdown">
+            <button class="form-select text-start" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="selected-options">Wszystkie kampanie</span>
+            </button>
+            <div class="dropdown-menu w-100 p-3">
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input select-all-campaigns" id="selectAllCampaigns" checked>
+                    <label class="form-check-label" for="selectAllCampaigns">Zaznacz/Odznacz wszystkie</label>
+                </div>
+                <hr class="dropdown-divider">
+                {% for campaign in campaigns %}
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input filter-campaign" 
+                           value="{{ campaign.code }}" id="filterCampaign{{ campaign.code }}">
+                    <label class="form-check-label" for="filterCampaign{{ campaign.code }}">
+                        {{ campaign.code }} - {{ campaign.title }}
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Status rekrutacji</label>
+        <div class="dropdown">
+            <button class="form-select text-start" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="selected-options">Wszystkie statusy</span>
+            </button>
+            <div class="dropdown-menu w-100 p-3">
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input select-all-statuses" id="selectAllStatuses" checked>
+                    <label class="form-check-label" for="selectAllStatuses">Zaznacz/Odznacz wszystkie</label>
+                </div>
+                <hr class="dropdown-divider">
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input filter-status" value="PO1" id="filterPO1">
+                    <label class="form-check-label" for="filterPO1">Ankieta</label>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input filter-status" value="PO2" id="filterPO2">
+                    <label class="form-check-label" for="filterPO2">Test EQ</label>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input filter-status" value="PO2_5" id="filterPO2_5">
+                    <label class="form-check-label" for="filterPO2_5">Ocena EQ</label>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input filter-status" value="PO3" id="filterPO3">
+                    <label class="form-check-label" for="filterPO3">Test IQ</label>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input filter-status" value="PO4" id="filterPO4">
+                    <label class="form-check-label" for="filterPO4">Potencjał</label>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input filter-status" value="INVITED_TO_INTERVIEW" id="filterINVITED">
+                    <label class="form-check-label" for="filterINVITED">Zaproszono na rozmowę</label>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input filter-status" value="AWAITING_DECISION" id="filterAWAITING">
+                    <label class="form-check-label" for="filterAWAITING">Oczekuje na decyzję</label>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input filter-status" value="REJECTED" id="filterREJECTED">
+                    <label class="form-check-label" for="filterREJECTED">Odrzucony</label>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input filter-status" value="ACCEPTED" id="filterACCEPTED">
+                    <label class="form-check-label" for="filterACCEPTED">Zaakceptowany</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 d-flex justify-content-between mt-3">
+        <div>
+            <button type="button" class="btn btn-primary" id="bulkRecalculateBtn">
+                <i class="bi bi-arrow-clockwise me-1"></i>
+                Przelicz punkty
+            </button>
+        </div>
+        <div>
+            <button type="button" class="btn btn-outline-secondary" id="resetFiltersBtn">
+                Resetuj filtry
+            </button>
+        </div>
+    </div>
+</form> 

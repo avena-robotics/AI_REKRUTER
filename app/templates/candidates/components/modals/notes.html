@@ -1,0 +1,59 @@
+<!-- Modal for adding notes -->
+<div class="modal fade" id="listAddNoteModal" tabindex="-1" aria-labelledby="listAddNoteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="listAddNoteModalLabel">Dodaj notatkę</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="listNoteForm">
+                    <div class="mb-3">
+                        <label for="listNoteType" class="form-label">Tytuł notatki</label>
+                        <input type="text" class="form-control" id="listNoteType" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="listNoteContent" class="form-label">Treść notatki</label>
+                        <textarea class="form-control" id="listNoteContent" rows="4" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                <button type="button" class="btn btn-primary" id="listSaveNoteBtn">
+                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    <span class="button-text">Zapisz</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Form for adding notes in detail view -->
+<div id="viewNoteForm" class="card shadow-sm mb-3 d-none">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">Dodaj notatkę</h5>
+            <button type="button" class="btn-close" onclick="hideAddNoteModal()"></button>
+        </div>
+        <div class="modal-body">
+            <div class="mb-3">
+                <label for="viewNoteType" class="form-label">Tytuł notatki</label>
+                <input type="text" class="form-control" id="viewNoteType" required>
+            </div>
+            <div class="mb-3">
+                <label for="viewNoteContent" class="form-label">Treść notatki</label>
+                <textarea class="form-control" id="viewNoteContent" rows="3" required></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" onclick="hideAddNoteModal()">
+                Anuluj
+            </button>
+            <button type="button" class="btn btn-primary" id="viewSaveNoteBtn">
+                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                <span class="button-text">Zapisz</span>
+            </button>
+        </div>
+    </div>
+</div> 

@@ -47,7 +47,7 @@ def list():
         campaigns = CampaignService.get_campaigns_for_dropdown()
         
         return render_template(
-            "candidates/candidate_list.html",
+            "candidates/list.html",
             candidates=candidates,
             campaigns=campaigns
         )
@@ -55,7 +55,7 @@ def list():
     except CandidateException as e:
         logger.error(f"Błąd podczas pobierania listy kandydatów: {str(e)}")
         return render_template(
-            "candidates/candidate_list.html",
+            "candidates/list.html",
             candidates=[],
             campaigns=[],
             error_message=e.message
@@ -63,7 +63,7 @@ def list():
     except Exception as e:
         logger.error(f"Nieznany błąd podczas pobierania listy kandydatów: {str(e)}")
         return render_template(
-            "candidates/candidate_list.html",
+            "candidates/list.html",
             candidates=[],
             campaigns=[],
             error_message="Wystąpił nieznany błąd podczas pobierania listy kandydatów"
@@ -75,7 +75,7 @@ def view(id):
     try:
         candidate_data = CandidateService.get_candidate_details(id)
         return render_template(
-            "candidates/components/candidate_view.html",
+            "candidates/views/details.html",
             **candidate_data
         )
         
@@ -410,7 +410,7 @@ def get_notes_list(id):
     try:
         candidate_data = CandidateService.get_candidate_details(id)
         return render_template(
-            "candidates/components/notes_list.html",
+            'candidates/components/notes/list.html',
             notes_data=candidate_data['notes_data'],
             candidate={'id': id}
         )

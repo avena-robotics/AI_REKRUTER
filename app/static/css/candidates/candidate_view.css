@@ -1,6 +1,8 @@
 /* Import components */
 @import 'components/modals.css';
+@import 'components/badges.css';
 
+/* EQ Results Table */
 .eq-results-table {
     width: 100%;
     table-layout: fixed;
@@ -35,28 +37,119 @@
     background-color: #f8fafc;
 }
 
-/* Custom badge colors */
-.badge.bg-potential {
-    background-color: #e879f9 !important;
-    color: white;
+/* AH Points Grid */
+.ah-points-grid {
+    display: grid;
+    gap: 1rem;
+    margin: 1rem 0;
 }
 
-.badge.bg-survey {
-    background-color: #818cf8 !important;
-    color: white;
+.ah-points-header,
+.ah-points-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 100px;
+    align-items: center;
+    gap: 1rem;
 }
 
-.badge.bg-eq-test {
-    background-color: #38bdf8 !important;
-    color: white;
+.ah-points-header {
+    font-weight: 600;
+    color: #475569;
 }
 
-.badge.bg-eq-eval {
-    background-color: #2dd4bf !important;
-    color: white;
+.ah-letter-col {
+    text-align: center;
 }
 
-.badge.bg-iq-test {
-    background-color: #4ade80 !important;
-    color: white;
+.letter-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: #f1f5f9;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    margin: 0 auto;
+}
+
+.ah-content-col {
+    color: #1f2937;
+}
+
+.points-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #e2e8f0;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    margin: 0 auto;
+}
+
+/* Question Wrapper */
+.question-wrapper {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.question-header {
+    color: #1f2937;
+}
+
+.answer-content {
+    color: #4b5563;
+}
+
+/* Accordion Customization */
+.accordion-button:not(.collapsed) {
+    background-color: #f8fafc;
+    color: #1f2937;
+}
+
+.accordion-button:focus {
+    box-shadow: none;
+    border-color: rgba(0, 0, 0, 0.125);
+}
+
+/* Token Section */
+.token-section .card {
+    transition: all 0.2s ease-in-out;
+}
+
+.token-section .card:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Test Info Section */
+.test-info-wrapper {
+    background-color: white;
+}
+
+.test-header {
+    color: #1f2937;
+}
+
+.test-details {
+    color: #4b5563;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .ah-points-header,
+    .ah-points-row {
+        grid-template-columns: 60px 1fr 80px;
+    }
+
+    .letter-circle,
+    .points-badge {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9rem;
+    }
 } 

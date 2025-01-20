@@ -17,7 +17,7 @@ function setButtonLoading(buttonId, isLoading) {
 }
 
 // Function to show add note modal from list view
-window.addNoteFromList = function(candidateId) {
+function addNoteFromList(candidateId) {
     const modal = new bootstrap.Modal(document.getElementById('listAddNoteModal'));
     const saveBtn = document.getElementById('listSaveNoteBtn');
     if (!saveBtn) return;
@@ -35,10 +35,10 @@ window.addNoteFromList = function(candidateId) {
     saveBtn.dataset.candidateId = candidateId;
     
     modal.show();
-};
+}
 
 // Function to show add note modal in detailed view
-window.showAddNoteModal = function(candidateId) {
+function showAddNoteModal(candidateId) {
     const form = document.getElementById('viewNoteForm');
     const saveBtn = document.getElementById('viewSaveNoteBtn');
     if (!form || !saveBtn) return;
@@ -54,14 +54,14 @@ window.showAddNoteModal = function(candidateId) {
     
     // Set up save button handler
     saveBtn.onclick = () => saveNote(candidateId, 'view');
-};
+}
 
 // Function to hide add note modal in detailed view
-window.hideAddNoteModal = function() {
+function hideAddNoteModal() {
     const form = document.getElementById('viewNoteForm');
     if (!form) return;
     form.classList.add('d-none');
-};
+}
 
 // Function to refresh notes list
 async function refreshNotesList(candidateId) {
@@ -139,29 +139,8 @@ async function saveNote(candidateId, context) {
     }
 }
 
-// Function to update notes list
-async function updateNotesList(candidateId) {
-    try {
-        // For view context, refresh the whole candidate view
-        if (window.location.pathname.includes(`/candidates/${candidateId}`)) {
-            window.location.reload();
-            return;
-        }
-        
-        // For list context, just close the modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('listAddNoteModal'));
-        if (modal) {
-            modal.hide();
-            showToast('Notatka została dodana', 'success');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showToast('Wystąpił błąd podczas aktualizacji listy notatek', 'error');
-    }
-}
-
 // Function to edit a note
-window.editNote = function(candidateId, noteId, noteType, noteContent) {
+async function editNote(candidateId, noteId, noteType, noteContent) {
     const form = document.getElementById('viewNoteForm');
     const typeInput = document.getElementById('viewNoteType');
     const contentInput = document.getElementById('viewNoteContent');
@@ -216,10 +195,10 @@ window.editNote = function(candidateId, noteId, noteType, noteContent) {
             setButtonLoading(saveBtn, false);
         }
     };
-};
+}
 
 // Function to delete a note
-window.deleteNote = async function(candidateId, noteId) {
+async function deleteNote(candidateId, noteId) {
     if (!confirm('Czy na pewno chcesz usunąć tę notatkę?')) {
         return;
     }
@@ -240,4 +219,11 @@ window.deleteNote = async function(candidateId, noteId) {
         console.error('Error:', error);
         showToast('Wystąpił błąd podczas usuwania notatki', 'error');
     }
-}; 
+}
+
+// Export functions to global scope
+window.addNoteFromList = addNoteFromList;
+window.showAddNoteModal = showAddNoteModal;
+window.hideAddNoteModal = hideAddNoteModal;
+window.editNote = editNote;
+window.deleteNote = deleteNote; 

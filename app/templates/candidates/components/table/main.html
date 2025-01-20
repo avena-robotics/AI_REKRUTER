@@ -1,0 +1,155 @@
+<table class="table table-striped w-100" id="candidatesTable">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th class="sortable" data-sort="name">Imię i nazwisko</th>
+            <th class="sortable" data-sort="campaign_code">Kod kampanii</th>
+            <th class="sortable" data-sort="email">Email</th>
+            <th class="sortable" data-sort="phone">Telefon</th>
+            <th class="sortable" data-sort="recruitment_status">Status</th>
+            <th class="sortable" data-sort="po1_score">Wynik ankiety</th>
+            <th class="sortable" data-sort="po2_score">Wynik testu EQ</th>
+            <th class="sortable" data-sort="po2_5_score">Wynik oceny EQ</th>
+            <th class="sortable" data-sort="po3_score">Wynik testu IQ</th>
+            <th class="sortable" data-sort="po4_score">Ocena rozmowy</th>
+            <th class="sortable" data-sort="total_score">Wynik ogólny</th>
+            <th class="sortable" data-sort="created_at">Data aplikacji</th>
+            <th>Akcje</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for candidate in candidates %}
+        <tr ondblclick="viewCandidate('{{ candidate.id }}')" style="cursor: pointer;">
+            <td class="row-number"></td>
+            <td>{{ candidate.first_name }} {{ candidate.last_name }}</td>
+            <td data-sort="campaign_code">{{ candidate.campaigns.code }}</td>
+            <td data-sort="email">{{ candidate.email }}</td>
+            <td data-sort="phone">{{ candidate.phone if candidate.phone else '-' }}</td>
+            <td data-sort="recruitment_status">
+                <span class="badge 
+                    {% if candidate.recruitment_status == 'ACCEPTED' %}bg-success
+                    {% elif candidate.recruitment_status == 'REJECTED' %}bg-danger
+                    {% elif candidate.recruitment_status == 'INVITED_TO_INTERVIEW' %}bg-info
+                    {% elif candidate.recruitment_status == 'AWAITING_DECISION' %}bg-warning
+                    {% elif candidate.recruitment_status == 'PO4' %}bg-potential
+                    {% elif candidate.recruitment_status == 'PO1' %}bg-survey
+                    {% elif candidate.recruitment_status == 'PO2' %}bg-eq-test
+                    {% elif candidate.recruitment_status == 'PO2_5' %}bg-eq-eval
+                    {% elif candidate.recruitment_status == 'PO3' %}bg-iq-test
+                    {% else %}bg-primary{% endif %}">
+                    {% if candidate.recruitment_status == 'PO1' %}Ankieta
+                    {% elif candidate.recruitment_status == 'PO2' %}Test EQ
+                    {% elif candidate.recruitment_status == 'PO2_5' %}Ocena EQ
+                    {% elif candidate.recruitment_status == 'PO3' %}Test IQ
+                    {% elif candidate.recruitment_status == 'PO4' %}Potencjał
+                    {% elif candidate.recruitment_status == 'INVITED_TO_INTERVIEW' %}Zaproszono na rozmowę
+                    {% elif candidate.recruitment_status == 'AWAITING_DECISION' %}Oczekuje na decyzję
+                    {% elif candidate.recruitment_status == 'REJECTED' %}Odrzucony
+                    {% elif candidate.recruitment_status == 'ACCEPTED' %}Zaakceptowany
+                    {% else %}{{ candidate.recruitment_status }}{% endif %}
+                </span>
+            </td>
+            <td data-sort="po1_score">{{ candidate.po1_score if candidate.po1_score is not none else '-' }}</td>
+            <td data-sort="po2_score">{{ candidate.po2_score if candidate.po2_score is not none else '-' }}</td>
+            <td data-sort="po2_5_score">{{ candidate.po2_5_score if candidate.po2_5_score is not none else '-' }}</td>
+            <td data-sort="po3_score">{{ candidate.po3_score if candidate.po3_score is not none else '-' }}</td>
+            <td data-sort="po4_score">{{ candidate.po4_score if candidate.po4_score is not none else '-' }}</td>
+            <td data-sort="total_score">{{ candidate.total_score if candidate.total_score is not none else '-' }}</td>
+            <td data-sort="created_at">{{ candidate.created_at|format_datetime }}</td>
+            <td>
+                <div class="dropdown">
+                    <button class="btn btn-primary btn-sm dropdown-toggle" 
+                            type="button" 
+                            id="dropdownMenuButton{{ candidate.id }}" 
+                            data-bs-toggle="dropdown" 
+                            aria-expanded="false">
+                        Akcje
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" 
+                        aria-labelledby="dropdownMenuButton{{ candidate.id }}"
+                        style="z-index: 1021;">
+                        <!-- Section 1: Neutral actions -->
+                        <li>
+                            <button class="dropdown-item" onclick="viewCandidate('{{ candidate.id }}')" 
+                                    id="viewBtn_{{ candidate.id }}">
+                                <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                                <span class="button-text">Podgląd</span>
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item" onclick="addNoteFromList('{{ candidate.id }}')"
+                                    id="addNoteBtn_{{ candidate.id }}">
+                                <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                                <span class="button-text">Dodaj notatkę</span>
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item" onclick="recalculateScores('{{ candidate.id }}')"
+                                    id="recalculateBtn_{{ candidate.id }}">
+                                <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                                <span class="button-text">Przelicz punkty</span>
+                            </button>
+                        </li>
+                        
+                        <!-- Divider -->
+                        <li><hr class="dropdown-divider"></li>
+                        
+                        <!-- Section 2: Status actions -->
+                        {% if candidate.recruitment_status not in ['ACCEPTED', 'PO4'] %}
+                        <li>
+                            <button class="dropdown-item" onclick="moveToNextStage('{{ candidate.id }}')"
+                                    id="nextStageBtn_{{ candidate.id }}">
+                                <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                                <span class="button-text">Przepchnij do kolejnego etapu</span>
+                            </button>
+                        </li>
+                        {% endif %}
+                        {% if candidate.recruitment_status != 'REJECTED' %}
+                        <li>
+                            <button class="dropdown-item text-danger" onclick="rejectCandidate('{{ candidate.id }}')"
+                                    id="rejectBtn_{{ candidate.id }}">
+                                <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                                <span class="button-text">Odrzuć</span>
+                            </button>
+                        </li>
+                        {% endif %}
+                        <li>
+                            <button class="dropdown-item text-success" onclick="acceptCandidate('{{ candidate.id }}')"
+                                    id="acceptBtn_{{ candidate.id }}">
+                                <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                                <span class="button-text">Zaakceptuj</span>
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item text-info" onclick="showInterviewEmailModal('{{ candidate.id }}')"
+                                    id="inviteBtn_{{ candidate.id }}">
+                                <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                                <span class="button-text">Zaproś na rozmowę</span>
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item text-warning" onclick="setAwaitingDecision('{{ candidate.id }}')"
+                                    id="awaitingBtn_{{ candidate.id }}">
+                                <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                                <span class="button-text">Oczekuje na decyzję</span>
+                            </button>
+                        </li>
+
+                        <!-- Divider -->
+                        <li><hr class="dropdown-divider"></li>
+
+                        <!-- Section 3: Destructive actions -->
+                        <li>
+                            <button class="dropdown-item text-danger" onclick="deleteCandidate('{{ candidate.id }}')"
+                                    id="deleteBtn_{{ candidate.id }}">
+                                <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                                <span class="button-text">Usuń aplikację</span>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table> 
