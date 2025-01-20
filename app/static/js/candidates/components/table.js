@@ -14,13 +14,19 @@ async function refreshTable(fetchNewData = false) {
             if (newTable) {
                 document.querySelector('#candidatesTable tbody').innerHTML = newTable.innerHTML;
             }
+            
+            // Reapply filters after fetching new data
+            applyFilters();
         }
         
-        // Update row numbers
-        document.querySelectorAll('#candidatesTable tbody tr').forEach((row, index) => {
-            const numberCell = row.querySelector('td.row-number');
-            if (numberCell) {
-                numberCell.textContent = index + 1;
+        // Update row numbers for visible rows only
+        let visibleRowNumber = 1;
+        document.querySelectorAll('#candidatesTable tbody tr').forEach(row => {
+            if (row.style.display !== 'none') {
+                const numberCell = row.querySelector('td.row-number');
+                if (numberCell) {
+                    numberCell.textContent = visibleRowNumber++;
+                }
             }
         });
         
@@ -204,11 +210,17 @@ function updateSelectedOptionsText(checkbox) {
 // Function to initialize filters
 function initializeFilters() {
     const searchInput = document.getElementById('searchText');
-    const campaignCheckboxes = document.querySelectorAll('.filter-campaign');
-    const statusCheckboxes = document.querySelectorAll('.filter-status');
     const selectAllCampaigns = document.querySelector('.select-all-campaigns');
     const selectAllStatuses = document.querySelector('.select-all-statuses');
+    const campaignCheckboxes = document.querySelectorAll('.filter-campaign:not(.select-all-campaigns)');
+    const statusCheckboxes = document.querySelectorAll('.filter-status:not(.select-all-statuses)');
     
+    // Initialize bulk recalculate button
+    const bulkRecalculateBtn = document.getElementById('bulkRecalculateBtn');
+    if (bulkRecalculateBtn) {
+        bulkRecalculateBtn.addEventListener('click', bulkRecalculateScores);
+    }
+
     // Set initial state - all checkboxes checked
     if (selectAllCampaigns) {
         selectAllCampaigns.checked = true;

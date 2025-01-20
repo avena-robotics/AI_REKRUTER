@@ -216,6 +216,28 @@ async function viewCandidate(candidateId) {
 
 // Function to bulk recalculate scores
 async function bulkRecalculateScores() {
+    // Get candidates list first
+    const candidates = Array.from(document.querySelectorAll('#candidatesTable tbody tr'))
+        .filter(row => row.style.display !== 'none')
+        .map(row => {
+            const id = row.querySelector('.dropdown-menu').getAttribute('aria-labelledby').replace('dropdownMenuButton', '');
+            return { id };
+        });
+    
+    const total = candidates.length;
+    
+    // Reset and initialize modal state
+    const progressBar = document.querySelector('#bulkRecalculateModal .progress-bar');
+    const processedCount = document.getElementById('processedCount');
+    const totalCount = document.getElementById('totalCount');
+    
+    if (progressBar) {
+        progressBar.style.width = '0%';
+        progressBar.setAttribute('aria-valuenow', 0);
+    }
+    if (processedCount) processedCount.textContent = '0';
+    if (totalCount) totalCount.textContent = total.toString();
+    
     const modal = new bootstrap.Modal(document.getElementById('bulkRecalculateModal'));
     modal.show();
     
@@ -229,14 +251,6 @@ async function bulkRecalculateScores() {
     }
     
     try {
-        const candidates = Array.from(document.querySelectorAll('#candidatesTable tbody tr'))
-            .filter(row => row.style.display !== 'none')
-            .map(row => {
-                const id = row.querySelector('.dropdown-menu').getAttribute('aria-labelledby').replace('dropdownMenuButton', '');
-                return { id };
-            });
-        
-        const total = candidates.length;
         let processed = 0;
         
         for (const candidate of candidates) {
