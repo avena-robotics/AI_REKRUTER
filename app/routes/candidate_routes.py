@@ -7,6 +7,7 @@ from services.group_service import get_user_groups
 from common.logger import Logger
 from common.recalculation_score_service import RecalculationScoreService
 from common.email_service import EmailService
+from common.config import Config
 import json
 from datetime import datetime
 
@@ -228,7 +229,7 @@ def send_interview_email(id):
         
         # Send email
         logger.info(f"Wysyłanie emaila do kandydata {id} na adres {candidate_email}")
-        email_service = EmailService(current_app.config)
+        email_service = EmailService(Config.instance())
         success = email_service.send_interview_invitation(
             to_email=candidate_email,
             subject=subject,
