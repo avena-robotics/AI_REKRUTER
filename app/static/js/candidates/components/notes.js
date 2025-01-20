@@ -1,23 +1,7 @@
-// Utility function to set button loading state
-function setButtonLoading(buttonId, isLoading) {
-    const button = typeof buttonId === 'string' ? document.getElementById(buttonId) : buttonId;
-    if (!button) return;
-    
-    const spinner = button.querySelector('.spinner-border');
-    const text = button.querySelector('.button-text');
-    if (isLoading) {
-        spinner?.classList.remove('d-none');
-        text?.classList.add('d-none');
-        button.disabled = true;
-    } else {
-        spinner?.classList.add('d-none');
-        text?.classList.remove('d-none');
-        button.disabled = false;
-    }
-}
+import { setButtonLoading } from '../utils/buttons.js';
 
 // Function to show add note modal from list view
-function addNoteFromList(candidateId) {
+export function addNoteFromList(candidateId) {
     const modal = new bootstrap.Modal(document.getElementById('listAddNoteModal'));
     const saveBtn = document.getElementById('listSaveNoteBtn');
     if (!saveBtn) return;
@@ -38,7 +22,7 @@ function addNoteFromList(candidateId) {
 }
 
 // Function to show add note modal in detailed view
-function showAddNoteModal(candidateId) {
+export function showAddNoteModal(candidateId) {
     const form = document.getElementById('viewNoteForm');
     const saveBtn = document.getElementById('viewSaveNoteBtn');
     if (!form || !saveBtn) return;
@@ -57,14 +41,14 @@ function showAddNoteModal(candidateId) {
 }
 
 // Function to hide add note modal in detailed view
-function hideAddNoteModal() {
+export function hideAddNoteModal() {
     const form = document.getElementById('viewNoteForm');
     if (!form) return;
     form.classList.add('d-none');
 }
 
 // Function to refresh notes list
-async function refreshNotesList(candidateId) {
+export async function refreshNotesList(candidateId) {
     try {
         const response = await fetch(`/candidates/${candidateId}/notes/list`);
         if (!response.ok) {
@@ -82,7 +66,7 @@ async function refreshNotesList(candidateId) {
 }
 
 // Function to save a note (works for both list and view)
-async function saveNote(candidateId, context) {
+export async function saveNote(candidateId, context) {
     const isListContext = context === 'list';
     const typeInput = document.getElementById(isListContext ? 'listNoteType' : 'viewNoteType');
     const contentInput = document.getElementById(isListContext ? 'listNoteContent' : 'viewNoteContent');
@@ -140,7 +124,7 @@ async function saveNote(candidateId, context) {
 }
 
 // Function to edit a note
-async function editNote(candidateId, noteId, noteType, noteContent) {
+export async function editNote(candidateId, noteId, noteType, noteContent) {
     const form = document.getElementById('viewNoteForm');
     const typeInput = document.getElementById('viewNoteType');
     const contentInput = document.getElementById('viewNoteContent');
@@ -198,7 +182,7 @@ async function editNote(candidateId, noteId, noteType, noteContent) {
 }
 
 // Function to delete a note
-async function deleteNote(candidateId, noteId) {
+export async function deleteNote(candidateId, noteId) {
     if (!confirm('Czy na pewno chcesz usunąć tę notatkę?')) {
         return;
     }
@@ -221,11 +205,13 @@ async function deleteNote(candidateId, noteId) {
     }
 }
 
-// Export functions to global scope
-window.addNoteFromList = addNoteFromList;
-window.showAddNoteModal = showAddNoteModal;
-window.hideAddNoteModal = hideAddNoteModal;
-window.editNote = editNote;
-window.deleteNote = deleteNote;
-window.saveNote = saveNote;
-window.refreshNotesList = refreshNotesList; 
+// Export functions to global scope for HTML event handlers
+Object.assign(window, {
+    addNoteFromList,
+    showAddNoteModal,
+    hideAddNoteModal,
+    editNote,
+    deleteNote,
+    saveNote,
+    refreshNotesList
+}); 

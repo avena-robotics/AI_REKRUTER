@@ -1,5 +1,8 @@
+import { setButtonLoading } from '../utils/buttons.js';
+import { refreshTable } from '../utils/table.js';
+
 // Function to move candidate to next stage
-async function moveToNextStage(candidateId) {
+export async function moveToNextStage(candidateId) {
     try {
         const button = document.getElementById(`nextStageBtn_${candidateId}`);
         if (!button) return;
@@ -28,7 +31,7 @@ async function moveToNextStage(candidateId) {
 }
 
 // Function to reject candidate
-async function rejectCandidate(candidateId) {
+export async function rejectCandidate(candidateId) {
     if (!confirm('Czy na pewno chcesz odrzucić tego kandydata?')) {
         return;
     }
@@ -61,7 +64,7 @@ async function rejectCandidate(candidateId) {
 }
 
 // Function to accept candidate
-async function acceptCandidate(candidateId) {
+export async function acceptCandidate(candidateId) {
     if (!confirm('Czy na pewno chcesz zaakceptować tego kandydata?')) {
         return;
     }
@@ -94,7 +97,7 @@ async function acceptCandidate(candidateId) {
 }
 
 // Function to delete candidate
-async function deleteCandidate(candidateId) {
+export async function deleteCandidate(candidateId) {
     if (!confirm('Czy na pewno chcesz usunąć tego kandydata? Ta operacja jest nieodwracalna.')) {
         return;
     }
@@ -127,7 +130,7 @@ async function deleteCandidate(candidateId) {
 }
 
 // Function to set awaiting decision
-async function setAwaitingDecision(candidateId) {
+export async function setAwaitingDecision(candidateId) {
     try {
         const button = document.getElementById(`awaitingBtn_${candidateId}`);
         if (!button) return;
@@ -156,7 +159,7 @@ async function setAwaitingDecision(candidateId) {
 }
 
 // Function to recalculate scores
-async function recalculateScores(candidateId) {
+export async function recalculateScores(candidateId) {
     try {
         const button = document.getElementById(`recalculateBtn_${candidateId}`);
         if (!button) return;
@@ -185,7 +188,7 @@ async function recalculateScores(candidateId) {
 }
 
 // Function to view candidate details
-async function viewCandidate(candidateId) {
+export async function viewCandidate(candidateId) {
     try {
         const button = document.getElementById(`viewBtn_${candidateId}`);
         if (button) setButtonLoading(button, true);
@@ -215,7 +218,7 @@ async function viewCandidate(candidateId) {
 }
 
 // Function to bulk recalculate scores
-async function bulkRecalculateScores() {
+export async function bulkRecalculateScores() {
     // Get candidates list first
     const candidates = Array.from(document.querySelectorAll('#candidatesTable tbody tr'))
         .filter(row => row.style.display !== 'none')
@@ -303,12 +306,14 @@ function updateRecalculationProgress(processed, total) {
     if (totalCount) totalCount.textContent = total;
 }
 
-// Export functions to global scope
-window.moveToNextStage = moveToNextStage;
-window.rejectCandidate = rejectCandidate;
-window.acceptCandidate = acceptCandidate;
-window.deleteCandidate = deleteCandidate;
-window.setAwaitingDecision = setAwaitingDecision;
-window.recalculateScores = recalculateScores;
-window.viewCandidate = viewCandidate;
-window.bulkRecalculateScores = bulkRecalculateScores; 
+// Export functions to global scope for HTML event handlers
+Object.assign(window, {
+    moveToNextStage,
+    rejectCandidate,
+    acceptCandidate,
+    deleteCandidate,
+    setAwaitingDecision,
+    recalculateScores,
+    viewCandidate,
+    bulkRecalculateScores
+}); 

@@ -685,49 +685,15 @@
 
 <!-- Scripts -->
 <script src="{{ url_for('static', filename='js/toast.js') }}"></script>
-<script src="{{ url_for('static', filename='js/candidates/notes.js') }}"></script>
-<script src="{{ url_for('static', filename='js/candidates/candidate_view.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="module" src="{{ url_for('static', filename='js/candidates/components/tokens.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/candidates/components/notes.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/candidates/components/interview.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/candidates/views/details.js') }}"></script>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Copy link functionality
-    document.querySelectorAll('.copy-link').forEach(button => {
-        button.addEventListener('click', function() {
-            const link = this.dataset.link;
-            const fullLink = link.startsWith('http') ? link : window.location.origin + link;
-            
-            navigator.clipboard.writeText(fullLink)
-                .then(() => {
-                    showToast('Link został skopiowany do schowka', 'success');
-                })
-                .catch(err => {
-                    console.error('Failed to copy:', err);
-                    showToast('Nie udało się skopiować linku', 'error');
-                });
-        });
+<script type="module">
+    import { initializeDetailsView } from "{{ url_for('static', filename='js/candidates/views/details.js') }}";
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeDetailsView();
     });
-
-    // Update time remaining
-    function formatTimeRemaining(diff) {
-        if (diff <= 0) {
-            return 'token wygasł';
-        }
-
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-        let timeText = [];
-        if (days > 0) {
-            timeText.push(`${days} ${days === 1 ? 'dzień' : 'dni'}`);
-        }
-        if (hours > 0 || days > 0) {
-            timeText.push(`${hours} ${hours === 1 ? 'godzina' : hours < 5 ? 'godziny' : 'godzin'}`);
-        }
-        timeText.push(`${minutes} ${minutes === 1 ? 'minuta' : minutes < 5 ? 'minuty' : 'minut'}`);
-
-        return timeText.join(' ');
-    }
-});
-</script> 
+</script>

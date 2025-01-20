@@ -1,3 +1,6 @@
+import { setButtonLoading } from '../utils/buttons.js';
+import { refreshTable } from '../utils/table.js';
+
 let currentCandidateId = null;
 let emailModal = null;
 let quillEditor = null;
@@ -160,6 +163,40 @@ async function sendInterviewEmail() {
     }
 }
 
+// Function to invite candidate to interview
+export async function inviteToInterview(candidateId) {
+    if (!confirm('Czy na pewno chcesz zaprosić kandydata na rozmowę?')) {
+        return;
+    }
+    
+    try {
+        const button = document.getElementById(`inviteBtn_${candidateId}`);
+        if (!button) return;
+        
+        setButtonLoading(button, true);
+        
+        const response = await fetch(`/candidates/${candidateId}/invite-to-interview`, {
+            method: 'POST'
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Wystąpił błąd podczas zapraszania kandydata na rozmowę');
+        }
+        
+        showToast('Kandydat został zaproszony na rozmowę', 'success');
+        await refreshTable(true);
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showToast(error.message, 'error');
+    } finally {
+        const button = document.getElementById(`inviteBtn_${candidateId}`);
+        if (button) setButtonLoading(button, false);
+    }
+}
+
 // Export functions to global scope
 window.showInterviewEmailModal = showInterviewEmailModal;
-window.sendInterviewEmail = sendInterviewEmail; 
+window.sendInterviewEmail = sendInterviewEmail;
+window.inviteToInterview = inviteToInterview; 
