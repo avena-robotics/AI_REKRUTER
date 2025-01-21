@@ -1,7 +1,3 @@
-console.log('tokens.js loaded');
-
-import { setButtonLoading } from '../utils/buttons.js';
-
 // Function to format date and time
 export function formatDateTime(date) {
     return date.toLocaleDateString('pl-PL', {
@@ -37,13 +33,11 @@ function formatTimeRemaining(diff) {
 
 // Function to update time remaining displays
 export function updateTimeRemainingDisplays() {
-    console.log('Updating time remaining displays...');
     ['PO2', 'PO3'].forEach(stage => {
         const expirySpan = document.getElementById(`expiryTime${stage}`);
         const remainingSpan = document.getElementById(`timeRemaining${stage}`);
         
         if (expirySpan && remainingSpan) {
-            console.log(`Found spans for stage ${stage}`);
             const expiryText = expirySpan.textContent.trim();
             if (expiryText) {
                 const [datePart, timePart] = expiryText.split(' ');
@@ -55,29 +49,20 @@ export function updateTimeRemainingDisplays() {
                 const diff = expiryDate - now;
                 
                 remainingSpan.textContent = `(${formatTimeRemaining(diff)})`;
-                console.log(`Updated time remaining for stage ${stage}: ${remainingSpan.textContent}`);
             }
-        } else {
-            console.log(`Spans not found for stage ${stage}`);
         }
     });
 }
 
 // Function to initialize copy links
 export function initializeCopyLinks() {
-    console.log('Initializing copy links...');
     const copyButtons = document.querySelectorAll('.copy-link');
-    console.log('Found copy buttons:', copyButtons.length);
     
     copyButtons.forEach(button => {
-        console.log('Adding click listener to button:', button);
         button.addEventListener('click', function() {
-            console.log('Copy button clicked!');
             const link = this.dataset.link;
-            console.log('Link from data-link:', link);
             
             if (!link) {
-                console.error('No link found in data-link attribute');
                 showToast('Nie udało się skopiować linku - brak adresu', 'error');
                 return;
             }
@@ -88,17 +73,13 @@ export function initializeCopyLinks() {
                 // Try to parse as URL to check if it's absolute
                 new URL(link);
                 fullLink = link;
-                console.log('Link is absolute:', fullLink);
             } catch {
                 // If parsing fails, it's a relative URL - prepend origin
                 fullLink = window.location.origin + (link.startsWith('/') ? '' : '/') + link;
-                console.log('Created full link:', fullLink);
             }
             
-            console.log('Attempting to copy link:', fullLink);
             navigator.clipboard.writeText(fullLink)
                 .then(() => {
-                    console.log('Successfully copied link to clipboard');
                     showToast('Link został skopiowany do schowka', 'success');
                 })
                 .catch(err => {
@@ -163,5 +144,3 @@ export async function regenerateToken(candidateId, stage) {
 
 // Export functions to global scope
 window.regenerateToken = regenerateToken;
-
-console.log('tokens.js finished loading'); 

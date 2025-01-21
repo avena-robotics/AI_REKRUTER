@@ -470,8 +470,6 @@ function resetAddTestForm() {
 }
 
 function editTest(testId) {
-    console.log(`Starting edit process for test ID: ${testId}`);
-    
     // Reset button state before fetching data
     const submitButton = document.querySelector('#editTestSubmit');
     const spinner = submitButton.querySelector('.spinner-border');
@@ -484,7 +482,6 @@ function editTest(testId) {
     fetch(`/tests/${testId}/data`)
         .then(response => response.json())
         .then(test => {
-            console.log('Test data received:', test);
             const form = document.getElementById('editTestForm');
             form.action = `/tests/${testId}/edit`;
             

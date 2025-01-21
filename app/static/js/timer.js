@@ -15,7 +15,6 @@ class TestTimer {
 
         try {
             const response = await this.validateTimer();
-            console.log('Timer validation response:', response);
             
             if (response.valid) {
                 this.remainingSeconds = response.remaining_seconds;
@@ -44,7 +43,6 @@ class TestTimer {
             }
 
             const data = await response.json();
-            console.log('Timer validation data:', data);
             return data;
         } catch (error) {
             console.error('Timer validation error:', error);

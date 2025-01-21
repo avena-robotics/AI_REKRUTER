@@ -563,7 +563,6 @@ function handleCampaignFormSubmit(e) {
         const content = quillEditor.root.innerHTML;
         emailContentTextarea.value = content;
         formData.set('interview_email_content', content);
-        console.log('Updating email content:', content); // Debug log
     }
     
     // Show loading state

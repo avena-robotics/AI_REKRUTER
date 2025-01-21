@@ -73,7 +73,6 @@ export class CampaignTests {
         if (groupId) {
             try {
                 const tests = await CampaignAPI.getTestsByGroup(groupId);
-                console.log('Fetched tests:', tests); // Debug log
                 
                 // Update test selects with fetched options
                 Object.entries(this.testSelects).forEach(([type, select]) => {
@@ -91,8 +90,6 @@ export class CampaignTests {
                     const typeTests = tests.filter(test => 
                         test && test.test_type && test.test_type === expectedType
                     );
-                    
-                    console.log(`Tests for type ${type}:`, typeTests); // Debug log
                     
                     typeTests.forEach(test => {
                         const option = document.createElement('option');
@@ -130,13 +127,10 @@ export class CampaignTests {
         this.validateWeights();
     }
 
-    updateDependencies() {
-        console.log('Updating dependencies...'); // Debug log
-        
+    updateDependencies() {        
         // Handle PO2 dependency on PO1
         if (this.testSelects.po2 && this.testSelects.po1) {
             const isEnabled = this.testSelects.po1.value !== '';
-            console.log('PO2 dependency - PO1 value:', this.testSelects.po1.value, 'isEnabled:', isEnabled);
             this.testSelects.po2.disabled = !isEnabled;
             if (!isEnabled) {
                 this.testSelects.po2.value = '';
@@ -151,14 +145,7 @@ export class CampaignTests {
             const po2HasValue = this.testSelects.po2.value !== '';
             const po2IsEnabled = !this.testSelects.po2.disabled;
             const isEnabled = po2HasValue && po2IsEnabled;
-            
-            console.log('PO2.5 dependency check:', {
-                po2Value: this.testSelects.po2.value,
-                po2HasValue,
-                po2IsEnabled,
-                isEnabled
-            });
-            
+
             this.testSelects.po25.disabled = !isEnabled;
             if (this.weightInputs.po25) {
                 this.weightInputs.po25.disabled = !isEnabled || !this.testSelects.po25.value;
@@ -177,13 +164,6 @@ export class CampaignTests {
             const po25HasValue = this.testSelects.po25.value !== '';
             const po25IsEnabled = !this.testSelects.po25.disabled;
             const isEnabled = po25HasValue && po25IsEnabled;
-            
-            console.log('PO3 dependency check:', {
-                po25Value: this.testSelects.po25.value,
-                po25HasValue,
-                po25IsEnabled,
-                isEnabled
-            });
             
             this.testSelects.po3.disabled = !isEnabled;
             if (this.weightInputs.po3) {

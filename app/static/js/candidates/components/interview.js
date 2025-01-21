@@ -45,7 +45,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function showInterviewEmailModal(candidateId) {
     try {
-        console.log('Opening modal for candidate:', candidateId);
         currentCandidateId = candidateId;
         
         // Reset form and editor
@@ -63,7 +62,6 @@ async function showInterviewEmailModal(candidateId) {
         
         // Fetch email template
         const response = await fetch(`/candidates/${candidateId}/interview-email-template`);
-        console.log('Template response status:', response.status);
         
         if (!response.ok) {
             const error = await response.json();
@@ -71,7 +69,6 @@ async function showInterviewEmailModal(candidateId) {
         }
         
         const template = await response.json();
-        console.log('Received template:', template);
         
         // Set subject and content
         if (subjectInput) {
@@ -109,8 +106,6 @@ async function sendInterviewEmail() {
         const subject = document.getElementById('emailSubject')?.value.trim() || '';
         const content = quillEditor?.root.innerHTML.trim() || '';
         
-        console.log('Sending email with data:', { subject, content });
-        
         if (!subject || !content) {
             throw new Error('Wypełnij wszystkie pola formularza');
         }
@@ -128,8 +123,6 @@ async function sendInterviewEmail() {
             },
             body: JSON.stringify({ subject, content })
         });
-        
-        console.log('Send email response status:', response.status);
         
         if (!response.ok) {
             const error = await response.json();
