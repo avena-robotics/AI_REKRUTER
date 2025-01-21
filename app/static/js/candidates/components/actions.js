@@ -190,6 +190,7 @@ export async function recalculateScores(candidateId) {
 // Function to view candidate details
 export async function viewCandidate(candidateId) {
     try {
+        console.log('Loading candidate details for ID:', candidateId);
         const button = document.getElementById(`viewBtn_${candidateId}`);
         if (button) setButtonLoading(button, true);
         
@@ -200,11 +201,24 @@ export async function viewCandidate(candidateId) {
         }
         
         const html = await response.text();
+        console.log('Received HTML content for modal');
+        
         const modalBody = document.getElementById('candidateModalBody');
         if (modalBody) {
+            console.log('Setting modal body content...');
             modalBody.innerHTML = html;
+            // Initialize details view after loading content
+            if (typeof initializeDetailsView === 'function') {
+                console.log('Calling initializeDetailsView...');
+                initializeDetailsView();
+            } else {
+                console.error('initializeDetailsView function not found!');
+            }
+        } else {
+            console.error('Modal body element not found!');
         }
         
+        console.log('Showing modal...');
         const modal = new bootstrap.Modal(document.getElementById('candidateModal'));
         modal.show();
         

@@ -35,32 +35,15 @@ function formatTimeRemaining(diff) {
     return timeText.join(' ');
 }
 
-// Function to initialize copy links
-export function initializeCopyLinks() {
-    document.querySelectorAll('.copy-link').forEach(button => {
-        button.addEventListener('click', function() {
-            const link = this.dataset.link;
-            const fullLink = link.startsWith('http') ? link : window.location.origin + link;
-            
-            navigator.clipboard.writeText(fullLink)
-                .then(() => {
-                    showToast('Link został skopiowany do schowka', 'success');
-                })
-                .catch(err => {
-                    console.error('Failed to copy:', err);
-                    showToast('Nie udało się skopiować linku', 'error');
-                });
-        });
-    });
-}
-
 // Function to update time remaining displays
-function updateTimeRemainingDisplays() {
+export function updateTimeRemainingDisplays() {
+    console.log('Updating time remaining displays...');
     ['PO2', 'PO3'].forEach(stage => {
         const expirySpan = document.getElementById(`expiryTime${stage}`);
         const remainingSpan = document.getElementById(`timeRemaining${stage}`);
         
         if (expirySpan && remainingSpan) {
+            console.log(`Found spans for stage ${stage}`);
             const expiryText = expirySpan.textContent.trim();
             if (expiryText) {
                 const [datePart, timePart] = expiryText.split(' ');
@@ -72,8 +55,57 @@ function updateTimeRemainingDisplays() {
                 const diff = expiryDate - now;
                 
                 remainingSpan.textContent = `(${formatTimeRemaining(diff)})`;
+                console.log(`Updated time remaining for stage ${stage}: ${remainingSpan.textContent}`);
             }
+        } else {
+            console.log(`Spans not found for stage ${stage}`);
         }
+    });
+}
+
+// Function to initialize copy links
+export function initializeCopyLinks() {
+    console.log('Initializing copy links...');
+    const copyButtons = document.querySelectorAll('.copy-link');
+    console.log('Found copy buttons:', copyButtons.length);
+    
+    copyButtons.forEach(button => {
+        console.log('Adding click listener to button:', button);
+        button.addEventListener('click', function() {
+            console.log('Copy button clicked!');
+            const link = this.dataset.link;
+            console.log('Link from data-link:', link);
+            
+            if (!link) {
+                console.error('No link found in data-link attribute');
+                showToast('Nie udało się skopiować linku - brak adresu', 'error');
+                return;
+            }
+
+            // Ensure we have a full URL
+            let fullLink;
+            try {
+                // Try to parse as URL to check if it's absolute
+                new URL(link);
+                fullLink = link;
+                console.log('Link is absolute:', fullLink);
+            } catch {
+                // If parsing fails, it's a relative URL - prepend origin
+                fullLink = window.location.origin + (link.startsWith('/') ? '' : '/') + link;
+                console.log('Created full link:', fullLink);
+            }
+            
+            console.log('Attempting to copy link:', fullLink);
+            navigator.clipboard.writeText(fullLink)
+                .then(() => {
+                    console.log('Successfully copied link to clipboard');
+                    showToast('Link został skopiowany do schowka', 'success');
+                })
+                .catch(err => {
+                    console.error('Failed to copy:', err);
+                    showToast('Nie udało się skopiować linku', 'error');
+                });
+        });
     });
 }
 
@@ -128,15 +160,6 @@ export async function regenerateToken(candidateId, stage) {
         showToast(error.message, 'error');
     }
 }
-
-// Initialize token functionality
-document.addEventListener('DOMContentLoaded', function() {
-    initializeCopyLinks();
-    updateTimeRemainingDisplays();
-    
-    // Update time remaining every minute
-    setInterval(updateTimeRemainingDisplays, 60000);
-});
 
 // Export functions to global scope
 window.regenerateToken = regenerateToken;
