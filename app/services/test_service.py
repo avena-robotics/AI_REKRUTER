@@ -50,33 +50,6 @@ class TestService:
                 original_error=e
             )
     
-    # @staticmethod
-    # def get_tests_for_groups(group_ids: List[int]) -> List[Dict]:
-    #     """
-    #     Pobiera testy dla podanych grup.
-    
-    #     Args:
-    #         group_ids (List[int]): Lista ID grup
-            
-    #     Returns:
-    #         List[Dict]: Lista testów
-            
-    #     Raises:
-    #         TestException: Gdy wystąpi błąd podczas pobierania testów
-    #     """
-    #     try:
-    #         tests_response = supabase.rpc('get_group_tests', {
-    #             'p_group_ids': group_ids
-    #         }).execute()
-            
-    #         return tests_response.data or []
-            
-    #     except Exception as e:
-    #         logger.error(f"Błąd podczas pobierania testów dla grup {group_ids}: {str(e)}")
-    #         raise TestException(
-    #             message="Błąd podczas pobierania testów dla grup.",
-    #             original_error=e
-    #         )
 
     @staticmethod
     def create_test(

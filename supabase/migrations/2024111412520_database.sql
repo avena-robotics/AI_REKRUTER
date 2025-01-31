@@ -19,7 +19,6 @@ DROP TYPE IF EXISTS algorithm_type CASCADE;
 
 DROP FUNCTION IF EXISTS get_campaigns_with_groups(bigint[]);
 DROP FUNCTION IF EXISTS get_campaigns_count(bigint[]);
-DROP FUNCTION IF EXISTS get_group_tests(bigint[]);
 DROP FUNCTION IF EXISTS get_candidate_with_tests(bigint);
 
 -- Create types first
@@ -213,26 +212,6 @@ create table candidate_notes (
     created_at timestamp with time zone default now(), -- Data utworzenia notatki
     updated_at timestamp with time zone default now()  -- Data ostatniej aktualizacji
 );
-
--- Function to get tests for groups
-CREATE OR REPLACE FUNCTION get_group_tests(
-    p_group_ids bigint[]
-) RETURNS TABLE (
-    id integer,
-    test_type text,
-    title text,
-    description text
-) LANGUAGE plpgsql AS $$
-BEGIN
-    RETURN QUERY
-    SELECT t.id, t.test_type::text, t.title, t.description
-    FROM tests t
-    JOIN link_groups_tests lgt ON t.id = lgt.test_id
-    WHERE lgt.group_id = ANY(p_group_ids)
-    GROUP BY t.id, t.test_type, t.title, t.description
-    ORDER BY t.test_type;
-END;
-$$;
 
 
 -- Drop and recreate get_campaigns_with_groups function with new columns
