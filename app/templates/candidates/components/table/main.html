@@ -114,13 +114,6 @@
                         </li>
                         {% endif %}
                         <li>
-                            <button class="dropdown-item text-success" onclick="acceptCandidate('{{ candidate.id }}')"
-                                    id="acceptBtn_{{ candidate.id }}">
-                                <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
-                                <span class="button-text">Zaakceptuj</span>
-                            </button>
-                        </li>
-                        <li>
                             <button class="dropdown-item text-info" onclick="showInterviewEmailModal('{{ candidate.id }}')"
                                     id="inviteBtn_{{ candidate.id }}">
                                 <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
@@ -132,6 +125,13 @@
                                     id="awaitingBtn_{{ candidate.id }}">
                                 <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
                                 <span class="button-text">Oczekuje na decyzję</span>
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item text-success" onclick="acceptCandidate('{{ candidate.id }}')"
+                                    id="acceptBtn_{{ candidate.id }}">
+                                <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                                <span class="button-text">Zaakceptuj</span>
                             </button>
                         </li>
 
