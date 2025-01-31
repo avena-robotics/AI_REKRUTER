@@ -97,8 +97,7 @@ class CampaignService:
                 .eq('id', campaign_id)
                 .execute()
             )
-
-            logger.debug(f"Pobieranie danych kampanii o ID {campaign_id}: {json.dumps(response.data, indent=4)}")
+ 
             campaign = response.data[0]
             campaign['groups'] = [group['groups'] for group in campaign['link_groups_campaigns']]
             
