@@ -107,6 +107,7 @@ export function applyFilters() {
                     case 'PO4': return status === 'Potencjał';
                     case 'INVITED_TO_INTERVIEW': return status === 'Zaproszono na rozmowę';
                     case 'AWAITING_DECISION': return status === 'Oczekuje na decyzję';
+                    case 'REJECTED_CRITICAL': return status === 'Odrzucony k';
                     case 'REJECTED': return status === 'Odrzucony';
                     case 'ACCEPTED': return status === 'Zaakceptowany';
                     default: return false;
