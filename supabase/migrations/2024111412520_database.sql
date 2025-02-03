@@ -24,7 +24,7 @@ DROP FUNCTION IF EXISTS get_candidate_with_tests(bigint);
 -- Create types first
 create type test_type as enum ('SURVEY', 'EQ', 'IQ', 'EQ_EVALUATION');
 create type answer_type as enum ('TEXT', 'BOOLEAN', 'SCALE', 'SALARY', 'DATE', 'ABCDEF', 'AH_POINTS', 'NUMERIC');
-create type recruitment_status as enum ('PO1', 'PO2', 'PO2_5', 'PO3', 'PO4', 'REJECTED', 'ACCEPTED', 'INVITED_TO_INTERVIEW', 'AWAITING_DECISION');
+create type recruitment_status as enum ('PO1', 'PO2', 'PO2_5', 'PO3', 'PO4', 'REJECTED', 'ACCEPTED', 'INVITED_TO_INTERVIEW', 'AWAITING_DECISION', 'REJECTED_CRITICAL');
 create type algorithm_type AS ENUM (
     'NO_ALGORITHM',
     'RIGHT_SIDED',
@@ -91,6 +91,7 @@ create table questions (
     points int not null default 0,                                  -- Punkty za pytanie
     order_number integer not null,                                  -- Numer pytania w testach
     is_required boolean default true,                               -- Czy pytanie jest obowiązkowe
+    is_critical boolean not null default false,                     -- Czy pytanie jest krytyczne
     image text,                                                     -- Add image URL field
     algorithm_type algorithm_type DEFAULT 'NO_ALGORITHM',
     algorithm_params jsonb
@@ -436,6 +437,7 @@ BEGIN
                     'points', q.points,
                     'order_number', q.order_number,
                     'is_required', q.is_required,
+                    'is_critical', q.is_critical,
                     'image', q.image,
                     'algorithm_type', q.algorithm_type,
                     'algorithm_params', q.algorithm_params,

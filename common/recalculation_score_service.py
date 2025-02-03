@@ -70,7 +70,7 @@ class RecalculationScoreService:
             
             # If candidate is rejected, determine their last completed stage
             last_stage = original_status
-            if original_status == "REJECTED":
+            if original_status == "REJECTED" or original_status == "REJECTED_CRITICAL":
                 if candidate.get("po3_score") is not None:
                     last_stage = "PO3"
                 elif candidate.get("po2_5_score") is not None:

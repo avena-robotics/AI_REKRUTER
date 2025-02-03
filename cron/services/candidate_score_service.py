@@ -384,6 +384,7 @@ class CandidateScoreService:
             response = self.supabase.table('candidates')\
                 .select('*, campaign:campaigns!campaign_id(*)')\
                 .neq('recruitment_status', 'REJECTED')\
+                .neq('recruitment_status', 'REJECTED_CRITICAL')\
                 .neq('recruitment_status', 'ACCEPTED')\
                 .neq('recruitment_status', 'PO4')\
                 .eq('id', candidate_id)\
@@ -404,6 +405,7 @@ class CandidateScoreService:
             response = self.supabase.table('candidates')\
                 .select('id')\
                 .neq('recruitment_status', 'REJECTED')\
+                .neq('recruitment_status', 'REJECTED_CRITICAL')\
                 .neq('recruitment_status', 'ACCEPTED')\
                 .neq('recruitment_status', 'PO4')\
                 .execute()

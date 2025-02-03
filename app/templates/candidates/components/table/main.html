@@ -28,6 +28,7 @@
             <td data-sort="recruitment_status">
                 <span class="badge 
                     {% if candidate.recruitment_status == 'ACCEPTED' %}bg-success
+                    {% elif candidate.recruitment_status == 'REJECTED_CRITICAL' %}bg-rejected-critical
                     {% elif candidate.recruitment_status == 'REJECTED' %}bg-danger
                     {% elif candidate.recruitment_status == 'INVITED_TO_INTERVIEW' %}bg-info
                     {% elif candidate.recruitment_status == 'AWAITING_DECISION' %}bg-warning
@@ -44,6 +45,7 @@
                     {% elif candidate.recruitment_status == 'PO4' %}Potencjał
                     {% elif candidate.recruitment_status == 'INVITED_TO_INTERVIEW' %}Zaproszono na rozmowę
                     {% elif candidate.recruitment_status == 'AWAITING_DECISION' %}Oczekuje na decyzję
+                    {% elif candidate.recruitment_status == 'REJECTED_CRITICAL' %}Odrzucony k
                     {% elif candidate.recruitment_status == 'REJECTED' %}Odrzucony
                     {% elif candidate.recruitment_status == 'ACCEPTED' %}Zaakceptowany
                     {% else %}{{ candidate.recruitment_status }}{% endif %}

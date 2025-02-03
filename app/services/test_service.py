@@ -362,6 +362,7 @@ class TestService:
                     "points": int(question.get("points", 0)),
                     "order_number": int(question.get("order_number", 1)),
                     "is_required": question.get("is_required", True),
+                    "is_critical": question.get("is_critical", False),
                     "image": question.get("image"),
                     "algorithm_type": question.get("algorithm_type", "NO_ALGORITHM"),
                     "algorithm_params": TestService.clean_algorithm_params(
@@ -502,7 +503,7 @@ class TestService:
                         changed_fields = {}
                         # Check each field for changes
                         for field in ["question_text", "answer_type", "points", "order_number", 
-                                    "is_required", "image", "algorithm_type", "algorithm_params", "options"]:
+                                    "is_required", "is_critical", "image", "algorithm_type", "algorithm_params", "options"]:
                             new_value = question.get(field)
                             if new_value is not None and new_value != original.get(field):
                                 changed_fields[field] = new_value
@@ -523,6 +524,7 @@ class TestService:
                             "points": int(question.get("points", 0)),
                             "order_number": int(question.get("order_number", 1)),
                             "is_required": question.get("is_required", True),
+                            "is_critical": question.get("is_critical", False),
                             "image": question.get("image"),
                             "algorithm_type": question.get("algorithm_type", "NO_ALGORITHM"),
                             "algorithm_params": TestService.clean_algorithm_params(

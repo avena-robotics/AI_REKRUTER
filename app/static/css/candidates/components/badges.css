@@ -24,6 +24,11 @@
     color: white;
 }
 
+.badge.bg-rejected-critical {
+    background-color: #991b1b !important;
+    color: white;
+}
+
 /* Base badge styles */
 .badge {
     padding: 0.5rem 1rem;

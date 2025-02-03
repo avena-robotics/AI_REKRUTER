@@ -215,3 +215,137 @@ Parametry:
 - `--clean`: Usuwa istniejące obiekty przed przywróceniem
 - `--disable-triggers`: Wyłącza wyzwalacze na czas przywracania
 - `-v`: Tryb szczegółowy dla lepszego debugowania
+
+"""
+Wchodzac pierwszy raz opjawi sie nam ekran logowania, w ktorym wykorzystujemy logowanie jak do emaila firmowoge (LDAP) lub dowolone email dodany przez adminstratora z haslem przez niego nadanym. W celu pomocy trzeba odezwac sie do ai_rekruter@pomagier.info lub sebastian.krajna@pomagier.info. 
+
+Po poprawnym logowaniu widzimy w panelu bocznym 3 sekcje. 
+Kampanie rekrutacyjne
+Zarządzaj kampaniami rekrutacyjnymi, twórz testy i ankiety.
+
+Kandydaci
+Przeglądaj i zarządzaj kandydatami w procesie rekrutacji.
+
+Szablony testów
+Zarządzaj bazą szablonów testów i pytań dla kampanii rekrutacyjnych.
+
+Widzimy rowniez przycisk wylogowania oraz grup do ktorych nalezymy. Kazdy uzytkownik musi zostac przypisane przez administratora do grupy, w ktorej moze tworzyc odpowiednie testy i kampanie. Nie bedzie on mial mozliwosci podgladu oraz edycji testow ktore przypisane sa do grupy do ktorej on nie nalezy. 
+
+Przechodzac do testow mamy opcje takie jak 'dodaj szablon testu' panel filtracji w ktorej mozemy wybrac jaki typ testu bedzie widoczny w liscie oraz z jakiej grupy testy maja byc widoczne. 
+
+W liscie wyswietlaja sie nam takie kolumny:
+#(numer w liscie)	Tytuł	"Typ testu"	"Limit czasu"	"Liczba pytań"	"Suma punktów"	"Próg zaliczenia"	"Grupy"	"Data utworzenia"	"Akcje(edycja, usuwanie, duplikacja)"
+
+Przy tworzeniu szablonu musimy uzupelnc pola takie jak:
+Tytuł testu* (Wewnętrzna identyfikacja testu)
+Typ testu*
+Ankieta
+Opis testu (Opis wyświetlany na stronie testu dla kandydata)
+Próg zaliczenia* (Ustaw wartość 0, aby test był traktowany jako bez progu)
+Limit czasu (minuty, Ustaw wartość 0, aby test był traktowany jako bez limitu czasu)
+Grupy*
+
+oraz dodać pytania do testu.
+
+Mamy 4 typy testow:
+1. Ankieta - Pytania o imie, naziwsko, numer telefonu, email sa zawsze odgrodnie dodawane do ankiety. Mozna dodac dodatkowe pytania ogolne do kandydata np. wynagrodzenie, dosiwadczenie, wyksztalcenie, prawo jazdy, etc.
+2. Test EQ - polega na tym, ze jest 7 sekcji po 8 stwierdzen w kazdej. Kandydat ma 10 punktow do rozdysponowania w kazdej sekcji. Punkty te sa zliczane wg tabeli 
+            'Sekcja': ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII']
+            'KO': ['d', 'b', 'a', 'h', 'f', 'c', 'g'],
+            'RE': ['g', 'a', 'h', 'd', 'b', 'f', 'e'],
+            'W':  ['f', 'e', 'c', 'b', 'd', 'g', 'a'],
+            'IN': ['c', 'g', 'd', 'e', 'h', 'a', 'f'],
+            'PZ': ['a', 'c', 'f', 'g', 'e', 'h', 'd'],
+            'KZ': ['h', 'd', 'g', 'c', 'a', 'e', 'b'],
+            'DZ': ['b', 'f', 'e', 'a', 'c', 'b', 'h'],
+            'SW': ['e', 'h', 'b', 'f', 'g', 'd', 'c']
+        
+3. Ocena EQ - Jest to specjalny test przygotowany po to, aby wydobyc kandydata o opowiednich dla naszych potrzeb cechach. Np mozemy ograniczyc ze kandydat ma miec KO pomiedzy 10 a 15.
+4. TEST IQ - Jest to test z pytaniami w ktorym trzeba wybrac odpowiedni obrazek z 6 mozliwosci, ktory pasuje do schematu.
+
+
+Do kazdego pytania musimy dodac tresc oraz zaznaczyc czy jest wymagane pytanie czy nie.
+Opcjonalnie mozemy dodac obrazek do pytania.
+Ustawiamy maksymalna liczbe punktów jakie mozna uzyskac za pytanie.
+Wybieramy typ odpowiedzi dla pytania.
+W tworzonych pytaniach mamy 8 mozliwosci typow odpowiedzi:
+- tekst
+- tak/nie
+- skala (0-5)
+- wynagrodzenie 
+- data
+- abcdef 
+- liczba 
+- punkty a-h (typ dostepny tylko dla testu EQ)
+
+W zaleznosci od typu odpowiedzi mamy różne opcje algorytmu punktacji.
+- tekst (brak algorytmu, dokładne dopasowanie odpowiedzi, ocena odpowiedzi przez AI)
+- tak/nie (brak algorytmu, dokładne dopasowanie odpowiedzi)
+- skala (brak algorytmu, lewostronny, prawstronny, srodkowy, przedzial)
+- wynagrodzenie (brak algorytmu, lewostronny, prawstronny, srodkowy, przedzial)
+- data (brak algorytmu, lewostronny, prawstronny, srodkowy, przedzial)
+- abcdef (brak algorytmu, dokładne dopasowanie odpowiedzi)
+- liczba (brak algorytmu, lewostronny, prawstronny, srodkowy, przedzial)
+- punkty a-h (domyślnie brak algorytmu, bo ocenia te odpowiedzi test 'OCENA EQ' a nie algorytm. Dlatego wybierajac ten typ odpowiedi trzeba do a,b,c,d,e,f,g,h wpisac tresc)
+
+Jak dzalaja algorytmu:
+- Brak algorytmu - Odpowiedź nie jest oceniana.
+- Dokładne dopasowanie odpowiedzi - Punkty przyznawane tylko za dokładnie poprawną odpowiedź.
+- Ocena odpowiedzi przez AI - Ocena przez sztuczną inteligencję na podstawie zdefiniowanych kryteriów. Musimy uzupelnic Na co zwrócić uwagę w odpowiedzi (Opisz algorytm oceny odpowiedzi) oraz Kryteria przyznawania punktów (Opisz, jak powinny być przyznawane punkty za poszczególne elementy odpowiedzi)
+- Przedzial - Punkty przyznawane, jeśli odpowiedź mieści się w określonym przedziale (musimy uzupelnic wartosc miniamlna i wartosc maksymalna. Krance sa wliczane jako prawidlowa odpowiedz)
+- Lewostronny - Im bliżej minimalnej wartości, tym mniej punktów. Wartości większe lub równe poprawnej odpowiedzi to maksymalna liczba punktów. (musimy uzupelnic wartosc minimalna i poprawna odpowiedz)
+- Prawostronny - Im bliżej maksymalnej wartości, tym mniej punktów. Wartości mniejsze lub równe poprawnej odpowiedzi to maksymalna liczba punktów. (musimy uzupelnic wartosc maksymalna i poprawna odpowiedz)
+- Srodkowy - Maksymalna liczba punktów za dokładne dopasowanie odpowiedzi, punkty maleją proporcjonalnie wraz oddaleniem od poprawnej odpowiedzi. (musimy uzupelnic wartosc minimalna i maksymalna, poprawna odpowiedz)
+
+
+
+
+Przechodzac do kampanii widzimy liste kampanii.
+
+W liscie wyswietlaja sie nam takie kolumny:
+#(numer kampani w liscie)	Kod	Tytuł	Lokalizacja	Status	Testy	"Data utworzenia"	Akcje(edycja, duplikacja, usuwanie)
+
+Mozemy dodac kampanie rekrutacyjna za pomoca przycisku 'dodaj kampanie'
+Mozemy ustawic status kampanii rekrutacyjnej na 'aktywna' lub 'nieaktywna', tak aby kandydaci nie mogli sie do niej dolaczyc.
+
+Ustawiamy kod kampanii do wewnetrznej identyfikacji kampanii.
+Ustawiamy tytul kampanii rekrutacyjnej.
+Ustawiamy lokalizacje kampanii rekrutacyjnej, miejsce gdzie kandydaci beda rekrutowani. 
+Ustawiamy porzadana przez nas date rozpoczecia pracy.
+
+Ustawiamy typ umowy, wymiar pracy, wynagrodzenie od, do (netto pln)
+
+Uzupełniamy szczegoly stanowiska(obowiazki, wymagnaia, co oferujemy, opis stanowiska) - jest to sekcja ktora bedzie przekopiowana do pracuj.pl 
+
+Uzuppelniamy szablon zaproszenia na rozmowe kwalifikacyjna. Przy wyslaniu zaproszenia bedzie mozliwosc modyfikacji szablonu. UStawiamy tytul i tresc.
+
+Wybieramy odpowiednia grupe do ktorej przypisujemy kampanie rekrutacyjna oraz z ktorej grupy beda brane testy. 
+Uzupelniamy odpowiedni ankiete, test eq, ocene eq, test iq. Ustawiamy w odpowiednia miejsca wage. Waga jest potrzebna po to, aby zaznaczyc jak bardzo wynik danego testu ma wplywac na wynik ogolny kandydata. Mozemy rowniez ustawic przy tescie eq i tescie iq jak dlugo ma byc dostepny link wygenerowany dla kandydata. 
+
+Po stworzeniu kampanii rekrutacyjnej mozemy wygenerowac link do kampanii rekrutacyjnej. Link ten bedzie mozliwosc udostepnienia kandydatom i jest on uniwersalny, ze kazdy moze miec do niego dostep. Nastepne linki do dalszych testow beda generowane unikalnie dla kazdego kandydata.
+
+
+
+Przechodzac do kandydatow widzimy panel filtrcji w ktorym mozemy wyszukac kandydatow po imieniu, nazwisku, emailu, telefonie. 
+Mozemy wyfiltrowac kandydatow wg kampanii rekrutacyjnej oraz statusie rekrutacji. 
+Mozemy przeliczyc punkty dla kazdego kandydata w liscie. Jesli lista jest przefiltrowana to tylko dla kandydatow wyfiltrowanych zostana przeliczone punkty. 
+W liscie widzimy kolumny takie jak:
+#(numer kandydata w liscie)	"Imię i nazwisko"	"Kod kampanii"	"Email"	"Telefon"	"Status"	"Wynik ankiety"	"Wynik testu EQ"	"Wynik oceny EQ"	"Wynik testu IQ"	"Ocena rozmowy"	"Wynik ogólny"	"Data aplikacji"	"Akcje"
+
+W akcjach widzimy przyciski do:
+- podgladu kandydata 
+- dodania notatki do kandydata
+- przeliczenia punktow dla kandydata (jesli po przeliczeniu punktow kandydat zalapie sie do nastepnego etapu odpowiedni email zostanie wyslany, nawet jesli odrzucilismy go recznie)
+- odrzuc - odrzucamy kandydata 
+- zapros na rozmowe (wysylamy zaproszenie na rozmowe kwalifikacyjna, wyswietla sie szablon zaproszenia na rozmowe z przyciskiem do wyslania)
+- oczekuje na decyzje - ustawiamy status kandydata na 'oczekuje na decyzje' abysmy nie zapomnieli ze trzeba kandydata poinformowac o decyzji
+- zaakceptuj - kandydat, ktorego zaakceptowalismy i chcemy go zatrudnic
+- usun aplikacje - usuwamy kandydata z listy wraz z wszystkimi danymi, wszystkie testy i ankiety zostana usuniete
+
+Przechodzac do podgladu kandydata widzimy wszystkie informacje o kandydacie oraz wyniki testow i ankiet. Mozemy dodac notatke do kandydata oraz edytowac usuwac juz istniejace. 
+Mozemy skopiowac wygenerowany link dostepu do danego testu dla kandydata. Mozemy rowniez ponownie wygenerowac token dostepu dla kandydata, jesli ktorys z jakiegos powodu wygasl. Opcja ta rowniez usunie juz wykonany test dla odpowiedniego etapu, jesli taki test istnieje. 
+
+Pytania ocenianie sa cyklicznie przez skrypt w CRON, ktory sprawdza czy kandydat ma jakis test ktore nie zostal jeszcze oceniony. Sprawdza czy wynik kandydata jest wiekszy od progu zaliczenia. Jesli tak to wysyla odpowiednie email do kandydata z dostepem do nastepnego etapu. Gdy ktos pozytywnie zaliczy test IQ to musimy juz recznie zaprosic go na rozmowe po przejrzeniu jego kandydatury. 
+
+
+"""

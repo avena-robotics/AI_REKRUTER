@@ -857,6 +857,13 @@ function createQuestionHtml(question = null) {
                                    ${q.is_required !== false ? 'checked' : ''}>
                             <label class="form-check-label" for="required_${questionCounter}">Wymagane</label>
                         </div>
+                        <div class="form-check form-switch">
+                            <input type="checkbox" class="form-check-input" 
+                                   name="questions[${questionCounter}][is_critical]" 
+                                   id="critical_${questionCounter}"
+                                   ${q.is_critical === true ? 'checked' : ''}>
+                            <label class="form-check-label" for="critical_${questionCounter}">Krytyczne</label>
+                        </div>
                     </div>
                     <button type="button" class="btn btn-danger btn-sm remove-question">
                         Usuń pytanie
@@ -1235,6 +1242,7 @@ function collectQuestionData(card, index) {
         points: parseInt(pointsElement?.value || '0'),
         order_number: index + 1,
         is_required: card.querySelector('[name$="[is_required]"]')?.checked ?? true,
+        is_critical: card.querySelector('[name$="[is_critical]"]')?.checked ?? false,
         algorithm_type: card.querySelector('[name$="[algorithm_type]"]')?.value || 'NO_ALGORITHM',
         image: card.querySelector('input[name$="[image]"]')?.value
     };
@@ -1318,6 +1326,7 @@ function getQuestionChanges(original, updated) {
         'points',
         'order_number',
         'is_required',
+        'is_critical',
         'algorithm_type',
         'image'
     ];
