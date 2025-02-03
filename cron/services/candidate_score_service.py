@@ -53,27 +53,39 @@ class CandidateScoreService:
                 )
                 
                 if result is not None:
-                    updates['po1_score'] = result
+                    if isinstance(result, dict) and result.get('status') == 'REJECTED_CRITICAL':
+                        updates['po1_score'] = 0
+                        updates['recruitment_status'] = 'REJECTED_CRITICAL'
+                        self.logger.warning(f"Kandydat {candidate['id']} nie zaliczył pytania krytycznego w PO1")
+                        updates['updated_at'] = current_time.isoformat()
+                        self.supabase.table('candidates')\
+                            .update(updates)\
+                            .eq('id', candidate['id'])\
+                            .execute()
+                        return
                     
-                    test_response = self.supabase.table('tests')\
-                        .select('passing_threshold')\
-                        .eq('id', campaign['po1_test_id'])\
-                        .single()\
-                        .execute()
+                    if isinstance(result, dict) and 'score' in result:
+                        updates['po1_score'] = result['score']
                         
-                    if test_response.data:
-                        passing_threshold = test_response.data['passing_threshold']
-                        if result < passing_threshold and candidate.get('recruitment_status') == 'PO1':
-                            updates['recruitment_status'] = 'REJECTED'
-                            self.logger.warning(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO1 (wynik: {result})")
-                        elif result >= passing_threshold and candidate.get('recruitment_status') == 'PO1':
-                            result = self._generate_token(candidate, campaign, 'PO2')
-                            updates.update(result)
+                        test_response = self.supabase.table('tests')\
+                            .select('passing_threshold')\
+                            .eq('id', campaign['po1_test_id'])\
+                            .single()\
+                            .execute()
+                            
+                        if test_response.data:
+                            passing_threshold = test_response.data['passing_threshold']
+                            if result['score'] < passing_threshold and candidate.get('recruitment_status') == 'PO1':
+                                updates['recruitment_status'] = 'REJECTED'
+                                self.logger.warning(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO1 (wynik: {result['score']})")
+                            elif result['score'] >= passing_threshold and candidate.get('recruitment_status') == 'PO1':
+                                result = self._generate_token(candidate, campaign, 'PO2')
+                                updates.update(result)
                 else:
                     self.logger.warning(f"Nie otrzymano wyniku dla kandydata {candidate['id']} w teście PO1")
 
             # Sprawdzenie i obliczenie wyniku PO2
-            if (candidate.get('po2_score') is None) and campaign.get('po2_test_id'):
+            if (candidate.get('po2_score') is None) and campaign.get('po2_test_id') and updates.get('recruitment_status') != 'REJECTED_CRITICAL':
                 self.logger.info(f"Obliczanie wyniku PO2 dla kandydata {candidate['id']}, test {campaign['po2_test_id']}")
                 
                 result = self.test_score_service.calculate_test_score(
@@ -81,6 +93,17 @@ class CandidateScoreService:
                     campaign['po2_test_id'],
                     'PO2'
                 )
+                
+                if isinstance(result, dict) and result.get('status') == 'REJECTED_CRITICAL':
+                    updates['po2_score'] = 0
+                    updates['recruitment_status'] = 'REJECTED_CRITICAL'
+                    self.logger.warning(f"Kandydat {candidate['id']} nie zaliczył pytania krytycznego w PO2")
+                    updates['updated_at'] = current_time.isoformat()
+                    self.supabase.table('candidates')\
+                        .update(updates)\
+                        .eq('id', candidate['id'])\
+                        .execute()
+                    return
                 
                 if isinstance(result, dict):  # EQ test results
                     updates.update(result)
@@ -97,8 +120,8 @@ class CandidateScoreService:
                         updates['updated_at'] = datetime.now(timezone.utc).isoformat()
                         self.logger.info(f"Ustawiono wynik PO2=0 i zaktualizowano status na PO2_5 dla kandydata {candidate['id']}")
 
-                elif result is not None:  # Regular test score
-                    updates['po2_score'] = result
+                elif result is not None and 'score' in result:  # Regular test score
+                    updates['po2_score'] = result['score']
                     
                     test_response = self.supabase.table('tests')\
                         .select('passing_threshold')\
@@ -108,15 +131,15 @@ class CandidateScoreService:
                         
                     if test_response.data:
                         passing_threshold = test_response.data['passing_threshold']
-                        if result < passing_threshold and candidate.get('recruitment_status') == 'PO2':
+                        if result['score'] < passing_threshold and candidate.get('recruitment_status') == 'PO2':
                             updates['recruitment_status'] = 'REJECTED'
                             self.logger.info(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO2")
-                        elif result >= passing_threshold and candidate.get('recruitment_status') == 'PO2':
+                        elif result['score'] >= passing_threshold and candidate.get('recruitment_status') == 'PO2':
                             result = self._generate_token(candidate, campaign, 'PO3')
                             updates.update(result)
 
             # Sprawdzenie i obliczenie wyniku PO2_5
-            if (candidate.get('po2_5_score') is None and campaign.get('po2_5_test_id')):
+            if (candidate.get('po2_5_score') is None and campaign.get('po2_5_test_id')) and updates.get('recruitment_status') != 'REJECTED_CRITICAL':
                 self.logger.info(f"Obliczanie wyniku PO2_5 dla kandydata {candidate['id']}, test {campaign['po2_5_test_id']}")
                 
                 result = self.test_score_service.calculate_test_score(
@@ -125,8 +148,19 @@ class CandidateScoreService:
                     'PO2_5'
                 )
                 
-                if result is not None:  # Regular test score
-                    updates['po2_5_score'] = result
+                if isinstance(result, dict) and result.get('status') == 'REJECTED_CRITICAL':
+                    updates['po2_5_score'] = 0
+                    updates['recruitment_status'] = 'REJECTED_CRITICAL'
+                    self.logger.warning(f"Kandydat {candidate['id']} nie zaliczył pytania krytycznego w PO2_5")
+                    updates['updated_at'] = current_time.isoformat()
+                    self.supabase.table('candidates')\
+                        .update(updates)\
+                        .eq('id', candidate['id'])\
+                        .execute()
+                    return
+                
+                if result is not None and 'score' in result:  # Regular test score
+                    updates['po2_5_score'] = result['score']
                     
                     test_response = self.supabase.table('tests')\
                         .select('passing_threshold')\
@@ -136,15 +170,15 @@ class CandidateScoreService:
                         
                     if test_response.data:
                         passing_threshold = test_response.data['passing_threshold']
-                        if result < passing_threshold and (candidate.get('recruitment_status') == 'PO2' or candidate.get('recruitment_status') == 'PO2_5'):
+                        if result['score'] < passing_threshold and (candidate.get('recruitment_status') == 'PO2' or candidate.get('recruitment_status') == 'PO2_5'):
                             updates['recruitment_status'] = 'REJECTED'
                             self.logger.info(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO2_5")
-                        elif result >= passing_threshold and (candidate.get('recruitment_status') == 'PO2' or candidate.get('recruitment_status') == 'PO2_5'):
+                        elif result['score'] >= passing_threshold and (candidate.get('recruitment_status') == 'PO2' or candidate.get('recruitment_status') == 'PO2_5'):
                             result = self._generate_token(candidate, campaign, 'PO3')
                             updates.update(result)
 
             # Sprawdzenie i obliczenie wyniku PO3
-            if (candidate.get('po3_score') is None and campaign.get('po3_test_id')):
+            if (candidate.get('po3_score') is None and campaign.get('po3_test_id')) and updates.get('recruitment_status') != 'REJECTED_CRITICAL':
                 self.logger.info(f"Obliczanie wyniku PO3 dla kandydata {candidate['id']}, test {campaign['po3_test_id']}")
                 
                 result = self.test_score_service.calculate_test_score(
@@ -153,8 +187,19 @@ class CandidateScoreService:
                     'PO3'
                 )
                 
-                if result is not None:  # Regular test score
-                    updates['po3_score'] = result
+                if isinstance(result, dict) and result.get('status') == 'REJECTED_CRITICAL':
+                    updates['po3_score'] = 0
+                    updates['recruitment_status'] = 'REJECTED_CRITICAL'
+                    self.logger.warning(f"Kandydat {candidate['id']} nie zaliczył pytania krytycznego w PO3")
+                    updates['updated_at'] = current_time.isoformat()
+                    self.supabase.table('candidates')\
+                        .update(updates)\
+                        .eq('id', candidate['id'])\
+                        .execute()
+                    return
+                
+                if result is not None and 'score' in result:  # Regular test score
+                    updates['po3_score'] = result['score']
                     
                     test_response = self.supabase.table('tests')\
                         .select('passing_threshold')\
@@ -164,10 +209,10 @@ class CandidateScoreService:
                         
                     if test_response.data:
                         passing_threshold = test_response.data['passing_threshold']
-                        if result < passing_threshold and candidate.get('recruitment_status') == 'PO3':
+                        if result['score'] < passing_threshold and candidate.get('recruitment_status') == 'PO3':
                             updates['recruitment_status'] = 'REJECTED'
                             self.logger.info(f"Kandydat {candidate['id']} nie osiągnął wymaganego progu {passing_threshold} punktów w PO3")
-                        elif result >= passing_threshold and candidate.get('recruitment_status') == 'PO3':
+                        elif result['score'] >= passing_threshold and candidate.get('recruitment_status') == 'PO3':
                             self._next_stage(candidate)
 
             if updates:

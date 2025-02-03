@@ -16,6 +16,16 @@ class TestScoreService:
     def calculate_test_score(self, candidate_id: int, test_id: int, stage: str) -> Optional[dict]:
         """
         Oblicza wynik testu dla kandydata
+        
+        Args:
+            candidate_id: ID kandydata
+            test_id: ID testu
+            stage: Etap rekrutacji
+            
+        Returns:
+            Optional[dict]: Wynik testu lub None w przypadku błędu. 
+            Dla testów EQ zwraca słownik z wynikami poszczególnych kategorii.
+            Dla zwykłych testów zwraca słownik z wynikiem i ewentualnym statusem odrzucenia.
         """
         try:
             self.logger.info(f"[TEST {test_id}] Rozpoczęcie obliczania wyniku dla kandydata {candidate_id} w etapie {stage}")
@@ -80,12 +90,40 @@ class TestScoreService:
                     self.logger.warning(f"[TEST {test_id}] Test oznaczony jako EQ, ale nie znaleziono pytań typu AH_POINTS")
                     return None
             else:
-                # For non-EQ tests, calculate regular score
-                non_eq_questions = [q for q in questions.values() if q['answer_type'] != 'AH_POINTS']
+                # For non-EQ tests, first check critical questions
+                critical_questions = [q for q in questions.values() if q.get('is_critical', False)]
+                non_critical_questions = [q for q in questions.values() if not q.get('is_critical', False)]
+                
+                self.logger.info(f"[TEST {test_id}] Znaleziono {len(critical_questions)} pytań krytycznych")
+                
+                # Check critical questions first
+                if critical_questions:
+                    for question in critical_questions:
+                        answer = next((a for a in answers_response.data if a['question_id'] == question['id']), None)
+                        if answer:
+                            score = self.calculate_score(answer, question)
+                            max_points = float(question.get('points', 0))
+                            
+                            # If critical question score is not maximum, reject immediately
+                            if score < max_points:
+                                self.logger.warning(
+                                    f"[TEST {test_id}] Kandydat {candidate_id} nie uzyskał maksymalnej liczby punktów "
+                                    f"({score}/{max_points}) w pytaniu krytycznym {question['id']}"
+                                )
+                                return {
+                                    'score': 0,
+                                    'status': 'REJECTED_CRITICAL',
+                                    'critical_question_id': question['id']
+                                }
+                
+                # If all critical questions passed or there were none, calculate total score
                 self.logger.info(f"[TEST {test_id}] Wykryto standardowy test typu {test_type}")
-                total_score = self.calculate_total_score(answers_response, non_eq_questions)
+                total_score = self.calculate_total_score(answers_response, non_critical_questions)
                 self.logger.info(f"[TEST {test_id}] Obliczono wynik standardowy dla kandydata {candidate_id}: {total_score}")
-                return total_score or 0  # Test został wykonany, więc zwracamy wynik (nawet 0)
+                return {
+                    'score': total_score or 0,
+                    'status': 'OK'
+                }
                 
         except Exception as e:
             self.logger.error(f"[TEST {test_id}] Krytyczny błąd podczas obliczania wyniku dla kandydata {candidate_id}: {str(e)}")
