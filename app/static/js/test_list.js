@@ -849,20 +849,25 @@ function createQuestionHtml(question = null) {
                         <div class="drag-handle" style="cursor: grab;">
                             <i class="bi bi-grip-vertical" style="font-size: 1.2rem;"></i>
                         </div>
-                        <h6 class="card-title mb-0">Pytanie ${questionCounter + 1}</h6>
-                        <div class="form-check form-switch">
-                            <input type="checkbox" class="form-check-input" 
-                                   name="questions[${questionCounter}][is_required]" 
-                                   id="required_${questionCounter}"
-                                   ${q.is_required !== false ? 'checked' : ''}>
-                            <label class="form-check-label" for="required_${questionCounter}">Wymagane</label>
-                        </div>
-                        <div class="form-check form-switch">
-                            <input type="checkbox" class="form-check-input" 
-                                   name="questions[${questionCounter}][is_critical]" 
-                                   id="critical_${questionCounter}"
-                                   ${q.is_critical === true ? 'checked' : ''}>
-                            <label class="form-check-label" for="critical_${questionCounter}">Krytyczne</label>
+                        <div class="switch-container">
+                            <div class="switch-group">
+                                <div class="form-check form-switch">
+                                    <input type="checkbox" class="form-check-input" 
+                                           name="questions[${questionCounter}][is_required]" 
+                                           id="required_${questionCounter}"
+                                           ${q.is_required !== false ? 'checked' : ''}>
+                                    <label class="form-check-label switch-label" for="required_${questionCounter}">Wymagane</label>
+                                </div>
+                            </div>
+                            <div class="switch-group">
+                                <div class="form-check form-switch">
+                                    <input type="checkbox" class="form-check-input" 
+                                           name="questions[${questionCounter}][is_critical]" 
+                                           id="critical_${questionCounter}"
+                                           ${q.is_critical === true ? 'checked' : ''}>
+                                    <label class="form-check-label switch-label" for="critical_${questionCounter}">Krytyczne</label>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <button type="button" class="btn btn-danger btn-sm remove-question">
@@ -1378,10 +1383,6 @@ function initializeSortable() {
 function updateQuestionOrders(container) {
     // Update question numbers and order inputs
     container.querySelectorAll('.question-card').forEach((card, index) => {
-        // Update question number in title
-        const title = card.querySelector('.card-title');
-        title.textContent = `Pytanie ${index + 1}`;
-        
         // Update order number input
         const orderInput = card.querySelector('input[name$="[order_number]"]');
         if (orderInput) {
@@ -1623,7 +1624,7 @@ function handleAlgorithmTypeChange(select) {
     const aiParamsContainer = questionCard.querySelector('.ai-params-container');
     
     // Update algorithm description
-    const algorithmDescription = questionCard.querySelector('.algorithm-type-select').closest('div').querySelector('.text-muted');
+    const algorithmDescription = select.closest('div').querySelector('.text-muted');
     if (algorithmDescription) {
         algorithmDescription.textContent = getAlgorithmDescription(select.value);
     }

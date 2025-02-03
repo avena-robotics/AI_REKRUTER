@@ -146,7 +146,7 @@ class TestService:
             # Single query to get test with questions and groups
             test = (
                 supabase.from_("tests")
-                .select("*, questions(id, question_text, answer_type, points, order_number, is_required, image, options, algorithm_type, algorithm_params), link_groups_tests(group_id)")
+                .select("*, questions(id, question_text, answer_type, points, order_number, is_required, is_critical, image, options, algorithm_type, algorithm_params), link_groups_tests(group_id)")
                 .eq("id", test_id)
                 .single()
                 .execute()
@@ -613,7 +613,7 @@ class TestService:
                 tests_response = (
                     supabase.from_("tests")
                     .select(
-                        "*, questions(*), link_groups_tests(group_id)",
+                        "*, questions(id, question_text, answer_type, points, order_number, is_required, is_critical, image, options, algorithm_type, algorithm_params), link_groups_tests(group_id)",
                         count="exact",
                     )
                     .order("created_at", desc=True)
