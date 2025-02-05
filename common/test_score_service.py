@@ -324,14 +324,14 @@ class TestScoreService:
                     correct_answer = float(str(algorithm_params.get('correct_answer', '')).replace(',', '.'))
                     
                     if algorithm_type == 'LEFT_SIDED':
-                        if user_answer <= min_value:
+                        if user_answer < min_value:
                             return 0.0
                         elif user_answer >= correct_answer:
                             return float(max_points)
                         return max_points * (user_answer - min_value) / (correct_answer - min_value)
                         
                     elif algorithm_type == 'RIGHT_SIDED':
-                        if user_answer >= max_value:
+                        if user_answer > max_value:
                             return 0.0
                         elif user_answer <= correct_answer:
                             return float(max_points)
@@ -340,7 +340,7 @@ class TestScoreService:
                     else:  # CENTER
                         if user_answer == correct_answer:
                             return float(max_points)
-                        elif user_answer <= min_value or user_answer >= max_value:
+                        elif user_answer < min_value or user_answer > max_value:
                             return 0.0
                         elif user_answer < correct_answer:
                             return max_points * (user_answer - min_value) / (correct_answer - min_value)
