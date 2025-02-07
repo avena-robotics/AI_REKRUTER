@@ -93,7 +93,7 @@ export function applyFilters() {
             phone.includes(searchText);
             
         const matchesCampaign = selectedCampaigns.length === 0 ? 
-            !campaign : // jeśli nie wybrano żadnej kampanii, pokaż tylko wiersze bez kampanii
+            false : // jeśli nie wybrano żadnej kampanii, nie pokazuj żadnych wierszy
             selectedCampaigns.includes(campaign);
             
         const matchesStatus = selectedStatuses.length === 0 ?
@@ -191,7 +191,7 @@ export function initializeFilters() {
                 checkbox.checked = isChecked;
             });
             updateSelectedOptionsText(this);
-            applyFilters();
+            refreshTable();
         });
     }
     
@@ -202,7 +202,7 @@ export function initializeFilters() {
                 checkbox.checked = isChecked;
             });
             updateSelectedOptionsText(this);
-            applyFilters();
+            refreshTable();
         });
     }
     
@@ -214,7 +214,7 @@ export function initializeFilters() {
                 selectAllCampaigns.checked = allChecked;
             }
             updateSelectedOptionsText(this);
-            applyFilters();
+            refreshTable();
         });
     });
     
@@ -225,7 +225,7 @@ export function initializeFilters() {
                 selectAllStatuses.checked = allChecked;
             }
             updateSelectedOptionsText(this);
-            applyFilters();
+            refreshTable();
         });
     });
     
@@ -236,13 +236,13 @@ export function initializeFilters() {
         });
     });
     
-    // Initialize search input with immediate filtering
+    // Initialize search input with debounce
     if (searchInput) {
         let debounceTimeout;
         searchInput.addEventListener('input', function() {
             clearTimeout(debounceTimeout);
             debounceTimeout = setTimeout(() => {
-                applyFilters();
+                refreshTable();
             }, 300);
         });
     }
@@ -281,8 +281,8 @@ export function initializeFilters() {
                 }
             });
             
-            // Apply filters
-            applyFilters();
+            // Refresh table
+            refreshTable();
         });
     }
 }

@@ -25,8 +25,8 @@ class CandidateService:
     @staticmethod
     def get_candidates(
         user_group_ids: List[int],
-        campaign_code: Optional[str] = None,
-        status: Optional[str] = None,
+        campaign_codes: List[str] = None,
+        statuses: List[str] = None,
         sort_by: str = "created_at",
         sort_order: str = "desc",
         search: str = ""
@@ -36,8 +36,8 @@ class CandidateService:
         
         Args:
             user_group_ids (List[int]): Lista ID grup do których należy użytkownik (wymagane)
-            campaign_code (Optional[str]): Kod kampanii do filtrowania
-            status (Optional[str]): Status rekrutacji do filtrowania
+            campaign_codes (List[str]): Lista kodów kampanii do filtrowania
+            statuses (List[str]): Lista statusów rekrutacji do filtrowania
             sort_by (str): Pole po którym sortować
             sort_order (str): Kierunek sortowania (asc/desc)
             search (str): Fraza do wyszukiwania
@@ -70,6 +70,14 @@ class CandidateService:
             # Filter by user's campaign access
             query = query.in_("campaign_id", campaign_ids)
 
+            # Apply campaign codes filter
+            if campaign_codes:
+                query = query.in_("campaigns.code", campaign_codes)
+
+            # Apply status filter
+            if statuses:
+                query = query.in_("recruitment_status", statuses)
+
             # Apply search if provided
             if search:
                 search_pattern = f"%{search.lower()}%"
@@ -79,12 +87,6 @@ class CandidateService:
                     f"email.ilike.{search_pattern},"
                     f"phone.ilike.{search_pattern}"
                 )
-
-            # Apply filters
-            if campaign_code:
-                query = query.eq("campaigns.code", campaign_code)
-            if status:
-                query = query.eq("recruitment_status", status)
 
             # Apply sorting
             query = query.order(sort_by, desc=(sort_order == "desc"))

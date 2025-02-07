@@ -24,11 +24,14 @@ class DateTimeEncoder(json.JSONEncoder):
 @login_required
 def list():
     try:
-        campaign_code = request.args.get("campaign_code")
-        status = request.args.get("status")
-        sort_by = request.args.get("sort_by", "created_at")
-        sort_order = request.args.get("sort_order", "desc")
+        # Get filter parameters from request
+        campaign_codes = request.args.get("campaigns", "").split(",")
+        statuses = request.args.get("statuses", "").split(",")
         search = request.args.get("search", "").strip()
+        
+        # Clean up empty values
+        campaign_codes = [c for c in campaign_codes if c]
+        statuses = [s for s in statuses if s]
         
         # Get user's groups
         user_id = session.get('user_id')
@@ -37,10 +40,10 @@ def list():
         
         candidates = CandidateService.get_candidates(
             user_group_ids=user_group_ids,
-            campaign_code=campaign_code,
-            status=status,
-            sort_by=sort_by,
-            sort_order=sort_order,
+            campaign_codes=campaign_codes,
+            statuses=statuses,
+            sort_by=request.args.get("sort_by", "created_at"),
+            sort_order=request.args.get("sort_order", "desc"),
             search=search
         )
         

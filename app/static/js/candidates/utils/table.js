@@ -1,34 +1,35 @@
 // Function to refresh table
-export async function refreshTable(fetchNewData = false) {
+export async function refreshTable() {
     try {
-        if (fetchNewData) {
-            const currentUrl = new URL(window.location.href);
-            const response = await fetch(currentUrl);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const html = await response.text();
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const newTable = doc.querySelector('#candidatesTable tbody');
-            if (newTable) {
-                document.querySelector('#candidatesTable tbody').innerHTML = newTable.innerHTML;
-            }
-            
-            // Reapply filters after fetching new data
-            if (typeof applyFilters === 'function') {
-                applyFilters();
-            }
+        const currentUrl = new URL(window.location.href);
+        // Dodaj parametry filtrowania do URL
+        const selectedCampaigns = Array.from(document.querySelectorAll('.filter-campaign:checked'))
+            .map(cb => cb.value);
+        const selectedStatuses = Array.from(document.querySelectorAll('.filter-status:checked'))
+            .map(cb => cb.value);
+        const searchText = document.getElementById('searchText')?.value || '';
+
+        currentUrl.searchParams.set('campaigns', selectedCampaigns.join(','));
+        currentUrl.searchParams.set('statuses', selectedStatuses.join(','));
+        currentUrl.searchParams.set('search', searchText);
+
+        const response = await fetch(currentUrl);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const html = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const newTable = doc.querySelector('#candidatesTable tbody');
+        if (newTable) {
+            document.querySelector('#candidatesTable tbody').innerHTML = newTable.innerHTML;
         }
         
-        // Update row numbers for visible rows only
-        let visibleRowNumber = 1;
-        document.querySelectorAll('#candidatesTable tbody tr').forEach(row => {
-            if (row.style.display !== 'none') {
-                const numberCell = row.querySelector('td.row-number');
-                if (numberCell) {
-                    numberCell.textContent = visibleRowNumber++;
-                }
+        // Update row numbers
+        document.querySelectorAll('#candidatesTable tbody tr').forEach((row, index) => {
+            const numberCell = row.querySelector('td.row-number');
+            if (numberCell) {
+                numberCell.textContent = index + 1;
             }
         });
         
