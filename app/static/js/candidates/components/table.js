@@ -171,9 +171,15 @@ export function initializeFilters() {
 
     // Set initial state - only active campaigns checked
     if (selectAllCampaigns) {
-        const activeCampaignsCount = document.querySelectorAll('.filter-campaign[checked]').length;
-        const totalCampaignsCount = campaignCheckboxes.length;
-        selectAllCampaigns.checked = activeCampaignsCount === totalCampaignsCount;
+        selectAllCampaigns.checked = false;
+        // Ustawiamy początkowy tekst
+        const campaignDropdown = selectAllCampaigns.closest('.dropdown');
+        if (campaignDropdown) {
+            const selectedOptionsSpan = campaignDropdown.querySelector('.selected-options');
+            if (selectedOptionsSpan) {
+                selectedOptionsSpan.textContent = 'Aktywne kampanie';
+            }
+        }
     }
     
     // Initialize select all campaigns
@@ -261,11 +267,26 @@ export function initializeFilters() {
             
             // Reset campaign filters
             if (selectAllCampaigns) {
-                selectAllCampaigns.checked = true;
+                selectAllCampaigns.checked = false;
             }
-            campaignCheckboxes.forEach(checkbox => {
-                checkbox.checked = true;
-            });
+
+            // Zaznaczamy wszystkie aktywne kampanie
+            const activeCampaignsSection = document.querySelector('.dropdown-menu .mb-2'); // Sekcja z aktywnymi kampaniami
+            if (activeCampaignsSection) {
+                const activeCheckboxes = activeCampaignsSection.querySelectorAll('.filter-campaign');
+                activeCheckboxes.forEach(checkbox => {
+                    checkbox.checked = true;
+                });
+            }
+
+            // Odznaczamy wszystkie nieaktywne kampanie
+            const inactiveCampaignsSection = activeCampaignsSection?.nextElementSibling?.nextElementSibling;
+            if (inactiveCampaignsSection) {
+                const inactiveCheckboxes = inactiveCampaignsSection.querySelectorAll('.filter-campaign');
+                inactiveCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+            }
             
             // Reset status filters
             if (selectAllStatuses) {
@@ -278,7 +299,7 @@ export function initializeFilters() {
             // Update dropdown texts
             document.querySelectorAll('.dropdown .selected-options').forEach(span => {
                 if (span.closest('.dropdown').querySelector('.select-all-campaigns')) {
-                    span.textContent = 'Wszystkie kampanie';
+                    span.textContent = 'Aktywne kampanie';
                 } else if (span.closest('.dropdown').querySelector('.select-all-statuses')) {
                     span.textContent = 'Wszystkie statusy';
                 }
