@@ -169,21 +169,14 @@ export function initializeFilters() {
         bulkRecalculateBtn.addEventListener('click', bulkRecalculateScores);
     }
 
-    // Set initial state - all checkboxes checked
+    // Set initial state - only active campaigns checked
     if (selectAllCampaigns) {
-        selectAllCampaigns.checked = true;
+        const activeCampaignsCount = document.querySelectorAll('.filter-campaign[checked]').length;
+        const totalCampaignsCount = campaignCheckboxes.length;
+        selectAllCampaigns.checked = activeCampaignsCount === totalCampaignsCount;
     }
-    if (selectAllStatuses) {
-        selectAllStatuses.checked = true;
-    }
-    campaignCheckboxes.forEach(checkbox => {
-        checkbox.checked = true;
-    });
-    statusCheckboxes.forEach(checkbox => {
-        checkbox.checked = true;
-    });
     
-    // Initialize select all checkboxes
+    // Initialize select all campaigns
     if (selectAllCampaigns) {
         selectAllCampaigns.addEventListener('change', function() {
             const isChecked = this.checked;
@@ -195,18 +188,7 @@ export function initializeFilters() {
         });
     }
     
-    if (selectAllStatuses) {
-        selectAllStatuses.addEventListener('change', function() {
-            const isChecked = this.checked;
-            statusCheckboxes.forEach(checkbox => {
-                checkbox.checked = isChecked;
-            });
-            updateSelectedOptionsText(this);
-            refreshTable();
-        });
-    }
-    
-    // Initialize individual checkboxes
+    // Initialize individual campaign checkboxes
     campaignCheckboxes.forEach(checkbox => {
         checkbox.addEventListener('change', function() {
             const allChecked = Array.from(campaignCheckboxes).every(cb => cb.checked);
@@ -218,6 +200,27 @@ export function initializeFilters() {
         });
     });
     
+    // Initialize status checkboxes
+    if (selectAllStatuses) {
+        selectAllStatuses.checked = true;
+    }
+    statusCheckboxes.forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    
+    // Initialize select all statuses
+    if (selectAllStatuses) {
+        selectAllStatuses.addEventListener('change', function() {
+            const isChecked = this.checked;
+            statusCheckboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+            updateSelectedOptionsText(this);
+            refreshTable();
+        });
+    }
+    
+    // Initialize individual status checkboxes
     statusCheckboxes.forEach(checkbox => {
         checkbox.addEventListener('change', function() {
             const allChecked = Array.from(statusCheckboxes).every(cb => cb.checked);

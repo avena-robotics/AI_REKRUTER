@@ -20,15 +20,35 @@
                     <label class="form-check-label" for="selectAllCampaigns">Zaznacz/Odznacz wszystkie</label>
                 </div>
                 <hr class="dropdown-divider">
-                {% for campaign in campaigns %}
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input filter-campaign" 
-                           value="{{ campaign.code }}" id="filterCampaign{{ campaign.code }}">
-                    <label class="form-check-label" for="filterCampaign{{ campaign.code }}">
-                        {{ campaign.code }} - {{ campaign.title }}
-                    </label>
+                <div class="mb-2">
+                    <strong class="d-block mb-2">Aktywne kampanie</strong>
+                    {% for campaign in campaigns %}
+                        {% if campaign.is_active %}
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input filter-campaign" 
+                                   value="{{ campaign.code }}" id="filterCampaign{{ campaign.code }}" checked>
+                            <label class="form-check-label" for="filterCampaign{{ campaign.code }}">
+                                {{ campaign.code }} - {{ campaign.title }}
+                            </label>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
                 </div>
-                {% endfor %}
+                <hr class="dropdown-divider">
+                <div>
+                    <strong class="d-block mb-2">Nieaktywne kampanie</strong>
+                    {% for campaign in campaigns %}
+                        {% if not campaign.is_active %}
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input filter-campaign" 
+                                   value="{{ campaign.code }}" id="filterCampaign{{ campaign.code }}">
+                            <label class="form-check-label" for="filterCampaign{{ campaign.code }}">
+                                {{ campaign.code }} - {{ campaign.title }}
+                            </label>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
             </div>
         </div>
     </div>

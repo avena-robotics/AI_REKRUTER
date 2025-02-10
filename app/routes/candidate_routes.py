@@ -47,7 +47,9 @@ def list():
             search=search
         )
         
+        # Dodajmy logowanie aby sprawdzić dane kampanii
         campaigns = CampaignService.get_campaigns_for_dropdown()
+        logger.debug(f"Kampanie przekazane do widoku: {campaigns}")
         
         return render_template(
             "candidates/list.html",

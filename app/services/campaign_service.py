@@ -311,26 +311,21 @@ class CampaignService:
             )
 
     @staticmethod
-    def get_campaigns_for_dropdown() -> List[Dict]:
-        """
-        Pobiera listę kampanii do wyświetlenia w dropdownie.
-        
-        Returns:
-            List[Dict]: Lista kampanii z kodem i tytułem
-            
-        Raises:
-            CampaignException: Gdy wystąpi błąd podczas pobierania kampanii
-        """
+    def get_campaigns_for_dropdown():
         try:
             result = supabase.from_("campaigns")\
-                .select("code, title")\
-                .order("code", desc=False)\
+                .select("code, title, is_active")\
+                .order("created_at", desc=True)\
                 .execute()
                 
+            # Dodaj debugowanie
+            for campaign in result.data:
+                logger.debug(f"Kampania {campaign['code']}: is_active = {campaign.get('is_active')}, typ: {type(campaign.get('is_active'))}")
+            
             return result.data
                 
         except Exception as e:
-            logger.error(f"Błąd podczas pobierania listy kampanii: {str(e)}")
+            logger.error(f"Błąd podczas pobierania kampanii: {str(e)}")
             raise CampaignException(
                 message="Wystąpił błąd podczas pobierania listy kampanii",
                 original_error=e
