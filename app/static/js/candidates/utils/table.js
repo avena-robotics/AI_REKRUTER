@@ -39,6 +39,19 @@ export async function refreshTable() {
     }
 }
 
+const statusOrder = {
+    'Odrzucony k': 1,          // REJECTED_CRITICAL - najpierw krytyczne odrzucenie
+    'Odrzucony': 2,            // REJECTED - potem zwykłe odrzucenie
+    'Ankieta': 3,              // PO1
+    'Test EQ': 4,              // PO2
+    'Ocena EQ': 5,             // PO2_5
+    'Test IQ': 6,              // PO3
+    'Potencjał': 7,            // PO4
+    'Zaproszono na rozmowę': 8,// INVITED_TO_INTERVIEW
+    'Oczekuje na decyzję': 9,  // AWAITING_DECISION
+    'Zaakceptowany': 10        // ACCEPTED
+};
+
 // Function to get row value for sorting
 export function getRowValue(row, sortField) {
     const cell = row.querySelector(`td[data-sort="${sortField}"]`);
@@ -51,6 +64,11 @@ export function getRowValue(row, sortField) {
         return new Date(value).getTime();
     } else if (['po1_score', 'po2_score', 'po2_5_score', 'po3_score', 'po4_score', 'total_score'].includes(sortField)) {
         return value === '-' ? -Infinity : parseFloat(value);
+    } else if (sortField === 'recruitment_status') {
+        // Pobierz tekst ze spana wewnątrz komórki (pomijając białe znaki)
+        const statusText = cell.querySelector('.badge')?.textContent.trim() || '';
+        // Zwróć wartość numeryczną ze słownika lub maksymalną wartość jeśli status nie jest znany
+        return statusOrder[statusText] || 999;
     }
     
     return value.toLowerCase();
