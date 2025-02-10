@@ -35,7 +35,7 @@ class CandidateService:
         Pobiera listę kandydatów z możliwością filtrowania i sortowania.
         
         Args:
-            user_group_ids (List[int]): Lista ID grup do których należy użytkownik (wymagane)
+            user_group_ids (List[int]): Lista ID grup do których należy użytkownik
             campaign_codes (List[str]): Lista kodów kampanii do filtrowania
             statuses (List[str]): Lista statusów rekrutacji do filtrowania
             sort_by (str): Pole po którym sortować
@@ -49,6 +49,10 @@ class CandidateService:
             CandidateException: Gdy wystąpi błąd podczas pobierania kandydatów
         """
         try:
+            # Jeśli nie wybrano żadnej kampanii lub statusu, zwróć pustą listę
+            if not campaign_codes or not statuses:
+                return []
+
             # If no groups assigned, return empty list
             if not user_group_ids:
                 return []
@@ -71,12 +75,10 @@ class CandidateService:
             query = query.in_("campaign_id", campaign_ids)
 
             # Apply campaign codes filter
-            if campaign_codes:
-                query = query.in_("campaigns.code", campaign_codes)
+            query = query.in_("campaigns.code", campaign_codes)
 
             # Apply status filter
-            if statuses:
-                query = query.in_("recruitment_status", statuses)
+            query = query.in_("recruitment_status", statuses)
 
             # Apply search if provided
             if search:
